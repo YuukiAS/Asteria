@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.1.7 - Block Clipboard Paste
+
+- Added internal whole-block copy/paste support.
+- Added `Ctrl/Cmd+C` to copy the selected block when focus is not inside an editor or input.
+- Added `Ctrl/Cmd+V` to paste the copied block with preserved content, styling, type, status, emoji markers, and size.
+- Added `Copy block` and `Paste block` buttons to the block inspector.
+- Kept normal text copy/paste untouched inside Tiptap and form fields.
+
+## 0.1.6 - Collapsible and Resizable Inspector
+
+- Added an animated right inspector collapse/expand control that leaves a compact restore button on the right edge.
+- Added drag resizing for the inspector with persisted width and a subtle width readout.
+- Reduced the default inspector width from 400px to 360px and constrained it between 320px and 520px.
+- Removed inspector horizontal overflow by making the panel width controlled by the shell and tightening narrow action button layouts.
+- Added reduced-motion fallbacks for the inspector transition.
+
+## 0.1.5 - Lightweight Types, Status, Emoji Markers, and Edge Styling
+
+- Added lightweight block types: Generic, Definition, Notation, Model, Prior, Assumption, Statement, Dataset, Result, Citation, Warning, and TODO.
+- Added compact type badges to block headers without changing user-selected block background, border, or text colors.
+- Added optional block status markers with hidden-by-default undo / doing / done states.
+- Added two compact emoji marker inputs per block and header display.
+- Added edge line style, path type, arrow direction, and stroke width controls.
+- Added edge style copy/paste with localStorage-backed app clipboard.
+- Added edge label copy using the browser clipboard API when available.
+- Added block duplication, block style copy/paste, and Ctrl/Cmd+D duplication with editor/input focus guards.
+- Updated import/export normalization so old V1 maps still load, new V1.1 fields persist, and unknown block/edge style fields fallback with console warnings.
+
 ## 0.1.4 - Resize Feedback, Math Color, and Drag Recovery
 
 - Made selected blocks visually resize in real time while dragging corner handles, with a subtle resizing highlight.

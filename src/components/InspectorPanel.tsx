@@ -1,4 +1,5 @@
-import { Plus } from "lucide-react"
+import { Clipboard, Copy, Layers, Plus } from "lucide-react"
+import { blockStatusOptions, blockTypeByValue, blockTypeOptions } from "../constants/blockTypes"
 import { ColorPickerRow } from "./ColorPickerRow"
 import { EdgeInspector } from "./EdgeInspector"
 import { RichTextEditor } from "./RichTextEditor"
@@ -17,6 +18,13 @@ export function InspectorPanel() {
     updateBlock,
     updateEdge,
     deleteEdge,
+    duplicateBlock,
+    copyBlock,
+    pasteBlock,
+    blockClipboard,
+    copyBlockStyle,
+    pasteBlockStyle,
+    blockStyleClipboard,
   } = useMapStore()
   const node = nodes.find((item) => item.id === selectedNodeId)
   const edge = edges.find((item) => item.id === selectedEdgeId)
@@ -36,14 +44,22 @@ export function InspectorPanel() {
   }
 
   if (node) {
+    const blockType = blockTypeByValue[node.data.nodeType] || blockTypeByValue.generic
+    const emojis = node.data.emojis || []
+    const updateEmoji = (index: number, value: string) => {
+      const next = [emojis[0] || "", emojis[1] || ""]
+      next[index] = value
+      updateBlock(node.id, { emojis: next.map((item) => item.trim()).filter(Boolean).slice(0, 2) })
+    }
+
     return (
       <aside className="inspector">
         <div className="inspector-heading">
           <div>
             <h2>Block</h2>
-            <p>Generic research block</p>
+            <p>{blockType.label} research block</p>
           </div>
-          <span className="badge">Generic</span>
+          <span className={`type-badge ${blockType.badgeClass}`}>{blockType.label}</span>
         </div>
         <div className="grid gap-5">
           <section className="panel-section">
@@ -55,6 +71,20 @@ export function InspectorPanel() {
                 value={node.data.title}
                 onChange={(event) => updateBlock(node.id, { title: event.target.value })}
               />
+            </label>
+            <label className="field-label">
+              Type
+              <select
+                className="field-input"
+                value={node.data.nodeType}
+                onChange={(event) => updateBlock(node.id, { nodeType: event.target.value as typeof node.data.nodeType })}
+              >
+                {blockTypeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </label>
           </section>
           <section className="panel-section">
@@ -99,6 +129,76 @@ export function InspectorPanel() {
                   value={node.data.height}
                   onChange={(event) => updateBlock(node.id, { height: Number(event.target.value) })}
                 />
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" className="toolbar-button justify-center" onClick={() => duplicateBlock(node.id)}>
+                <Layers size={14} />
+                Duplicate
+              </button>
+              <button type="button" className="toolbar-button justify-center" onClick={() => copyBlock(node.id)}>
+                <Copy size={14} />
+                Copy block
+              </button>
+              <button
+                type="button"
+                className="toolbar-button col-span-2 justify-center disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!blockClipboard}
+                onClick={() => pasteBlock()}
+              >
+                <Clipboard size={14} />
+                Paste block
+              </button>
+              <button type="button" className="toolbar-button justify-center" onClick={() => copyBlockStyle(node.id)}>
+                <Copy size={14} />
+                Copy style
+              </button>
+              <button
+                type="button"
+                className="toolbar-button justify-center disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!blockStyleClipboard}
+                onClick={() => pasteBlockStyle(node.id)}
+              >
+                <Clipboard size={14} />
+                Paste style
+              </button>
+            </div>
+          </section>
+          <section className="panel-section">
+            <div className="section-title">Markers</div>
+            <label className="inline-flex items-center gap-2 text-xs font-medium text-secondary">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-border text-accent"
+                checked={Boolean(node.data.showStatus)}
+                onChange={(event) => updateBlock(node.id, { showStatus: event.target.checked, status: node.data.status || "undo" })}
+              />
+              Show status
+            </label>
+            {node.data.showStatus && (
+              <label className="field-label">
+                Status
+                <select
+                  className="field-input"
+                  value={node.data.status || "undo"}
+                  onChange={(event) => updateBlock(node.id, { status: event.target.value as typeof node.data.status })}
+                >
+                  {blockStatusOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <label className="field-label">
+                Emoji 1
+                <input className="field-input" value={emojis[0] || ""} maxLength={16} onChange={(event) => updateEmoji(0, event.target.value)} />
+              </label>
+              <label className="field-label">
+                Emoji 2
+                <input className="field-input" value={emojis[1] || ""} maxLength={16} onChange={(event) => updateEmoji(1, event.target.value)} />
               </label>
             </div>
           </section>

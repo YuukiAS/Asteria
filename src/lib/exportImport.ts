@@ -1,6 +1,26 @@
-import type { Connection, Edge } from "@xyflow/react"
+import { MarkerType, type Connection, type Edge } from "@xyflow/react"
+import {
+  edgeArrowOptions,
+  edgeLineStyleOptions,
+  edgePathTypeOptions,
+  edgeStrokeWidthOptions,
+  validBlockNodeTypes,
+  validBlockStatuses,
+} from "../constants/blockTypes"
 import { defaultBlockColors } from "../constants/palette"
-import type { BlockData, BlockNode, ExportedMap, MapEdgeData, MapViewport } from "../types/map"
+import type {
+  BlockData,
+  BlockNode,
+  BlockNodeType,
+  BlockStatus,
+  EdgeArrow,
+  EdgeLineStyle,
+  EdgePathType,
+  ExportedMap,
+  MapEdge,
+  MapEdgeData,
+  MapViewport,
+} from "../types/map"
 import { createId } from "./ids"
 import { nowIso } from "./time"
 
@@ -32,20 +52,116 @@ export function createBlockNode(position = { x: 120, y: 120 }, title = "New bloc
       width: 340,
       height: 220,
       nodeType: "generic",
+      showStatus: false,
+      status: "undo",
+      emojis: [],
       createdAt: at,
       updatedAt: at,
     },
   }
 }
 
+export const defaultEdgeData = {
+  color: defaultBlockColors.edge,
+  lineStyle: "solid",
+  pathType: "smoothstep",
+  arrow: "forward",
+  strokeWidth: 1.5,
+} as const satisfies Pick<MapEdgeData, "color" | "lineStyle" | "pathType" | "arrow" | "strokeWidth">
+
+function strokeDasharray(lineStyle: EdgeLineStyle) {
+  if (lineStyle === "dashed") return "6 5"
+  if (lineStyle === "dotted") return "1.5 5"
+  return undefined
+}
+
+export function applyEdgePresentation(edge: MapEdge): MapEdge {
+  const data = normalizeEdgeData(edge.data)
+  const color = data.color || defaultEdgeData.color
+  const lineStyle = data.lineStyle || defaultEdgeData.lineStyle
+  const strokeWidth = data.strokeWidth || defaultEdgeData.strokeWidth
+  const marker = { type: MarkerType.ArrowClosed, color }
+  return {
+    ...edge,
+    type: data.pathType || defaultEdgeData.pathType,
+    data,
+    markerEnd: data.arrow === "forward" || data.arrow === "both" ? marker : undefined,
+    markerStart: data.arrow === "backward" || data.arrow === "both" ? marker : undefined,
+    style: {
+      ...(edge.style || {}),
+      stroke: color,
+      strokeWidth,
+      strokeDasharray: strokeDasharray(lineStyle),
+    },
+  }
+}
+
 export function createEdge(connection: Connection): Edge<MapEdgeData> {
   const at = nowIso()
-  return {
+  return applyEdgePresentation({
     id: createId("edge"),
     ...connection,
-    type: "smoothstep",
-    data: { color: defaultBlockColors.edge, createdAt: at, updatedAt: at },
-    style: { stroke: defaultBlockColors.edge, strokeWidth: 1.5 },
+    type: defaultEdgeData.pathType,
+    data: { ...defaultEdgeData, createdAt: at, updatedAt: at },
+  })
+}
+
+function normalizeNodeType(value: unknown): BlockNodeType {
+  if (validBlockNodeTypes.includes(value as BlockNodeType)) return value as BlockNodeType
+  if (value !== undefined) console.warn(`Unknown block nodeType "${String(value)}"; falling back to generic.`)
+  return "generic"
+}
+
+function normalizeBlockStatus(value: unknown): BlockStatus {
+  if (validBlockStatuses.includes(value as BlockStatus)) return value as BlockStatus
+  if (value !== undefined) console.warn(`Unknown block status "${String(value)}"; falling back to undo.`)
+  return "undo"
+}
+
+function normalizeEmojis(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((item) => String(item ?? "").trim())
+    .filter(Boolean)
+    .slice(0, 2)
+}
+
+function normalizeEdgeLineStyle(value: unknown): EdgeLineStyle {
+  if (edgeLineStyleOptions.includes(value as EdgeLineStyle)) return value as EdgeLineStyle
+  if (value !== undefined) console.warn(`Unknown edge lineStyle "${String(value)}"; falling back to solid.`)
+  return defaultEdgeData.lineStyle
+}
+
+function normalizeEdgePathType(value: unknown): EdgePathType {
+  if (edgePathTypeOptions.includes(value as EdgePathType)) return value as EdgePathType
+  if (value !== undefined) console.warn(`Unknown edge pathType "${String(value)}"; falling back to smoothstep.`)
+  return defaultEdgeData.pathType
+}
+
+function normalizeEdgeArrow(value: unknown): EdgeArrow {
+  if (edgeArrowOptions.includes(value as EdgeArrow)) return value as EdgeArrow
+  if (value !== undefined) console.warn(`Unknown edge arrow "${String(value)}"; falling back to forward.`)
+  return defaultEdgeData.arrow
+}
+
+function normalizeStrokeWidth(value: unknown): number {
+  const parsed = Number(value)
+  if (edgeStrokeWidthOptions.includes(parsed as (typeof edgeStrokeWidthOptions)[number])) return parsed
+  if (value !== undefined) console.warn(`Unknown edge strokeWidth "${String(value)}"; falling back to 1.5.`)
+  return defaultEdgeData.strokeWidth
+}
+
+export function normalizeEdgeData(input?: Partial<MapEdgeData>): MapEdgeData {
+  const at = nowIso()
+  return {
+    label: input?.label,
+    color: input?.color || defaultEdgeData.color,
+    lineStyle: normalizeEdgeLineStyle(input?.lineStyle),
+    pathType: normalizeEdgePathType(input?.pathType),
+    arrow: normalizeEdgeArrow(input?.arrow),
+    strokeWidth: normalizeStrokeWidth(input?.strokeWidth),
+    createdAt: input?.createdAt || at,
+    updatedAt: input?.updatedAt || at,
   }
 }
 
@@ -66,7 +182,10 @@ function normalizeBlockData(input: Partial<BlockData> & { content?: string }): B
     borderColor: input.borderColor || defaultBlockColors.border,
     width: Number.isFinite(width) ? Math.min(Math.max(width, 220), 860) : 340,
     height: Number.isFinite(height) ? Math.min(Math.max(height, 160), 720) : 220,
-    nodeType: input.nodeType === "generic" ? input.nodeType : "generic",
+    nodeType: normalizeNodeType(input.nodeType),
+    showStatus: Boolean(input.showStatus),
+    status: normalizeBlockStatus(input.status),
+    emojis: normalizeEmojis(input.emojis),
     createdAt: input.createdAt || at,
     updatedAt: input.updatedAt || at,
   }
@@ -93,21 +212,13 @@ export function normalizeExportedMap(input: unknown): ExportedMap {
       return createBlockNode({ x: 120 + index * 80, y: 120 + index * 60 }, "Recovered block")
     }
   })
-  const edges = raw.edges.map((edge) => {
-    const color = edge.data?.color || defaultBlockColors.edge
-    return {
+  const edges = raw.edges.map((edge) =>
+    applyEdgePresentation({
       ...edge,
       id: edge.id || createId("edge"),
-      type: edge.type || "smoothstep",
-      data: {
-        label: edge.data?.label,
-        color,
-        createdAt: edge.data?.createdAt || nowIso(),
-        updatedAt: edge.data?.updatedAt || nowIso(),
-      },
-      style: { ...(edge.style || {}), stroke: color, strokeWidth: 1.5 },
-    }
-  })
+      data: normalizeEdgeData(edge.data),
+    } as MapEdge),
+  )
   const viewport: MapViewport | undefined = raw.viewport
     ? { x: Number(raw.viewport.x) || 0, y: Number(raw.viewport.y) || 0, zoom: Number(raw.viewport.zoom) || 1 }
     : undefined

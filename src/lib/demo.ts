@@ -1,4 +1,5 @@
 import type { BlockNode, ExportedMap, MapEdge } from "../types/map"
+import { defaultEdgeData } from "./exportImport"
 import { nowIso } from "./time"
 
 const at = nowIso()
@@ -18,6 +19,9 @@ function block(id: string, title: string, x: number, y: number, contentJson: Blo
       width: 340,
       height: 220,
       nodeType: "generic",
+      showStatus: false,
+      status: "undo",
+      emojis: [],
       createdAt: at,
       updatedAt: at,
     },
@@ -87,8 +91,8 @@ export function createDemoMap(): ExportedMap {
       sourceHandle: "right",
       targetHandle: "left-target",
       type: "smoothstep",
-      data: { label: "contrasts", color: "#94a3b8", createdAt: at, updatedAt: at },
-      style: { stroke: "#94a3b8", strokeWidth: 1.5 },
+      data: { label: "contrasts", ...defaultEdgeData, createdAt: at, updatedAt: at },
+      style: { stroke: defaultEdgeData.color, strokeWidth: defaultEdgeData.strokeWidth },
     },
     {
       id: "demo-edge-2",
@@ -97,8 +101,8 @@ export function createDemoMap(): ExportedMap {
       sourceHandle: "bottom",
       targetHandle: "top-target",
       type: "smoothstep",
-      data: { label: "feeds residual layer", color: "#94a3b8", createdAt: at, updatedAt: at },
-      style: { stroke: "#94a3b8", strokeWidth: 1.5 },
+      data: { label: "feeds residual layer", ...defaultEdgeData, createdAt: at, updatedAt: at },
+      style: { stroke: defaultEdgeData.color, strokeWidth: defaultEdgeData.strokeWidth },
     },
   ]
   return { version: 1, nodes, edges, viewport: { x: 0, y: 0, zoom: 1 }, updatedAt: at }

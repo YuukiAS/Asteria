@@ -10,14 +10,26 @@ import {
   type NodeProps,
   type OnSelectionChangeParams,
 } from "@xyflow/react"
-import { useEffect, useMemo, type MouseEvent } from "react"
+import { createContext, useContext, useEffect, useMemo, type MouseEvent } from "react"
 import { BlockNode } from "./BlockNode"
+import { applyEdgePresentation } from "../lib/exportImport"
 import { useMapStore } from "../store/useMapStore"
 import type { BlockNode as BlockNodeType, MapEdge } from "../types/map"
 
 type CanvasProps = {
   onFitViewReady: (fitView: () => void) => void
   interactionMode: "move" | "edit"
+}
+
+const InteractionModeContext = createContext<"move" | "edit">("move")
+
+function BlockNodeRenderer(props: NodeProps<BlockNodeType>) {
+  const interactionMode = useContext(InteractionModeContext)
+  return <BlockNode {...props} interactionMode={interactionMode} />
+}
+
+const nodeTypes = {
+  block: BlockNodeRenderer,
 }
 
 export function Canvas({ onFitViewReady, interactionMode }: CanvasProps) {
@@ -35,26 +47,21 @@ export function Canvas({ onFitViewReady, interactionMode }: CanvasProps) {
     setViewport,
   } = useMapStore()
 
-  const nodeTypes = useMemo(
-    () => ({
-      block: (props: NodeProps<BlockNodeType>) => <BlockNode {...props} interactionMode={interactionMode} />,
-    }),
-    [interactionMode],
-  )
-
   useEffect(() => {
     onFitViewReady(() => reactFlow.fitView({ padding: 0.18, duration: 240 }))
   }, [onFitViewReady, reactFlow])
 
   const styledEdges = useMemo(
     () =>
-      edges.map((edge) => ({
-        ...edge,
-        label: edge.data?.label || undefined,
-        labelBgStyle: { fill: "var(--edge-label-bg)", fillOpacity: 0.95 },
-        labelStyle: { fill: "var(--edge-label-text)", fontSize: 11 },
-        style: { ...(edge.style || {}), stroke: edge.data?.color || "#94a3b8", strokeWidth: 1.5 },
-      })),
+      edges.map((edge) => {
+        const presented = applyEdgePresentation(edge)
+        return {
+          ...presented,
+          label: presented.data?.label || undefined,
+          labelBgStyle: { fill: "var(--edge-label-bg)", fillOpacity: 0.95 },
+          labelStyle: { fill: "var(--edge-label-text)", fontSize: 11 },
+        }
+      }),
     [edges],
   )
 
@@ -85,51 +92,53 @@ export function Canvas({ onFitViewReady, interactionMode }: CanvasProps) {
 
   return (
     <main className="min-h-0 min-w-0 flex-1 bg-canvas" onDoubleClick={onCanvasDoubleClick}>
-      <ReactFlow
-        nodes={nodes}
-        edges={styledEdges}
-        nodeTypes={nodeTypes}
-        fitView
-        defaultViewport={viewport}
-        minZoom={0.15}
-        maxZoom={2.2}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={addEdge}
-        onNodeClick={(event, node) => {
-          setSelectedNode(node.id)
-          const target = event.target as HTMLElement
-          if (interactionMode === "edit" && target.closest(".asteria-block-preview")) {
-            window.setTimeout(
-              () => window.dispatchEvent(new CustomEvent("asteria-focus-editor", { detail: { nodeId: node.id } })),
-              0,
-            )
-          }
-        }}
-        onEdgeClick={(_, edge) => setSelectedEdge(edge.id)}
-        onNodeDoubleClick={onNodeDoubleClick}
-        onSelectionChange={onSelectionChange}
-        onMoveEnd={(_, nextViewport) => setViewport(nextViewport)}
-        nodesDraggable={interactionMode === "move"}
-        panOnDrag={interactionMode === "move"}
-        selectionOnDrag={interactionMode === "move"}
-        nodesConnectable
-        elementsSelectable
-        className={interactionMode === "edit" ? "asteria-flow-edit" : "asteria-flow-move"}
-        deleteKeyCode={null}
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background variant={BackgroundVariant.Dots} gap={22} size={1.2} color="var(--canvas-grid)" />
-        <Controls position="bottom-left" />
-        <MiniMap
-          position="bottom-right"
-          pannable
-          zoomable
-          nodeStrokeColor="#2563eb"
-          nodeColor="var(--minimap-node)"
-          maskColor="var(--minimap-mask)"
-        />
-      </ReactFlow>
+      <InteractionModeContext.Provider value={interactionMode}>
+        <ReactFlow
+          nodes={nodes}
+          edges={styledEdges}
+          nodeTypes={nodeTypes}
+          fitView
+          defaultViewport={viewport}
+          minZoom={0.15}
+          maxZoom={2.2}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={addEdge}
+          onNodeClick={(event, node) => {
+            setSelectedNode(node.id)
+            const target = event.target as HTMLElement
+            if (interactionMode === "edit" && target.closest(".asteria-block-preview")) {
+              window.setTimeout(
+                () => window.dispatchEvent(new CustomEvent("asteria-focus-editor", { detail: { nodeId: node.id } })),
+                0,
+              )
+            }
+          }}
+          onEdgeClick={(_, edge) => setSelectedEdge(edge.id)}
+          onNodeDoubleClick={onNodeDoubleClick}
+          onSelectionChange={onSelectionChange}
+          onMoveEnd={(_, nextViewport) => setViewport(nextViewport)}
+          nodesDraggable={interactionMode === "move"}
+          panOnDrag={interactionMode === "move"}
+          selectionOnDrag={interactionMode === "move"}
+          nodesConnectable
+          elementsSelectable
+          className={interactionMode === "edit" ? "asteria-flow-edit" : "asteria-flow-move"}
+          deleteKeyCode={null}
+          proOptions={{ hideAttribution: true }}
+        >
+          <Background variant={BackgroundVariant.Dots} gap={22} size={1.2} color="var(--canvas-grid)" />
+          <Controls position="bottom-left" />
+          <MiniMap
+            position="bottom-right"
+            pannable
+            zoomable
+            nodeStrokeColor="#2563eb"
+            nodeColor="var(--minimap-node)"
+            maskColor="var(--minimap-mask)"
+          />
+        </ReactFlow>
+      </InteractionModeContext.Provider>
     </main>
   )
 }

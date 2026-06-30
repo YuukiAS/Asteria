@@ -1,5 +1,6 @@
 import { Handle, NodeResizer, Position, type NodeProps } from "@xyflow/react"
 import { useState, type CSSProperties } from "react"
+import { blockStatusByValue, blockTypeByValue } from "../constants/blockTypes"
 import type { BlockNode as BlockNodeType } from "../types/map"
 import { useMapStore } from "../store/useMapStore"
 import { RichTextEditor } from "./RichTextEditor"
@@ -16,6 +17,9 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
   const visualWidth = resizePreview?.width ?? data.width
   const visualHeight = resizePreview?.height ?? data.height
   const previewInteractionClass = interactionMode === "edit" ? "nodrag nopan nowheel" : ""
+  const blockType = blockTypeByValue[data.nodeType] || blockTypeByValue.generic
+  const blockStatus = data.status ? blockStatusByValue[data.status] : blockStatusByValue.undo
+  const emojis = (data.emojis || []).filter(Boolean).slice(0, 2)
 
   return (
     <div
@@ -91,9 +95,15 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
       <div className="flex h-9 items-center gap-2 border-b px-3" style={{ borderColor: data.borderColor }}>
         <span className="h-2 w-2 shrink-0 rounded-full bg-accent/75" />
         <div className="truncate text-[14px] font-semibold">{data.title}</div>
-        <span className="ml-auto rounded-md border border-border px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-secondary">
-          {data.nodeType}
-        </span>
+        <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1">
+          {emojis.map((emoji, index) => (
+            <span key={`${emoji}-${index}`} className="emoji-marker" title={emoji}>
+              {emoji}
+            </span>
+          ))}
+          {data.showStatus && <span className={`status-marker ${blockStatus.className}`}>{blockStatus.label}</span>}
+          <span className={`type-badge ${blockType.badgeClass}`}>{blockType.label}</span>
+        </div>
       </div>
       <div
         className={`asteria-block-preview h-[calc(100%-36px)] overflow-auto px-3 py-2 text-[13px] leading-[1.45] ${previewInteractionClass}`}

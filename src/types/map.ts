@@ -1,7 +1,25 @@
 import type { Edge, Node, Viewport } from "@xyflow/react"
 import type { JSONContent } from "@tiptap/react"
 
-export type BlockNodeType = "generic"
+export type BlockNodeType =
+  | "generic"
+  | "definition"
+  | "notation"
+  | "model"
+  | "prior"
+  | "assumption"
+  | "statement"
+  | "dataset"
+  | "result"
+  | "citation"
+  | "warning"
+  | "todo"
+
+export type BlockStatus = "undo" | "doing" | "done"
+
+export type EdgeLineStyle = "solid" | "dashed" | "dotted"
+export type EdgePathType = "smoothstep" | "bezier" | "straight" | "step"
+export type EdgeArrow = "none" | "forward" | "backward" | "both"
 
 export type BlockData = {
   title: string
@@ -13,6 +31,9 @@ export type BlockData = {
   width: number
   height: number
   nodeType: BlockNodeType
+  showStatus?: boolean
+  status?: BlockStatus
+  emojis?: string[]
   createdAt: string
   updatedAt: string
 }
@@ -20,6 +41,10 @@ export type BlockData = {
 export type MapEdgeData = {
   label?: string
   color?: string
+  lineStyle?: EdgeLineStyle
+  pathType?: EdgePathType
+  arrow?: EdgeArrow
+  strokeWidth?: number
   createdAt: string
   updatedAt: string
 }
