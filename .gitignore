@@ -1,0 +1,11 @@
+node_modules/
+.pnpm-store/
+dist/
+
+.vite-server*.log
+*.local
+
+asteria-*.png
+
+.DS_Store
+Thumbs.db

@@ -1,0 +1,120 @@
+import { Download, Moon, MousePointer2, PencilLine, Plus, Save, Scan, Sun, Trash2, Upload } from "lucide-react"
+import { useRef } from "react"
+import { exportMapFile, normalizeExportedMap, readJsonFile } from "../lib/exportImport"
+import { formatJsonTimestamp } from "../lib/time"
+import { useMapStore } from "../store/useMapStore"
+
+type ToolbarProps = {
+  theme: "light" | "dark"
+  interactionMode: "move" | "edit"
+  onToggleTheme: () => void
+  onInteractionModeChange: (mode: "move" | "edit") => void
+  onFitView: () => void
+}
+
+export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionModeChange, onFitView }: ToolbarProps) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const { nodes, edges, viewport, saveStatus, addBlock, saveNow, clearMap, loadMap } = useMapStore()
+
+  const exportJson = () => {
+    exportMapFile(
+      { version: 1, nodes, edges, viewport, updatedAt: new Date().toISOString() },
+      `trace-map-${formatJsonTimestamp()}.json`,
+    )
+  }
+
+  const importJson = async (file?: File) => {
+    if (!file) return
+    if (!window.confirm("Importing JSON will replace the current canvas. Continue?")) return
+    try {
+      const raw = await readJsonFile(file)
+      loadMap(normalizeExportedMap(raw))
+    } catch (error) {
+      console.error("Failed to import JSON", error)
+      window.alert("Import failed. Check the JSON format.")
+    } finally {
+      if (inputRef.current) inputRef.current.value = ""
+    }
+  }
+
+  const clear = () => {
+    if (window.confirm("Clear the current canvas? This keeps the app installed but removes current local map data.")) {
+      clearMap()
+    }
+  }
+
+  return (
+    <header className="flex h-[52px] shrink-0 items-center gap-2 border-b border-border bg-toolbar/90 px-3 backdrop-blur">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex items-center gap-2">
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent text-xs font-bold text-white">A</span>
+          <div className="leading-tight">
+            <div className="text-sm font-semibold text-foreground">Asteria</div>
+            <div className="hidden text-[11px] text-secondary sm:block">local trace map</div>
+          </div>
+        </div>
+        <span
+          className={`rounded-full border px-2 py-1 text-[11px] ${
+            saveStatus === "Error"
+              ? "border-danger/30 text-danger"
+              : saveStatus === "Saved"
+                ? "border-success/30 text-success"
+                : "border-warning/30 text-warning"
+          }`}
+        >
+          {saveStatus}
+        </span>
+      </div>
+      <div className="ml-auto flex items-center gap-1.5 overflow-x-auto">
+        <div className="flex shrink-0 rounded-md border border-border bg-panel p-0.5" aria-label="Canvas interaction mode">
+          <button
+            type="button"
+            className={`segmented-button ${interactionMode === "move" ? "segmented-button-active" : ""}`}
+            onClick={() => onInteractionModeChange("move")}
+            title="Move mode: drag blocks around the canvas"
+          >
+            <MousePointer2 size={14} />
+            Move
+          </button>
+          <button
+            type="button"
+            className={`segmented-button ${interactionMode === "edit" ? "segmented-button-active" : ""}`}
+            onClick={() => onInteractionModeChange("edit")}
+            title="Edit mode: click a block to edit its text in the inspector"
+          >
+            <PencilLine size={14} />
+            Edit
+          </button>
+        </div>
+        <button type="button" className="primary-button" onClick={() => addBlock()}>
+          <Plus size={15} />
+          <span>New block</span>
+        </button>
+        <button type="button" className="toolbar-button" onClick={onFitView}>
+          <Scan size={15} />
+          <span>Fit</span>
+        </button>
+        <button type="button" className="toolbar-button" onClick={() => void saveNow()}>
+          <Save size={15} />
+          <span>Save</span>
+        </button>
+        <button type="button" className="toolbar-button" onClick={exportJson}>
+          <Download size={15} />
+          <span>Export</span>
+        </button>
+        <button type="button" className="toolbar-button" onClick={() => inputRef.current?.click()}>
+          <Upload size={15} />
+          <span>Import</span>
+        </button>
+        <button type="button" className="danger-button" onClick={clear}>
+          <Trash2 size={15} />
+          <span>Clear</span>
+        </button>
+        <button type="button" className="toolbar-button !px-2" onClick={onToggleTheme} aria-label="Toggle theme">
+          {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+        </button>
+      </div>
+      <input ref={inputRef} type="file" accept="application/json" className="hidden" onChange={(event) => void importJson(event.target.files?.[0])} />
+    </header>
+  )
+}
