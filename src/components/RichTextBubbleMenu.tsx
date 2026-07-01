@@ -1,6 +1,6 @@
 import { BubbleMenu, type Editor } from "@tiptap/react"
 import { Bold, Code, Highlighter, Italic, Link as LinkIcon, Sigma, Strikethrough, Type, Underline } from "lucide-react"
-import { palette } from "../constants/palette"
+import { textPalette } from "../constants/palette"
 
 type RichTextBubbleMenuProps = {
   editor: Editor
@@ -117,7 +117,7 @@ export function RichTextBubbleMenu({ editor }: RichTextBubbleMenuProps) {
           </BubbleButton>
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {palette.slice(0, 12).map((color) => (
+          {textPalette.map((color) => (
             <button
               key={color}
               type="button"

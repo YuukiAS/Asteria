@@ -8,7 +8,7 @@ export type BlockNodeType =
   | "model"
   | "prior"
   | "assumption"
-  | "statement"
+  | "theorem"
   | "dataset"
   | "result"
   | "citation"
@@ -38,6 +38,14 @@ export type BlockData = {
   updatedAt: string
 }
 
+export type GroupData = {
+  title: string
+  backgroundColor: string
+  borderColor: string
+  createdAt: string
+  updatedAt: string
+}
+
 export type MapEdgeData = {
   label?: string
   color?: string
@@ -52,11 +60,14 @@ export type MapEdgeData = {
 export type MapViewport = Pick<Viewport, "x" | "y" | "zoom">
 
 export type BlockNode = Node<BlockData, "block">
+export type GroupNode = Node<GroupData, "group">
+export type MapNode = BlockNode | GroupNode
 export type MapEdge = Edge<MapEdgeData>
 
 export type ExportedMap = {
   version: 1
-  nodes: BlockNode[]
+  title?: string
+  nodes: MapNode[]
   edges: MapEdge[]
   viewport?: MapViewport
   updatedAt: string

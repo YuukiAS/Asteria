@@ -1,6 +1,6 @@
 import { Clipboard, Copy, Trash2 } from "lucide-react"
 import { edgeArrowOptions, edgeLineStyleOptions, edgePathTypeOptions, edgeStrokeWidthOptions } from "../constants/blockTypes"
-import { defaultBlockColors } from "../constants/palette"
+import { defaultBlockColors, textPalette } from "../constants/palette"
 import { useMapStore } from "../store/useMapStore"
 import type { MapEdge } from "../types/map"
 import { ColorPickerRow } from "./ColorPickerRow"
@@ -46,6 +46,7 @@ export function EdgeInspector({ edge, onChange, onDelete }: EdgeInspectorProps) 
         <ColorPickerRow
           label="Line color"
           value={edge.data?.color || defaultBlockColors.edge}
+          palette={textPalette}
           onChange={(color) => onChange({ ...edge.data, color })}
         />
         <div className="grid grid-cols-2 gap-3">

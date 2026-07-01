@@ -7,6 +7,7 @@ import {
   validBlockNodeTypes,
   validBlockStatuses,
 } from "../constants/blockTypes"
+import { blockTypeDefaults } from "../constants/blockDefaults"
 import { defaultBlockColors } from "../constants/palette"
 import type {
   BlockData,
@@ -17,16 +18,40 @@ import type {
   EdgeLineStyle,
   EdgePathType,
   ExportedMap,
+  GroupData,
+  GroupNode,
   MapEdge,
   MapEdgeData,
+  MapNode,
   MapViewport,
 } from "../types/map"
 import { createId } from "./ids"
-import { nowIso } from "./time"
+import { formatJsonTimestamp, nowIso } from "./time"
+
+export const defaultMapTitle = "Local trace map"
 
 export const defaultContentJson = {
   type: "doc",
   content: [{ type: "paragraph", content: [{ type: "text", text: "New block" }] }],
+}
+
+export function normalizeMapTitle(value: unknown) {
+  const title = typeof value === "string" ? value.trim() : ""
+  return title || defaultMapTitle
+}
+
+function slugifyTitle(title: string) {
+  return title
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+}
+
+export function createExportFilename(title: string, date = new Date()) {
+  const slug = slugifyTitle(title)
+  const prefix = slug || "trace-map"
+  return `${prefix}-${formatJsonTimestamp(date)}.json`
 }
 
 export function paragraphJson(text: string) {
@@ -46,15 +71,32 @@ export function createBlockNode(position = { x: 120, y: 120 }, title = "New bloc
       title,
       contentJson: defaultContentJson,
       contentHtml: "<p>New block</p>",
-      backgroundColor: defaultBlockColors.background,
-      textColor: defaultBlockColors.text,
-      borderColor: defaultBlockColors.border,
+      backgroundColor: blockTypeDefaults.generic.backgroundColor,
+      textColor: blockTypeDefaults.generic.textColor,
+      borderColor: blockTypeDefaults.generic.borderColor,
       width: 340,
       height: 220,
       nodeType: "generic",
       showStatus: false,
       status: "undo",
       emojis: [],
+      createdAt: at,
+      updatedAt: at,
+    },
+  }
+}
+
+export function createGroupNode(position = { x: 80, y: 80 }, size = { width: 420, height: 300 }, title = "Group"): GroupNode {
+  const at = nowIso()
+  return {
+    id: createId("group"),
+    type: "group",
+    position,
+    style: { width: size.width, height: size.height },
+    data: {
+      title,
+      backgroundColor: "rgba(219, 234, 254, 0.22)",
+      borderColor: defaultBlockColors.border,
       createdAt: at,
       updatedAt: at,
     },
@@ -107,6 +149,7 @@ export function createEdge(connection: Connection): Edge<MapEdgeData> {
 }
 
 function normalizeNodeType(value: unknown): BlockNodeType {
+  if (value === "statement") return "theorem"
   if (validBlockNodeTypes.includes(value as BlockNodeType)) return value as BlockNodeType
   if (value !== undefined) console.warn(`Unknown block nodeType "${String(value)}"; falling back to generic.`)
   return "generic"
@@ -179,7 +222,7 @@ function normalizeBlockData(input: Partial<BlockData> & { content?: string }): B
     contentHtml: input.contentHtml,
     backgroundColor: input.backgroundColor || defaultBlockColors.background,
     textColor: input.textColor || defaultBlockColors.text,
-    borderColor: input.borderColor || defaultBlockColors.border,
+    borderColor: defaultBlockColors.border,
     width: Number.isFinite(width) ? Math.min(Math.max(width, 220), 860) : 340,
     height: Number.isFinite(height) ? Math.min(Math.max(height, 160), 720) : 220,
     nodeType: normalizeNodeType(input.nodeType),
@@ -191,6 +234,48 @@ function normalizeBlockData(input: Partial<BlockData> & { content?: string }): B
   }
 }
 
+function normalizeGroupData(input?: Partial<GroupData>): GroupData {
+  const at = nowIso()
+  return {
+    title: input?.title || "Group",
+    backgroundColor: input?.backgroundColor || "rgba(219, 234, 254, 0.22)",
+    borderColor: defaultBlockColors.border,
+    createdAt: input?.createdAt || at,
+    updatedAt: input?.updatedAt || at,
+  }
+}
+
+function normalizeNodeSize(value: unknown, fallback: number) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+}
+
+function normalizeMapNode(node: Partial<MapNode>, index: number): MapNode {
+  if (node.type === "group") {
+    const style = (node.style || {}) as { width?: unknown; height?: unknown }
+    return {
+      ...node,
+      id: node.id || createId("group"),
+      type: "group",
+      position: node.position || { x: 100 + index * 60, y: 100 + index * 40 },
+      style: {
+        ...node.style,
+        width: normalizeNodeSize(style.width, 420),
+        height: normalizeNodeSize(style.height, 300),
+      },
+      data: normalizeGroupData(node.data as Partial<GroupData> | undefined),
+    } as GroupNode
+  }
+
+  return {
+    ...node,
+    id: node.id || createId("block"),
+    type: "block",
+    position: node.position || { x: 120 + index * 80, y: 120 + index * 60 },
+    data: normalizeBlockData(node.data as Partial<BlockData> & { content?: string }),
+  } as BlockNode
+}
+
 export function normalizeExportedMap(input: unknown): ExportedMap {
   if (!input || typeof input !== "object") throw new Error("Imported JSON must be an object.")
   const raw = input as Partial<ExportedMap>
@@ -200,13 +285,7 @@ export function normalizeExportedMap(input: unknown): ExportedMap {
   }
   const nodes = raw.nodes.map((node, index) => {
     try {
-      return {
-        ...node,
-        id: node.id || createId("block"),
-        type: "block" as const,
-        position: node.position || { x: 120 + index * 80, y: 120 + index * 60 },
-        data: normalizeBlockData(node.data as Partial<BlockData> & { content?: string }),
-      }
+      return normalizeMapNode(node as Partial<MapNode>, index)
     } catch (error) {
       console.warn("Recovered malformed block during import.", error)
       return createBlockNode({ x: 120 + index * 80, y: 120 + index * 60 }, "Recovered block")
@@ -222,7 +301,7 @@ export function normalizeExportedMap(input: unknown): ExportedMap {
   const viewport: MapViewport | undefined = raw.viewport
     ? { x: Number(raw.viewport.x) || 0, y: Number(raw.viewport.y) || 0, zoom: Number(raw.viewport.zoom) || 1 }
     : undefined
-  return { version: 1, nodes, edges, viewport, updatedAt: raw.updatedAt || nowIso() }
+  return { version: 1, title: normalizeMapTitle(raw.title), nodes, edges, viewport, updatedAt: raw.updatedAt || nowIso() }
 }
 
 export function exportMapFile(map: ExportedMap, filename: string) {

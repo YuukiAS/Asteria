@@ -8,6 +8,7 @@ import Underline from "@tiptap/extension-underline"
 import StarterKit from "@tiptap/starter-kit"
 import { FontSizeExtension } from "./FontSizeExtension"
 import { BlockMath, InlineMath } from "./mathExtensions"
+import { TaskItem, TaskList } from "./taskListExtensions"
 
 export function createEditorExtensions(placeholder = "Write a model note, prior, theorem, or paper observation...") {
   return [
@@ -24,5 +25,7 @@ export function createEditorExtensions(placeholder = "Write a model note, prior,
     FontSizeExtension,
     InlineMath,
     BlockMath,
+    TaskList,
+    TaskItem,
   ]
 }

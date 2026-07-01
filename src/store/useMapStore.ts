@@ -7,8 +7,18 @@ import {
   type NodeChange,
 } from "@xyflow/react"
 import { create } from "zustand"
+import { blockTypeDefaults } from "../constants/blockDefaults"
 import { createDemoMap } from "../lib/demo"
-import { applyEdgePresentation, createBlockNode, createEdge, defaultEdgeData } from "../lib/exportImport"
+import {
+  applyEdgePresentation,
+  createBlockNode,
+  createEdge,
+  createGroupNode,
+  defaultEdgeData,
+  defaultMapTitle,
+  normalizeMapTitle,
+  normalizeExportedMap,
+} from "../lib/exportImport"
 import { loadPersistedMap, savePersistedMap } from "../lib/db"
 import { contentJsonToHtml } from "../editor/editorUtils"
 import { createId } from "../lib/ids"
@@ -20,11 +30,15 @@ import type {
   EdgeLineStyle,
   EdgePathType,
   ExportedMap,
+  GroupNode,
   MapEdge,
   MapEdgeData,
+  MapNode,
   MapViewport,
   SaveStatus,
 } from "../types/map"
+
+type XYPosition = { x: number; y: number }
 
 type EdgeStyleClipboard = {
   color: string
@@ -73,9 +87,11 @@ function cloneJson<T>(value: T): T {
 }
 
 type MapState = {
-  nodes: BlockNode[]
+  mapTitle: string
+  nodes: MapNode[]
   edges: MapEdge[]
   selectedNodeId?: string
+  selectedNodeIds: string[]
   selectedEdgeId?: string
   viewport: MapViewport
   saveStatus: SaveStatus
@@ -87,7 +103,11 @@ type MapState = {
   blockStyleClipboard?: BlockStyleClipboard
   blockClipboard?: BlockClipboard
   addBlock: (position?: { x: number; y: number }) => void
+  groupSelectedBlocks: () => void
+  updateMapTitle: (title: string) => void
+  appendBlockMathToSelectedBlock: (latex: string) => void
   updateBlock: (id: string, patch: Partial<BlockData>) => void
+  updateGroup: (id: string, patch: Partial<GroupNode["data"]>) => void
   duplicateBlock: (id: string) => void
   duplicateSelectedBlock: () => void
   copyBlock: (id: string) => void
@@ -103,29 +123,57 @@ type MapState = {
   pasteEdgeStyle: (id: string) => void
   deleteEdge: (id: string) => void
   setSelectedNode: (id?: string) => void
+  setSelectedNodes: (ids: string[]) => void
   setSelectedEdge: (id?: string) => void
   setViewport: (viewport: MapViewport) => void
   clearMap: () => void
   loadMap: (map: ExportedMap, markUnsaved?: boolean) => void
-  onNodesChange: (changes: NodeChange<BlockNode>[]) => void
+  onNodesChange: (changes: NodeChange<MapNode>[]) => void
   onEdgesChange: (changes: EdgeChange<MapEdge>[]) => void
   saveNow: () => Promise<void>
   hydrate: () => Promise<void>
   markUnsaved: () => void
 }
 
-function mapFromState(state: Pick<MapState, "nodes" | "edges" | "viewport">): ExportedMap {
-  return { version: 1, nodes: state.nodes, edges: state.edges, viewport: state.viewport, updatedAt: nowIso() }
+function mapFromState(state: Pick<MapState, "mapTitle" | "nodes" | "edges" | "viewport">): ExportedMap {
+  return { version: 1, title: normalizeMapTitle(state.mapTitle), nodes: state.nodes, edges: state.edges, viewport: state.viewport, updatedAt: nowIso() }
 }
 
-function applyContentHtml(nodes: BlockNode[]) {
-  return nodes.map((node) => ({
-    ...node,
-    data: {
-      ...node.data,
-      contentHtml: node.data.contentHtml || contentJsonToHtml(node.data.contentJson),
-    },
-  }))
+function isBlockNode(node: MapNode): node is BlockNode {
+  return node.type === "block"
+}
+
+function findBlockNode(nodes: MapNode[], id?: string): BlockNode | undefined {
+  return nodes.find((node): node is BlockNode => Boolean(id) && node.id === id && isBlockNode(node))
+}
+
+function applyContentHtml(nodes: MapNode[]): MapNode[] {
+  return nodes.map((node) => {
+    if (!isBlockNode(node)) return node
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        contentHtml: node.data.contentHtml || contentJsonToHtml(node.data.contentJson),
+      },
+    }
+  })
+}
+
+function getNodeSize(node: MapNode) {
+  if (isBlockNode(node)) return { width: node.data.width, height: node.data.height }
+  return {
+    width: Number((node.style as { width?: number } | undefined)?.width) || 420,
+    height: Number((node.style as { height?: number } | undefined)?.height) || 300,
+  }
+}
+
+function absolutePosition(node: MapNode, nodes: MapNode[]): XYPosition {
+  if (!node.parentId) return node.position
+  const parent = nodes.find((item) => item.id === node.parentId)
+  if (!parent) return node.position
+  const parentPosition = absolutePosition(parent, nodes)
+  return { x: parentPosition.x + node.position.x, y: parentPosition.y + node.position.y }
 }
 
 function blockStyleFromData(data: BlockData): BlockStyleClipboard {
@@ -152,9 +200,22 @@ function edgeStyleFromData(data?: MapEdgeData): EdgeStyleClipboard {
   }
 }
 
+function blockTypePatch(patch: Partial<BlockData>) {
+  if (!patch.nodeType) return patch
+  const defaults = blockTypeDefaults[patch.nodeType]
+  return {
+    ...defaults,
+    ...patch,
+    emojis: patch.emojis ?? (defaults.emojis ? [...defaults.emojis] : patch.emojis),
+    contentJson: patch.contentJson ?? (defaults.contentJson ? cloneJson(defaults.contentJson) : patch.contentJson),
+  }
+}
+
 export const useMapStore = create<MapState>((set, get) => ({
+  mapTitle: defaultMapTitle,
   nodes: [],
   edges: [],
+  selectedNodeIds: [],
   viewport: { x: 0, y: 0, zoom: 1 },
   saveStatus: "Saved",
   seededDemo: false,
@@ -176,10 +237,12 @@ export const useMapStore = create<MapState>((set, get) => ({
     try {
       const persisted = await loadPersistedMap()
       if (persisted) {
+        const map = normalizeExportedMap(persisted.map)
         set({
-          nodes: applyContentHtml(persisted.map.nodes),
-          edges: persisted.map.edges.map(applyEdgePresentation),
-          viewport: persisted.map.viewport ?? { x: 0, y: 0, zoom: 1 },
+          mapTitle: normalizeMapTitle(map.title),
+          nodes: applyContentHtml(map.nodes),
+          edges: map.edges.map(applyEdgePresentation),
+          viewport: map.viewport ?? { x: 0, y: 0, zoom: 1 },
           lastSavedAt: persisted.updatedAt,
           seededDemo: persisted.seededDemo,
           isHydrated: true,
@@ -189,6 +252,7 @@ export const useMapStore = create<MapState>((set, get) => ({
       }
       const demo = createDemoMap()
       set({
+        mapTitle: normalizeMapTitle(demo.title),
         nodes: applyContentHtml(demo.nodes),
         edges: demo.edges.map(applyEdgePresentation),
         viewport: demo.viewport ?? { x: 0, y: 0, zoom: 1 },
@@ -219,12 +283,75 @@ export const useMapStore = create<MapState>((set, get) => ({
 
   addBlock: (position) => {
     const node = createBlockNode(position)
-    set((state) => ({ nodes: [...state.nodes, node], selectedNodeId: node.id, selectedEdgeId: undefined }))
+    set((state) => ({ nodes: [...state.nodes, node], selectedNodeId: node.id, selectedNodeIds: [node.id], selectedEdgeId: undefined }))
     get().markUnsaved()
   },
 
+  groupSelectedBlocks: () => {
+    const state = get()
+    const selectedBlocks = state.nodes.filter((node) => state.selectedNodeIds.includes(node.id) && isBlockNode(node) && !node.parentId)
+    if (selectedBlocks.length < 2) return
+    const padding = 36
+    const bounds = selectedBlocks.reduce(
+      (current, node) => {
+        const position = absolutePosition(node, state.nodes)
+        const size = getNodeSize(node)
+        return {
+          minX: Math.min(current.minX, position.x),
+          minY: Math.min(current.minY, position.y),
+          maxX: Math.max(current.maxX, position.x + size.width),
+          maxY: Math.max(current.maxY, position.y + size.height),
+        }
+      },
+      { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity },
+    )
+    const group = createGroupNode(
+      { x: bounds.minX - padding, y: bounds.minY - padding },
+      { width: bounds.maxX - bounds.minX + padding * 2, height: bounds.maxY - bounds.minY + padding * 2 },
+    )
+    const selectedIds = new Set(selectedBlocks.map((node) => node.id))
+    const groupedNodes = state.nodes.map((node) => {
+      if (!selectedIds.has(node.id) || !isBlockNode(node)) return node
+      const position = absolutePosition(node, state.nodes)
+      return {
+        ...node,
+        parentId: group.id,
+        extent: "parent" as const,
+        position: { x: position.x - group.position.x, y: position.y - group.position.y },
+        selected: false,
+      }
+    })
+    set({
+      nodes: [group, ...groupedNodes],
+      selectedNodeId: group.id,
+      selectedNodeIds: [group.id],
+      selectedEdgeId: undefined,
+    })
+    get().markUnsaved()
+  },
+
+  updateMapTitle: (title) => {
+    set({ mapTitle: title })
+    get().markUnsaved()
+  },
+
+  appendBlockMathToSelectedBlock: (latex) => {
+    const selectedNodeId = get().selectedNodeId
+    const node = findBlockNode(get().nodes, selectedNodeId)
+    if (!selectedNodeId || !node) return
+    const contentJson = cloneJson(node.data.contentJson)
+    const content = Array.isArray(contentJson.content) ? contentJson.content : []
+    get().updateBlock(selectedNodeId, {
+      contentJson: {
+        ...contentJson,
+        type: contentJson.type || "doc",
+        content: [...content, { type: "blockMath", attrs: { latex } }, { type: "paragraph" }],
+      },
+    })
+  },
+
   duplicateBlock: (id) => {
-    const source = get().nodes.find((node) => node.id === id)
+    const source = findBlockNode(get().nodes, id)
     if (!source) return
     const at = nowIso()
     const duplicate: BlockNode = {
@@ -232,6 +359,8 @@ export const useMapStore = create<MapState>((set, get) => ({
       id: createId("block"),
       position: { x: source.position.x + 36, y: source.position.y + 36 },
       selected: false,
+      parentId: source.parentId,
+      extent: source.extent,
       data: {
         ...cloneJson(source.data),
         title: `${source.data.title} copy`,
@@ -244,6 +373,7 @@ export const useMapStore = create<MapState>((set, get) => ({
     set((state) => ({
       nodes: [...state.nodes, duplicate],
       selectedNodeId: duplicate.id,
+      selectedNodeIds: [duplicate.id],
       selectedEdgeId: undefined,
     }))
     get().markUnsaved()
@@ -255,7 +385,7 @@ export const useMapStore = create<MapState>((set, get) => ({
   },
 
   copyBlock: (id) => {
-    const source = get().nodes.find((node) => node.id === id)
+    const source = findBlockNode(get().nodes, id)
     if (!source) return
     const clipboard: BlockClipboard = {
       data: {
@@ -300,6 +430,7 @@ export const useMapStore = create<MapState>((set, get) => ({
     set((state) => ({
       nodes: [...state.nodes, node],
       selectedNodeId: node.id,
+      selectedNodeIds: [node.id],
       selectedEdgeId: undefined,
       blockClipboard: nextClipboard,
     }))
@@ -307,7 +438,7 @@ export const useMapStore = create<MapState>((set, get) => ({
   },
 
   copyBlockStyle: (id) => {
-    const source = get().nodes.find((node) => node.id === id)
+    const source = findBlockNode(get().nodes, id)
     if (!source) return
     const clipboard = blockStyleFromData(source.data)
     writeClipboard(blockStyleClipboardKey, clipboard)
@@ -321,16 +452,19 @@ export const useMapStore = create<MapState>((set, get) => ({
   },
 
   updateBlock: (id, patch) => {
+    const resolvedPatch = blockTypePatch(patch)
     set((state) => ({
       nodes: state.nodes.map((node) =>
-        node.id === id
+        node.id === id && isBlockNode(node)
           ? {
               ...node,
               data: {
                 ...node.data,
-                ...patch,
+                ...resolvedPatch,
                 updatedAt: nowIso(),
-                contentHtml: patch.contentJson ? contentJsonToHtml(patch.contentJson) : patch.contentHtml ?? node.data.contentHtml,
+                contentHtml: resolvedPatch.contentJson
+                  ? contentJsonToHtml(resolvedPatch.contentJson)
+                  : resolvedPatch.contentHtml ?? node.data.contentHtml,
               },
             }
           : node,
@@ -339,17 +473,36 @@ export const useMapStore = create<MapState>((set, get) => ({
     get().markUnsaved()
   },
 
+  updateGroup: (id, patch) => {
+    set((state) => ({
+      nodes: state.nodes.map((node) =>
+        node.id === id && node.type === "group"
+          ? {
+              ...node,
+              data: { ...node.data, ...patch, updatedAt: nowIso() },
+            }
+          : node,
+      ),
+    }))
+    get().markUnsaved()
+  },
+
   deleteSelected: () => {
-    const { selectedNodeId, selectedEdgeId } = get()
+    const { selectedNodeIds, selectedNodeId, selectedEdgeId } = get()
+    if (selectedNodeIds.length) {
+      selectedNodeIds.forEach((id) => get().deleteBlock(id))
+      return
+    }
     if (selectedNodeId) get().deleteBlock(selectedNodeId)
     if (selectedEdgeId) get().deleteEdge(selectedEdgeId)
   },
 
   deleteBlock: (id) => {
     set((state) => ({
-      nodes: state.nodes.filter((node) => node.id !== id),
+      nodes: state.nodes.filter((node) => node.id !== id && node.parentId !== id),
       edges: state.edges.filter((edge) => edge.source !== id && edge.target !== id),
       selectedNodeId: state.selectedNodeId === id ? undefined : state.selectedNodeId,
+      selectedNodeIds: state.selectedNodeIds.filter((nodeId) => nodeId !== id),
     }))
     get().markUnsaved()
   },
@@ -397,12 +550,24 @@ export const useMapStore = create<MapState>((set, get) => ({
   setSelectedNode: (id) => {
     const state = get()
     if (state.selectedNodeId === id && state.selectedEdgeId === undefined) return
-    set({ selectedNodeId: id, selectedEdgeId: undefined })
+    set({ selectedNodeId: id, selectedNodeIds: id ? [id] : [], selectedEdgeId: undefined })
+  },
+  setSelectedNodes: (ids) => {
+    const state = get()
+    if (
+      state.selectedEdgeId === undefined &&
+      state.selectedNodeIds.length === ids.length &&
+      state.selectedNodeIds.every((id, index) => id === ids[index])
+    ) {
+      return
+    }
+    const selectedNodeId = ids[0]
+    set({ selectedNodeId, selectedNodeIds: ids, selectedEdgeId: undefined })
   },
   setSelectedEdge: (id) => {
     const state = get()
     if (state.selectedEdgeId === id && state.selectedNodeId === undefined) return
-    set({ selectedEdgeId: id, selectedNodeId: undefined })
+    set({ selectedEdgeId: id, selectedNodeId: undefined, selectedNodeIds: [] })
   },
 
   setViewport: (viewport) => {
@@ -413,16 +578,18 @@ export const useMapStore = create<MapState>((set, get) => ({
   },
 
   clearMap: () => {
-    set({ nodes: [], edges: [], selectedNodeId: undefined, selectedEdgeId: undefined, seededDemo: true })
+    set({ nodes: [], edges: [], selectedNodeId: undefined, selectedNodeIds: [], selectedEdgeId: undefined, seededDemo: true })
     get().markUnsaved()
   },
 
   loadMap: (map, markUnsaved = true) => {
     set({
+      mapTitle: normalizeMapTitle(map.title),
       nodes: applyContentHtml(map.nodes),
       edges: map.edges.map(applyEdgePresentation),
       viewport: map.viewport ?? { x: 0, y: 0, zoom: 1 },
       selectedNodeId: undefined,
+      selectedNodeIds: [],
       selectedEdgeId: undefined,
       seededDemo: true,
       saveStatus: markUnsaved ? "Unsaved" : "Saved",
@@ -431,7 +598,7 @@ export const useMapStore = create<MapState>((set, get) => ({
   },
 
   onNodesChange: (changes) => {
-    set((state) => ({ nodes: applyNodeChanges(changes, state.nodes) as BlockNode[] }))
+    set((state) => ({ nodes: applyNodeChanges(changes, state.nodes) as MapNode[] }))
     get().markUnsaved()
   },
 

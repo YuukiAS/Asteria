@@ -7,8 +7,7 @@ import type { PointerEvent as ReactPointerEvent } from "react"
 import { Canvas } from "../components/Canvas"
 import { InspectorPanel } from "../components/InspectorPanel"
 import { Toolbar } from "../components/Toolbar"
-import { exportMapFile } from "../lib/exportImport"
-import { formatJsonTimestamp } from "../lib/time"
+import { createExportFilename, exportMapFile, normalizeMapTitle } from "../lib/exportImport"
 import { useMapStore } from "../store/useMapStore"
 
 function isEditableTarget(target: EventTarget | null) {
@@ -58,6 +57,7 @@ export function App() {
     setSelectedNode,
     setSelectedEdge,
     saveNow,
+    mapTitle,
     nodes,
     edges,
     viewport,
@@ -73,14 +73,26 @@ export function App() {
 
   const exportJson = useCallback(() => {
     exportMapFile(
-      { version: 1, nodes, edges, viewport, updatedAt: new Date().toISOString() },
-      `trace-map-${formatJsonTimestamp()}.json`,
+      { version: 1, title: normalizeMapTitle(mapTitle), nodes, edges, viewport, updatedAt: new Date().toISOString() },
+      createExportFilename(mapTitle),
     )
-  }, [edges, nodes, viewport])
+  }, [edges, mapTitle, nodes, viewport])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const isMod = event.ctrlKey || event.metaKey
+      if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && !isEditableTarget(event.target)) {
+        if (event.key === "1") {
+          event.preventDefault()
+          setInteractionMode("move")
+          return
+        }
+        if (event.key === "2") {
+          event.preventDefault()
+          setInteractionMode("edit")
+          return
+        }
+      }
       if (isMod && event.key.toLowerCase() === "s") {
         event.preventDefault()
         void saveNow()

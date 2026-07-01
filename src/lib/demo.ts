@@ -15,7 +15,7 @@ function block(id: string, title: string, x: number, y: number, contentJson: Blo
       contentHtml: "",
       backgroundColor: "#ffffff",
       textColor: "#111827",
-      borderColor: "#e5e7eb",
+      borderColor: "#111827",
       width: 340,
       height: 220,
       nodeType: "generic",
@@ -105,5 +105,5 @@ export function createDemoMap(): ExportedMap {
       style: { stroke: defaultEdgeData.color, strokeWidth: defaultEdgeData.strokeWidth },
     },
   ]
-  return { version: 1, nodes, edges, viewport: { x: 0, y: 0, zoom: 1 }, updatedAt: at }
+  return { version: 1, title: "Local trace map", nodes, edges, viewport: { x: 0, y: 0, zoom: 1 }, updatedAt: at }
 }

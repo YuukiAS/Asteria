@@ -1,13 +1,13 @@
-import { palette } from "../constants/palette"
 import { isHexColor } from "../lib/sanitize"
 
 type ColorPickerRowProps = {
   label: string
   value: string
   onChange: (value: string) => void
+  palette: readonly string[]
 }
 
-export function ColorPickerRow({ label, value, onChange }: ColorPickerRowProps) {
+export function ColorPickerRow({ label, value, onChange, palette }: ColorPickerRowProps) {
   const valid = isHexColor(value)
   return (
     <label className="grid gap-2 text-xs font-medium text-secondary">

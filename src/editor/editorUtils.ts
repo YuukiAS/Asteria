@@ -80,6 +80,14 @@ function renderNode(node: JSONContent): string {
       return `<ol>${renderChildren(node)}</ol>`
     case "listItem":
       return `<li>${renderChildren(node)}</li>`
+    case "taskList":
+      return `<ul data-type="taskList" class="task-list">${renderChildren(node)}</ul>`
+    case "taskItem": {
+      const checked = Boolean(node.attrs?.checked)
+      return `<li data-type="taskItem" data-checked="${checked ? "true" : "false"}" class="task-item"><input class="task-item-checkbox" type="checkbox" ${
+        checked ? "checked" : ""
+      } disabled /><div class="task-item-content">${renderChildren(node)}</div></li>`
+    }
     case "blockquote":
       return `<blockquote>${renderChildren(node)}</blockquote>`
     case "codeBlock":

@@ -7,7 +7,7 @@ export const blockTypeOptions = [
   { value: "model", label: "Model", badgeClass: "type-badge-model" },
   { value: "prior", label: "Prior", badgeClass: "type-badge-prior" },
   { value: "assumption", label: "Assumption", badgeClass: "type-badge-assumption" },
-  { value: "statement", label: "Statement", badgeClass: "type-badge-statement" },
+  { value: "theorem", label: "Theorem", badgeClass: "type-badge-theorem" },
   { value: "dataset", label: "Dataset", badgeClass: "type-badge-dataset" },
   { value: "result", label: "Result", badgeClass: "type-badge-result" },
   { value: "citation", label: "Citation", badgeClass: "type-badge-citation" },

@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.1.10 - Block Type Color Defaults
+
+- Split text and background color palettes so dark text colors are no longer offered as block backgrounds.
+- Added white as the first background swatch and fixed block/group borders to black instead of exposing a border color picker.
+- Renamed the Statement block type to Theorem, with old `statement` data normalized on load/import.
+- Added block type default colors, warning emoji defaults, Result ordered-list initialization, and TODO checkbox-list initialization.
+- Added built-in emoji preset buttons for the two block marker fields while keeping free-form emoji input.
+
+## 0.1.9 - Canvas Editing Improvements
+
+- Fixed inline title editing so the display and editing states keep consistent typography and only show an input frame while actively editing.
+- Added inline math rendering for block titles using `$...$` syntax.
+- Replaced browser math prompts with a reusable equation dialog that renders KaTeX previews live.
+- Added double-click editing for existing inline and block equations.
+- Fixed editor click focus behavior so clicking inside multi-line content no longer jumps the caret to the end.
+- Restored visible ordered and unordered list markers in editors and previews.
+- Added Shift-drag multi-selection in Move mode and a group frame action for selected blocks.
+- Updated app metadata to version `0.1.9`.
+
+## 0.1.8 - Asteria 1.2 Editing Enhancements
+
+- Added inline block title editing in Edit mode.
+- Added inline block type selection from the block header in Edit mode.
+- Reordered the block inspector to Object, Markers, Appearance, Content, and Metadata.
+- Added an Edit-mode toolbar equation button for inserting display equations into the selected block.
+- Added a persisted editable map title and title-based JSON export filenames.
+
 ## 0.1.7 - Block Clipboard Paste
 
 - Added internal whole-block copy/paste support.

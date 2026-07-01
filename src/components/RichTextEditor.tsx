@@ -1,7 +1,8 @@
 import { EditorContent, type JSONContent, useEditor } from "@tiptap/react"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { createEditorExtensions } from "../editor/createEditorExtensions"
 import { normalizeInlineDollarMath, preprocessPastedMath } from "../editor/mathPasteHandler"
+import { EquationDialog } from "./EquationDialog"
 import { RichTextBubbleMenu } from "./RichTextBubbleMenu"
 import { RichTextToolbar } from "./RichTextToolbar"
 
@@ -23,6 +24,7 @@ export function RichTextEditor({
   focusTargetId,
 }: RichTextEditorProps) {
   const lastLocalContentRef = useRef<string | undefined>(undefined)
+  const [editingEquation, setEditingEquation] = useState<{ pos: number; latex: string; displayMode: boolean } | null>(null)
   const editor = useEditor({
     extensions: createEditorExtensions(),
     content,
@@ -46,6 +48,15 @@ export function RichTextEditor({
           insertPosition += node.nodeSize
         }
         view.dispatch(transaction)
+        return true
+      },
+      handleDoubleClickOn(_view, _pos, node, nodePos) {
+        if (node.type.name !== "inlineMath" && node.type.name !== "blockMath") return false
+        setEditingEquation({
+          pos: nodePos,
+          latex: String(node.attrs.latex || ""),
+          displayMode: node.type.name === "blockMath",
+        })
         return true
       },
     },
@@ -94,6 +105,22 @@ export function RichTextEditor({
 
   if (!editor) return <div className="rounded-lg border border-border p-4 text-sm text-secondary">Loading editor...</div>
 
+  const updateEquation = (latex: string) => {
+    if (!editingEquation) return
+    const target = editingEquation
+    setEditingEquation(null)
+    editor
+      .chain()
+      .focus()
+      .command(({ tr }) => {
+        const node = tr.doc.nodeAt(target.pos)
+        if (!node || (node.type.name !== "inlineMath" && node.type.name !== "blockMath")) return false
+        tr.setNodeMarkup(target.pos, undefined, { ...node.attrs, latex })
+        return true
+      })
+      .run()
+  }
+
   const contentElement = (
     <>
       <RichTextBubbleMenu editor={editor} />
@@ -109,6 +136,14 @@ export function RichTextEditor({
       ) : (
         contentElement
       )}
+      <EquationDialog
+        open={Boolean(editingEquation)}
+        title="Edit equation"
+        initialLatex={editingEquation?.latex}
+        displayMode={editingEquation?.displayMode ?? true}
+        onCancel={() => setEditingEquation(null)}
+        onConfirm={updateEquation}
+      />
     </div>
   )
 }

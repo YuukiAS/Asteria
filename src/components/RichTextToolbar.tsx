@@ -1,4 +1,5 @@
 import type { Editor } from "@tiptap/react"
+import { useState } from "react"
 import {
   AlignCenter,
   AlignLeft,
@@ -19,7 +20,9 @@ import {
   Underline,
   Unlink,
 } from "lucide-react"
+import { backgroundPalette, textPalette } from "../constants/palette"
 import { ColorPickerRow } from "./ColorPickerRow"
+import { EquationDialog } from "./EquationDialog"
 import { FontSizeSelect } from "./FontSizeSelect"
 
 type RichTextToolbarProps = {
@@ -54,6 +57,7 @@ function ToolButton({
 }
 
 export function RichTextToolbar({ editor }: RichTextToolbarProps) {
+  const [equationDialogMode, setEquationDialogMode] = useState<"inline" | "block" | null>(null)
   const textColor = (editor.getAttributes("textStyle").color as string) || "#111827"
   const highlight = (editor.getAttributes("highlight").color as string) || "#fef3c7"
 
@@ -69,16 +73,18 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
   }
 
   const insertInlineMath = () => {
-    const latex = window.prompt("Inline LaTeX", "\\beta_j \\sim N_q(\\nu,\\Psi)")
-    if (latex) editor.chain().focus().insertInlineMath(latex).run()
+    setEquationDialogMode("inline")
   }
 
   const insertBlockMath = () => {
-    const latex = window.prompt(
-      "Block LaTeX",
-      "\\begin{aligned}\ny_{ij} &= \\mathbb{I}(z_{ij}>0),\\\\\nz_{ij} &= \\alpha_j+x_i^\\top\\beta_j+\\varepsilon_{ij}.\n\\end{aligned}",
-    )
-    if (latex) editor.chain().focus().insertBlockMath(latex).run()
+    setEquationDialogMode("block")
+  }
+
+  const confirmEquation = (latex: string) => {
+    const mode = equationDialogMode
+    setEquationDialogMode(null)
+    if (mode === "inline") editor.chain().focus().insertInlineMath(latex).run()
+    if (mode === "block") editor.chain().focus().insertBlockMath(latex).run()
   }
 
   return (
@@ -148,13 +154,27 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
         <FontSizeSelect editor={editor} />
       </div>
       <div className="grid gap-3">
-        <ColorPickerRow label="Text color" value={textColor} onChange={(color) => editor.chain().focus().setColor(color).run()} />
+        <ColorPickerRow
+          label="Text color"
+          value={textColor}
+          palette={textPalette}
+          onChange={(color) => editor.chain().focus().setColor(color).run()}
+        />
         <ColorPickerRow
           label="Highlight"
           value={highlight}
+          palette={backgroundPalette}
           onChange={(color) => editor.chain().focus().toggleHighlight({ color }).run()}
         />
       </div>
+      <EquationDialog
+        open={Boolean(equationDialogMode)}
+        title={equationDialogMode === "inline" ? "Inline equation" : "Block equation"}
+        initialLatex={equationDialogMode === "inline" ? "\\beta_j \\sim N_q(\\nu,\\Psi)" : undefined}
+        displayMode={equationDialogMode !== "inline"}
+        onCancel={() => setEquationDialogMode(null)}
+        onConfirm={confirmEquation}
+      />
     </div>
   )
 }

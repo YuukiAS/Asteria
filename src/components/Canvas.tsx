@@ -12,9 +12,10 @@ import {
 } from "@xyflow/react"
 import { createContext, useContext, useEffect, useMemo, type MouseEvent } from "react"
 import { BlockNode } from "./BlockNode"
+import { GroupNode } from "./GroupNode"
 import { applyEdgePresentation } from "../lib/exportImport"
 import { useMapStore } from "../store/useMapStore"
-import type { BlockNode as BlockNodeType, MapEdge } from "../types/map"
+import type { BlockNode as BlockNodeType, GroupNode as GroupNodeType, MapEdge, MapNode } from "../types/map"
 
 type CanvasProps = {
   onFitViewReady: (fitView: () => void) => void
@@ -28,12 +29,18 @@ function BlockNodeRenderer(props: NodeProps<BlockNodeType>) {
   return <BlockNode {...props} interactionMode={interactionMode} />
 }
 
+function GroupNodeRenderer(props: NodeProps<GroupNodeType>) {
+  const interactionMode = useContext(InteractionModeContext)
+  return <GroupNode {...props} interactionMode={interactionMode} />
+}
+
 const nodeTypes = {
   block: BlockNodeRenderer,
+  group: GroupNodeRenderer,
 }
 
 export function Canvas({ onFitViewReady, interactionMode }: CanvasProps) {
-  const reactFlow = useReactFlow<BlockNodeType, MapEdge>()
+  const reactFlow = useReactFlow<MapNode, MapEdge>()
   const {
     nodes,
     edges,
@@ -43,6 +50,7 @@ export function Canvas({ onFitViewReady, interactionMode }: CanvasProps) {
     addEdge,
     addBlock,
     setSelectedNode,
+    setSelectedNodes,
     setSelectedEdge,
     setViewport,
   } = useMapStore()
@@ -65,8 +73,9 @@ export function Canvas({ onFitViewReady, interactionMode }: CanvasProps) {
     [edges],
   )
 
-  const onNodeDoubleClick: NodeMouseHandler<BlockNodeType> = (_event, node) => {
+  const onNodeDoubleClick: NodeMouseHandler<MapNode> = (_event, node) => {
     setSelectedNode(node.id)
+    if (node.type !== "block") return
     window.setTimeout(
       () => window.dispatchEvent(new CustomEvent("asteria-focus-editor", { detail: { nodeId: node.id } })),
       0,
@@ -74,12 +83,12 @@ export function Canvas({ onFitViewReady, interactionMode }: CanvasProps) {
   }
 
   const onSelectionChange = ({ nodes: selectedNodes, edges: selectedEdges }: OnSelectionChangeParams) => {
-    const selectedNode = selectedNodes[0] as BlockNodeType | undefined
+    const selectedNodeIds = selectedNodes.map((node) => node.id)
     const selectedEdge = selectedEdges[0] as Edge | undefined
-    if (selectedNode) setSelectedNode(selectedNode.id)
+    if (selectedNodeIds.length) setSelectedNodes(selectedNodeIds)
     else if (selectedEdge) setSelectedEdge(selectedEdge.id)
     else {
-      setSelectedNode(undefined)
+      setSelectedNodes([])
       setSelectedEdge(undefined)
     }
   }
@@ -107,7 +116,7 @@ export function Canvas({ onFitViewReady, interactionMode }: CanvasProps) {
           onNodeClick={(event, node) => {
             setSelectedNode(node.id)
             const target = event.target as HTMLElement
-            if (interactionMode === "edit" && target.closest(".asteria-block-preview")) {
+            if (interactionMode === "edit" && target.closest(".asteria-block-preview") && !target.closest(".ProseMirror")) {
               window.setTimeout(
                 () => window.dispatchEvent(new CustomEvent("asteria-focus-editor", { detail: { nodeId: node.id } })),
                 0,
@@ -121,6 +130,8 @@ export function Canvas({ onFitViewReady, interactionMode }: CanvasProps) {
           nodesDraggable={interactionMode === "move"}
           panOnDrag={interactionMode === "move"}
           selectionOnDrag={interactionMode === "move"}
+          selectionKeyCode="Shift"
+          multiSelectionKeyCode="Shift"
           nodesConnectable
           elementsSelectable
           className={interactionMode === "edit" ? "asteria-flow-edit" : "asteria-flow-move"}

@@ -1,21 +1,26 @@
 import { Clipboard, Copy, Layers, Plus } from "lucide-react"
 import { blockStatusOptions, blockTypeByValue, blockTypeOptions } from "../constants/blockTypes"
+import { backgroundPalette, textPalette } from "../constants/palette"
 import { ColorPickerRow } from "./ColorPickerRow"
 import { EdgeInspector } from "./EdgeInspector"
 import { RichTextEditor } from "./RichTextEditor"
 import { formatLocalDateTime } from "../lib/time"
 import { useMapStore } from "../store/useMapStore"
 
+const emojiPresets = ["⚠️", "⭐", "📌", "✅", "❌", "💡", "📎", "🧪", "📊", "🔗", "❓", "🔥"]
+
 export function InspectorPanel() {
   const {
     nodes,
     edges,
     selectedNodeId,
+    selectedNodeIds,
     selectedEdgeId,
     saveStatus,
     lastSavedAt,
     addBlock,
     updateBlock,
+    updateGroup,
     updateEdge,
     deleteEdge,
     duplicateBlock,
@@ -25,9 +30,30 @@ export function InspectorPanel() {
     copyBlockStyle,
     pasteBlockStyle,
     blockStyleClipboard,
+    groupSelectedBlocks,
   } = useMapStore()
   const node = nodes.find((item) => item.id === selectedNodeId)
   const edge = edges.find((item) => item.id === selectedEdgeId)
+
+  if (selectedNodeIds.length > 1) {
+    return (
+      <aside className="inspector">
+        <div className="inspector-heading">
+          <div>
+            <h2>Selection</h2>
+            <p>{selectedNodeIds.length} objects selected.</p>
+          </div>
+        </div>
+        <section className="panel-section">
+          <div className="section-title">Actions</div>
+          <button type="button" className="toolbar-button justify-center" onClick={groupSelectedBlocks}>
+            <Layers size={14} />
+            Group selected blocks
+          </button>
+        </section>
+      </aside>
+    )
+  }
 
   if (edge) {
     return (
@@ -43,7 +69,45 @@ export function InspectorPanel() {
     )
   }
 
-  if (node) {
+  if (node?.type === "group") {
+    return (
+      <aside className="inspector">
+        <div className="inspector-heading">
+          <div>
+            <h2>Group</h2>
+            <p>Frame for grouped blocks.</p>
+          </div>
+        </div>
+        <div className="grid gap-5">
+          <section className="panel-section">
+            <div className="section-title">Object</div>
+            <label className="field-label">
+              Title
+              <input className="field-input" value={node.data.title} onChange={(event) => updateGroup(node.id, { title: event.target.value })} />
+            </label>
+          </section>
+          <section className="panel-section">
+            <div className="section-title">Appearance</div>
+            <ColorPickerRow
+              label="Background"
+              value={node.data.backgroundColor}
+              palette={backgroundPalette}
+              onChange={(backgroundColor) => updateGroup(node.id, { backgroundColor })}
+            />
+          </section>
+          <section className="panel-section">
+            <div className="section-title">Metadata</div>
+            <div className="grid gap-1 text-xs text-secondary">
+              <div>Created: {formatLocalDateTime(node.data.createdAt)}</div>
+              <div>Updated: {formatLocalDateTime(node.data.updatedAt)}</div>
+            </div>
+          </section>
+        </div>
+      </aside>
+    )
+  }
+
+  if (node?.type === "block") {
     const blockType = blockTypeByValue[node.data.nodeType] || blockTypeByValue.generic
     const emojis = node.data.emojis || []
     const updateEmoji = (index: number, value: string) => {
@@ -88,24 +152,70 @@ export function InspectorPanel() {
             </label>
           </section>
           <section className="panel-section">
-            <div className="section-title">Content</div>
-            <RichTextEditor
-              content={node.data.contentJson}
-              onChange={(contentJson, contentHtml) => updateBlock(node.id, { contentJson, contentHtml })}
-            />
+            <div className="section-title">Markers</div>
+            <label className="inline-flex items-center gap-2 text-xs font-medium text-secondary">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-border text-accent"
+                checked={Boolean(node.data.showStatus)}
+                onChange={(event) => updateBlock(node.id, { showStatus: event.target.checked, status: node.data.status || "undo" })}
+              />
+              Show status
+            </label>
+            {node.data.showStatus && (
+              <label className="field-label">
+                Status
+                <select
+                  className="field-input"
+                  value={node.data.status || "undo"}
+                  onChange={(event) => updateBlock(node.id, { status: event.target.value as typeof node.data.status })}
+                >
+                  {blockStatusOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <label className="field-label">
+                Emoji 1
+                <input className="field-input" value={emojis[0] || ""} maxLength={16} onChange={(event) => updateEmoji(0, event.target.value)} />
+                <div className="emoji-preset-grid" aria-label="Emoji 1 presets">
+                  {emojiPresets.map((emoji) => (
+                    <button key={`emoji-1-${emoji}`} type="button" className="emoji-preset-button" onClick={() => updateEmoji(0, emoji)}>
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </label>
+              <label className="field-label">
+                Emoji 2
+                <input className="field-input" value={emojis[1] || ""} maxLength={16} onChange={(event) => updateEmoji(1, event.target.value)} />
+                <div className="emoji-preset-grid" aria-label="Emoji 2 presets">
+                  {emojiPresets.map((emoji) => (
+                    <button key={`emoji-2-${emoji}`} type="button" className="emoji-preset-button" onClick={() => updateEmoji(1, emoji)}>
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </label>
+            </div>
           </section>
           <section className="panel-section">
             <div className="section-title">Appearance</div>
             <ColorPickerRow
               label="Background"
               value={node.data.backgroundColor}
+              palette={backgroundPalette}
               onChange={(backgroundColor) => updateBlock(node.id, { backgroundColor })}
             />
-            <ColorPickerRow label="Text" value={node.data.textColor} onChange={(textColor) => updateBlock(node.id, { textColor })} />
             <ColorPickerRow
-              label="Border"
-              value={node.data.borderColor}
-              onChange={(borderColor) => updateBlock(node.id, { borderColor })}
+              label="Text"
+              value={node.data.textColor}
+              palette={textPalette}
+              onChange={(textColor) => updateBlock(node.id, { textColor })}
             />
             <div className="grid grid-cols-2 gap-3">
               <label className="field-label">
@@ -165,42 +275,11 @@ export function InspectorPanel() {
             </div>
           </section>
           <section className="panel-section">
-            <div className="section-title">Markers</div>
-            <label className="inline-flex items-center gap-2 text-xs font-medium text-secondary">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-border text-accent"
-                checked={Boolean(node.data.showStatus)}
-                onChange={(event) => updateBlock(node.id, { showStatus: event.target.checked, status: node.data.status || "undo" })}
-              />
-              Show status
-            </label>
-            {node.data.showStatus && (
-              <label className="field-label">
-                Status
-                <select
-                  className="field-input"
-                  value={node.data.status || "undo"}
-                  onChange={(event) => updateBlock(node.id, { status: event.target.value as typeof node.data.status })}
-                >
-                  {blockStatusOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            <div className="grid grid-cols-2 gap-3">
-              <label className="field-label">
-                Emoji 1
-                <input className="field-input" value={emojis[0] || ""} maxLength={16} onChange={(event) => updateEmoji(0, event.target.value)} />
-              </label>
-              <label className="field-label">
-                Emoji 2
-                <input className="field-input" value={emojis[1] || ""} maxLength={16} onChange={(event) => updateEmoji(1, event.target.value)} />
-              </label>
-            </div>
+            <div className="section-title">Content</div>
+            <RichTextEditor
+              content={node.data.contentJson}
+              onChange={(contentJson, contentHtml) => updateBlock(node.id, { contentJson, contentHtml })}
+            />
           </section>
           <section className="panel-section">
             <div className="section-title">Metadata</div>

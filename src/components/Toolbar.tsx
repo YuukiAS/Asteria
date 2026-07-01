@@ -1,8 +1,8 @@
-import { Download, Moon, MousePointer2, PencilLine, Plus, Save, Scan, Sun, Trash2, Upload } from "lucide-react"
-import { useRef } from "react"
-import { exportMapFile, normalizeExportedMap, readJsonFile } from "../lib/exportImport"
-import { formatJsonTimestamp } from "../lib/time"
+import { Download, Group, Moon, MousePointer2, PencilLine, Plus, Save, Scan, Sigma, Sun, Trash2, Upload } from "lucide-react"
+import { useRef, useState } from "react"
+import { createExportFilename, exportMapFile, normalizeExportedMap, normalizeMapTitle, readJsonFile } from "../lib/exportImport"
 import { useMapStore } from "../store/useMapStore"
+import { EquationDialog } from "./EquationDialog"
 
 type ToolbarProps = {
   theme: "light" | "dark"
@@ -14,13 +14,53 @@ type ToolbarProps = {
 
 export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionModeChange, onFitView }: ToolbarProps) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const { nodes, edges, viewport, saveStatus, addBlock, saveNow, clearMap, loadMap } = useMapStore()
+  const titleInputRef = useRef<HTMLInputElement>(null)
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [isEquationDialogOpen, setIsEquationDialogOpen] = useState(false)
+  const {
+    mapTitle,
+    nodes,
+    edges,
+    viewport,
+    selectedNodeId,
+    selectedNodeIds,
+    saveStatus,
+    addBlock,
+    groupSelectedBlocks,
+    updateMapTitle,
+    appendBlockMathToSelectedBlock,
+    saveNow,
+    clearMap,
+    loadMap,
+  } = useMapStore()
+  const selectedBlock = nodes.find((node) => node.id === selectedNodeId && node.type === "block")
 
   const exportJson = () => {
     exportMapFile(
-      { version: 1, nodes, edges, viewport, updatedAt: new Date().toISOString() },
-      `trace-map-${formatJsonTimestamp()}.json`,
+      { version: 1, title: normalizeMapTitle(mapTitle), nodes, edges, viewport, updatedAt: new Date().toISOString() },
+      createExportFilename(mapTitle),
     )
+  }
+
+  const startTitleEditing = () => {
+    setIsEditingTitle(true)
+    window.setTimeout(() => {
+      titleInputRef.current?.focus()
+      titleInputRef.current?.select()
+    }, 0)
+  }
+
+  const finishTitleEditing = () => {
+    updateMapTitle(normalizeMapTitle(mapTitle))
+    setIsEditingTitle(false)
+  }
+
+  const insertEquation = (latex: string) => {
+    setIsEquationDialogOpen(false)
+    appendBlockMathToSelectedBlock(latex)
+    if (selectedNodeId) {
+      window.setTimeout(() => window.dispatchEvent(new CustomEvent("asteria-focus-editor", { detail: { nodeId: selectedNodeId } })), 0)
+    }
   }
 
   const importJson = async (file?: File) => {
@@ -50,7 +90,24 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent text-xs font-bold text-white">A</span>
           <div className="leading-tight">
             <div className="text-sm font-semibold text-foreground">Asteria</div>
-            <div className="hidden text-[11px] text-secondary sm:block">local trace map</div>
+            {isEditingTitle || interactionMode === "edit" ? (
+              <input
+                ref={titleInputRef}
+                className="map-title-input nodrag nopan hidden sm:block"
+                value={mapTitle}
+                onChange={(event) => updateMapTitle(event.target.value)}
+                onBlur={finishTitleEditing}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") event.currentTarget.blur()
+                  if (event.key === "Escape") setIsEditingTitle(false)
+                }}
+                aria-label="Map title"
+              />
+            ) : (
+              <button type="button" className="map-title-display hidden sm:block" onClick={startTitleEditing} title="Edit map title">
+                {normalizeMapTitle(mapTitle)}
+              </button>
+            )}
           </div>
         </div>
         <span
@@ -90,6 +147,24 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           <Plus size={15} />
           <span>New block</span>
         </button>
+        {interactionMode === "move" && selectedNodeIds.length > 1 && (
+          <button type="button" className="toolbar-button" onClick={groupSelectedBlocks} title="Group selected blocks">
+            <Group size={15} />
+            <span>Group</span>
+          </button>
+        )}
+        {interactionMode === "edit" && (
+          <button
+            type="button"
+            className="toolbar-button disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={!selectedBlock}
+            onClick={() => setIsEquationDialogOpen(true)}
+            title={selectedBlock ? "Insert display equation into selected block" : "Select a block before inserting an equation"}
+          >
+            <Sigma size={15} />
+            <span>Equation</span>
+          </button>
+        )}
         <button type="button" className="toolbar-button" onClick={onFitView}>
           <Scan size={15} />
           <span>Fit</span>
@@ -115,6 +190,12 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
         </button>
       </div>
       <input ref={inputRef} type="file" accept="application/json" className="hidden" onChange={(event) => void importJson(event.target.files?.[0])} />
+      <EquationDialog
+        open={isEquationDialogOpen}
+        title="Insert block equation"
+        onCancel={() => setIsEquationDialogOpen(false)}
+        onConfirm={insertEquation}
+      />
     </header>
   )
 }
