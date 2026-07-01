@@ -15,18 +15,23 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
   const updateBlock = useMapStore((state) => state.updateBlock)
   const isInlineEditing = selected && interactionMode === "edit"
   const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [isEditingEmoji, setIsEditingEmoji] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
+  const emojiInputRef = useRef<HTMLInputElement>(null)
   const [resizePreview, setResizePreview] = useState<{ width: number; height: number } | null>(null)
   const visualWidth = resizePreview?.width ?? data.width
   const visualHeight = resizePreview?.height ?? data.height
   const previewInteractionClass = interactionMode === "edit" ? "nodrag nopan nowheel" : ""
   const blockType = blockTypeByValue[data.nodeType] || blockTypeByValue.generic
   const blockStatus = data.status ? blockStatusByValue[data.status] : blockStatusByValue.undo
-  const emojis = (data.emojis || []).filter(Boolean).slice(0, 2)
+  const emoji = (data.emojis || []).filter(Boolean)[0] || ""
   const titleHtml = useMemo(() => titleToHtml(data.title), [data.title])
 
   useEffect(() => {
-    if (!isInlineEditing) setIsEditingTitle(false)
+    if (!isInlineEditing) {
+      setIsEditingTitle(false)
+      setIsEditingEmoji(false)
+    }
   }, [isInlineEditing])
 
   useEffect(() => {
@@ -34,6 +39,17 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
     titleInputRef.current?.focus()
     titleInputRef.current?.select()
   }, [isEditingTitle])
+
+  useEffect(() => {
+    if (!isEditingEmoji) return
+    emojiInputRef.current?.focus()
+    emojiInputRef.current?.select()
+  }, [isEditingEmoji])
+
+  const updateEmoji = (value: string) => {
+    const next = value.trim()
+    updateBlock(id, { emojis: next ? [next] : [] })
+  }
 
   return (
     <div
@@ -107,7 +123,34 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
         />
       ))}
       <div className="flex h-9 items-center gap-2 border-b px-3" style={{ borderColor: data.borderColor }}>
-        <span className="h-2 w-2 shrink-0 rounded-full bg-accent/75" />
+        {isInlineEditing && isEditingEmoji ? (
+          <input
+            ref={emojiInputRef}
+            className="block-emoji-input nodrag nopan"
+            value={emoji}
+            maxLength={16}
+            onChange={(event) => updateEmoji(event.target.value)}
+            onBlur={() => setIsEditingEmoji(false)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur()
+              if (event.key === "Escape") setIsEditingEmoji(false)
+            }}
+            aria-label="Block emoji"
+          />
+        ) : isInlineEditing ? (
+          <button
+            type="button"
+            className={`block-emoji-button nodrag nopan ${emoji ? "" : "block-emoji-button-empty"}`}
+            title={emoji ? "Edit emoji" : "Add emoji"}
+            onClick={() => setIsEditingEmoji(true)}
+          >
+            {emoji || "+"}
+          </button>
+        ) : emoji ? (
+          <span className="block-title-emoji" title={emoji}>
+            {emoji}
+          </span>
+        ) : null}
         {isInlineEditing && isEditingTitle ? (
           <input
             ref={titleInputRef}
@@ -133,11 +176,6 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
           <div className="block-title-display" title={data.title} dangerouslySetInnerHTML={{ __html: titleHtml }} />
         )}
         <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1">
-          {emojis.map((emoji, index) => (
-            <span key={`${emoji}-${index}`} className="emoji-marker" title={emoji}>
-              {emoji}
-            </span>
-          ))}
           {data.showStatus && <span className={`status-marker ${blockStatus.className}`}>{blockStatus.label}</span>}
           {isInlineEditing ? (
             <select

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.11 - Single Emoji Header Markers
+
+- Migrated loaded/imported blocks onto the current block type color defaults while preserving existing blue, purple, and pink block text emphasis colors.
+- Reduced block emoji markers to one emoji per block.
+- Moved the emoji marker into the block title header position, replacing the blue title dot.
+- Added Edit-mode inline emoji editing from the selected block header.
+
 ## 0.1.10 - Block Type Color Defaults
 
 - Split text and background color palettes so dark text colors are no longer offered as block backgrounds.

@@ -41,7 +41,7 @@ Current block type defaults:
 - Warning: warning background and a default warning emoji marker.
 - TODO: generic block colors and an initial checkbox list; pressing Enter in the list creates another checkbox item.
 
-Marker emoji fields keep free-form input and also provide a small preset picker so users do not have to open an OS emoji input method for common markers.
+The single marker emoji keeps free-form input and also provides a small preset picker so users do not have to open an OS emoji input method for common markers. On the canvas, the emoji is shown directly before the block title and can be edited from the selected block header in Edit mode.
 
 ## V2 TODO
 

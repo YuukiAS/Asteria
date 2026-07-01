@@ -155,6 +155,23 @@ body {
     @apply block h-7 min-w-0 flex-1 truncate border-0 bg-transparent px-1 text-left text-[14px] font-semibold leading-7 text-inherit;
   }
 
+  .block-title-emoji,
+  .block-emoji-button {
+    @apply inline-grid h-6 w-6 shrink-0 place-items-center rounded-md border border-transparent text-sm leading-none;
+  }
+
+  .block-emoji-button {
+    @apply transition hover:border-border hover:bg-panel/70;
+  }
+
+  .block-emoji-button-empty {
+    @apply border-border bg-panel/60 text-[12px] text-muted;
+  }
+
+  .block-emoji-input {
+    @apply h-6 w-10 shrink-0 rounded-md border border-border bg-panel px-1 text-center text-sm leading-none outline-none transition focus:border-accent;
+  }
+
   .type-select {
     @apply h-6 max-w-[116px] shrink-0 rounded-md border px-1 text-[10px] font-semibold uppercase leading-none outline-none transition focus:border-accent;
   }

@@ -186,7 +186,7 @@ function blockStyleFromData(data: BlockData): BlockStyleClipboard {
     nodeType: data.nodeType,
     showStatus: data.showStatus,
     status: data.status,
-    emojis: data.emojis,
+    emojis: (data.emojis || []).slice(0, 1),
   }
 }
 
@@ -206,7 +206,7 @@ function blockTypePatch(patch: Partial<BlockData>) {
   return {
     ...defaults,
     ...patch,
-    emojis: patch.emojis ?? (defaults.emojis ? [...defaults.emojis] : patch.emojis),
+    emojis: patch.emojis?.slice(0, 1) ?? (defaults.emojis ? [...defaults.emojis] : []),
     contentJson: patch.contentJson ?? (defaults.contentJson ? cloneJson(defaults.contentJson) : patch.contentJson),
   }
 }
@@ -365,7 +365,7 @@ export const useMapStore = create<MapState>((set, get) => ({
         ...cloneJson(source.data),
         title: `${source.data.title} copy`,
         contentJson: cloneJson(source.data.contentJson),
-        emojis: [...(source.data.emojis || [])],
+        emojis: [...(source.data.emojis || []).slice(0, 1)],
         createdAt: at,
         updatedAt: at,
       },
@@ -391,7 +391,7 @@ export const useMapStore = create<MapState>((set, get) => ({
       data: {
         ...cloneJson(source.data),
         contentJson: cloneJson(source.data.contentJson),
-        emojis: [...(source.data.emojis || [])],
+        emojis: [...(source.data.emojis || []).slice(0, 1)],
       },
       position: { x: source.position.x, y: source.position.y },
       pasteCount: 0,
@@ -421,7 +421,7 @@ export const useMapStore = create<MapState>((set, get) => ({
       data: {
         ...cloneJson(clipboard.data),
         contentJson: cloneJson(clipboard.data.contentJson),
-        emojis: [...(clipboard.data.emojis || [])],
+        emojis: [...(clipboard.data.emojis || []).slice(0, 1)],
         createdAt: at,
         updatedAt: at,
       },
@@ -448,7 +448,7 @@ export const useMapStore = create<MapState>((set, get) => ({
   pasteBlockStyle: (id) => {
     const clipboard = get().blockStyleClipboard
     if (!clipboard) return
-    get().updateBlock(id, { ...clipboard, emojis: [...(clipboard.emojis || [])] })
+    get().updateBlock(id, { ...clipboard, emojis: [...(clipboard.emojis || []).slice(0, 1)] })
   },
 
   updateBlock: (id, patch) => {

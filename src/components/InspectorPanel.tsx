@@ -110,10 +110,9 @@ export function InspectorPanel() {
   if (node?.type === "block") {
     const blockType = blockTypeByValue[node.data.nodeType] || blockTypeByValue.generic
     const emojis = node.data.emojis || []
-    const updateEmoji = (index: number, value: string) => {
-      const next = [emojis[0] || "", emojis[1] || ""]
-      next[index] = value
-      updateBlock(node.id, { emojis: next.map((item) => item.trim()).filter(Boolean).slice(0, 2) })
+    const updateEmoji = (value: string) => {
+      const emoji = value.trim()
+      updateBlock(node.id, { emojis: emoji ? [emoji] : [] })
     }
 
     return (
@@ -178,24 +177,13 @@ export function InspectorPanel() {
                 </select>
               </label>
             )}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3">
               <label className="field-label">
-                Emoji 1
-                <input className="field-input" value={emojis[0] || ""} maxLength={16} onChange={(event) => updateEmoji(0, event.target.value)} />
-                <div className="emoji-preset-grid" aria-label="Emoji 1 presets">
+                Emoji
+                <input className="field-input" value={emojis[0] || ""} maxLength={16} onChange={(event) => updateEmoji(event.target.value)} />
+                <div className="emoji-preset-grid" aria-label="Emoji presets">
                   {emojiPresets.map((emoji) => (
-                    <button key={`emoji-1-${emoji}`} type="button" className="emoji-preset-button" onClick={() => updateEmoji(0, emoji)}>
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              </label>
-              <label className="field-label">
-                Emoji 2
-                <input className="field-input" value={emojis[1] || ""} maxLength={16} onChange={(event) => updateEmoji(1, event.target.value)} />
-                <div className="emoji-preset-grid" aria-label="Emoji 2 presets">
-                  {emojiPresets.map((emoji) => (
-                    <button key={`emoji-2-${emoji}`} type="button" className="emoji-preset-button" onClick={() => updateEmoji(1, emoji)}>
+                    <button key={`emoji-${emoji}`} type="button" className="emoji-preset-button" onClick={() => updateEmoji(emoji)}>
                       {emoji}
                     </button>
                   ))}

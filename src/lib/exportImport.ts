@@ -166,7 +166,12 @@ function normalizeEmojis(value: unknown): string[] {
   return value
     .map((item) => String(item ?? "").trim())
     .filter(Boolean)
-    .slice(0, 2)
+    .slice(0, 1)
+}
+
+function shouldPreserveExistingTextColor(value: unknown) {
+  if (typeof value !== "string") return false
+  return ["#3b82f6", "#1d4ed8", "#8b5cf6", "#6d28d9", "#ec4899", "#be185d"].includes(value.toLowerCase())
 }
 
 function normalizeEdgeLineStyle(value: unknown): EdgeLineStyle {
@@ -213,6 +218,9 @@ function normalizeBlockData(input: Partial<BlockData> & { content?: string }): B
   const contentJson = input.contentJson ?? paragraphJson(input.content ?? "Recovered block")
   const width = Number(input.width)
   const height = Number(input.height)
+  const nodeType = normalizeNodeType(input.nodeType)
+  const defaults = blockTypeDefaults[nodeType]
+  const emojis = normalizeEmojis(input.emojis)
   if (!input.contentJson && input.content) {
     console.warn("Migrated legacy content string into Tiptap JSON.")
   }
@@ -220,15 +228,15 @@ function normalizeBlockData(input: Partial<BlockData> & { content?: string }): B
     title: input.title || "Untitled block",
     contentJson,
     contentHtml: input.contentHtml,
-    backgroundColor: input.backgroundColor || defaultBlockColors.background,
-    textColor: input.textColor || defaultBlockColors.text,
+    backgroundColor: defaults.backgroundColor,
+    textColor: shouldPreserveExistingTextColor(input.textColor) ? String(input.textColor) : defaults.textColor,
     borderColor: defaultBlockColors.border,
     width: Number.isFinite(width) ? Math.min(Math.max(width, 220), 860) : 340,
     height: Number.isFinite(height) ? Math.min(Math.max(height, 160), 720) : 220,
-    nodeType: normalizeNodeType(input.nodeType),
+    nodeType,
     showStatus: Boolean(input.showStatus),
     status: normalizeBlockStatus(input.status),
-    emojis: normalizeEmojis(input.emojis),
+    emojis: emojis.length ? emojis : defaults.emojis ? [...defaults.emojis] : [],
     createdAt: input.createdAt || at,
     updatedAt: input.updatedAt || at,
   }
