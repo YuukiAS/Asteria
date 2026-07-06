@@ -58,6 +58,11 @@ function renderChildren(node: JSONContent) {
   return (node.content || []).map(renderNode).join("")
 }
 
+function renderParagraphChildren(node: JSONContent) {
+  const children = renderChildren(node)
+  return children || '<br data-asteria-empty-paragraph="true" />'
+}
+
 function textAlignStyle(node: JSONContent) {
   return node.attrs?.textAlign ? ` style="text-align: ${escapeHtml(String(node.attrs.textAlign))}"` : ""
 }
@@ -69,7 +74,7 @@ function renderNode(node: JSONContent): string {
     case "text":
       return renderMarks(escapeHtml(node.text || ""), node.marks)
     case "paragraph":
-      return `<p${textAlignStyle(node)}>${renderChildren(node)}</p>`
+      return `<p${textAlignStyle(node)}>${renderParagraphChildren(node)}</p>`
     case "heading": {
       const level = node.attrs?.level === 1 ? 1 : 2
       return `<h${level}${textAlignStyle(node)}>${renderChildren(node)}</h${level}>`

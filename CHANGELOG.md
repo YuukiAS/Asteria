@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.4 - Preserve Blank Lines in Preview
+
+- Preserved manually inserted blank paragraphs when leaving inline block editing.
+- Rendered empty rich-text paragraphs with an explicit line break so preview mode matches edit mode.
+
 ## 0.4.3 - Compact Default Variant Label
 
 - Shortened the missing variant state to `(default)`.
