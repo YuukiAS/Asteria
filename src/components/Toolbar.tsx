@@ -199,21 +199,6 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
             <Settings2 size={14} />
           </button>
         </div>
-        <label className="flex shrink-0 items-center gap-1 rounded-md border border-border bg-panel px-2 text-xs font-medium text-secondary" title="Display density">
-          <Rows3 size={14} />
-          <span className="sr-only">Display density</span>
-          <select
-            className="h-7 max-w-[112px] border-0 bg-panel text-xs outline-none"
-            value={displayModeOverride}
-            onChange={(event) => setDisplayModeOverride(event.target.value as DisplayModeOverride)}
-          >
-            {displayModeOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
         {interactionMode === "move" && selectedNodeIds.length > 1 && (
           <button type="button" className="toolbar-button" onClick={groupSelectedBlocks} title="Group selected blocks">
             <Group size={15} />
@@ -256,14 +241,33 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           <Download size={15} />
           <span className="toolbar-label">Export</span>
         </button>
-        <button type="button" className="toolbar-button" onClick={() => inputRef.current?.click()} title="Import">
-          <Upload size={15} />
-          <span className="toolbar-label">Import</span>
-        </button>
         <button type="button" className="danger-button" onClick={clear} title="Clear">
           <Trash2 size={15} />
           <span className="toolbar-label">Clear</span>
         </button>
+        <button type="button" className="toolbar-button" onClick={() => inputRef.current?.click()} title="Import">
+          <Upload size={15} />
+          <span className="toolbar-label">Import</span>
+        </button>
+        <label
+          className="density-control flex shrink-0 items-center gap-1 rounded-md border border-border bg-panel px-1.5 text-xs font-medium text-secondary"
+          title="Display density: Auto uses each block's saved display mode; other choices temporarily override all blocks."
+        >
+          <Rows3 size={14} />
+          <span className="sr-only">Display density</span>
+          <select
+            className="h-7 max-w-[76px] border-0 bg-panel text-xs outline-none"
+            value={displayModeOverride}
+            onChange={(event) => setDisplayModeOverride(event.target.value as DisplayModeOverride)}
+            aria-label="Display density"
+          >
+            {displayModeOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <button type="button" className="toolbar-button !px-2" onClick={onToggleTheme} aria-label="Toggle theme">
           {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
         </button>

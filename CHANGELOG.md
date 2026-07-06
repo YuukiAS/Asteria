@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.6 - Density Control Placement
+
+- Renamed the toolbar density default from `Use block settings` to compact `Auto` wording.
+- Added a clearer display density tooltip explaining Auto and global override behavior.
+- Moved the density control to the right side between Import and the theme toggle.
+
 ## 0.2.5 - Toolbar and Icon Polish
 
 - Cropped the app icon asset so the compass artwork fills the visible icon instead of leaving large blank margins.
