@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.6 - Fix Default Variant Editing
+
+- Fixed Default content-version edits being overwritten by the existing common variant.
+- Restored title and content updates while a block's content version is set to Default.
+
 ## 0.4.5 - Opaque Block Backgrounds
 
 - Made block header and content regions explicitly use the block background color.

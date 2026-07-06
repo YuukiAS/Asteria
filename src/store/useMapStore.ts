@@ -254,10 +254,14 @@ function patchBlockVariant(data: BlockData, key: string, patch: Partial<Pick<Blo
     contentHtml: patch.contentHtml ?? (patch.contentJson ? contentJsonToHtml(patch.contentJson) : current.contentHtml),
     updatedAt: nowIso(),
   }
+  const commonVariant =
+    key === commonVariantKey
+      ? next
+      : data.variants?.[commonVariantKey] || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt)
   return {
     ...data.variants,
     [key]: next,
-    [commonVariantKey]: data.variants?.[commonVariantKey] || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt),
+    [commonVariantKey]: commonVariant,
   }
 }
 
