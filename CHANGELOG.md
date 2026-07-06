@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.2 - Clearer Variant Fallback Labels
+
+- Renamed variant fallback text to `same as Default`.
+- Styled the fallback state as a muted italic label so it reads separately from the version name.
+
 ## 0.4.1 - App Icon Favicon
 
 - Reused the Asteria toolbar icon as the browser favicon.
