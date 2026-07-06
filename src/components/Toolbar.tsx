@@ -87,7 +87,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
     <header className="flex h-[52px] shrink-0 items-center gap-2 border-b border-border bg-toolbar/90 px-3 backdrop-blur">
       <div className="flex min-w-0 items-center gap-3">
         <div className="flex items-center gap-2">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent text-xs font-bold text-white">A</span>
+          <img src="/app-icon.png" alt="Asteria icon" className="h-7 w-7 rounded-lg object-cover" />
           <div className="leading-tight">
             <div className="text-sm font-semibold text-foreground">Asteria</div>
             {isEditingTitle || interactionMode === "edit" ? (

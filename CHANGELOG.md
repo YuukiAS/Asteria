@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.12 - 0.1.x Final Planning and App Icon
+
+- Added the Asteria compass artwork as a repo asset for the app icon.
+- Replaced the top-left text `A` brand mark with the new app icon.
+- Translated the 0.2.x TODO into Chinese.
+- Updated the 0.2.x plan so model versions are user-defined, capped at five versions, and not hard-coded to project-specific labels.
+- Marked micro-straighten as a top-toolbar action placed between Fit and Save in the future 0.2.3 milestone.
+
 ## 0.1.11 - Single Emoji Header Markers
 
 - Migrated loaded/imported blocks onto the current block type color defaults while preserving existing blue, purple, and pink block text emphasis colors.
