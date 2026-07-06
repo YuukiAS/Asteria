@@ -14,24 +14,44 @@ import { createContext, useContext, useEffect, useMemo, type MouseEvent } from "
 import { BlockNode } from "./BlockNode"
 import { GroupNode } from "./GroupNode"
 import { applyEdgePresentation } from "../lib/exportImport"
+import { requestInlineBlockEdit, type InlineEditTarget } from "../lib/inlineEditEvents"
 import { useMapStore } from "../store/useMapStore"
 import type { BlockNode as BlockNodeType, GroupNode as GroupNodeType, MapEdge, MapNode } from "../types/map"
 
 type CanvasProps = {
   onFitViewReady: (fitView: () => void) => void
   interactionMode: "move" | "edit"
+  inlineEditTarget?: InlineEditTarget
+  onInlineEditTargetChange: (target?: InlineEditTarget) => void
 }
 
-const InteractionModeContext = createContext<"move" | "edit">("move")
+const InteractionModeContext = createContext<{
+  interactionMode: "move" | "edit"
+  inlineEditTarget?: InlineEditTarget
+  selectedNodeIds: string[]
+  onInlineEditTargetChange: (target?: InlineEditTarget) => void
+}>({
+  interactionMode: "move",
+  selectedNodeIds: [],
+  onInlineEditTargetChange: () => undefined,
+})
 
 function BlockNodeRenderer(props: NodeProps<BlockNodeType>) {
-  const interactionMode = useContext(InteractionModeContext)
-  return <BlockNode {...props} interactionMode={interactionMode} />
+  const { interactionMode, inlineEditTarget, selectedNodeIds, onInlineEditTargetChange } = useContext(InteractionModeContext)
+  return (
+    <BlockNode
+      {...props}
+      selected={selectedNodeIds.includes(props.id)}
+      interactionMode={interactionMode}
+      inlineEditTarget={inlineEditTarget}
+      onInlineEditTargetChange={onInlineEditTargetChange}
+    />
+  )
 }
 
 function GroupNodeRenderer(props: NodeProps<GroupNodeType>) {
-  const interactionMode = useContext(InteractionModeContext)
-  return <GroupNode {...props} interactionMode={interactionMode} />
+  const { interactionMode, selectedNodeIds } = useContext(InteractionModeContext)
+  return <GroupNode {...props} selected={selectedNodeIds.includes(props.id)} interactionMode={interactionMode} />
 }
 
 const nodeTypes = {
@@ -39,7 +59,7 @@ const nodeTypes = {
   group: GroupNodeRenderer,
 }
 
-export function Canvas({ onFitViewReady, interactionMode }: CanvasProps) {
+export function Canvas({ onFitViewReady, interactionMode, inlineEditTarget, onInlineEditTargetChange }: CanvasProps) {
   const reactFlow = useReactFlow<MapNode, MapEdge>()
   const {
     nodes,
@@ -49,8 +69,9 @@ export function Canvas({ onFitViewReady, interactionMode }: CanvasProps) {
     onNodesChange,
     onEdgesChange,
     addEdge,
-    addBlock,
+    addBlockAndSelect,
     setSelectedNode,
+    selectedNodeIds,
     setSelectedNodes,
     setSelectedEdge,
     setViewport,
@@ -85,10 +106,7 @@ export function Canvas({ onFitViewReady, interactionMode }: CanvasProps) {
   const onNodeDoubleClick: NodeMouseHandler<MapNode> = (_event, node) => {
     setSelectedNode(node.id)
     if (node.type !== "block") return
-    window.setTimeout(
-      () => window.dispatchEvent(new CustomEvent("asteria-focus-editor", { detail: { nodeId: node.id } })),
-      0,
-    )
+    requestInlineBlockEdit(node.id, "content")
   }
 
   const onSelectionChange = ({ nodes: selectedNodes, edges: selectedEdges }: OnSelectionChangeParams) => {
@@ -96,21 +114,18 @@ export function Canvas({ onFitViewReady, interactionMode }: CanvasProps) {
     const selectedEdge = selectedEdges[0] as Edge | undefined
     if (selectedNodeIds.length) setSelectedNodes(selectedNodeIds)
     else if (selectedEdge) setSelectedEdge(selectedEdge.id)
-    else {
-      setSelectedNodes([])
-      setSelectedEdge(undefined)
-    }
   }
 
   const onCanvasDoubleClick = (event: MouseEvent<HTMLElement>) => {
     const target = event.target as HTMLElement
     if (!target.closest(".react-flow__pane")) return
-    addBlock(reactFlow.screenToFlowPosition({ x: event.clientX, y: event.clientY }))
+    const nodeId = addBlockAndSelect(reactFlow.screenToFlowPosition({ x: event.clientX, y: event.clientY }))
+    requestInlineBlockEdit(nodeId, "title")
   }
 
   return (
     <main className="min-h-0 min-w-0 flex-1 bg-canvas" onDoubleClick={onCanvasDoubleClick}>
-      <InteractionModeContext.Provider value={interactionMode}>
+      <InteractionModeContext.Provider value={{ interactionMode, inlineEditTarget, selectedNodeIds, onInlineEditTargetChange }}>
         <ReactFlow
           nodes={presentedNodes}
           edges={styledEdges}
@@ -123,17 +138,31 @@ export function Canvas({ onFitViewReady, interactionMode }: CanvasProps) {
           onEdgesChange={onEdgesChange}
           onConnect={addEdge}
           onNodeClick={(event, node) => {
-            setSelectedNode(node.id)
             const target = event.target as HTMLElement
-            if (interactionMode === "edit" && target.closest(".asteria-block-preview") && !target.closest(".ProseMirror")) {
-              window.setTimeout(
-                () => window.dispatchEvent(new CustomEvent("asteria-focus-editor", { detail: { nodeId: node.id } })),
-                0,
-              )
+            const wasEditingThisNode = inlineEditTarget?.nodeId === node.id
+            const wasSelected = selectedNodeIds.includes(node.id) || Boolean(node.selected)
+            setSelectedNode(node.id)
+            if (interactionMode !== "edit") {
+              onInlineEditTargetChange(undefined)
+              return
             }
+            if (target.closest(".ProseMirror")) return
+            if (target.closest(".asteria-block-preview") && (wasEditingThisNode || wasSelected)) {
+              onInlineEditTargetChange({ nodeId: node.id, field: "content" })
+              return
+            }
+            if (!wasEditingThisNode) onInlineEditTargetChange(undefined)
           }}
-          onEdgeClick={(_, edge) => setSelectedEdge(edge.id)}
+          onEdgeClick={(_, edge) => {
+            onInlineEditTargetChange(undefined)
+            setSelectedEdge(edge.id)
+          }}
           onNodeDoubleClick={onNodeDoubleClick}
+          onPaneClick={() => {
+            onInlineEditTargetChange(undefined)
+            setSelectedNodes([])
+            setSelectedEdge(undefined)
+          }}
           onSelectionChange={onSelectionChange}
           onMoveEnd={(_, nextViewport) => setViewport(nextViewport)}
           nodesDraggable={interactionMode === "move"}

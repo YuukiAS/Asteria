@@ -118,6 +118,9 @@ type MapState = {
   blockStyleClipboard?: BlockStyleClipboard
   blockClipboard?: BlockClipboard
   addBlock: (position?: { x: number; y: number }) => void
+  addBlockAndSelect: (position?: { x: number; y: number }) => string
+  addBlockNextToSelected: () => string
+  addLinkedBlockFromSelected: () => string
   groupSelectedBlocks: () => void
   attachSelectedBlocksToFrame: () => void
   detachSelectedBlocksFromFrame: () => void
@@ -266,6 +269,11 @@ function roundToGrid(value: number) {
   return Math.round(value / snapGridSize) * snapGridSize
 }
 
+function nextBlockPositionFrom(source: BlockNode, nodes: MapNode[]): XYPosition {
+  const position = absolutePosition(source, nodes)
+  return { x: position.x + source.data.width + 120, y: position.y }
+}
+
 function blockStyleFromData(data: BlockData): BlockStyleClipboard {
   return {
     backgroundColor: data.backgroundColor,
@@ -382,9 +390,42 @@ export const useMapStore = create<MapState>((set, get) => ({
   },
 
   addBlock: (position) => {
+    get().addBlockAndSelect(position)
+  },
+
+  addBlockAndSelect: (position) => {
     const node = createBlockNode(position)
-    set((state) => ({ nodes: [...state.nodes, node], selectedNodeId: node.id, selectedNodeIds: [node.id], selectedEdgeId: undefined }))
+    set((state) => ({
+      nodes: [...state.nodes, node],
+      selectedNodeId: node.id,
+      selectedNodeIds: [node.id],
+      selectedEdgeId: undefined,
+    }))
     get().markUnsaved()
+    return node.id
+  },
+
+  addBlockNextToSelected: () => {
+    const state = get()
+    const source = findBlockNode(state.nodes, state.selectedNodeId)
+    return get().addBlockAndSelect(source ? nextBlockPositionFrom(source, state.nodes) : undefined)
+  },
+
+  addLinkedBlockFromSelected: () => {
+    const state = get()
+    const source = findBlockNode(state.nodes, state.selectedNodeId)
+    if (!source) return get().addBlockAndSelect()
+    const node = createBlockNode(nextBlockPositionFrom(source, state.nodes))
+    const edge = createEdge({ source: source.id, target: node.id, sourceHandle: "right", targetHandle: "left-target" })
+    set((nextState) => ({
+      nodes: [...nextState.nodes, node],
+      edges: addReactFlowEdge(edge, nextState.edges) as MapEdge[],
+      selectedNodeId: node.id,
+      selectedNodeIds: [node.id],
+      selectedEdgeId: undefined,
+    }))
+    get().markUnsaved()
+    return node.id
   },
 
   groupSelectedBlocks: () => {
@@ -916,7 +957,8 @@ export const useMapStore = create<MapState>((set, get) => ({
   setSelectedNode: (id) => {
     const state = get()
     if (state.selectedNodeId === id && state.selectedEdgeId === undefined) return
-    set({ selectedNodeId: id, selectedNodeIds: id ? [id] : [], selectedEdgeId: undefined })
+    const selectedNodeIds = id ? [id] : []
+    set({ selectedNodeId: id, selectedNodeIds, selectedEdgeId: undefined })
   },
   setSelectedNodes: (ids) => {
     const state = get()

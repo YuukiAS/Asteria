@@ -6,6 +6,7 @@ import { ColorPickerRow } from "./ColorPickerRow"
 import { EdgeInspector } from "./EdgeInspector"
 import { RichTextEditor } from "./RichTextEditor"
 import { formatLocalDateTime } from "../lib/time"
+import { requestInlineBlockEdit } from "../lib/inlineEditEvents"
 import { resolveBlockContentJson, resolveBlockTitle } from "../lib/exportImport"
 import { useMapStore } from "../store/useMapStore"
 
@@ -23,7 +24,7 @@ export function InspectorPanel() {
     selectedEdgeId,
     saveStatus,
     lastSavedAt,
-    addBlock,
+    addBlockAndSelect,
     updateBlock,
     updateGroup,
     updateEdge,
@@ -49,6 +50,11 @@ export function InspectorPanel() {
   } = useMapStore()
   const node = nodes.find((item) => item.id === selectedNodeId)
   const edge = edges.find((item) => item.id === selectedEdgeId)
+
+  const createBlock = () => {
+    const nodeId = addBlockAndSelect()
+    requestInlineBlockEdit(nodeId, "title")
+  }
 
   if (selectedNodeIds.length > 1) {
     return (
@@ -425,7 +431,7 @@ export function InspectorPanel() {
           <div className="font-medium text-foreground">{saveStatus}</div>
           <div className="mt-1 text-xs text-secondary">Last saved: {formatLocalDateTime(lastSavedAt)}</div>
         </div>
-        <button type="button" className="primary-button mt-3" onClick={() => addBlock()}>
+        <button type="button" className="primary-button mt-3" onClick={createBlock}>
           <Plus size={15} />
           Create block
         </button>
@@ -440,9 +446,15 @@ export function InspectorPanel() {
           <dt className="shortcut">Ctrl/Cmd+E</dt>
           <dd>Export JSON</dd>
           <dt className="shortcut">Esc</dt>
-          <dd>Clear selection</dd>
+          <dd>Exit inline editing, then clear selection</dd>
+          <dt className="shortcut">Enter</dt>
+          <dd>Edit selected block content</dd>
+          <dt className="shortcut">Ctrl/Cmd+Enter</dt>
+          <dd>Create next block</dd>
+          <dt className="shortcut">Ctrl/Cmd+Shift+Enter</dt>
+          <dd>Create linked block</dd>
           <dt className="shortcut">Double click</dt>
-          <dd>Create block or focus editor</dd>
+          <dd>Create block or edit selected block</dd>
         </dl>
       </section>
     </aside>

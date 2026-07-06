@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { blockStatusByValue, blockTypeByValue, blockTypeOptions } from "../constants/blockTypes"
 import { allVersionsId, commonVariantKey } from "../constants/versioning"
 import { getVariantKey, resolveBlockContentHtml, resolveBlockContentJson, resolveBlockTitle } from "../lib/exportImport"
+import { requestInlineBlockEdit, requestInlineEditorFocus, type InlineEditTarget } from "../lib/inlineEditEvents"
 import { titleToHtml } from "../lib/titleMath"
 import type { BlockNode as BlockNodeType } from "../types/map"
 import { useMapStore } from "../store/useMapStore"
@@ -11,17 +12,20 @@ import { RichTextPreview } from "./RichTextPreview"
 
 type BlockNodeProps = NodeProps<BlockNodeType> & {
   interactionMode: "move" | "edit"
+  inlineEditTarget?: InlineEditTarget
+  onInlineEditTargetChange: (target?: InlineEditTarget) => void
 }
 
-export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProps) {
+export function BlockNode({ id, data, selected, interactionMode, inlineEditTarget, onInlineEditTargetChange }: BlockNodeProps) {
   const updateBlock = useMapStore((state) => state.updateBlock)
   const updateBlockVariant = useMapStore((state) => state.updateBlockVariant)
   const setBlockActiveVariant = useMapStore((state) => state.setBlockActiveVariant)
   const activeVersionId = useMapStore((state) => state.activeVersionId)
   const modelVersions = useMapStore((state) => state.modelVersions)
   const displayModeOverride = useMapStore((state) => state.displayModeOverride)
-  const isInlineEditing = selected && interactionMode === "edit"
-  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const isEditableSelection = selected && interactionMode === "edit"
+  const isEditingTitle = isEditableSelection && inlineEditTarget?.nodeId === id && inlineEditTarget.field === "title"
+  const isEditingContent = isEditableSelection && inlineEditTarget?.nodeId === id && inlineEditTarget.field === "content"
   const [isEditingEmoji, setIsEditingEmoji] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
   const emojiInputRef = useRef<HTMLInputElement>(null)
@@ -46,17 +50,20 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
   const titleHtml = useMemo(() => titleToHtml(title), [title])
 
   useEffect(() => {
-    if (!isInlineEditing) {
-      setIsEditingTitle(false)
+    if (!isEditableSelection) {
       setIsEditingEmoji(false)
     }
-  }, [isInlineEditing])
+  }, [isEditableSelection])
 
   useEffect(() => {
     if (!isEditingTitle) return
     titleInputRef.current?.focus()
     titleInputRef.current?.select()
   }, [isEditingTitle])
+
+  useEffect(() => {
+    if (isEditingContent) requestInlineEditorFocus(id)
+  }, [id, isEditingContent])
 
   useEffect(() => {
     if (!isEditingEmoji) return
@@ -74,6 +81,12 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
       className={`asteria-block group relative rounded-xl border bg-white shadow-block transition ${
         selected ? "ring-2 ring-accent ring-offset-2 ring-offset-canvas" : ""
       } ${resizePreview ? "asteria-block-resizing" : ""}`}
+      onDoubleClick={(event) => {
+        const target = event.target as HTMLElement
+        if (target.closest("input, select, button, .ProseMirror")) return
+        event.stopPropagation()
+        requestInlineBlockEdit(id, "content")
+      }}
         style={{
         width: visualWidth,
         height: visualHeight,
@@ -141,7 +154,7 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
         />
       ))}
       <div className="flex h-9 items-center gap-2 border-b px-3" style={{ borderColor: data.borderColor }}>
-        {isInlineEditing && isEditingEmoji ? (
+        {isEditableSelection && isEditingEmoji ? (
           <input
             ref={emojiInputRef}
             className="block-emoji-input nodrag nopan"
@@ -151,11 +164,14 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
             onBlur={() => setIsEditingEmoji(false)}
             onKeyDown={(event) => {
               if (event.key === "Enter") event.currentTarget.blur()
-              if (event.key === "Escape") setIsEditingEmoji(false)
+              if (event.key === "Escape") {
+                event.stopPropagation()
+                setIsEditingEmoji(false)
+              }
             }}
             aria-label="Block emoji"
           />
-        ) : isInlineEditing ? (
+        ) : isEditableSelection ? (
           <button
             type="button"
             className={`block-emoji-button nodrag nopan ${emoji ? "" : "block-emoji-button-empty"}`}
@@ -169,25 +185,28 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
             {emoji}
           </span>
         ) : null}
-        {isInlineEditing && isEditingTitle ? (
+        {isEditableSelection && isEditingTitle ? (
           <input
             ref={titleInputRef}
             className="block-title-input nodrag nopan"
             value={title}
             onChange={(event) => updateBlockVariant(id, effectiveVariantKey, { title: event.target.value })}
-            onBlur={() => setIsEditingTitle(false)}
+            onBlur={() => onInlineEditTargetChange(undefined)}
             onKeyDown={(event) => {
               if (event.key === "Enter") event.currentTarget.blur()
-              if (event.key === "Escape") setIsEditingTitle(false)
+              if (event.key === "Escape") {
+                event.stopPropagation()
+                onInlineEditTargetChange(undefined)
+              }
             }}
             aria-label="Block title"
           />
-        ) : isInlineEditing ? (
+        ) : isEditableSelection ? (
           <button
             type="button"
             className="block-title-display nodrag nopan"
             title={title}
-            onClick={() => setIsEditingTitle(true)}
+            onClick={() => onInlineEditTargetChange({ nodeId: id, field: "title" })}
             dangerouslySetInnerHTML={{ __html: titleHtml }}
           />
         ) : (
@@ -199,7 +218,7 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
           </span>
         )}
         <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1">
-          {isInlineEditing ? (
+          {isEditableSelection ? (
             <select
               className="version-select nodrag nopan"
               value={effectiveVariantKey}
@@ -221,7 +240,7 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
             </span>
           )}
           {data.showStatus && <span className={`status-marker ${blockStatus.className}`}>{blockStatus.label}</span>}
-          {isInlineEditing ? (
+          {isEditableSelection ? (
             <select
               className={`type-select nodrag nopan ${blockType.badgeClass}`}
               value={data.nodeType}
@@ -243,7 +262,7 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
       <div
         className={`asteria-block-preview asteria-block-preview-${displayMode} h-[calc(100%-36px)] overflow-auto px-3 py-2 text-[13px] leading-[1.45] ${previewInteractionClass}`}
       >
-        {isInlineEditing && displayMode === "full" ? (
+        {isEditingContent && displayMode === "full" ? (
           <RichTextEditor
             content={contentJson}
             onChange={(contentJson, contentHtml) => updateBlockVariant(id, effectiveVariantKey, { contentJson, contentHtml })}

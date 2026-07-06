@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0 - Faster Block Entry Flow
+
+- Added explicit inline edit targeting so selecting a block in Edit mode no longer automatically enters text editing.
+- Made new blocks from the toolbar, inspector, and canvas double-click select their title for immediate replacement.
+- Added `Enter`, `Ctrl/Cmd+Enter`, and `Ctrl/Cmd+Shift+Enter` flows for entering content, creating adjacent blocks, and creating linked blocks.
+- Kept the existing Move/Edit mode toggle and `Alt+1` / `Alt+2` shortcuts intact.
+
 ## 0.2.9 - Inline Version Editing
 
 - Renamed the top toolbar's global baseline option from `All` to `Default` for a consistent version vocabulary.

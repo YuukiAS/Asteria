@@ -8,11 +8,17 @@ import { Canvas } from "../components/Canvas"
 import { InspectorPanel } from "../components/InspectorPanel"
 import { Toolbar } from "../components/Toolbar"
 import { createExportFilename, exportMapFile, normalizeMapTitle } from "../lib/exportImport"
+import { requestInlineBlockEdit, startInlineEditEvent, type InlineEditTarget } from "../lib/inlineEditEvents"
 import { useMapStore } from "../store/useMapStore"
 
 function isEditableTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false
   return Boolean(target.closest("input, textarea, select, button, [contenteditable='true'], .ProseMirror"))
+}
+
+function isTextEditingTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false
+  return Boolean(target.closest("input, textarea, select, [contenteditable='true'], .ProseMirror"))
 }
 
 function useTheme() {
@@ -42,6 +48,7 @@ export function App() {
   const fitViewRef = useRef<() => void>(() => undefined)
   const [theme, setTheme] = useTheme()
   const [interactionMode, setInteractionMode] = useState<"move" | "edit">("move")
+  const [inlineEditTarget, setInlineEditTarget] = useState<InlineEditTarget | undefined>()
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const stored = Number(localStorage.getItem(sidebarWidthKey))
     return Number.isFinite(stored) && stored > 0 ? clampSidebarWidth(stored) : 360
@@ -54,6 +61,8 @@ export function App() {
     duplicateSelectedBlock,
     copySelectedBlock,
     pasteBlock,
+    addBlockNextToSelected,
+    addLinkedBlockFromSelected,
     setSelectedNode,
     setSelectedEdge,
     saveNow,
@@ -61,6 +70,8 @@ export function App() {
     modelVersions,
     activeVersionId,
     displayModeOverride,
+    selectedNodeId,
+    selectedNodeIds,
     nodes,
     edges,
     viewport,
@@ -73,6 +84,29 @@ export function App() {
   const setFitView = useCallback((fitView: () => void) => {
     fitViewRef.current = fitView
   }, [])
+
+  const setAppInteractionMode = useCallback((mode: "move" | "edit") => {
+    setInteractionMode(mode)
+    if (mode === "move") setInlineEditTarget(undefined)
+  }, [])
+
+  useEffect(() => {
+    const startInlineEdit = (event: Event) => {
+      const target = (event as CustomEvent<InlineEditTarget>).detail
+      if (!target?.nodeId) return
+      setInteractionMode("edit")
+      setInlineEditTarget(target)
+    }
+    window.addEventListener(startInlineEditEvent, startInlineEdit)
+    return () => window.removeEventListener(startInlineEditEvent, startInlineEdit)
+  }, [])
+
+  useEffect(() => {
+    if (!inlineEditTarget) return
+    if (interactionMode !== "edit" || !selectedNodeIds.includes(inlineEditTarget.nodeId)) {
+      setInlineEditTarget(undefined)
+    }
+  }, [inlineEditTarget, interactionMode, selectedNodeIds])
 
   const exportJson = useCallback(() => {
     exportMapFile(
@@ -94,17 +128,23 @@ export function App() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const isMod = event.ctrlKey || event.metaKey
-      if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && !isEditableTarget(event.target)) {
+      if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && !isTextEditingTarget(event.target)) {
         if (event.key === "1") {
           event.preventDefault()
-          setInteractionMode("move")
+          setAppInteractionMode("move")
           return
         }
         if (event.key === "2") {
           event.preventDefault()
-          setInteractionMode("edit")
+          setAppInteractionMode("edit")
           return
         }
+      }
+      if (isMod && event.key === "Enter" && !isEditableTarget(event.target)) {
+        event.preventDefault()
+        const nodeId = event.shiftKey ? addLinkedBlockFromSelected() : addBlockNextToSelected()
+        requestInlineBlockEdit(nodeId, "title")
+        return
       }
       if (isMod && event.key.toLowerCase() === "s") {
         event.preventDefault()
@@ -131,7 +171,18 @@ export function App() {
         pasteBlock()
         return
       }
+      if (event.key === "Enter" && selectedNodeId && !isEditableTarget(event.target)) {
+        event.preventDefault()
+        requestInlineBlockEdit(selectedNodeId, "content")
+        return
+      }
       if (event.key === "Escape") {
+        if (inlineEditTarget) {
+          event.preventDefault()
+          setInlineEditTarget(undefined)
+          if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+          return
+        }
         setSelectedNode(undefined)
         setSelectedEdge(undefined)
         return
@@ -143,7 +194,21 @@ export function App() {
     }
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
-  }, [copySelectedBlock, deleteSelected, duplicateSelectedBlock, exportJson, pasteBlock, saveNow, setSelectedEdge, setSelectedNode])
+  }, [
+    addBlockNextToSelected,
+    addLinkedBlockFromSelected,
+    copySelectedBlock,
+    deleteSelected,
+    duplicateSelectedBlock,
+    exportJson,
+    inlineEditTarget,
+    pasteBlock,
+    saveNow,
+    selectedNodeId,
+    setAppInteractionMode,
+    setSelectedEdge,
+    setSelectedNode,
+  ])
 
   const toggleTheme = useCallback(() => setTheme((current) => (current === "dark" ? "light" : "dark")), [setTheme])
   const fitView = useMemo(() => () => fitViewRef.current(), [])
@@ -189,12 +254,17 @@ export function App() {
         <Toolbar
           theme={theme}
           interactionMode={interactionMode}
-          onInteractionModeChange={setInteractionMode}
+          onInteractionModeChange={setAppInteractionMode}
           onToggleTheme={toggleTheme}
           onFitView={fitView}
         />
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          <Canvas onFitViewReady={setFitView} interactionMode={interactionMode} />
+          <Canvas
+            onFitViewReady={setFitView}
+            interactionMode={interactionMode}
+            inlineEditTarget={inlineEditTarget}
+            onInlineEditTargetChange={setInlineEditTarget}
+          />
           <aside
             className={`inspector-shell ${isSidebarCollapsed ? "inspector-shell-collapsed" : "inspector-shell-expanded"}`}
             style={{ width: isSidebarCollapsed ? collapsedSidebarWidth : sidebarWidth }}

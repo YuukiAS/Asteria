@@ -2,6 +2,7 @@ import { Download, Group, Moon, MousePointer2, PencilLine, Plus, Rows3, Save, Sc
 import { useRef, useState } from "react"
 import { displayModeOptions, maxModelVersions } from "../constants/versioning"
 import { createExportFilename, exportMapFile, normalizeExportedMap, normalizeMapTitle, readJsonFile } from "../lib/exportImport"
+import { requestInlineBlockEdit, requestInlineEditorFocus } from "../lib/inlineEditEvents"
 import { useMapStore } from "../store/useMapStore"
 import type { DisplayModeOverride } from "../types/map"
 import { EquationDialog } from "./EquationDialog"
@@ -31,7 +32,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
     selectedNodeId,
     selectedNodeIds,
     saveStatus,
-    addBlock,
+    addBlockAndSelect,
     groupSelectedBlocks,
     updateMapTitle,
     setActiveVersion,
@@ -82,8 +83,14 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
     setIsEquationDialogOpen(false)
     appendBlockMathToSelectedBlock(latex)
     if (selectedNodeId) {
-      window.setTimeout(() => window.dispatchEvent(new CustomEvent("asteria-focus-editor", { detail: { nodeId: selectedNodeId } })), 0)
+      requestInlineBlockEdit(selectedNodeId, "content")
+      requestInlineEditorFocus(selectedNodeId)
     }
+  }
+
+  const createBlock = () => {
+    const nodeId = addBlockAndSelect()
+    requestInlineBlockEdit(nodeId, "title")
   }
 
   const importJson = async (file?: File) => {
@@ -166,7 +173,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
             <span className="toolbar-label">Edit</span>
           </button>
         </div>
-        <button type="button" className="primary-button" onClick={() => addBlock()} title="New block">
+        <button type="button" className="primary-button" onClick={createBlock} title="New block">
           <Plus size={15} />
           <span className="toolbar-label">New block</span>
         </button>
