@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0 - Fixed Celestial Canvas Background
+
+- Added a fixed celestial atlas background layer behind the React Flow canvas.
+- Kept nodes, edges, controls, minimap, and the subtle dots background above the fixed viewport artwork.
+- Made the React Flow canvas transparent so the background image and readability overlay remain visible.
+- Added subdued dark-mode treatment and placed the background asset under `public/backgrounds/`.
+
 ## 0.3.2 - Inline Editor Type Colors
 
 - Preserved block text color while inline editing content on the canvas.

@@ -8,6 +8,7 @@ dist/
 *.local
 
 asteria-*.png
+!public/backgrounds/asteria-celestial-map.png
 
 .DS_Store
 Thumbs.db

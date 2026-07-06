@@ -124,7 +124,9 @@ export function Canvas({ onFitViewReady, interactionMode, inlineEditTarget, onIn
   }
 
   return (
-    <main className="min-h-0 min-w-0 flex-1 bg-canvas" onDoubleClick={onCanvasDoubleClick}>
+    <main className="asteria-canvas-shell min-h-0 min-w-0 flex-1" onDoubleClick={onCanvasDoubleClick}>
+      <div className="asteria-celestial-background" aria-hidden="true" />
+      <div className="asteria-canvas-readability-overlay" aria-hidden="true" />
       <InteractionModeContext.Provider value={{ interactionMode, inlineEditTarget, selectedNodeIds, onInlineEditTargetChange }}>
         <ReactFlow
           nodes={presentedNodes}
@@ -172,11 +174,11 @@ export function Canvas({ onFitViewReady, interactionMode, inlineEditTarget, onIn
           multiSelectionKeyCode="Shift"
           nodesConnectable
           elementsSelectable
-          className={interactionMode === "edit" ? "asteria-flow-edit" : "asteria-flow-move"}
+          className={`${interactionMode === "edit" ? "asteria-flow-edit" : "asteria-flow-move"} asteria-flow-canvas`}
           deleteKeyCode={null}
           proOptions={{ hideAttribution: true }}
         >
-          <Background variant={BackgroundVariant.Dots} gap={22} size={1.2} color="var(--canvas-grid)" />
+          <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="var(--canvas-grid)" />
           <Controls position="bottom-left" />
           <MiniMap
             position="bottom-right"
