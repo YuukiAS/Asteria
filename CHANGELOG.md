@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.5 - Opaque Block Backgrounds
+
+- Made block header and content regions explicitly use the block background color.
+- Isolated block painting so the celestial canvas background does not visually affect node fills.
+
 ## 0.4.4 - Preserve Blank Lines in Preview
 
 - Preserved manually inserted blank paragraphs when leaving inline block editing.

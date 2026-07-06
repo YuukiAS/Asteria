@@ -94,6 +94,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
         style={{
         width: visualWidth,
         height: visualHeight,
+        "--asteria-block-background": data.backgroundColor,
         "--asteria-node-height": `${visualHeight}px`,
         "--asteria-rich-accent-color": richTextAccentColor,
         backgroundColor: data.backgroundColor,
@@ -158,7 +159,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
           className="!h-2.5 !w-2.5 !border-2 !border-white !bg-accent !opacity-0"
         />
       ))}
-      <div className="flex h-9 items-center gap-2 border-b px-3" style={{ borderColor: data.borderColor }}>
+      <div className="asteria-block-header flex h-9 items-center gap-2 border-b px-3" style={{ borderColor: data.borderColor }}>
         {isEditableSelection && isEditingEmoji ? (
           <input
             ref={emojiInputRef}
