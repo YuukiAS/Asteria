@@ -50,6 +50,8 @@
 - 如果 5173 已被占用但不可用，先报告状态；需要临时备用端口时使用 `npm run dev -- --host 127.0.0.1 --port 5174`。
 - 不要为启动服务器而重新安装依赖；只有依赖确实缺失且用户批准后才运行安装命令。
 - 后台启动时应隐藏窗口，并把日志写到 repo 内的临时日志文件，例如 `.codex/vite-dev.log`，避免多个 thread 反复尝试同一启动路径。
+- 如果用户要求服务器在对话结束后仍可访问，不要依赖沙箱内启动的后台进程；沙箱可能在命令结束后清理子进程。应请求批准后在沙箱外启动隐藏后台进程，并在启动后至少等待几秒再次访问 `http://127.0.0.1:5173/` 确认仍返回 HTTP 200。
+- Windows 上如果 `npm run dev` 的后台包装层无法稳定保活，可直接启动 Vite 的 Node 入口作为等价 fallback：`node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5173`，仍需写入 `.codex/vite-dev.log` 并用 `netstat -ano` 确认 5173 处于 `LISTENING`。
 <!-- asteria-local-rules:end -->
 
 <!-- AI_SKILLS_COLLECTION_START -->
