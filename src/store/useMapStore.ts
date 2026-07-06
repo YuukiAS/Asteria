@@ -8,16 +8,20 @@ import {
 } from "@xyflow/react"
 import { create } from "zustand"
 import { blockTypeDefaults } from "../constants/blockDefaults"
+import { allVersionsId, commonVariantKey, maxModelVersions, microStraightenTolerance, snapGridSize } from "../constants/versioning"
 import { createDemoMap } from "../lib/demo"
 import {
   applyEdgePresentation,
   createBlockNode,
+  createBlockVariant,
   createEdge,
   createGroupNode,
   defaultEdgeData,
   defaultMapTitle,
+  getVariantKey,
   normalizeMapTitle,
   normalizeExportedMap,
+  resolveBlockVariant,
 } from "../lib/exportImport"
 import { loadPersistedMap, savePersistedMap } from "../lib/db"
 import { contentJsonToHtml } from "../editor/editorUtils"
@@ -25,8 +29,12 @@ import { createId } from "../lib/ids"
 import { nowIso } from "../lib/time"
 import type {
   BlockData,
+  BlockDisplayMode,
   BlockNode,
+  BlockVariant,
+  DisplayModeOverride,
   EdgeArrow,
+  EdgeVisibility,
   EdgeLineStyle,
   EdgePathType,
   ExportedMap,
@@ -35,6 +43,7 @@ import type {
   MapEdgeData,
   MapNode,
   MapViewport,
+  ModelVersion,
   SaveStatus,
 } from "../types/map"
 
@@ -50,7 +59,7 @@ type EdgeStyleClipboard = {
 
 type BlockStyleClipboard = Pick<
   BlockData,
-  "backgroundColor" | "textColor" | "borderColor" | "width" | "height" | "nodeType" | "showStatus" | "status" | "emojis"
+  "backgroundColor" | "textColor" | "borderColor" | "width" | "height" | "displayMode" | "nodeType" | "showStatus" | "status" | "emojis"
 >
 
 type BlockClipboard = {
@@ -58,6 +67,9 @@ type BlockClipboard = {
   position: { x: number; y: number }
   pasteCount: number
 }
+
+type AlignCommand = "left" | "right" | "top" | "bottom" | "horizontal_center" | "vertical_center"
+type DistributeCommand = "horizontal" | "vertical"
 
 const edgeStyleClipboardKey = "asteria-edge-style-clipboard"
 const blockStyleClipboardKey = "asteria-block-style-clipboard"
@@ -88,6 +100,9 @@ function cloneJson<T>(value: T): T {
 
 type MapState = {
   mapTitle: string
+  modelVersions: ModelVersion[]
+  activeVersionId: "all" | string
+  displayModeOverride: DisplayModeOverride
   nodes: MapNode[]
   edges: MapEdge[]
   selectedNodeId?: string
@@ -104,9 +119,19 @@ type MapState = {
   blockClipboard?: BlockClipboard
   addBlock: (position?: { x: number; y: number }) => void
   groupSelectedBlocks: () => void
+  attachSelectedBlocksToFrame: () => void
+  detachSelectedBlocksFromFrame: () => void
   updateMapTitle: (title: string) => void
+  setActiveVersion: (versionId: "all" | string) => void
+  addModelVersion: () => void
+  updateModelVersion: (id: string, patch: Partial<Pick<ModelVersion, "label" | "shortLabel">>) => void
+  deleteModelVersion: (id: string) => void
+  moveModelVersion: (id: string, direction: -1 | 1) => void
+  setDisplayModeOverride: (mode: DisplayModeOverride) => void
   appendBlockMathToSelectedBlock: (latex: string) => void
   updateBlock: (id: string, patch: Partial<BlockData>) => void
+  copyBlockVariantToVersion: (id: string, versionId: string) => void
+  deleteBlockVariant: (id: string, variantKey: string) => void
   updateGroup: (id: string, patch: Partial<GroupNode["data"]>) => void
   duplicateBlock: (id: string) => void
   duplicateSelectedBlock: () => void
@@ -126,6 +151,11 @@ type MapState = {
   setSelectedNodes: (ids: string[]) => void
   setSelectedEdge: (id?: string) => void
   setViewport: (viewport: MapViewport) => void
+  alignSelectedBlocks: (command: AlignCommand) => void
+  distributeSelectedBlocks: (command: DistributeCommand) => void
+  snapSelectedBlocksToGrid: () => void
+  snapAllBlocksToGrid: () => void
+  straightenNearAxisEdges: () => void
   clearMap: () => void
   loadMap: (map: ExportedMap, markUnsaved?: boolean) => void
   onNodesChange: (changes: NodeChange<MapNode>[]) => void
@@ -135,8 +165,18 @@ type MapState = {
   markUnsaved: () => void
 }
 
-function mapFromState(state: Pick<MapState, "mapTitle" | "nodes" | "edges" | "viewport">): ExportedMap {
-  return { version: 1, title: normalizeMapTitle(state.mapTitle), nodes: state.nodes, edges: state.edges, viewport: state.viewport, updatedAt: nowIso() }
+function mapFromState(state: Pick<MapState, "mapTitle" | "modelVersions" | "activeVersionId" | "displayModeOverride" | "nodes" | "edges" | "viewport">): ExportedMap {
+  return {
+    version: 1,
+    title: normalizeMapTitle(state.mapTitle),
+    modelVersions: state.modelVersions,
+    activeVersionId: state.activeVersionId,
+    displayModeOverride: state.displayModeOverride,
+    nodes: state.nodes,
+    edges: state.edges,
+    viewport: state.viewport,
+    updatedAt: nowIso(),
+  }
 }
 
 function isBlockNode(node: MapNode): node is BlockNode {
@@ -150,11 +190,23 @@ function findBlockNode(nodes: MapNode[], id?: string): BlockNode | undefined {
 function applyContentHtml(nodes: MapNode[]): MapNode[] {
   return nodes.map((node) => {
     if (!isBlockNode(node)) return node
+    const variants = Object.fromEntries(
+      Object.entries(node.data.variants || {}).map(([key, variant]) => [
+        key,
+        variant
+          ? {
+              ...variant,
+              contentHtml: variant.contentHtml || contentJsonToHtml(variant.contentJson),
+            }
+          : variant,
+      ]),
+    )
     return {
       ...node,
       data: {
         ...node.data,
         contentHtml: node.data.contentHtml || contentJsonToHtml(node.data.contentJson),
+        variants,
       },
     }
   })
@@ -176,6 +228,42 @@ function absolutePosition(node: MapNode, nodes: MapNode[]): XYPosition {
   return { x: parentPosition.x + node.position.x, y: parentPosition.y + node.position.y }
 }
 
+function relativePositionFromAbsolute(node: MapNode, nodes: MapNode[], absolute: XYPosition): XYPosition {
+  if (!node.parentId) return absolute
+  const parent = nodes.find((item) => item.id === node.parentId)
+  if (!parent) return absolute
+  const parentPosition = absolutePosition(parent, nodes)
+  return { x: absolute.x - parentPosition.x, y: absolute.y - parentPosition.y }
+}
+
+function getBlockVariantKeyForState(state: Pick<MapState, "activeVersionId">, data: BlockData) {
+  return getVariantKey(state.activeVersionId, state.activeVersionId === allVersionsId ? data.activeVariantKey : undefined)
+}
+
+function patchBlockVariant(data: BlockData, key: string, patch: Partial<Pick<BlockData, "title" | "contentJson" | "contentHtml">>) {
+  const current = data.variants?.[key] || data.variants?.[commonVariantKey] || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt)
+  const next: BlockVariant = {
+    ...current,
+    title: patch.title ?? current.title,
+    contentJson: patch.contentJson ?? current.contentJson,
+    contentHtml: patch.contentHtml ?? (patch.contentJson ? contentJsonToHtml(patch.contentJson) : current.contentHtml),
+    updatedAt: nowIso(),
+  }
+  return {
+    ...data.variants,
+    [key]: next,
+    [commonVariantKey]: data.variants?.[commonVariantKey] || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt),
+  }
+}
+
+function selectedBlockNodes(state: MapState) {
+  return state.nodes.filter((node): node is BlockNode => state.selectedNodeIds.includes(node.id) && isBlockNode(node))
+}
+
+function roundToGrid(value: number) {
+  return Math.round(value / snapGridSize) * snapGridSize
+}
+
 function blockStyleFromData(data: BlockData): BlockStyleClipboard {
   return {
     backgroundColor: data.backgroundColor,
@@ -183,6 +271,7 @@ function blockStyleFromData(data: BlockData): BlockStyleClipboard {
     borderColor: data.borderColor,
     width: data.width,
     height: data.height,
+    displayMode: data.displayMode,
     nodeType: data.nodeType,
     showStatus: data.showStatus,
     status: data.status,
@@ -213,6 +302,9 @@ function blockTypePatch(patch: Partial<BlockData>) {
 
 export const useMapStore = create<MapState>((set, get) => ({
   mapTitle: defaultMapTitle,
+  modelVersions: [],
+  activeVersionId: allVersionsId,
+  displayModeOverride: "block",
   nodes: [],
   edges: [],
   selectedNodeIds: [],
@@ -240,6 +332,9 @@ export const useMapStore = create<MapState>((set, get) => ({
         const map = normalizeExportedMap(persisted.map)
         set({
           mapTitle: normalizeMapTitle(map.title),
+          modelVersions: map.modelVersions || [],
+          activeVersionId: map.activeVersionId || allVersionsId,
+          displayModeOverride: map.displayModeOverride || "block",
           nodes: applyContentHtml(map.nodes),
           edges: map.edges.map(applyEdgePresentation),
           viewport: map.viewport ?? { x: 0, y: 0, zoom: 1 },
@@ -253,6 +348,9 @@ export const useMapStore = create<MapState>((set, get) => ({
       const demo = createDemoMap()
       set({
         mapTitle: normalizeMapTitle(demo.title),
+        modelVersions: demo.modelVersions || [],
+        activeVersionId: demo.activeVersionId || allVersionsId,
+        displayModeOverride: demo.displayModeOverride || "block",
         nodes: applyContentHtml(demo.nodes),
         edges: demo.edges.map(applyEdgePresentation),
         viewport: demo.viewport ?? { x: 0, y: 0, zoom: 1 },
@@ -335,11 +433,139 @@ export const useMapStore = create<MapState>((set, get) => ({
     get().markUnsaved()
   },
 
+  attachSelectedBlocksToFrame: () => {
+    const state = get()
+    const selectedFrame = state.nodes.find((node): node is GroupNode => state.selectedNodeIds.includes(node.id) && node.type === "group")
+    if (!selectedFrame || selectedFrame.data.locked) return
+    const blocks = state.nodes.filter((node): node is BlockNode => state.selectedNodeIds.includes(node.id) && isBlockNode(node) && node.parentId !== selectedFrame.id)
+    if (!blocks.length) return
+    set({
+      nodes: state.nodes.map((node) => {
+        if (!blocks.some((block) => block.id === node.id) || !isBlockNode(node)) return node
+        const position = absolutePosition(node, state.nodes)
+        return {
+          ...node,
+          parentId: selectedFrame.id,
+          extent: "parent" as const,
+          position: { x: position.x - selectedFrame.position.x, y: position.y - selectedFrame.position.y },
+          selected: false,
+        }
+      }),
+      selectedNodeId: selectedFrame.id,
+      selectedNodeIds: [selectedFrame.id],
+    })
+    get().markUnsaved()
+  },
+
+  detachSelectedBlocksFromFrame: () => {
+    const state = get()
+    const blocks = selectedBlockNodes(state).filter((node) => node.parentId)
+    if (!blocks.length) return
+    set({
+      nodes: state.nodes.map((node) => {
+        if (!blocks.some((block) => block.id === node.id) || !isBlockNode(node)) return node
+        const position = absolutePosition(node, state.nodes)
+        return {
+          ...node,
+          parentId: undefined,
+          extent: undefined,
+          position,
+        }
+      }),
+    })
+    get().markUnsaved()
+  },
+
+  setActiveVersion: (versionId) => {
+    const state = get()
+    const activeVersionId =
+      versionId === allVersionsId || state.modelVersions.some((version) => version.id === versionId) ? versionId : allVersionsId
+    set({ activeVersionId, selectedEdgeId: undefined })
+    get().markUnsaved()
+  },
+
+  addModelVersion: () => {
+    const state = get()
+    if (state.modelVersions.length >= maxModelVersions) return
+    const at = nowIso()
+    const version: ModelVersion = {
+      id: createId("version"),
+      label: `Version ${state.modelVersions.length + 1}`,
+      shortLabel: `V${state.modelVersions.length + 1}`,
+      createdAt: at,
+      updatedAt: at,
+    }
+    set({ modelVersions: [...state.modelVersions, version], activeVersionId: version.id })
+    get().markUnsaved()
+  },
+
+  updateModelVersion: (id, patch) => {
+    set((state) => ({
+      modelVersions: state.modelVersions.map((version) =>
+        version.id === id
+          ? {
+              ...version,
+              label: patch.label !== undefined ? patch.label : version.label,
+              shortLabel: patch.shortLabel !== undefined ? patch.shortLabel : version.shortLabel,
+              updatedAt: nowIso(),
+            }
+          : version,
+      ),
+    }))
+    get().markUnsaved()
+  },
+
+  deleteModelVersion: (id) => {
+    set((state) => ({
+      modelVersions: state.modelVersions.filter((version) => version.id !== id),
+      activeVersionId: state.activeVersionId === id ? allVersionsId : state.activeVersionId,
+      nodes: state.nodes.map((node) => {
+        if (!isBlockNode(node)) return node
+        const variants = { ...(node.data.variants || {}) }
+        delete variants[id]
+        return { ...node, data: { ...node.data, variants, activeVariantKey: node.data.activeVariantKey === id ? commonVariantKey : node.data.activeVariantKey } }
+      }),
+      edges: state.edges.map((edge) => {
+        const visibility = edge.data?.visibility
+        if (!Array.isArray(visibility)) return edge
+        return applyEdgePresentation({
+          ...edge,
+          data: {
+            ...defaultEdgeData,
+            ...edge.data,
+            createdAt: edge.data?.createdAt || nowIso(),
+            visibility: visibility.filter((versionId) => versionId !== id),
+            updatedAt: nowIso(),
+          },
+        })
+      }),
+    }))
+    get().markUnsaved()
+  },
+
+  moveModelVersion: (id, direction) => {
+    set((state) => {
+      const index = state.modelVersions.findIndex((version) => version.id === id)
+      const nextIndex = index + direction
+      if (index < 0 || nextIndex < 0 || nextIndex >= state.modelVersions.length) return {}
+      const modelVersions = [...state.modelVersions]
+      const [version] = modelVersions.splice(index, 1)
+      modelVersions.splice(nextIndex, 0, version)
+      return { modelVersions }
+    })
+    get().markUnsaved()
+  },
+
+  setDisplayModeOverride: (mode) => {
+    set({ displayModeOverride: mode })
+    get().markUnsaved()
+  },
+
   appendBlockMathToSelectedBlock: (latex) => {
     const selectedNodeId = get().selectedNodeId
     const node = findBlockNode(get().nodes, selectedNodeId)
     if (!selectedNodeId || !node) return
-    const contentJson = cloneJson(node.data.contentJson)
+    const contentJson = cloneJson(resolveBlockVariant(node.data, get().activeVersionId).contentJson)
     const content = Array.isArray(contentJson.content) ? contentJson.content : []
     get().updateBlock(selectedNodeId, {
       contentJson: {
@@ -452,23 +678,93 @@ export const useMapStore = create<MapState>((set, get) => ({
   },
 
   updateBlock: (id, patch) => {
-    const resolvedPatch = blockTypePatch(patch)
+    const sharedPatch = { ...patch }
+    const variantPatch: Partial<Pick<BlockData, "title" | "contentJson" | "contentHtml">> = {}
+    if ("title" in sharedPatch) {
+      variantPatch.title = sharedPatch.title
+      delete sharedPatch.title
+    }
+    if ("contentJson" in sharedPatch) {
+      variantPatch.contentJson = sharedPatch.contentJson
+      delete sharedPatch.contentJson
+    }
+    if ("contentHtml" in sharedPatch) {
+      variantPatch.contentHtml = sharedPatch.contentHtml
+      delete sharedPatch.contentHtml
+    }
+    const resolvedPatch = blockTypePatch(sharedPatch)
     set((state) => ({
-      nodes: state.nodes.map((node) =>
+      nodes: state.nodes.map((node) => {
+        if (node.id !== id || !isBlockNode(node)) return node
+        const variantKey = getBlockVariantKeyForState(state, node.data)
+        const variants = Object.keys(variantPatch).length ? patchBlockVariant(node.data, variantKey, variantPatch) : node.data.variants
+        const resolvedVariant = variants?.[variantKey] || variants?.[commonVariantKey] || resolveBlockVariant(node.data, state.activeVersionId)
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            ...resolvedPatch,
+            variants,
+            activeVariantKey: state.activeVersionId === allVersionsId ? variantKey : node.data.activeVariantKey,
+            title: resolvedVariant.title,
+            contentJson: resolvedVariant.contentJson,
+            contentHtml: resolvedVariant.contentHtml || contentJsonToHtml(resolvedVariant.contentJson),
+            updatedAt: nowIso(),
+          },
+        }
+      }),
+    }))
+    get().markUnsaved()
+  },
+
+  copyBlockVariantToVersion: (id, versionId) => {
+    const state = get()
+    if (!state.modelVersions.some((version) => version.id === versionId)) return
+    const source = findBlockNode(state.nodes, id)
+    if (!source) return
+    const current = resolveBlockVariant(source.data, state.activeVersionId)
+    set((nextState) => ({
+      nodes: nextState.nodes.map((node) =>
         node.id === id && isBlockNode(node)
           ? {
               ...node,
               data: {
                 ...node.data,
-                ...resolvedPatch,
+                variants: {
+                  ...node.data.variants,
+                  [versionId]: { ...current, updatedAt: nowIso() },
+                },
+                activeVariantKey: versionId,
                 updatedAt: nowIso(),
-                contentHtml: resolvedPatch.contentJson
-                  ? contentJsonToHtml(resolvedPatch.contentJson)
-                  : resolvedPatch.contentHtml ?? node.data.contentHtml,
               },
             }
           : node,
       ),
+    }))
+    get().markUnsaved()
+  },
+
+  deleteBlockVariant: (id, variantKey) => {
+    if (variantKey === commonVariantKey) return
+    set((state) => ({
+      nodes: state.nodes.map((node) => {
+        if (node.id !== id || !isBlockNode(node)) return node
+        const variants = { ...(node.data.variants || {}) }
+        delete variants[variantKey]
+        const common = variants[commonVariantKey] || createBlockVariant(node.data.title, node.data.contentJson, node.data.contentHtml, node.data.updatedAt)
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            variants,
+            activeVariantKey: node.data.activeVariantKey === variantKey ? commonVariantKey : node.data.activeVariantKey,
+            title: common.title,
+            contentJson: common.contentJson,
+            contentHtml: common.contentHtml,
+            updatedAt: nowIso(),
+          },
+        }
+      }),
     }))
     get().markUnsaved()
   },
@@ -577,14 +873,161 @@ export const useMapStore = create<MapState>((set, get) => ({
     get().markUnsaved()
   },
 
+  alignSelectedBlocks: (command) => {
+    const state = get()
+    const blocks = selectedBlockNodes(state)
+    if (blocks.length < 2) return
+    const measurements = blocks.map((node) => ({ node, position: absolutePosition(node, state.nodes), size: getNodeSize(node) }))
+    const minX = Math.min(...measurements.map((item) => item.position.x))
+    const maxX = Math.max(...measurements.map((item) => item.position.x + item.size.width))
+    const minY = Math.min(...measurements.map((item) => item.position.y))
+    const maxY = Math.max(...measurements.map((item) => item.position.y + item.size.height))
+    const centerX = (minX + maxX) / 2
+    const centerY = (minY + maxY) / 2
+    set({
+      nodes: state.nodes.map((node) => {
+        const item = measurements.find((entry) => entry.node.id === node.id)
+        if (!item) return node
+        const next = { ...item.position }
+        if (command === "left") next.x = minX
+        if (command === "right") next.x = maxX - item.size.width
+        if (command === "top") next.y = minY
+        if (command === "bottom") next.y = maxY - item.size.height
+        if (command === "horizontal_center") next.x = centerX - item.size.width / 2
+        if (command === "vertical_center") next.y = centerY - item.size.height / 2
+        return { ...node, position: relativePositionFromAbsolute(node, state.nodes, next) }
+      }),
+    })
+    get().markUnsaved()
+  },
+
+  distributeSelectedBlocks: (command) => {
+    const state = get()
+    const blocks = selectedBlockNodes(state)
+    if (blocks.length < 3) return
+    const measurements = blocks
+      .map((node) => ({ node, position: absolutePosition(node, state.nodes), size: getNodeSize(node) }))
+      .sort((a, b) => (command === "horizontal" ? a.position.x - b.position.x : a.position.y - b.position.y))
+    const first = measurements[0]
+    const last = measurements[measurements.length - 1]
+    const start = command === "horizontal" ? first.position.x : first.position.y
+    const end = command === "horizontal" ? last.position.x : last.position.y
+    const step = (end - start) / (measurements.length - 1)
+    set({
+      nodes: state.nodes.map((node) => {
+        const index = measurements.findIndex((entry) => entry.node.id === node.id)
+        if (index < 0) return node
+        const item = measurements[index]
+        const next = { ...item.position }
+        if (command === "horizontal") next.x = start + step * index
+        else next.y = start + step * index
+        return { ...node, position: relativePositionFromAbsolute(node, state.nodes, next) }
+      }),
+    })
+    get().markUnsaved()
+  },
+
+  snapSelectedBlocksToGrid: () => {
+    const state = get()
+    const ids = new Set(selectedBlockNodes(state).map((node) => node.id))
+    if (!ids.size) return
+    set({
+      nodes: state.nodes.map((node) => {
+        if (!ids.has(node.id)) return node
+        const position = absolutePosition(node, state.nodes)
+        return { ...node, position: relativePositionFromAbsolute(node, state.nodes, { x: roundToGrid(position.x), y: roundToGrid(position.y) }) }
+      }),
+    })
+    get().markUnsaved()
+  },
+
+  snapAllBlocksToGrid: () => {
+    const state = get()
+    set({
+      nodes: state.nodes.map((node) => {
+        if (!isBlockNode(node)) return node
+        const position = absolutePosition(node, state.nodes)
+        return { ...node, position: relativePositionFromAbsolute(node, state.nodes, { x: roundToGrid(position.x), y: roundToGrid(position.y) }) }
+      }),
+    })
+    get().markUnsaved()
+  },
+
+  straightenNearAxisEdges: () => {
+    const state = get()
+    const selectedNodeIds = new Set(state.selectedNodeIds)
+    const selectedEdgeId = state.selectedEdgeId
+    const adjustments = new Map<string, XYPosition[]>()
+    const blocksById = new Map(state.nodes.filter(isBlockNode).map((node) => [node.id, node]))
+    const scopedEdges = state.edges.filter((edge) => {
+      if (selectedEdgeId) return edge.id === selectedEdgeId
+      if (selectedNodeIds.size) return selectedNodeIds.has(edge.source) || selectedNodeIds.has(edge.target)
+      return true
+    })
+    scopedEdges.forEach((edge) => {
+      const source = blocksById.get(edge.source)
+      const target = blocksById.get(edge.target)
+      if (!source || !target) return
+      const sourcePos = absolutePosition(source, state.nodes)
+      const targetPos = absolutePosition(target, state.nodes)
+      const sourceSize = getNodeSize(source)
+      const targetSize = getNodeSize(target)
+      const sourceCenter = { x: sourcePos.x + sourceSize.width / 2, y: sourcePos.y + sourceSize.height / 2 }
+      const targetCenter = { x: targetPos.x + targetSize.width / 2, y: targetPos.y + targetSize.height / 2 }
+      const dx = sourceCenter.x - targetCenter.x
+      const dy = sourceCenter.y - targetCenter.y
+      const moveTarget = selectedNodeIds.size ? selectedNodeIds.has(target.id) : true
+      const candidate = moveTarget ? target : source
+      const candidatePos = moveTarget ? targetPos : sourcePos
+      const list = adjustments.get(candidate.id) || []
+      if (Math.abs(dx) <= microStraightenTolerance && Math.abs(dy) > microStraightenTolerance) {
+        list.push({ x: candidatePos.x + (moveTarget ? dx : -dx), y: candidatePos.y })
+      } else if (Math.abs(dy) <= microStraightenTolerance && Math.abs(dx) > microStraightenTolerance) {
+        list.push({ x: candidatePos.x, y: candidatePos.y + (moveTarget ? dy : -dy) })
+      }
+      if (list.length) adjustments.set(candidate.id, list)
+    })
+    if (!adjustments.size) return
+    set({
+      nodes: state.nodes.map((node) => {
+        const nodeAdjustments = adjustments.get(node.id)
+        if (!nodeAdjustments?.length) return node
+        const base = absolutePosition(node, state.nodes)
+        const small = nodeAdjustments.filter(
+          (next) => Math.abs(next.x - base.x) <= microStraightenTolerance && Math.abs(next.y - base.y) <= microStraightenTolerance,
+        )
+        if (!small.length) {
+          console.warn(`Skipped conflicting micro-straighten adjustment for ${node.id}.`)
+          return node
+        }
+        small.sort((a, b) => Math.abs(a.x - base.x) + Math.abs(a.y - base.y) - (Math.abs(b.x - base.x) + Math.abs(b.y - base.y)))
+        return { ...node, position: relativePositionFromAbsolute(node, state.nodes, small[0]) }
+      }),
+    })
+    get().markUnsaved()
+  },
+
   clearMap: () => {
-    set({ nodes: [], edges: [], selectedNodeId: undefined, selectedNodeIds: [], selectedEdgeId: undefined, seededDemo: true })
+    set({
+      modelVersions: [],
+      activeVersionId: allVersionsId,
+      displayModeOverride: "block",
+      nodes: [],
+      edges: [],
+      selectedNodeId: undefined,
+      selectedNodeIds: [],
+      selectedEdgeId: undefined,
+      seededDemo: true,
+    })
     get().markUnsaved()
   },
 
   loadMap: (map, markUnsaved = true) => {
     set({
       mapTitle: normalizeMapTitle(map.title),
+      modelVersions: map.modelVersions || [],
+      activeVersionId: map.activeVersionId || allVersionsId,
+      displayModeOverride: map.displayModeOverride || "block",
       nodes: applyContentHtml(map.nodes),
       edges: map.edges.map(applyEdgePresentation),
       viewport: map.viewport ?? { x: 0, y: 0, zoom: 1 },

@@ -1,6 +1,8 @@
 import { Handle, NodeResizer, Position, type NodeProps } from "@xyflow/react"
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { blockStatusByValue, blockTypeByValue, blockTypeOptions } from "../constants/blockTypes"
+import { allVersionsId, commonVariantKey } from "../constants/versioning"
+import { resolveBlockContentHtml, resolveBlockContentJson, resolveBlockTitle, resolveBlockVariant } from "../lib/exportImport"
 import { titleToHtml } from "../lib/titleMath"
 import type { BlockNode as BlockNodeType } from "../types/map"
 import { useMapStore } from "../store/useMapStore"
@@ -13,6 +15,9 @@ type BlockNodeProps = NodeProps<BlockNodeType> & {
 
 export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProps) {
   const updateBlock = useMapStore((state) => state.updateBlock)
+  const activeVersionId = useMapStore((state) => state.activeVersionId)
+  const modelVersions = useMapStore((state) => state.modelVersions)
+  const displayModeOverride = useMapStore((state) => state.displayModeOverride)
   const isInlineEditing = selected && interactionMode === "edit"
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [isEditingEmoji, setIsEditingEmoji] = useState(false)
@@ -25,7 +30,20 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
   const blockType = blockTypeByValue[data.nodeType] || blockTypeByValue.generic
   const blockStatus = data.status ? blockStatusByValue[data.status] : blockStatusByValue.undo
   const emoji = (data.emojis || []).filter(Boolean)[0] || ""
-  const titleHtml = useMemo(() => titleToHtml(data.title), [data.title])
+  const title = resolveBlockTitle(data, activeVersionId)
+  const contentJson = resolveBlockContentJson(data, activeVersionId)
+  const contentHtml = resolveBlockContentHtml(data, activeVersionId)
+  const displayMode = displayModeOverride === "block" ? data.displayMode || "full" : displayModeOverride
+  const activeVariant = resolveBlockVariant(data, activeVersionId)
+  const activeVersion = modelVersions.find((version) => version.id === activeVersionId)
+  const variantKeys = Object.keys(data.variants || {}).filter((key) => key !== commonVariantKey)
+  const variantBadge =
+    activeVersionId === allVersionsId
+      ? activeVariant.title === data.variants?.[commonVariantKey]?.title
+        ? "COMMON"
+        : "VARIANT"
+      : activeVersion?.shortLabel || activeVersion?.label || "VERSION"
+  const titleHtml = useMemo(() => titleToHtml(title), [title])
 
   useEffect(() => {
     if (!isInlineEditing) {
@@ -155,7 +173,7 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
           <input
             ref={titleInputRef}
             className="block-title-input nodrag nopan"
-            value={data.title}
+            value={title}
             onChange={(event) => updateBlock(id, { title: event.target.value })}
             onBlur={() => setIsEditingTitle(false)}
             onKeyDown={(event) => {
@@ -168,14 +186,18 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
           <button
             type="button"
             className="block-title-display nodrag nopan"
-            title={data.title}
+            title={title}
             onClick={() => setIsEditingTitle(true)}
             dangerouslySetInnerHTML={{ __html: titleHtml }}
           />
         ) : (
-          <div className="block-title-display" title={data.title} dangerouslySetInnerHTML={{ __html: titleHtml }} />
+          <div className="block-title-display" title={title} dangerouslySetInnerHTML={{ __html: titleHtml }} />
         )}
         <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1">
+          <span className="version-badge" title="Active block variant">
+            {variantBadge}
+          </span>
+          {variantKeys.length > 0 && <span className="variant-dot-row" title={`${variantKeys.length} version variants`}>{variantKeys.map((key) => <span key={key} />)}</span>}
           {data.showStatus && <span className={`status-marker ${blockStatus.className}`}>{blockStatus.label}</span>}
           {isInlineEditing ? (
             <select
@@ -197,19 +219,19 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
         </div>
       </div>
       <div
-        className={`asteria-block-preview h-[calc(100%-36px)] overflow-auto px-3 py-2 text-[13px] leading-[1.45] ${previewInteractionClass}`}
+        className={`asteria-block-preview asteria-block-preview-${displayMode} h-[calc(100%-36px)] overflow-auto px-3 py-2 text-[13px] leading-[1.45] ${previewInteractionClass}`}
       >
-        {isInlineEditing ? (
+        {isInlineEditing && displayMode === "full" ? (
           <RichTextEditor
-            content={data.contentJson}
+            content={contentJson}
             onChange={(contentJson, contentHtml) => updateBlock(id, { contentJson, contentHtml })}
             showToolbar={false}
             chrome={false}
             editorClassName="min-h-[calc(var(--asteria-node-height,220px)-60px)] cursor-text"
             focusTargetId={id}
           />
-        ) : (
-          <RichTextPreview html={data.contentHtml} color={data.textColor} />
+        ) : displayMode === "title_only" ? null : (
+          <RichTextPreview html={contentHtml} color={data.textColor} />
         )}
       </div>
     </div>

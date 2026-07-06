@@ -12,7 +12,9 @@ type EdgeInspectorProps = {
 }
 
 export function EdgeInspector({ edge, onChange, onDelete }: EdgeInspectorProps) {
-  const { copyEdgeStyle, pasteEdgeStyle, edgeStyleClipboard } = useMapStore()
+  const { copyEdgeStyle, pasteEdgeStyle, edgeStyleClipboard, modelVersions } = useMapStore()
+  const visibility = edge.data?.visibility || "all"
+  const visibleIds = Array.isArray(visibility) ? visibility : []
   const copyLabel = async () => {
     const label = edge.data?.label || ""
     if (!label) return
@@ -125,6 +127,36 @@ export function EdgeInspector({ edge, onChange, onDelete }: EdgeInspectorProps) 
       </section>
       <section className="panel-section">
         <div className="section-title">Connection</div>
+        <label className="field-label">
+          Version visibility
+          <select
+            className="field-input"
+            value={visibility === "all" ? "all" : "custom"}
+            onChange={(event) => onChange({ ...edge.data, visibility: event.target.value === "all" ? "all" : [] })}
+          >
+            <option value="all">Visible in all versions</option>
+            <option value="custom">Only selected versions</option>
+          </select>
+        </label>
+        {visibility !== "all" && (
+          <div className="grid gap-2 rounded-lg border border-border bg-app/60 p-2">
+            {modelVersions.length === 0 && <div className="text-xs text-secondary">Add versions from the toolbar to scope this edge.</div>}
+            {modelVersions.map((version) => (
+              <label key={version.id} className="inline-flex items-center gap-2 text-xs font-medium text-secondary">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-border text-accent"
+                  checked={visibleIds.includes(version.id)}
+                  onChange={(event) => {
+                    const next = event.target.checked ? [...visibleIds, version.id] : visibleIds.filter((id) => id !== version.id)
+                    onChange({ ...edge.data, visibility: next })
+                  }}
+                />
+                {version.label}
+              </label>
+            ))}
+          </div>
+        )}
         <div className="grid gap-1 text-xs text-secondary">
           <div>Source: {edge.source}</div>
           <div>Target: {edge.target}</div>

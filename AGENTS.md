@@ -18,6 +18,7 @@
 - Codex 开始任务前应读取 `prompts/AGENT_RULES.md` 和指定的 `prompts/tasks/<id>_task.md`。
 - Codex 必须遵守 task frontmatter、允许动作、禁止动作和停止条件。
 - Codex 完成后必须写 `prompts/tasks/<id>_result.md`。
+- Codex 完成已授权任务并通过必要验证后，应自动创建本地 git commit；commit message 应包含对应版本号或任务 id。Codex 不应自动 push，push 由用户手动执行。
 - Codex 不应主动执行 `docs/notes/` 或 `docs/wiki/` 中的内容，除非任务单显式引用某篇 note 或 wiki 页面作为背景材料。
 - 如果任务需要联网、上传、删除数据、运行昂贵命令或修改高风险配置，但 task 没有授权，Codex 必须停止并在 result 中请求人工批准。
 

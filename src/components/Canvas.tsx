@@ -44,6 +44,7 @@ export function Canvas({ onFitViewReady, interactionMode }: CanvasProps) {
   const {
     nodes,
     edges,
+    activeVersionId,
     viewport,
     onNodesChange,
     onEdgesChange,
@@ -61,7 +62,7 @@ export function Canvas({ onFitViewReady, interactionMode }: CanvasProps) {
 
   const styledEdges = useMemo(
     () =>
-      edges.map((edge) => {
+      edges.filter((edge) => activeVersionId === "all" || edge.data?.visibility === "all" || !edge.data?.visibility || edge.data.visibility.includes(activeVersionId)).map((edge) => {
         const presented = applyEdgePresentation(edge)
         return {
           ...presented,
@@ -70,7 +71,15 @@ export function Canvas({ onFitViewReady, interactionMode }: CanvasProps) {
           labelStyle: { fill: "var(--edge-label-text)", fontSize: 11 },
         }
       }),
-    [edges],
+    [activeVersionId, edges],
+  )
+
+  const presentedNodes = useMemo(
+    () =>
+      nodes.map((node) =>
+        node.type === "group" && node.data.locked ? { ...node, draggable: false } : node,
+      ),
+    [interactionMode, nodes],
   )
 
   const onNodeDoubleClick: NodeMouseHandler<MapNode> = (_event, node) => {
@@ -103,7 +112,7 @@ export function Canvas({ onFitViewReady, interactionMode }: CanvasProps) {
     <main className="min-h-0 min-w-0 flex-1 bg-canvas" onDoubleClick={onCanvasDoubleClick}>
       <InteractionModeContext.Provider value={interactionMode}>
         <ReactFlow
-          nodes={nodes}
+          nodes={presentedNodes}
           edges={styledEdges}
           nodeTypes={nodeTypes}
           fitView

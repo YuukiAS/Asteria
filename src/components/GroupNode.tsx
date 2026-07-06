@@ -11,13 +11,14 @@ export function GroupNode({ id, data, selected, interactionMode }: GroupNodeProp
   const updateGroup = useMapStore((state) => state.updateGroup)
   const style = {
     backgroundColor: data.backgroundColor,
+    opacity: data.opacity ?? 0.22,
     borderColor: selected ? "#2563eb" : data.borderColor,
   } as CSSProperties
 
   return (
     <div className={`asteria-group-node ${selected ? "asteria-group-node-selected" : ""}`} style={style}>
       <NodeResizer
-        isVisible={selected && interactionMode === "edit"}
+        isVisible={selected && interactionMode === "edit" && !data.locked}
         minWidth={260}
         minHeight={180}
         handleClassName="asteria-resize-handle"

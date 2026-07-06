@@ -58,6 +58,9 @@ export function App() {
     setSelectedEdge,
     saveNow,
     mapTitle,
+    modelVersions,
+    activeVersionId,
+    displayModeOverride,
     nodes,
     edges,
     viewport,
@@ -73,10 +76,20 @@ export function App() {
 
   const exportJson = useCallback(() => {
     exportMapFile(
-      { version: 1, title: normalizeMapTitle(mapTitle), nodes, edges, viewport, updatedAt: new Date().toISOString() },
+      {
+        version: 1,
+        title: normalizeMapTitle(mapTitle),
+        modelVersions,
+        activeVersionId,
+        displayModeOverride,
+        nodes,
+        edges,
+        viewport,
+        updatedAt: new Date().toISOString(),
+      },
       createExportFilename(mapTitle),
     )
-  }, [edges, mapTitle, nodes, viewport])
+  }, [activeVersionId, displayModeOverride, edges, mapTitle, modelVersions, nodes, viewport])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

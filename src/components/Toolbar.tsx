@@ -1,7 +1,9 @@
-import { Download, Group, Moon, MousePointer2, PencilLine, Plus, Save, Scan, Sigma, Sun, Trash2, Upload } from "lucide-react"
+import { Download, Group, Moon, MousePointer2, PencilLine, Plus, Rows3, Save, Scan, Settings2, Sigma, Sparkles, Sun, Trash2, Upload } from "lucide-react"
 import { useRef, useState } from "react"
+import { displayModeOptions, maxModelVersions } from "../constants/versioning"
 import { createExportFilename, exportMapFile, normalizeExportedMap, normalizeMapTitle, readJsonFile } from "../lib/exportImport"
 import { useMapStore } from "../store/useMapStore"
+import type { DisplayModeOverride } from "../types/map"
 import { EquationDialog } from "./EquationDialog"
 
 type ToolbarProps = {
@@ -17,8 +19,12 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
   const titleInputRef = useRef<HTMLInputElement>(null)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [isEquationDialogOpen, setIsEquationDialogOpen] = useState(false)
+  const [isVersionPanelOpen, setIsVersionPanelOpen] = useState(false)
   const {
     mapTitle,
+    modelVersions,
+    activeVersionId,
+    displayModeOverride,
     nodes,
     edges,
     viewport,
@@ -28,7 +34,14 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
     addBlock,
     groupSelectedBlocks,
     updateMapTitle,
+    setActiveVersion,
+    addModelVersion,
+    updateModelVersion,
+    deleteModelVersion,
+    moveModelVersion,
+    setDisplayModeOverride,
     appendBlockMathToSelectedBlock,
+    straightenNearAxisEdges,
     saveNow,
     clearMap,
     loadMap,
@@ -37,7 +50,17 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
 
   const exportJson = () => {
     exportMapFile(
-      { version: 1, title: normalizeMapTitle(mapTitle), nodes, edges, viewport, updatedAt: new Date().toISOString() },
+      {
+        version: 1,
+        title: normalizeMapTitle(mapTitle),
+        modelVersions,
+        activeVersionId,
+        displayModeOverride,
+        nodes,
+        edges,
+        viewport,
+        updatedAt: new Date().toISOString(),
+      },
       createExportFilename(mapTitle),
     )
   }
@@ -84,7 +107,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
   }
 
   return (
-    <header className="flex h-[52px] shrink-0 items-center gap-2 border-b border-border bg-toolbar/90 px-3 backdrop-blur">
+    <header className="relative flex h-[52px] shrink-0 items-center gap-2 border-b border-border bg-toolbar/90 px-3 backdrop-blur">
       <div className="flex min-w-0 items-center gap-3">
         <div className="flex items-center gap-2">
           <img src="/app-icon.png" alt="Asteria icon" className="h-7 w-7 rounded-lg object-cover" />
@@ -147,6 +170,49 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           <Plus size={15} />
           <span>New block</span>
         </button>
+        <div className="flex shrink-0 items-center gap-1 rounded-md border border-border bg-panel p-0.5">
+          <label className="sr-only" htmlFor="active-version">
+            Active version
+          </label>
+          <select
+            id="active-version"
+            className="h-7 max-w-[150px] rounded border-0 bg-panel px-1.5 text-xs font-medium text-secondary outline-none focus:text-foreground"
+            value={activeVersionId}
+            onChange={(event) => setActiveVersion(event.target.value)}
+            title="Active version"
+          >
+            <option value="all">All</option>
+            {modelVersions.map((version) => (
+              <option key={version.id} value={version.id}>
+                {version.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="segmented-button !px-1.5"
+            onClick={() => setIsVersionPanelOpen((open) => !open)}
+            aria-label="Manage versions"
+            title="Manage versions"
+          >
+            <Settings2 size={14} />
+          </button>
+        </div>
+        <label className="flex shrink-0 items-center gap-1 rounded-md border border-border bg-panel px-2 text-xs font-medium text-secondary" title="Display density">
+          <Rows3 size={14} />
+          <span className="sr-only">Display density</span>
+          <select
+            className="h-7 max-w-[132px] border-0 bg-panel text-xs outline-none"
+            value={displayModeOverride}
+            onChange={(event) => setDisplayModeOverride(event.target.value as DisplayModeOverride)}
+          >
+            {displayModeOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
         {interactionMode === "move" && selectedNodeIds.length > 1 && (
           <button type="button" className="toolbar-button" onClick={groupSelectedBlocks} title="Group selected blocks">
             <Group size={15} />
@@ -169,6 +235,10 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           <Scan size={15} />
           <span>Fit</span>
         </button>
+        <button type="button" className="toolbar-button" onClick={straightenNearAxisEdges} title="Clean up small near-straight edge offsets">
+          <Sparkles size={15} />
+          <span>Clean</span>
+        </button>
         <button type="button" className="toolbar-button" onClick={() => void saveNow()}>
           <Save size={15} />
           <span>Save</span>
@@ -189,6 +259,50 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
         </button>
       </div>
+      {isVersionPanelOpen && (
+        <div className="version-manager-panel">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-xs font-semibold text-foreground">Versions</div>
+              <div className="text-[11px] text-secondary">{modelVersions.length}/{maxModelVersions} user versions</div>
+            </div>
+            <button type="button" className="primary-button" disabled={modelVersions.length >= maxModelVersions} onClick={addModelVersion}>
+              <Plus size={14} />
+              Add
+            </button>
+          </div>
+          <div className="grid gap-2">
+            {modelVersions.length === 0 && <div className="rounded-md border border-border bg-app p-2 text-xs text-secondary">No user versions yet. Add one when you need version-specific content.</div>}
+            {modelVersions.map((version, index) => (
+              <div key={version.id} className="version-row">
+                <input
+                  className="field-input h-8"
+                  value={version.label}
+                  onChange={(event) => updateModelVersion(version.id, { label: event.target.value })}
+                  aria-label="Version label"
+                />
+                <input
+                  className="field-input h-8 w-20"
+                  value={version.shortLabel || ""}
+                  maxLength={12}
+                  placeholder="Short"
+                  onChange={(event) => updateModelVersion(version.id, { shortLabel: event.target.value })}
+                  aria-label="Version short label"
+                />
+                <button type="button" className="toolbar-button !px-2" disabled={index === 0} onClick={() => moveModelVersion(version.id, -1)} aria-label="Move version up">
+                  ↑
+                </button>
+                <button type="button" className="toolbar-button !px-2" disabled={index === modelVersions.length - 1} onClick={() => moveModelVersion(version.id, 1)} aria-label="Move version down">
+                  ↓
+                </button>
+                <button type="button" className="danger-button !px-2" onClick={() => deleteModelVersion(version.id)} aria-label="Delete version">
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <input ref={inputRef} type="file" accept="application/json" className="hidden" onChange={(event) => void importJson(event.target.files?.[0])} />
       <EquationDialog
         open={isEquationDialogOpen}

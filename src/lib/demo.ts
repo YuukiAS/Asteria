@@ -13,11 +13,14 @@ function block(id: string, title: string, x: number, y: number, contentJson: Blo
       title,
       contentJson,
       contentHtml: "",
+      variants: { common: { title, contentJson, contentHtml: "", updatedAt: at } },
+      activeVariantKey: "common",
       backgroundColor: "#ffffff",
       textColor: "#111827",
       borderColor: "#111827",
       width: 340,
       height: 220,
+      displayMode: "full",
       nodeType: "generic",
       showStatus: false,
       status: "undo",
@@ -30,27 +33,26 @@ function block(id: string, title: string, x: number, y: number, contentJson: Blo
 
 export function createDemoMap(): ExportedMap {
   const nodes: BlockNode[] = [
-    block("demo-open-tail", "Open-tail TRACE", 80, 80, {
+    block("demo-problem", "Problem statement", 80, 80, {
       type: "doc",
       content: [
-        { type: "paragraph", content: [{ type: "text", text: "Open-tail columns use TRACE-calibrated intercepts." }] },
+        { type: "paragraph", content: [{ type: "text", text: "Summarize the object, assumptions, and open decisions in one place." }] },
         {
           type: "paragraph",
           content: [
-            { type: "inlineMath", attrs: { latex: "\\alpha^U_{hg}\\mid\\gamma_g,p_{U,g}" } },
-            { type: "text", text: " controls baseline rarity." },
+            { type: "inlineMath", attrs: { latex: "\\theta \\mid y" } },
+            { type: "text", text: " marks the current working quantity." },
           ],
         },
         {
           type: "blockMath",
           attrs: {
-            latex:
-              "\\mu_{p_{U,g}}(\\gamma_g)\n=\n(1+\\tau^2_{p_{U,g}})^{1/2}\n\\Phi^{-1}\\left(\\frac{\\gamma_g}{\\gamma_g+p_{U,g}}\\right)",
+            latex: "p(\\theta \\mid y) \\propto p(y \\mid \\theta)p(\\theta)",
           },
         },
       ],
     }),
-    block("demo-catalogue", "Catalogue component", 520, 160, {
+    block("demo-evidence", "Evidence block", 520, 160, {
       type: "doc",
       content: [
         {
@@ -58,26 +60,25 @@ export function createDemoMap(): ExportedMap {
           content: [
             {
               type: "text",
-              text: "Finite catalogue species use identity-aware borrowing, not extreme-value calibration.",
+              text: "Collect notes, equations, references, or checks that support the current diagram.",
             },
           ],
         },
       ],
     }),
-    block("demo-copula", "Residual copula", 300, 460, {
+    block("demo-output", "Output summary", 300, 460, {
       type: "doc",
       content: [
         {
           type: "paragraph",
           content: [
-            { type: "text", text: "Residual factors enter the Gaussian copula, not the marginal mean." },
+            { type: "text", text: "Keep the intended result visible without forcing a fixed workflow." },
           ],
         },
         {
           type: "blockMath",
           attrs: {
-            latex:
-              "\\Omega_W=\\Lambda_W\\Lambda_W^\\top+I,\n\\qquad\n\\Sigma_W=\\operatorname{diag}(\\Omega_W)^{-1/2}\n\\Omega_W\n\\operatorname{diag}(\\Omega_W)^{-1/2}",
+            latex: "\\widehat{q} = \\operatorname*{arg\\,min}_{q \\in \\mathcal{Q}} \\mathcal{L}(q)",
           },
         },
       ],
@@ -86,24 +87,34 @@ export function createDemoMap(): ExportedMap {
   const edges: MapEdge[] = [
     {
       id: "demo-edge-1",
-      source: "demo-open-tail",
-      target: "demo-catalogue",
+      source: "demo-problem",
+      target: "demo-evidence",
       sourceHandle: "right",
       targetHandle: "left-target",
       type: "smoothstep",
-      data: { label: "contrasts", ...defaultEdgeData, createdAt: at, updatedAt: at },
+      data: { label: "informs", ...defaultEdgeData, createdAt: at, updatedAt: at },
       style: { stroke: defaultEdgeData.color, strokeWidth: defaultEdgeData.strokeWidth },
     },
     {
       id: "demo-edge-2",
-      source: "demo-catalogue",
-      target: "demo-copula",
+      source: "demo-evidence",
+      target: "demo-output",
       sourceHandle: "bottom",
       targetHandle: "top-target",
       type: "smoothstep",
-      data: { label: "feeds residual layer", ...defaultEdgeData, createdAt: at, updatedAt: at },
+      data: { label: "summarizes", ...defaultEdgeData, createdAt: at, updatedAt: at },
       style: { stroke: defaultEdgeData.color, strokeWidth: defaultEdgeData.strokeWidth },
     },
   ]
-  return { version: 1, title: "Local trace map", nodes, edges, viewport: { x: 0, y: 0, zoom: 1 }, updatedAt: at }
+  return {
+    version: 1,
+    title: "Local map",
+    modelVersions: [],
+    activeVersionId: "all",
+    displayModeOverride: "block",
+    nodes,
+    edges,
+    viewport: { x: 0, y: 0, zoom: 1 },
+    updatedAt: at,
+  }
 }

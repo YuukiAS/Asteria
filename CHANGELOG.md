@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.4 - User Versions, Frames, Density, Layout, and Edge Visibility
+
+- Added user-defined model versions with a maximum of five versions, global version switching, and block content variants with Common fallback.
+- Added version management, block variant controls, version indicators, and export/import persistence for versions and variants.
+- Expanded frames with opacity, lock state, attach/detach behavior, and persisted frame metadata.
+- Added per-block display density and toolbar-level display override.
+- Added block alignment, distribution, grid snapping, and a toolbar micro-straighten action between Fit and Save.
+- Added edge visibility controls for all versions or selected user versions.
+- Removed hard-coded domain/version assumptions from default map title, export fallback, and seeded demo content.
+
 ## 0.1.12 - 0.1.x Final Planning and App Icon
 
 - Added the Asteria compass artwork as a repo asset for the app icon.

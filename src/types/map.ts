@@ -16,6 +16,26 @@ export type BlockNodeType =
   | "todo"
 
 export type BlockStatus = "undo" | "doing" | "done"
+export type ActiveVersionId = "all" | string
+export type BlockVariantKey = "common" | string
+export type BlockDisplayMode = "full" | "compact" | "title_only"
+export type DisplayModeOverride = "block" | BlockDisplayMode
+export type EdgeVisibility = "all" | string[]
+
+export type ModelVersion = {
+  id: string
+  label: string
+  shortLabel?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type BlockVariant = {
+  title: string
+  contentJson: JSONContent
+  contentHtml?: string
+  updatedAt: string
+}
 
 export type EdgeLineStyle = "solid" | "dashed" | "dotted"
 export type EdgePathType = "smoothstep" | "bezier" | "straight" | "step"
@@ -25,11 +45,14 @@ export type BlockData = {
   title: string
   contentJson: JSONContent
   contentHtml?: string
+  variants?: Partial<Record<BlockVariantKey, BlockVariant>>
+  activeVariantKey?: BlockVariantKey
   backgroundColor: string
   textColor: string
   borderColor: string
   width: number
   height: number
+  displayMode?: BlockDisplayMode
   nodeType: BlockNodeType
   showStatus?: boolean
   status?: BlockStatus
@@ -42,6 +65,8 @@ export type GroupData = {
   title: string
   backgroundColor: string
   borderColor: string
+  opacity?: number
+  locked?: boolean
   createdAt: string
   updatedAt: string
 }
@@ -53,6 +78,7 @@ export type MapEdgeData = {
   pathType?: EdgePathType
   arrow?: EdgeArrow
   strokeWidth?: number
+  visibility?: EdgeVisibility
   createdAt: string
   updatedAt: string
 }
@@ -67,6 +93,9 @@ export type MapEdge = Edge<MapEdgeData>
 export type ExportedMap = {
   version: 1
   title?: string
+  modelVersions?: ModelVersion[]
+  activeVersionId?: ActiveVersionId
+  displayModeOverride?: DisplayModeOverride
   nodes: MapNode[]
   edges: MapEdge[]
   viewport?: MapViewport

@@ -187,6 +187,26 @@ body {
   .emoji-preset-button {
     @apply grid h-7 w-7 place-items-center rounded-md border border-border bg-panel text-sm transition hover:border-strongBorder hover:bg-app;
   }
+
+  .version-badge {
+    @apply inline-flex max-w-[64px] shrink-0 truncate rounded border border-border bg-app px-1.5 py-0.5 text-[9px] font-semibold uppercase leading-none text-secondary;
+  }
+
+  .variant-dot-row {
+    @apply inline-flex shrink-0 items-center gap-0.5;
+  }
+
+  .variant-dot-row span {
+    @apply h-1.5 w-1.5 rounded-full bg-accent/70;
+  }
+
+  .version-manager-panel {
+    @apply absolute right-3 top-[46px] z-50 grid w-[min(520px,calc(100vw-24px))] gap-3 rounded-xl border border-border bg-panel p-3 text-foreground shadow-xl;
+  }
+
+  .version-row {
+    @apply grid grid-cols-[minmax(0,1fr)_80px_auto_auto_auto] items-center gap-2;
+  }
 }
 
 .inspector-shell {
@@ -458,6 +478,21 @@ body {
   min-height: calc(var(--asteria-node-height, 220px) - 60px);
   cursor: text;
   user-select: text;
+}
+
+.asteria-block-preview-compact {
+  max-height: calc(100% - 36px);
+}
+
+.asteria-block-preview-compact .rich-preview {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+.asteria-block-preview-title_only {
+  display: none;
 }
 
 .asteria-flow-edit .asteria-block-preview .ProseMirror ::selection {
