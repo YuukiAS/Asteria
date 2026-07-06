@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1 - App Icon Favicon
+
+- Reused the Asteria toolbar icon as the browser favicon.
+- Replaced the empty favicon placeholder with `/app-icon.png`.
+
 ## 0.4.0 - Fixed Celestial Canvas Background
 
 - Added a fixed celestial atlas background layer behind the React Flow canvas.
