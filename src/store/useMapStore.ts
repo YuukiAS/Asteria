@@ -130,6 +130,8 @@ type MapState = {
   setDisplayModeOverride: (mode: DisplayModeOverride) => void
   appendBlockMathToSelectedBlock: (latex: string) => void
   updateBlock: (id: string, patch: Partial<BlockData>) => void
+  setBlockActiveVariant: (id: string, variantKey?: string) => void
+  updateBlockVariant: (id: string, variantKey: string, patch: Partial<Pick<BlockData, "title" | "contentJson" | "contentHtml">>) => void
   copyBlockVariantToVersion: (id: string, versionId: string) => void
   deleteBlockVariant: (id: string, variantKey: string) => void
   updateGroup: (id: string, patch: Partial<GroupNode["data"]>) => void
@@ -717,12 +719,62 @@ export const useMapStore = create<MapState>((set, get) => ({
     get().markUnsaved()
   },
 
+  setBlockActiveVariant: (id, variantKey) => {
+    const state = get()
+    const key = variantKey ? getVariantKey(allVersionsId, variantKey) : undefined
+    if (key && key !== commonVariantKey && !state.modelVersions.some((version) => version.id === key)) return
+    set((nextState) => ({
+      nodes: nextState.nodes.map((node) => {
+        if (node.id !== id || !isBlockNode(node)) return node
+        const variant = key ? resolveBlockVariant(node.data, key) : resolveBlockVariant(node.data, nextState.activeVersionId)
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            activeVariantKey: key,
+            title: variant.title,
+            contentJson: variant.contentJson,
+            contentHtml: variant.contentHtml || contentJsonToHtml(variant.contentJson),
+            updatedAt: nowIso(),
+          },
+        }
+      }),
+    }))
+    get().markUnsaved()
+  },
+
+  updateBlockVariant: (id, variantKey, patch) => {
+    const state = get()
+    const key = getVariantKey(allVersionsId, variantKey)
+    if (key !== commonVariantKey && !state.modelVersions.some((version) => version.id === key)) return
+    set((nextState) => ({
+      nodes: nextState.nodes.map((node) => {
+        if (node.id !== id || !isBlockNode(node)) return node
+        const variants = patchBlockVariant(node.data, key, patch)
+        const resolvedVariant = variants[key] || variants[commonVariantKey] || resolveBlockVariant(node.data, allVersionsId)
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            variants,
+            activeVariantKey: key,
+            title: resolvedVariant.title,
+            contentJson: resolvedVariant.contentJson,
+            contentHtml: resolvedVariant.contentHtml || contentJsonToHtml(resolvedVariant.contentJson),
+            updatedAt: nowIso(),
+          },
+        }
+      }),
+    }))
+    get().markUnsaved()
+  },
+
   copyBlockVariantToVersion: (id, versionId) => {
     const state = get()
     if (!state.modelVersions.some((version) => version.id === versionId)) return
     const source = findBlockNode(state.nodes, id)
     if (!source) return
-    const current = resolveBlockVariant(source.data, state.activeVersionId)
+    const current = resolveBlockVariant(source.data, source.data.activeVariantKey || state.activeVersionId)
     set((nextState) => ({
       nodes: nextState.nodes.map((node) =>
         node.id === id && isBlockNode(node)

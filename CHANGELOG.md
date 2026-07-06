@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.7 - Block Variant Editing
+
+- Added a selected-block `Content version` control in the inspector so users can edit Common or a specific user version without switching the global canvas version.
+- Added `Follow toolbar` versus block-specific content version behavior for selected blocks.
+- Changed block title and rich-text editing on both the canvas and inspector to write to the currently visible content version.
+- Renamed variant copy actions to `Use current` and made them copy the block's current visible content into the target version.
+- Clarified the canvas version badge and variant dots with tooltips that explain preview versus saved content versions.
+
 ## 0.2.6 - Density Control Placement
 
 - Renamed the toolbar density default from `Use block settings` to compact `Auto` wording.

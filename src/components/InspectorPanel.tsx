@@ -9,6 +9,8 @@ import { formatLocalDateTime } from "../lib/time"
 import { resolveBlockContentJson, resolveBlockTitle } from "../lib/exportImport"
 import { useMapStore } from "../store/useMapStore"
 
+const followToolbarVariantKey = "__follow_toolbar__"
+
 const emojiPresets = ["⚠️", "⭐", "📌", "✅", "❌", "💡", "📎", "🧪", "📊", "🔗", "❓", "🔥"]
 
 export function InspectorPanel() {
@@ -44,6 +46,8 @@ export function InspectorPanel() {
     snapAllBlocksToGrid,
     copyBlockVariantToVersion,
     deleteBlockVariant,
+    setBlockActiveVariant,
+    updateBlockVariant,
   } = useMapStore()
   const node = nodes.find((item) => item.id === selectedNodeId)
   const edge = edges.find((item) => item.id === selectedEdgeId)
@@ -165,12 +169,16 @@ export function InspectorPanel() {
   if (node?.type === "block") {
     const blockType = blockTypeByValue[node.data.nodeType] || blockTypeByValue.generic
     const emojis = node.data.emojis || []
-    const activeVariantKey = activeVersionId === allVersionsId ? node.data.activeVariantKey || commonVariantKey : activeVersionId
+    const isFollowingToolbar = !node.data.activeVariantKey
+    const activeVariantKey = node.data.activeVariantKey || (activeVersionId === allVersionsId ? commonVariantKey : activeVersionId)
     const activeVersion = modelVersions.find((version) => version.id === activeVariantKey)
-    const activeTitle = resolveBlockTitle(node.data, activeVersionId)
-    const activeContentJson = resolveBlockContentJson(node.data, activeVersionId)
+    const activeTitle = resolveBlockTitle(node.data, activeVariantKey)
+    const activeContentJson = resolveBlockContentJson(node.data, activeVariantKey)
     const hasVersionVariant = Boolean(node.data.variants?.[activeVariantKey])
     const variantLabel = activeVariantKey === commonVariantKey ? "Common" : activeVersion?.label || "Version"
+    const setEditingVariant = (variantKey: string) => {
+      setBlockActiveVariant(node.id, variantKey === followToolbarVariantKey ? undefined : variantKey)
+    }
     const updateEmoji = (value: string) => {
       const emoji = value.trim()
       updateBlock(node.id, { emojis: emoji ? [emoji] : [] })
@@ -193,7 +201,7 @@ export function InspectorPanel() {
               <input
                 className="field-input"
                 value={activeTitle}
-                onChange={(event) => updateBlock(node.id, { title: event.target.value })}
+                onChange={(event) => updateBlockVariant(node.id, activeVariantKey, { title: event.target.value })}
               />
             </label>
             <label className="field-label">
@@ -206,6 +214,23 @@ export function InspectorPanel() {
                 {blockTypeOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field-label">
+              Content version
+              <select
+                className="field-input"
+                value={node.data.activeVariantKey || followToolbarVariantKey}
+                onChange={(event) => setEditingVariant(event.target.value)}
+                title="Choose which content version this block uses. Follow toolbar uses the global canvas version."
+              >
+                <option value={followToolbarVariantKey}>Follow toolbar</option>
+                <option value={commonVariantKey}>Common</option>
+                {modelVersions.map((version) => (
+                  <option key={version.id} value={version.id}>
+                    {version.label}
                   </option>
                 ))}
               </select>
@@ -225,9 +250,11 @@ export function InspectorPanel() {
               </select>
             </label>
             <div className="rounded-lg border border-border bg-app/60 p-2 text-xs text-secondary">
-              Editing: <span className="font-semibold text-foreground">{variantLabel}</span>
-              {!hasVersionVariant && activeVariantKey !== commonVariantKey ? " (using Common fallback)" : ""}
-              {displayModeOverride !== "block" ? ` | Toolbar display override: ${displayModeOverride}` : ""}
+              Editing content: <span className="font-semibold text-foreground">{isFollowingToolbar ? `Toolbar (${variantLabel})` : variantLabel}</span>
+              {!hasVersionVariant && activeVariantKey !== commonVariantKey ? " (currently showing Common fallback; typing here creates this version)" : ""}
+              <br />
+              {isFollowingToolbar ? "This block follows the top toolbar version." : "This block is using a block-specific content version."}
+              {displayModeOverride !== "block" ? ` Toolbar density override: ${displayModeOverride}.` : ""}
             </div>
           </section>
           <section className="panel-section">
@@ -242,7 +269,7 @@ export function InspectorPanel() {
                       {version.label} {hasVariant ? "" : "(fallback)"}
                     </span>
                     <button type="button" className="toolbar-button justify-center" onClick={() => copyBlockVariantToVersion(node.id, version.id)}>
-                      Copy here
+                      Use current
                     </button>
                     <button
                       type="button"
@@ -373,7 +400,7 @@ export function InspectorPanel() {
             <div className="section-title">Content</div>
             <RichTextEditor
               content={activeContentJson}
-              onChange={(contentJson, contentHtml) => updateBlock(node.id, { contentJson, contentHtml })}
+              onChange={(contentJson, contentHtml) => updateBlockVariant(node.id, activeVariantKey, { contentJson, contentHtml })}
             />
           </section>
           <section className="panel-section">
