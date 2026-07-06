@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.5 - Toolbar and Icon Polish
+
+- Cropped the app icon asset so the compass artwork fills the visible icon instead of leaving large blank margins.
+- Tightened the top toolbar so it avoids horizontal scrollbars by collapsing button labels on narrower widths.
+- Fixed the micro-straighten `Clean` button so its label does not appear selected after use.
+- Moved the version manager into a fixed top-layer panel so the settings button reliably opens the panel.
+- Hid corrupted version reorder glyphs and replaced their visible UI with standard arrow indicators.
+
 ## 0.2.4 - User Versions, Frames, Density, Layout, and Edge Visibility
 
 - Added user-defined model versions with a maximum of five versions, global version switching, and block content variants with Common fallback.

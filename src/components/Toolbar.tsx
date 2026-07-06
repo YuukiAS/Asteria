@@ -107,10 +107,10 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
   }
 
   return (
-    <header className="relative flex h-[52px] shrink-0 items-center gap-2 border-b border-border bg-toolbar/90 px-3 backdrop-blur">
+    <header className="relative z-30 flex h-[52px] shrink-0 select-none items-center gap-2 border-b border-border bg-toolbar/90 px-3 backdrop-blur">
       <div className="flex min-w-0 items-center gap-3">
         <div className="flex items-center gap-2">
-          <img src="/app-icon.png" alt="Asteria icon" className="h-7 w-7 rounded-lg object-cover" />
+          <img src="/app-icon.png" alt="Asteria icon" className="h-8 w-8 rounded-lg object-cover" />
           <div className="leading-tight">
             <div className="text-sm font-semibold text-foreground">Asteria</div>
             {isEditingTitle || interactionMode === "edit" ? (
@@ -134,7 +134,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           </div>
         </div>
         <span
-          className={`rounded-full border px-2 py-1 text-[11px] ${
+          className={`status-pill rounded-full border px-2 py-1 text-[11px] ${
             saveStatus === "Error"
               ? "border-danger/30 text-danger"
               : saveStatus === "Saved"
@@ -145,7 +145,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           {saveStatus}
         </span>
       </div>
-      <div className="ml-auto flex items-center gap-1.5 overflow-x-auto">
+      <div className="toolbar-actions ml-auto flex min-w-0 items-center gap-1.5 overflow-hidden">
         <div className="flex shrink-0 rounded-md border border-border bg-panel p-0.5" aria-label="Canvas interaction mode">
           <button
             type="button"
@@ -154,7 +154,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
             title="Move mode: drag blocks around the canvas"
           >
             <MousePointer2 size={14} />
-            Move
+            <span className="toolbar-label">Move</span>
           </button>
           <button
             type="button"
@@ -163,12 +163,12 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
             title="Edit mode: click a block to edit its text in the inspector"
           >
             <PencilLine size={14} />
-            Edit
+            <span className="toolbar-label">Edit</span>
           </button>
         </div>
-        <button type="button" className="primary-button" onClick={() => addBlock()}>
+        <button type="button" className="primary-button" onClick={() => addBlock()} title="New block">
           <Plus size={15} />
-          <span>New block</span>
+          <span className="toolbar-label">New block</span>
         </button>
         <div className="flex shrink-0 items-center gap-1 rounded-md border border-border bg-panel p-0.5">
           <label className="sr-only" htmlFor="active-version">
@@ -176,7 +176,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           </label>
           <select
             id="active-version"
-            className="h-7 max-w-[150px] rounded border-0 bg-panel px-1.5 text-xs font-medium text-secondary outline-none focus:text-foreground"
+            className="h-7 max-w-[128px] rounded border-0 bg-panel px-1.5 text-xs font-medium text-secondary outline-none focus:text-foreground"
             value={activeVersionId}
             onChange={(event) => setActiveVersion(event.target.value)}
             title="Active version"
@@ -190,9 +190,10 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           </select>
           <button
             type="button"
-            className="segmented-button !px-1.5"
+            className="segmented-button justify-center !px-1.5"
             onClick={() => setIsVersionPanelOpen((open) => !open)}
             aria-label="Manage versions"
+            aria-expanded={isVersionPanelOpen}
             title="Manage versions"
           >
             <Settings2 size={14} />
@@ -202,7 +203,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           <Rows3 size={14} />
           <span className="sr-only">Display density</span>
           <select
-            className="h-7 max-w-[132px] border-0 bg-panel text-xs outline-none"
+            className="h-7 max-w-[112px] border-0 bg-panel text-xs outline-none"
             value={displayModeOverride}
             onChange={(event) => setDisplayModeOverride(event.target.value as DisplayModeOverride)}
           >
@@ -216,7 +217,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
         {interactionMode === "move" && selectedNodeIds.length > 1 && (
           <button type="button" className="toolbar-button" onClick={groupSelectedBlocks} title="Group selected blocks">
             <Group size={15} />
-            <span>Group</span>
+            <span className="toolbar-label">Group</span>
           </button>
         )}
         {interactionMode === "edit" && (
@@ -228,32 +229,40 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
             title={selectedBlock ? "Insert display equation into selected block" : "Select a block before inserting an equation"}
           >
             <Sigma size={15} />
-            <span>Equation</span>
+            <span className="toolbar-label">Equation</span>
           </button>
         )}
-        <button type="button" className="toolbar-button" onClick={onFitView}>
+        <button type="button" className="toolbar-button" onClick={onFitView} title="Fit view">
           <Scan size={15} />
-          <span>Fit</span>
+          <span className="toolbar-label">Fit</span>
         </button>
-        <button type="button" className="toolbar-button" onClick={straightenNearAxisEdges} title="Clean up small near-straight edge offsets">
+        <button
+          type="button"
+          className="toolbar-button"
+          onClick={(event) => {
+            event.currentTarget.blur()
+            straightenNearAxisEdges()
+          }}
+          title="Clean up small near-straight edge offsets"
+        >
           <Sparkles size={15} />
-          <span>Clean</span>
+          <span className="toolbar-label">Clean</span>
         </button>
-        <button type="button" className="toolbar-button" onClick={() => void saveNow()}>
+        <button type="button" className="toolbar-button" onClick={() => void saveNow()} title="Save">
           <Save size={15} />
-          <span>Save</span>
+          <span className="toolbar-label">Save</span>
         </button>
-        <button type="button" className="toolbar-button" onClick={exportJson}>
+        <button type="button" className="toolbar-button" onClick={exportJson} title="Export">
           <Download size={15} />
-          <span>Export</span>
+          <span className="toolbar-label">Export</span>
         </button>
-        <button type="button" className="toolbar-button" onClick={() => inputRef.current?.click()}>
+        <button type="button" className="toolbar-button" onClick={() => inputRef.current?.click()} title="Import">
           <Upload size={15} />
-          <span>Import</span>
+          <span className="toolbar-label">Import</span>
         </button>
-        <button type="button" className="danger-button" onClick={clear}>
+        <button type="button" className="danger-button" onClick={clear} title="Clear">
           <Trash2 size={15} />
-          <span>Clear</span>
+          <span className="toolbar-label">Clear</span>
         </button>
         <button type="button" className="toolbar-button !px-2" onClick={onToggleTheme} aria-label="Toggle theme">
           {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}

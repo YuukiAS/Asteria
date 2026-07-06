@@ -66,15 +66,15 @@ body {
 
 @layer components {
   .toolbar-button {
-    @apply inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-border bg-panel px-2.5 text-xs font-medium text-secondary transition hover:border-strongBorder hover:text-foreground;
+    @apply inline-flex h-8 shrink-0 select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-border bg-panel px-2.5 text-xs font-medium text-secondary transition hover:border-strongBorder hover:text-foreground;
   }
 
   .primary-button {
-    @apply inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-accent/20 bg-accentSoft px-2.5 text-xs font-semibold text-accent transition hover:border-accent/40;
+    @apply inline-flex h-8 shrink-0 select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-accent/20 bg-accentSoft px-2.5 text-xs font-semibold text-accent transition hover:border-accent/40;
   }
 
   .segmented-button {
-    @apply inline-flex h-7 items-center gap-1 rounded px-2 text-xs font-medium text-secondary transition hover:text-foreground;
+    @apply inline-flex h-7 select-none items-center gap-1 whitespace-nowrap rounded px-2 text-xs font-medium text-secondary transition hover:text-foreground;
   }
 
   .segmented-button-active {
@@ -82,7 +82,7 @@ body {
   }
 
   .danger-button {
-    @apply inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-danger/20 bg-panel px-2.5 text-xs font-medium text-danger transition hover:border-danger/40 hover:bg-danger/5;
+    @apply inline-flex h-8 shrink-0 select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-danger/20 bg-panel px-2.5 text-xs font-medium text-danger transition hover:border-danger/40 hover:bg-danger/5;
   }
 
   .inspector {
@@ -201,12 +201,43 @@ body {
   }
 
   .version-manager-panel {
-    @apply absolute right-3 top-[46px] z-50 grid w-[min(520px,calc(100vw-24px))] gap-3 rounded-xl border border-border bg-panel p-3 text-foreground shadow-xl;
+    @apply fixed right-3 top-[48px] z-[80] grid w-[min(520px,calc(100vw-24px))] gap-3 rounded-xl border border-border bg-panel p-3 text-foreground shadow-xl;
   }
 
   .version-row {
     @apply grid grid-cols-[minmax(0,1fr)_80px_auto_auto_auto] items-center gap-2;
   }
+
+  .version-row .toolbar-button[aria-label="Move version up"],
+  .version-row .toolbar-button[aria-label="Move version down"] {
+    @apply w-8 px-0 text-[0px];
+  }
+
+  .version-row .toolbar-button[aria-label="Move version up"]::before {
+    content: "\2191";
+    font-size: 13px;
+  }
+
+  .version-row .toolbar-button[aria-label="Move version down"]::before {
+    content: "\2193";
+    font-size: 13px;
+  }
+}
+
+.toolbar-actions {
+  scrollbar-width: none;
+}
+
+.toolbar-actions::-webkit-scrollbar {
+  display: none;
+}
+
+.toolbar-button:focus-visible,
+.primary-button:focus-visible,
+.segmented-button:focus-visible,
+.danger-button:focus-visible {
+  outline: 2px solid rgb(var(--color-accent));
+  outline-offset: 2px;
 }
 
 .inspector-shell {
@@ -864,6 +895,28 @@ body {
 
   .inspector {
     border: 0;
+  }
+}
+
+@media (max-width: 1280px) {
+  .toolbar-actions .toolbar-label {
+    display: none;
+  }
+
+  .toolbar-actions .toolbar-button,
+  .toolbar-actions .primary-button,
+  .toolbar-actions .danger-button {
+    width: 2rem;
+    padding-right: 0;
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 1120px) {
+  .map-title-display,
+  .map-title-input,
+  .status-pill {
+    display: none;
   }
 }
 
