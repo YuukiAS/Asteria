@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.3 - Compact Default Variant Label
+
+- Shortened the missing variant state to `(default)`.
+- Right-aligned the default state inside the variant label cell.
+
 ## 0.4.2 - Clearer Variant Fallback Labels
 
 - Renamed variant fallback text to `same as Default`.

@@ -267,9 +267,9 @@ export function InspectorPanel() {
                 const hasVariant = Boolean(node.data.variants?.[version.id])
                 return (
                   <div key={version.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
-                    <span className="flex min-w-0 items-baseline gap-1.5 text-xs text-secondary">
+                    <span className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-baseline gap-2 text-xs text-secondary">
                       <span className="truncate">{version.label}</span>
-                      {!hasVariant && <span className="shrink-0 text-[11px] italic text-muted">same as Default</span>}
+                      {!hasVariant && <span className="justify-self-end text-[11px] italic text-muted">(default)</span>}
                     </span>
                     <button type="button" className="toolbar-button justify-center" onClick={() => copyBlockVariantToVersion(node.id, version.id)}>
                       Use current content
