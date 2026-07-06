@@ -81,7 +81,7 @@ export function getVariantKey(activeVersionId?: ActiveVersionId, explicitVariant
 }
 
 export function resolveBlockVariant(data: BlockData, activeVersionId?: ActiveVersionId): BlockVariant {
-  const key = getVariantKey(activeVersionId, data.activeVariantKey)
+  const key = getVariantKey(activeVersionId)
   const fallback = data.variants?.[commonVariantKey] || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt)
   return data.variants?.[key] || fallback
 }
@@ -96,7 +96,7 @@ export function resolveBlockContentJson(data: BlockData, activeVersionId?: Activ
 
 export function resolveBlockContentHtml(data: BlockData, activeVersionId?: ActiveVersionId) {
   const variant = resolveBlockVariant(data, activeVersionId)
-  return variant.contentHtml || contentJsonToSafeHtml(variant.contentJson)
+  return contentJsonToSafeHtml(variant.contentJson) || variant.contentHtml
 }
 
 function contentJsonToSafeHtml(contentJson: BlockVariant["contentJson"]) {

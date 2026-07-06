@@ -130,7 +130,7 @@ type MapState = {
   setDisplayModeOverride: (mode: DisplayModeOverride) => void
   appendBlockMathToSelectedBlock: (latex: string) => void
   updateBlock: (id: string, patch: Partial<BlockData>) => void
-  setBlockActiveVariant: (id: string, variantKey?: string) => void
+  setBlockActiveVariant: (id: string, variantKey: string) => void
   updateBlockVariant: (id: string, variantKey: string, patch: Partial<Pick<BlockData, "title" | "contentJson" | "contentHtml">>) => void
   copyBlockVariantToVersion: (id: string, versionId: string) => void
   deleteBlockVariant: (id: string, variantKey: string) => void
@@ -239,7 +239,7 @@ function relativePositionFromAbsolute(node: MapNode, nodes: MapNode[], absolute:
 }
 
 function getBlockVariantKeyForState(state: Pick<MapState, "activeVersionId">, data: BlockData) {
-  return getVariantKey(state.activeVersionId, state.activeVersionId === allVersionsId ? data.activeVariantKey : undefined)
+  return data.activeVariantKey || getVariantKey(state.activeVersionId)
 }
 
 function patchBlockVariant(data: BlockData, key: string, patch: Partial<Pick<BlockData, "title" | "contentJson" | "contentHtml">>) {
@@ -482,7 +482,25 @@ export const useMapStore = create<MapState>((set, get) => ({
     const state = get()
     const activeVersionId =
       versionId === allVersionsId || state.modelVersions.some((version) => version.id === versionId) ? versionId : allVersionsId
-    set({ activeVersionId, selectedEdgeId: undefined })
+    const variantKey = getVariantKey(activeVersionId)
+    set({
+      activeVersionId,
+      selectedEdgeId: undefined,
+      nodes: state.nodes.map((node) => {
+        if (!isBlockNode(node)) return node
+        const variant = resolveBlockVariant(node.data, variantKey)
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            activeVariantKey: variantKey,
+            title: variant.title,
+            contentJson: variant.contentJson,
+            contentHtml: variant.contentHtml || contentJsonToHtml(variant.contentJson),
+          },
+        }
+      }),
+    })
     get().markUnsaved()
   },
 
@@ -721,12 +739,12 @@ export const useMapStore = create<MapState>((set, get) => ({
 
   setBlockActiveVariant: (id, variantKey) => {
     const state = get()
-    const key = variantKey ? getVariantKey(allVersionsId, variantKey) : undefined
-    if (key && key !== commonVariantKey && !state.modelVersions.some((version) => version.id === key)) return
+    const key = getVariantKey(allVersionsId, variantKey)
+    if (key !== commonVariantKey && !state.modelVersions.some((version) => version.id === key)) return
     set((nextState) => ({
       nodes: nextState.nodes.map((node) => {
         if (node.id !== id || !isBlockNode(node)) return node
-        const variant = key ? resolveBlockVariant(node.data, key) : resolveBlockVariant(node.data, nextState.activeVersionId)
+        const variant = resolveBlockVariant(node.data, key)
         return {
           ...node,
           data: {

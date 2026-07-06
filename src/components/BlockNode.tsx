@@ -40,7 +40,7 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
   const variantKeys = Object.keys(data.variants || {}).filter((key) => key !== commonVariantKey)
   const variantBadge =
     effectiveVariantKey === commonVariantKey
-      ? "COMMON"
+      ? "DEFAULT"
       : activeVersion?.shortLabel || activeVersion?.label || "VERSION"
   const titleHtml = useMemo(() => titleToHtml(title), [title])
 
@@ -192,11 +192,15 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
         ) : (
           <div className="block-title-display" title={title} dangerouslySetInnerHTML={{ __html: titleHtml }} />
         )}
+        {variantKeys.length > 0 && (
+          <span className="variant-dot-row mr-auto" title={`${variantKeys.length} saved content versions. Select the block and use Content version in the inspector to edit them.`}>
+            {variantKeys.map((key) => <span key={key} />)}
+          </span>
+        )}
         <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1">
           <span className="version-badge" title={data.activeVariantKey ? "Block-specific content version" : "Version used by the current canvas preview"}>
             {variantBadge}
           </span>
-          {variantKeys.length > 0 && <span className="variant-dot-row" title={`${variantKeys.length} saved content versions. Select the block and use Content version in the inspector to edit them.`}>{variantKeys.map((key) => <span key={key} />)}</span>}
           {data.showStatus && <span className={`status-marker ${blockStatus.className}`}>{blockStatus.label}</span>}
           {isInlineEditing ? (
             <select

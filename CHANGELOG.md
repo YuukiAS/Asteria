@@ -1,9 +1,17 @@
 # Changelog
 
+## 0.2.8 - Version Editing Simplification
+
+- Removed the `Follow toolbar` content-version option and made `Default` the baseline content version shown to users.
+- Made global version switching batch-update every block's active content version, while the block inspector changes only the selected block.
+- Fixed block previews to render from canonical rich-text JSON before falling back to stored HTML, avoiding stale raw-LaTeX HTML when possible.
+- Moved saved-version dots beside the block title instead of the right-side metadata group.
+- Kept direct canvas editing in Edit mode writing to the currently displayed content version.
+
 ## 0.2.7 - Block Variant Editing
 
-- Added a selected-block `Content version` control in the inspector so users can edit Common or a specific user version without switching the global canvas version.
-- Added `Follow toolbar` versus block-specific content version behavior for selected blocks.
+- Added a selected-block `Content version` control in the inspector so users can edit Default or a specific user version without switching the global canvas version.
+- Added block-specific content version behavior for selected blocks.
 - Changed block title and rich-text editing on both the canvas and inspector to write to the currently visible content version.
 - Renamed variant copy actions to `Use current` and made them copy the block's current visible content into the target version.
 - Clarified the canvas version badge and variant dots with tooltips that explain preview versus saved content versions.

@@ -9,8 +9,6 @@ import { formatLocalDateTime } from "../lib/time"
 import { resolveBlockContentJson, resolveBlockTitle } from "../lib/exportImport"
 import { useMapStore } from "../store/useMapStore"
 
-const followToolbarVariantKey = "__follow_toolbar__"
-
 const emojiPresets = ["⚠️", "⭐", "📌", "✅", "❌", "💡", "📎", "🧪", "📊", "🔗", "❓", "🔥"]
 
 export function InspectorPanel() {
@@ -169,15 +167,14 @@ export function InspectorPanel() {
   if (node?.type === "block") {
     const blockType = blockTypeByValue[node.data.nodeType] || blockTypeByValue.generic
     const emojis = node.data.emojis || []
-    const isFollowingToolbar = !node.data.activeVariantKey
     const activeVariantKey = node.data.activeVariantKey || (activeVersionId === allVersionsId ? commonVariantKey : activeVersionId)
     const activeVersion = modelVersions.find((version) => version.id === activeVariantKey)
     const activeTitle = resolveBlockTitle(node.data, activeVariantKey)
     const activeContentJson = resolveBlockContentJson(node.data, activeVariantKey)
     const hasVersionVariant = Boolean(node.data.variants?.[activeVariantKey])
-    const variantLabel = activeVariantKey === commonVariantKey ? "Common" : activeVersion?.label || "Version"
+    const variantLabel = activeVariantKey === commonVariantKey ? "Default" : activeVersion?.label || "Version"
     const setEditingVariant = (variantKey: string) => {
-      setBlockActiveVariant(node.id, variantKey === followToolbarVariantKey ? undefined : variantKey)
+      setBlockActiveVariant(node.id, variantKey)
     }
     const updateEmoji = (value: string) => {
       const emoji = value.trim()
@@ -222,12 +219,11 @@ export function InspectorPanel() {
               Content version
               <select
                 className="field-input"
-                value={node.data.activeVariantKey || followToolbarVariantKey}
+                value={activeVariantKey}
                 onChange={(event) => setEditingVariant(event.target.value)}
-                title="Choose which content version this block uses. Follow toolbar uses the global canvas version."
+                title="Choose which content version this selected block displays and edits."
               >
-                <option value={followToolbarVariantKey}>Follow toolbar</option>
-                <option value={commonVariantKey}>Common</option>
+                <option value={commonVariantKey}>Default</option>
                 {modelVersions.map((version) => (
                   <option key={version.id} value={version.id}>
                     {version.label}
@@ -250,10 +246,10 @@ export function InspectorPanel() {
               </select>
             </label>
             <div className="rounded-lg border border-border bg-app/60 p-2 text-xs text-secondary">
-              Editing content: <span className="font-semibold text-foreground">{isFollowingToolbar ? `Toolbar (${variantLabel})` : variantLabel}</span>
-              {!hasVersionVariant && activeVariantKey !== commonVariantKey ? " (currently showing Common fallback; typing here creates this version)" : ""}
+              Editing content: <span className="font-semibold text-foreground">{variantLabel}</span>
+              {!hasVersionVariant && activeVariantKey !== commonVariantKey ? " (currently showing Default fallback; typing here creates this version)" : ""}
               <br />
-              {isFollowingToolbar ? "This block follows the top toolbar version." : "This block is using a block-specific content version."}
+              The top toolbar switches every block; this selector switches only the selected block.
               {displayModeOverride !== "block" ? ` Toolbar density override: ${displayModeOverride}.` : ""}
             </div>
           </section>
@@ -269,7 +265,7 @@ export function InspectorPanel() {
                       {version.label} {hasVariant ? "" : "(fallback)"}
                     </span>
                     <button type="button" className="toolbar-button justify-center" onClick={() => copyBlockVariantToVersion(node.id, version.id)}>
-                      Use current
+                      Use current content
                     </button>
                     <button
                       type="button"

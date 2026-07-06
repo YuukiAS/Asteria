@@ -152,7 +152,7 @@ body {
   }
 
   .block-title-display {
-    @apply block h-7 min-w-0 flex-1 truncate border-0 bg-transparent px-1 text-left text-[14px] font-semibold leading-7 text-inherit;
+    @apply block h-7 min-w-0 max-w-[min(360px,calc(100%-110px))] truncate border-0 bg-transparent px-1 text-left text-[14px] font-semibold leading-7 text-inherit;
   }
 
   .block-title-emoji,
