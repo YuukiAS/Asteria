@@ -269,6 +269,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
             showToolbar={false}
             chrome={false}
             editorClassName="min-h-[calc(var(--asteria-node-height,220px)-60px)] cursor-text"
+            editorTextColor={data.textColor}
             focusTargetId={id}
           />
         ) : displayMode === "title_only" ? null : (

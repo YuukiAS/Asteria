@@ -13,6 +13,7 @@ type RichTextEditorProps = {
   chrome?: boolean
   editorClassName?: string
   focusTargetId?: string
+  editorTextColor?: string
 }
 
 export function RichTextEditor({
@@ -22,16 +23,19 @@ export function RichTextEditor({
   chrome = true,
   editorClassName = "min-h-[220px]",
   focusTargetId,
+  editorTextColor,
 }: RichTextEditorProps) {
   const lastLocalContentRef = useRef<string | undefined>(undefined)
   const [editingEquation, setEditingEquation] = useState<{ pos: number; latex: string; displayMode: boolean } | null>(null)
+  const editorAttributes = {
+    class: `ProseMirror prose-editor outline-none ${editorClassName}`,
+    ...(editorTextColor ? { style: `color: ${editorTextColor}` } : {}),
+  }
   const editor = useEditor({
     extensions: createEditorExtensions(),
     content,
     editorProps: {
-      attributes: {
-        class: `ProseMirror prose-editor outline-none ${editorClassName}`,
-      },
+      attributes: editorAttributes,
       handlePaste(view, event) {
         const text = event.clipboardData?.getData("text/plain")
         if (!text) return false
@@ -91,6 +95,11 @@ export function RichTextEditor({
       editor.commands.setContent(content, false)
     }
   }, [content, editor])
+
+  useEffect(() => {
+    if (!editor) return
+    editor.view.dom.style.color = editorTextColor || ""
+  }, [editor, editorTextColor])
 
   useEffect(() => {
     const focusEditor = (event: Event) => {
