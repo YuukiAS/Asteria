@@ -31,6 +31,27 @@
 - ChatGPT 不应把 issue、PR description 或聊天正文当作 Codex 的唯一任务来源。
 <!-- ai-bridge-kit:end -->
 
+<!-- asteria-local-rules:start -->
+# Asteria Local Rules
+
+## Commit Naming
+
+- 完成已验证的版本任务后，Codex 应自动创建本地 commit，但不得自动 push；push 始终由用户手动完成。
+- 版本发布或版本修复的 commit message 使用精确版本号：`v0.3.0`、`v0.3.1`、`v0.4.0`。
+- 同一版本内的补丁如果用户明确要求作为版本提交，也使用对应的新 patch 版本号，不要复用已经存在的版本号。
+- 非版本化维护提交使用简短任务前缀：`docs: ...`、`chore: ...`、`fix: ...`；如果有 handoff task id，message 应包含 task id。
+- 提交前至少确认 `git status --short`，只 stage 当前任务相关文件，不要把其他 thread 或用户的未相关改动混入 commit。
+
+## Dev Server
+
+- 默认开发服务器命令是 `npm run dev`，项目脚本已固定 `vite --host 127.0.0.1`。
+- 默认访问地址是 `http://127.0.0.1:5173/`。
+- 启动前先检查该地址或 5173 端口是否已有可用 Vite server；如果页面可访问，不要重复启动服务器。
+- 如果 5173 已被占用但不可用，先报告状态；需要临时备用端口时使用 `npm run dev -- --host 127.0.0.1 --port 5174`。
+- 不要为启动服务器而重新安装依赖；只有依赖确实缺失且用户批准后才运行安装命令。
+- 后台启动时应隐藏窗口，并把日志写到 repo 内的临时日志文件，例如 `.codex/vite-dev.log`，避免多个 thread 反复尝试同一启动路径。
+<!-- asteria-local-rules:end -->
+
 <!-- AI_SKILLS_COLLECTION_START -->
 # AI Skills Collection
 
