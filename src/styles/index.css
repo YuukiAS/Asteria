@@ -176,6 +176,10 @@ body {
     @apply h-6 max-w-[116px] shrink-0 rounded-md border px-1 text-[10px] font-semibold uppercase leading-none outline-none transition focus:border-accent;
   }
 
+  .version-select {
+    @apply h-6 max-w-[88px] shrink-0 rounded-md border border-border bg-panel px-1 text-[10px] font-semibold uppercase leading-none text-secondary outline-none transition focus:border-accent focus:text-foreground;
+  }
+
   .shortcut {
     @apply rounded border border-border bg-app px-1.5 py-0.5 font-mono text-[11px] text-foreground;
   }

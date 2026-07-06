@@ -16,6 +16,7 @@ type BlockNodeProps = NodeProps<BlockNodeType> & {
 export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProps) {
   const updateBlock = useMapStore((state) => state.updateBlock)
   const updateBlockVariant = useMapStore((state) => state.updateBlockVariant)
+  const setBlockActiveVariant = useMapStore((state) => state.setBlockActiveVariant)
   const activeVersionId = useMapStore((state) => state.activeVersionId)
   const modelVersions = useMapStore((state) => state.modelVersions)
   const displayModeOverride = useMapStore((state) => state.displayModeOverride)
@@ -198,9 +199,27 @@ export function BlockNode({ id, data, selected, interactionMode }: BlockNodeProp
           </span>
         )}
         <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1">
-          <span className="version-badge" title={data.activeVariantKey ? "Block-specific content version" : "Version used by the current canvas preview"}>
-            {variantBadge}
-          </span>
+          {isInlineEditing ? (
+            <select
+              className="version-select nodrag nopan"
+              value={effectiveVariantKey}
+              onChange={(event) => setBlockActiveVariant(id, event.target.value)}
+              onPointerDown={(event) => event.stopPropagation()}
+              aria-label="Block content version"
+              title="Block content version"
+            >
+              <option value={commonVariantKey}>Default</option>
+              {modelVersions.map((version) => (
+                <option key={version.id} value={version.id}>
+                  {version.shortLabel || version.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="version-badge" title={data.activeVariantKey ? "Block-specific content version" : "Version used by the current canvas preview"}>
+              {variantBadge}
+            </span>
+          )}
           {data.showStatus && <span className={`status-marker ${blockStatus.className}`}>{blockStatus.label}</span>}
           {isInlineEditing ? (
             <select

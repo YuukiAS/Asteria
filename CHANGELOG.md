@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.9 - Inline Version Editing
+
+- Renamed the top toolbar's global baseline option from `All` to `Default` for a consistent version vocabulary.
+- Added a compact content-version selector directly in the selected block header during Edit mode.
+- Preserved inline math text marks in the editor so colored formula content does not disappear when editing a block.
+
 ## 0.2.8 - Version Editing Simplification
 
 - Removed the `Follow toolbar` content-version option and made `Default` the baseline content version shown to users.

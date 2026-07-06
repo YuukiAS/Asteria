@@ -181,7 +181,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
             onChange={(event) => setActiveVersion(event.target.value)}
             title="Active version"
           >
-            <option value="all">All</option>
+            <option value="all">Default</option>
             {modelVersions.map((version) => (
               <option key={version.id} value={version.id}>
                 {version.label}

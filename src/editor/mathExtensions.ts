@@ -23,6 +23,7 @@ export const InlineMath = Node.create({
   group: "inline",
   inline: true,
   atom: true,
+  marks: "_",
 
   addAttributes() {
     return { latex: { default: "" } }
