@@ -768,14 +768,14 @@ body {
 .math-inline {
   display: inline-block;
   max-width: 100%;
-  color: inherit;
+  color: var(--asteria-rich-accent-color, inherit);
   vertical-align: -0.12em;
 }
 
 .math-block {
   margin: 0.75em 0;
   max-width: 100%;
-  color: inherit;
+  color: var(--asteria-rich-accent-color, inherit);
   overflow-x: auto;
   border-radius: 8px;
   background: rgba(148, 163, 184, 0.08);

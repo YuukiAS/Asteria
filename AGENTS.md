@@ -38,6 +38,8 @@
 
 - 完成已验证的版本任务后，Codex 应自动创建本地 commit，但不得自动 push；push 始终由用户手动完成。
 - 版本发布或版本修复的 commit message 使用精确版本号：`v0.3.0`、`v0.3.1`、`v0.4.0`。
+- 如果用户把当前改动称为“版本”、明确提到 `0.3.x` / patch 版本，或要求“作为版本”，Codex 必须使用下一个未使用的 patch 版本号作为 commit message，例如当前已有 `v0.3.1` 时应提交 `v0.3.2`，不要使用 `fix:` / `docs:` 等非版本前缀。
+- 版本提交前必须同步更新 `package.json` 的 `version` 和 `CHANGELOG.md` 顶部条目；如果发现已有版本 commit 但这些文件滞后，应在当前版本提交中补齐记录。
 - 同一版本内的补丁如果用户明确要求作为版本提交，也使用对应的新 patch 版本号，不要复用已经存在的版本号。
 - 非版本化维护提交使用简短任务前缀：`docs: ...`、`chore: ...`、`fix: ...`；如果有 handoff task id，message 应包含 task id。
 - 提交前至少确认 `git status --short`，只 stage 当前任务相关文件，不要把其他 thread 或用户的未相关改动混入 commit。

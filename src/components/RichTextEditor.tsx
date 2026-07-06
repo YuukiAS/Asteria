@@ -14,6 +14,7 @@ type RichTextEditorProps = {
   editorClassName?: string
   focusTargetId?: string
   editorTextColor?: string
+  editorAccentColor?: string
 }
 
 export function RichTextEditor({
@@ -24,12 +25,19 @@ export function RichTextEditor({
   editorClassName = "min-h-[220px]",
   focusTargetId,
   editorTextColor,
+  editorAccentColor,
 }: RichTextEditorProps) {
   const lastLocalContentRef = useRef<string | undefined>(undefined)
   const [editingEquation, setEditingEquation] = useState<{ pos: number; latex: string; displayMode: boolean } | null>(null)
+  const editorStyle = [
+    editorTextColor ? `color: ${editorTextColor}` : "",
+    editorAccentColor ? `--asteria-rich-accent-color: ${editorAccentColor}` : "",
+  ]
+    .filter(Boolean)
+    .join("; ")
   const editorAttributes = {
     class: `ProseMirror prose-editor outline-none ${editorClassName}`,
-    ...(editorTextColor ? { style: `color: ${editorTextColor}` } : {}),
+    ...(editorStyle ? { style: editorStyle } : {}),
   }
   const editor = useEditor({
     extensions: createEditorExtensions(),
@@ -99,7 +107,12 @@ export function RichTextEditor({
   useEffect(() => {
     if (!editor) return
     editor.view.dom.style.color = editorTextColor || ""
-  }, [editor, editorTextColor])
+    if (editorAccentColor) {
+      editor.view.dom.style.setProperty("--asteria-rich-accent-color", editorAccentColor)
+    } else {
+      editor.view.dom.style.removeProperty("--asteria-rich-accent-color")
+    }
+  }, [editor, editorAccentColor, editorTextColor])
 
   useEffect(() => {
     const focusEditor = (event: Event) => {

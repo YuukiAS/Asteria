@@ -49,7 +49,7 @@ export const InlineMath = Node.create({
       const dom = document.createElement("span")
       dom.dataset.mathInline = ""
       dom.className = "math-inline"
-      dom.style.color = "inherit"
+      dom.style.color = "var(--asteria-rich-accent-color, inherit)"
       dom.innerHTML = renderMath(node.attrs.latex, false)
       return { dom }
     }
@@ -95,7 +95,7 @@ export const BlockMath = Node.create({
       const dom = document.createElement("div")
       dom.dataset.mathBlock = ""
       dom.className = "math-block"
-      dom.style.color = "inherit"
+      dom.style.color = "var(--asteria-rich-accent-color, inherit)"
       dom.innerHTML = renderMath(node.attrs.latex, true)
       return { dom }
     }

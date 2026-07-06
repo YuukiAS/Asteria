@@ -1,6 +1,8 @@
 import { Handle, NodeResizer, Position, type NodeProps } from "@xyflow/react"
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
+import { blockTypeDefaults } from "../constants/blockDefaults"
 import { blockStatusByValue, blockTypeByValue, blockTypeOptions } from "../constants/blockTypes"
+import { defaultBlockColors } from "../constants/palette"
 import { allVersionsId, commonVariantKey } from "../constants/versioning"
 import { getVariantKey, resolveBlockContentHtml, resolveBlockContentJson, resolveBlockTitle } from "../lib/exportImport"
 import { requestInlineBlockEdit, requestInlineEditorFocus, type InlineEditTarget } from "../lib/inlineEditEvents"
@@ -48,6 +50,8 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
       ? "DEFAULT"
       : activeVersion?.shortLabel || activeVersion?.label || "VERSION"
   const titleHtml = useMemo(() => titleToHtml(title), [title])
+  const defaultTypeTextColor = blockTypeDefaults[data.nodeType]?.textColor
+  const richTextAccentColor = defaultTypeTextColor && defaultTypeTextColor !== defaultBlockColors.text ? defaultTypeTextColor : data.textColor
 
   useEffect(() => {
     if (!isEditableSelection) {
@@ -91,6 +95,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
         width: visualWidth,
         height: visualHeight,
         "--asteria-node-height": `${visualHeight}px`,
+        "--asteria-rich-accent-color": richTextAccentColor,
         backgroundColor: data.backgroundColor,
         borderColor: selected ? "#2563eb" : data.borderColor,
         color: data.textColor,
@@ -270,10 +275,11 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
             chrome={false}
             editorClassName="min-h-[calc(var(--asteria-node-height,220px)-60px)] cursor-text"
             editorTextColor={data.textColor}
+            editorAccentColor={richTextAccentColor}
             focusTargetId={id}
           />
         ) : displayMode === "title_only" ? null : (
-          <RichTextPreview html={contentHtml} color={data.textColor} />
+          <RichTextPreview html={contentHtml} color={data.textColor} accentColor={richTextAccentColor} />
         )}
       </div>
     </div>

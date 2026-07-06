@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.2 - Inline Editor Type Colors
+
+- Preserved block text color while inline editing content on the canvas.
+- Added type-aware rich-text accent color so Model and Theorem math styling stays visible in Edit mode instead of falling back to black.
+- Kept the data schema unchanged; the fix is render-time styling only.
+
+## 0.3.1 - Local Workflow Rules
+
+- Documented local dev-server startup rules and background-process verification in `AGENTS.md`.
+- Ignored `.codex/` dev-server logs so local runtime files do not pollute git status.
+
 ## 0.3.0 - Faster Block Entry Flow
 
 - Added explicit inline edit targeting so selecting a block in Edit mode no longer automatically enters text editing.
