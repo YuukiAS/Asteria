@@ -142,12 +142,15 @@ type VariantSourceKind = "own" | "inherited" | "base" | "hidden"
 type ResolvedVariantState = {
   requestedVersionId?: string
   requestedVersionLabel?: string
+  requestedVersionShortLabel?: string
   renderedVariantKey?: string
   renderedVersionId?: string
   renderedVersionLabel?: string
+  renderedVersionShortLabel?: string
   sourceKind: VariantSourceKind
   inheritedFromVersionId?: string
   inheritedFromVersionLabel?: string
+  inheritedFromVersionShortLabel?: string
   isAuto: boolean
   isPinned: boolean
   isFallbackToBase: boolean
@@ -166,36 +169,142 @@ or update the existing `resolveBlockVersionState` to support sequential inherita
 
 Avoid duplicating inheritance logic across components.
 
+## UI: version labels and space constraints
+
+The right panel is narrow. Do not use full model names as the primary row labels in the variants panel.
+
+Use compact version labels as primary labels:
+
+```text
+V1
+V2
+V3
+```
+
+or `version.shortLabel` if the user has customized it.
+
+Use full names only in secondary text, tooltip/title attributes, or a details popover. The top toolbar already has enough room to show the full active version name, so the right panel should optimize for compact scanning.
+
+Recommended default mapping for the current project:
+
+```text
+V1 = TRACE
+V2 = TRACE+HMSC
+V3 = Marked TRACE
+```
+
 ## UI: right panel variant section
 
 Replace the current `Default is the base content...` design.
 
-Current language such as `(inherit default)` is misleading. Instead, show a version table that reflects sequential inheritance.
+Current language such as `(inherit default)` is misleading. Instead, show a compact version table that reflects sequential inheritance.
 
 Recommended wording:
 
 ```text
-Versions inherit from the nearest earlier version with content. Editing an inherited row creates an own copy for that version.
+Versions inherit from the nearest earlier version with content.
+Editing an inherited row creates an own copy for that version.
 ```
 
 Each row should correspond to a model version, not to `Default`.
 
 Each row should show:
 
-1. Version label, e.g. `TRACE`, `TRACE+HMSC`, `Marked TRACE`.
+1. Compact version label, e.g. `V1`, `V2`, `V3`.
 2. Source state:
-   - `Own content`
-   - `Inherits from TRACE`
-   - `Inherits from TRACE+HMSC`
-   - `Hidden in this version`
+   - `Own`
+   - `Inherits V1`
+   - `Inherits V2`
+   - `Hidden`
 3. Actions:
    - `Edit` or `Override` for inherited/hidden rows.
-   - `Use current content` or `Copy current here`.
+   - `Use current` or `Copy here`.
    - `Delete own` only if the row has own content.
+4. Tooltip/title containing the full version name and full inherited source name.
 
-If every version has own content, avoid noisy labels like `(default)` or `(inherit default)`. It is enough for each row to show the version name and a subtle `Own` state.
+Preferred compact examples:
+
+```text
+V1   Own
+V2   Own
+V3   Inherits V2
+```
+
+```text
+V1   Own
+V2   Inherits V1
+V3   Own
+```
+
+```text
+V1   Hidden
+V2   Own
+V3   Inherits V2
+```
+
+```text
+V1   Hidden
+V2   Own
+V3   Own
+```
+
+If every version has own content, keep the panel clean and show only compact labels plus `Own` states. Do not add `(default)` or `(inherit default)`.
 
 Do not put a large `Default` row at the top unless legacy/base content exists and needs to be managed. If legacy/base content exists, show it in a collapsed advanced section called `Base / legacy content`, not as the main variant model.
+
+## Four reference cases for the right panel
+
+Assume:
+
+```text
+V1 = TRACE
+V2 = TRACE+HMSC
+V3 = Marked TRACE
+```
+
+Case 1: block created in V1, edited in V2, untouched in V3.
+
+Right panel should show:
+
+```text
+V1   Own
+V2   Own
+V3   Inherits V2
+```
+
+Tooltips should clarify:
+
+```text
+V1 · TRACE: own content.
+V2 · TRACE+HMSC: own content.
+V3 · Marked TRACE: inherits from V2 · TRACE+HMSC.
+```
+
+Case 2: block created in V1, untouched in V2, edited in V3.
+
+```text
+V1   Own
+V2   Inherits V1
+V3   Own
+```
+
+Case 3: block created in V2, untouched in V3.
+
+```text
+V1   Hidden
+V2   Own
+V3   Inherits V2
+```
+
+Case 4: block created in V2, edited in V3.
+
+```text
+V1   Hidden
+V2   Own
+V3   Own
+```
+
+In all four cases, do not show `(default)` or `(inherit default)` in the main variants table. Those labels are only allowed in the optional collapsed `Base / legacy content` area for old data or All-mode base content.
 
 ## UI: terminology
 
@@ -204,7 +313,7 @@ Use these terms consistently:
 - `AUTO`: follows global version selector.
 - `PINNED`: fixed to a selected version.
 - `Own`: this version has its own content.
-- `Inherits from <version>`: this version has no own content and displays earlier content.
+- `Inherits V1`, `Inherits V2`, etc.: compact state label for the panel.
 - `Hidden`: no content exists at or before this version.
 - `Base / legacy`: only for old default/common content or content created in All mode.
 
@@ -220,13 +329,22 @@ Instead of:
 Default / Version 1 / Version 2 / Version 3
 ```
 
-Use something like:
+Use compact labels such as:
+
+```text
+AUTO
+PIN V1
+PIN V2
+PIN V3
+```
+
+The option tooltip/title should contain full names:
 
 ```text
 AUTO: follow global version
-PIN TRACE
-PIN TRACE+HMSC
-PIN Marked TRACE
+PIN V1 · TRACE
+PIN V2 · TRACE+HMSC
+PIN V3 · Marked TRACE
 ```
 
 When the selected mode is AUTO, the editing target should normally be the currently requested global version. If that version currently inherits from an earlier version, editing should create an own variant for the requested global version.
@@ -253,17 +371,17 @@ Suggested behavior:
 - Filled marker: version has own content.
 - Empty marker: version has no own content.
 - Active ring: requested/current version.
-- If current content is inherited, tooltip should say `Showing Marked TRACE by inheriting TRACE+HMSC` or equivalent.
+- If current content is inherited, tooltip should say `Showing V3 by inheriting V2` or equivalent, with full names in the tooltip.
 - If hidden in a version, it simply should not show in that version view.
 
 Tooltip examples:
 
 ```text
-TRACE: own. TRACE+HMSC: own. Marked TRACE: inherits from TRACE+HMSC. Showing Marked TRACE via AUTO.
+V1 TRACE: own. V2 TRACE+HMSC: own. V3 Marked TRACE: inherits from V2 TRACE+HMSC. Showing V3 via AUTO.
 ```
 
 ```text
-TRACE: hidden. TRACE+HMSC: own. Marked TRACE: inherits from TRACE+HMSC. Showing TRACE+HMSC via PINNED.
+V1 TRACE: hidden. V2 TRACE+HMSC: own. V3 Marked TRACE: inherits from V2 TRACE+HMSC. Showing V2 via PINNED.
 ```
 
 ## Version deletion and reordering
@@ -341,16 +459,17 @@ This task is complete when:
 4. Editing an inherited version creates an own variant for the requested version and does not modify the inherited source.
 5. AUTO follows global version and uses sequential inheritance.
 6. PINNED ignores global version but still uses sequential inheritance for the pinned version.
-7. The variants panel shows version rows with `Own`, `Inherits from <version>`, or `Hidden`, not `(inherit default)`.
-8. The `Default is the base content...` explanation is removed or replaced by sequential inheritance wording.
-9. If all versions have own content, the panel is clean and does not show redundant `(default)` or `(inherit default)` labels.
-10. Blocks with no content at or before the active concrete version are hidden in that version view.
-11. `All` mode still shows all blocks for editing/recovery.
-12. Edges connected to hidden blocks are hidden in concrete version views.
-13. Existing maps with default/common content still load and remain recoverable.
-14. Export/import preserves ordered variants and inheritance behavior.
-15. Build passes.
-16. No obvious console errors during basic variant creation, editing, pinning, global switching, and import/export.
+7. The variants panel uses compact primary labels such as `V1`, `V2`, `V3`, with full names in tooltip/title or secondary text.
+8. The variants panel shows `Own`, `Inherits V1`, `Inherits V2`, or `Hidden`, not `(inherit default)`.
+9. The `Default is the base content...` explanation is removed or replaced by sequential inheritance wording.
+10. If all versions have own content, the panel is clean and does not show redundant `(default)` or `(inherit default)` labels.
+11. Blocks with no content at or before the active concrete version are hidden in that version view.
+12. `All` mode still shows all blocks for editing/recovery.
+13. Edges connected to hidden blocks are hidden in concrete version views.
+14. Existing maps with default/common content still load and remain recoverable.
+15. Export/import preserves ordered variants and inheritance behavior.
+16. Build passes.
+17. No obvious console errors during basic variant creation, editing, pinning, global switching, and import/export.
 
 ## Out of scope
 
