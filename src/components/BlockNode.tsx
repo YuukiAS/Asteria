@@ -1,8 +1,6 @@
 import { Handle, NodeResizer, Position, type NodeProps } from "@xyflow/react"
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
-import { blockTypeDefaults } from "../constants/blockDefaults"
 import { blockStatusByValue, blockTypeByValue, blockTypeOptions } from "../constants/blockTypes"
-import { defaultBlockColors } from "../constants/palette"
 import { allVersionsId, commonVariantKey } from "../constants/versioning"
 import { getVariantKey, resolveBlockContentHtml, resolveBlockContentJson, resolveBlockTitle } from "../lib/exportImport"
 import { requestInlineBlockEdit, requestInlineEditorFocus, type InlineEditTarget } from "../lib/inlineEditEvents"
@@ -64,8 +62,6 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
       ? "DEFAULT"
       : activeVersion?.shortLabel || activeVersion?.label || "VERSION"
   const titleHtml = useMemo(() => titleToHtml(title), [title])
-  const defaultTypeTextColor = blockTypeDefaults[data.nodeType]?.textColor
-  const richTextAccentColor = defaultTypeTextColor && defaultTypeTextColor !== defaultBlockColors.text ? defaultTypeTextColor : data.textColor
   const visualBorderColor = getVisualBorderColor(data.borderColor)
   const visualDividerColor = getVisualDividerColor(data.borderColor)
 
@@ -114,7 +110,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
         "--asteria-block-border-color": visualBorderColor,
         "--asteria-block-divider-color": visualDividerColor,
         "--asteria-node-height": `${visualHeight}px`,
-        "--asteria-rich-accent-color": richTextAccentColor,
+        "--asteria-rich-accent-color": data.textColor,
         color: data.textColor,
       } as CSSProperties}
     >
@@ -266,12 +262,13 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
             <select
               className={`type-select nodrag nopan ${blockType.badgeClass}`}
               value={data.nodeType}
+              title={blockType.description}
               onChange={(event) => updateBlock(id, { nodeType: event.target.value as typeof data.nodeType })}
               onPointerDown={(event) => event.stopPropagation()}
               aria-label="Block type"
             >
               {blockTypeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
+                <option key={option.value} value={option.value} title={option.description}>
                   {option.label}
                 </option>
               ))}
@@ -292,11 +289,11 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
             chrome={false}
             editorClassName="min-h-[calc(var(--asteria-node-height,220px)-60px)] cursor-text"
             editorTextColor={data.textColor}
-            editorAccentColor={richTextAccentColor}
+            editorAccentColor={data.textColor}
             focusTargetId={id}
           />
         ) : displayMode === "title_only" ? null : (
-          <RichTextPreview html={contentHtml} color={data.textColor} accentColor={richTextAccentColor} />
+          <RichTextPreview html={contentHtml} color={data.textColor} accentColor={data.textColor} />
         )}
       </div>
     </div>

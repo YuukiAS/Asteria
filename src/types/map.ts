@@ -9,9 +9,12 @@ export type BlockNodeType =
   | "prior"
   | "assumption"
   | "theorem"
+  | "algorithm"
   | "dataset"
   | "result"
-  | "citation"
+  | "reference"
+  | "remark"
+  | "example"
   | "warning"
   | "todo"
 

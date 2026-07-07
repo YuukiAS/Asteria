@@ -204,6 +204,7 @@ export function createEdge(connection: Connection): Edge<MapEdgeData> {
 
 function normalizeNodeType(value: unknown): BlockNodeType {
   if (value === "statement") return "theorem"
+  if (value === "citation") return "reference"
   if (validBlockNodeTypes.includes(value as BlockNodeType)) return value as BlockNodeType
   if (value !== undefined) console.warn(`Unknown block nodeType "${String(value)}"; falling back to generic.`)
   return "generic"
@@ -302,9 +303,8 @@ function normalizeEdgeVisibility(value: unknown, modelVersions: ModelVersion[]):
   return value.map((item) => String(item)).filter((id) => validIds.has(id)).slice(0, maxModelVersions)
 }
 
-function shouldPreserveExistingTextColor(value: unknown) {
-  if (typeof value !== "string") return false
-  return ["#3b82f6", "#1d4ed8", "#8b5cf6", "#6d28d9", "#ec4899", "#be185d"].includes(value.toLowerCase())
+function normalizeColor(value: unknown, fallback: string) {
+  return typeof value === "string" && value.trim() ? value : fallback
 }
 
 function normalizeEdgeLineStyle(value: unknown): EdgeLineStyle {
@@ -371,9 +371,9 @@ function normalizeBlockData(input: Partial<BlockData> & { content?: string }): B
     contentHtml: commonVariant.contentHtml,
     variants,
     activeVariantKey: input.activeVariantKey || commonVariantKey,
-    backgroundColor: defaults.backgroundColor,
-    textColor: shouldPreserveExistingTextColor(input.textColor) ? String(input.textColor) : defaults.textColor,
-    borderColor: defaultBlockColors.border,
+    backgroundColor: normalizeColor(input.backgroundColor, defaults.backgroundColor),
+    textColor: normalizeColor(input.textColor, defaults.textColor),
+    borderColor: normalizeColor(input.borderColor, defaults.borderColor),
     width: Number.isFinite(width) ? Math.min(Math.max(width, 220), 860) : 340,
     height: Number.isFinite(height) ? Math.min(Math.max(height, 160), 720) : 220,
     displayMode: normalizeDisplayMode(input.displayMode),

@@ -1,10 +1,19 @@
 import type { BlockNode, ExportedMap, MapEdge } from "../types/map"
+import { blockTypeDefaults } from "../constants/blockDefaults"
 import { defaultEdgeData } from "./exportImport"
 import { nowIso } from "./time"
 
 const at = nowIso()
 
-function block(id: string, title: string, x: number, y: number, contentJson: BlockNode["data"]["contentJson"]): BlockNode {
+function block(
+  id: string,
+  title: string,
+  x: number,
+  y: number,
+  contentJson: BlockNode["data"]["contentJson"],
+  nodeType: BlockNode["data"]["nodeType"] = "generic",
+): BlockNode {
+  const defaults = blockTypeDefaults[nodeType]
   return {
     id,
     type: "block",
@@ -15,13 +24,13 @@ function block(id: string, title: string, x: number, y: number, contentJson: Blo
       contentHtml: "",
       variants: { common: { title, contentJson, contentHtml: "", updatedAt: at } },
       activeVariantKey: "common",
-      backgroundColor: "#ffffff",
-      textColor: "#111827",
-      borderColor: "#111827",
+      backgroundColor: defaults.backgroundColor,
+      textColor: defaults.textColor,
+      borderColor: defaults.borderColor,
       width: 340,
       height: 220,
       displayMode: "full",
-      nodeType: "generic",
+      nodeType,
       showStatus: false,
       status: "undo",
       emojis: [],
@@ -51,7 +60,7 @@ export function createDemoMap(): ExportedMap {
           },
         },
       ],
-    }),
+    }, "model"),
     block("demo-evidence", "Evidence block", 520, 160, {
       type: "doc",
       content: [
@@ -65,7 +74,7 @@ export function createDemoMap(): ExportedMap {
           ],
         },
       ],
-    }),
+    }, "reference"),
     block("demo-output", "Output summary", 300, 460, {
       type: "doc",
       content: [
@@ -82,7 +91,7 @@ export function createDemoMap(): ExportedMap {
           },
         },
       ],
-    }),
+    }, "result"),
   ]
   const edges: MapEdge[] = [
     {

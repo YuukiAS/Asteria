@@ -248,14 +248,16 @@ export function InspectorPanel() {
               <select
                 className="field-input"
                 value={node.data.nodeType}
+                title={blockType.description}
                 onChange={(event) => updateBlock(node.id, { nodeType: event.target.value as typeof node.data.nodeType })}
               >
                 {blockTypeOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
+                  <option key={option.value} value={option.value} title={option.description}>
                     {option.label}
                   </option>
                 ))}
               </select>
+              <span className="field-help" title={blockType.description}>{blockType.description}</span>
             </label>
                   <label className="field-label">
               Content version

@@ -74,6 +74,7 @@ type DistributeCommand = "horizontal" | "vertical"
 const edgeStyleClipboardKey = "asteria-edge-style-clipboard"
 const blockStyleClipboardKey = "asteria-block-style-clipboard"
 const blockClipboardKey = "asteria-block-clipboard"
+const blockTypeStyleMigrationKey = "asteria-block-type-style-migration-v0.5.1"
 
 function readClipboard<T>(key: string): T | undefined {
   try {
@@ -315,6 +316,23 @@ function blockTypePatch(patch: Partial<BlockData>) {
   }
 }
 
+function applyBlockTypeStyleSystem(nodes: MapNode[]): MapNode[] {
+  return nodes.map((node) => {
+    if (!isBlockNode(node)) return node
+    const defaults = blockTypeDefaults[node.data.nodeType] || blockTypeDefaults.generic
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        backgroundColor: defaults.backgroundColor,
+        textColor: defaults.textColor,
+        borderColor: defaults.borderColor,
+        updatedAt: nowIso(),
+      },
+    }
+  })
+}
+
 function clearTextColorMarks(content: BlockVariant["contentJson"]): BlockVariant["contentJson"] {
   const next = cloneJson(content)
   const visit = (node: typeof next) => {
@@ -387,19 +405,25 @@ export const useMapStore = create<MapState>((set, get) => ({
       const persisted = await loadPersistedMap()
       if (persisted) {
         const map = normalizeExportedMap(persisted.map)
+        const shouldMigrateBlockStyles = localStorage.getItem(blockTypeStyleMigrationKey) !== "done"
+        const nodes = applyContentHtml(shouldMigrateBlockStyles ? applyBlockTypeStyleSystem(map.nodes) : map.nodes)
         set({
           mapTitle: normalizeMapTitle(map.title),
           modelVersions: map.modelVersions || [],
           activeVersionId: map.activeVersionId || allVersionsId,
           displayModeOverride: map.displayModeOverride || "block",
-          nodes: applyContentHtml(map.nodes),
+          nodes,
           edges: map.edges.map(applyEdgePresentation),
           viewport: map.viewport ?? { x: 0, y: 0, zoom: 1 },
           lastSavedAt: persisted.updatedAt,
           seededDemo: persisted.seededDemo,
           isHydrated: true,
-          saveStatus: "Saved",
+          saveStatus: shouldMigrateBlockStyles ? "Unsaved" : "Saved",
         })
+        if (shouldMigrateBlockStyles) {
+          localStorage.setItem(blockTypeStyleMigrationKey, "done")
+          await get().saveNow()
+        }
         return
       }
       const demo = createDemoMap()

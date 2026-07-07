@@ -166,6 +166,10 @@ body {
     @apply h-9 rounded-md border border-border bg-panel px-2.5 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-accent;
   }
 
+  .field-help {
+    @apply text-[11px] font-normal leading-4 text-muted;
+  }
+
   .badge {
     @apply rounded-md border border-border px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-secondary;
   }
@@ -435,6 +439,12 @@ body {
 }
 
 .type-badge-definition,
+.type-badge-reference {
+  border-color: rgba(107, 114, 128, 0.24);
+  background: #f9fafb;
+  color: #374151;
+}
+
 .type-badge-notation {
   border-color: rgba(234, 179, 8, 0.26);
   background: #fef3c7;
@@ -442,15 +452,15 @@ body {
 }
 
 .type-badge-model {
-  border-color: rgba(234, 179, 8, 0.28);
-  background: rgba(234, 179, 8, 0.1);
-  color: #eab308;
+  border-color: rgba(251, 146, 60, 0.42);
+  background: #fff7ed;
+  color: #9a3412;
 }
 
 .type-badge-prior {
-  border-color: rgba(37, 99, 235, 0.22);
-  background: #dbeafe;
-  color: #1d4ed8;
+  border-color: rgba(250, 204, 21, 0.42);
+  background: #fef3c7;
+  color: #854d0e;
 }
 
 .type-badge-assumption {
@@ -460,27 +470,39 @@ body {
 }
 
 .type-badge-theorem {
-  border-color: rgba(180, 83, 9, 0.24);
-  background: rgba(217, 119, 6, 0.09);
-  color: #b45309;
+  border-color: rgba(249, 115, 22, 0.42);
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.type-badge-algorithm {
+  border-color: rgba(139, 92, 246, 0.34);
+  background: #ede9fe;
+  color: #6d28d9;
 }
 
 .type-badge-dataset {
-  border-color: rgba(236, 72, 153, 0.22);
-  background: #fce7f3;
-  color: #be185d;
+  border-color: rgba(34, 197, 94, 0.32);
+  background: #dcfce7;
+  color: #15803d;
 }
 
 .type-badge-result {
   border-color: rgba(37, 99, 235, 0.24);
-  background: rgba(37, 99, 235, 0.1);
+  background: #dbeafe;
   color: #1d4ed8;
 }
 
-.type-badge-citation {
-  border-color: rgba(107, 114, 128, 0.22);
-  background: rgba(107, 114, 128, 0.08);
-  color: #4b5563;
+.type-badge-remark {
+  border-color: rgba(236, 72, 153, 0.28);
+  background: #fce7f3;
+  color: #be185d;
+}
+
+.type-badge-example {
+  border-color: rgba(96, 165, 250, 0.34);
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .type-badge-warning {
@@ -490,9 +512,9 @@ body {
 }
 
 .type-badge-todo {
-  border-color: rgba(220, 38, 38, 0.2);
-  background: rgba(220, 38, 38, 0.08);
-  color: #b91c1c;
+  border-color: rgba(148, 163, 184, 0.34);
+  background: #ffffff;
+  color: #475569;
 }
 
 .status-marker-undo {
@@ -519,9 +541,12 @@ body {
 [data-theme="dark"] .type-badge-prior,
 [data-theme="dark"] .type-badge-assumption,
 [data-theme="dark"] .type-badge-theorem,
+[data-theme="dark"] .type-badge-algorithm,
 [data-theme="dark"] .type-badge-dataset,
 [data-theme="dark"] .type-badge-result,
-[data-theme="dark"] .type-badge-citation,
+[data-theme="dark"] .type-badge-reference,
+[data-theme="dark"] .type-badge-remark,
+[data-theme="dark"] .type-badge-example,
 [data-theme="dark"] .type-badge-warning,
 [data-theme="dark"] .type-badge-todo,
 [data-theme="dark"] .status-marker-doing,

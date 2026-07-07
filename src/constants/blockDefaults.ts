@@ -1,6 +1,6 @@
 import type { JSONContent } from "@tiptap/react"
 import type { BlockNodeType } from "../types/map"
-import { defaultBlockColors } from "./palette"
+import { blockTypeColors, defaultBlockColors } from "./palette"
 
 export const orderedResultContentJson: JSONContent = {
   type: "doc",
@@ -32,66 +32,81 @@ export type BlockTypeDefaults = {
 
 export const blockTypeDefaults: Record<BlockNodeType, BlockTypeDefaults> = {
   generic: {
-    backgroundColor: defaultBlockColors.background,
+    backgroundColor: blockTypeColors.generic.background,
     textColor: defaultBlockColors.text,
-    borderColor: defaultBlockColors.border,
+    borderColor: blockTypeColors.generic.border,
   },
   definition: {
-    backgroundColor: "#fef3c7",
+    backgroundColor: blockTypeColors.definition.background,
     textColor: defaultBlockColors.text,
-    borderColor: defaultBlockColors.border,
+    borderColor: blockTypeColors.definition.border,
   },
   notation: {
-    backgroundColor: "#fef3c7",
+    backgroundColor: blockTypeColors.notation.background,
     textColor: defaultBlockColors.text,
-    borderColor: defaultBlockColors.border,
+    borderColor: blockTypeColors.notation.border,
   },
   model: {
-    backgroundColor: defaultBlockColors.background,
-    textColor: "#eab308",
-    borderColor: defaultBlockColors.border,
+    backgroundColor: blockTypeColors.model.background,
+    textColor: defaultBlockColors.text,
+    borderColor: blockTypeColors.model.border,
   },
   prior: {
-    backgroundColor: "#dbeafe",
+    backgroundColor: blockTypeColors.prior.background,
     textColor: defaultBlockColors.text,
-    borderColor: defaultBlockColors.border,
+    borderColor: blockTypeColors.prior.border,
   },
   assumption: {
-    backgroundColor: "#e5e7eb",
+    backgroundColor: blockTypeColors.assumption.background,
     textColor: defaultBlockColors.text,
-    borderColor: defaultBlockColors.border,
+    borderColor: blockTypeColors.assumption.border,
   },
   theorem: {
-    backgroundColor: defaultBlockColors.background,
-    textColor: "#b45309",
-    borderColor: defaultBlockColors.border,
+    backgroundColor: blockTypeColors.theorem.background,
+    textColor: defaultBlockColors.text,
+    borderColor: blockTypeColors.theorem.border,
+  },
+  algorithm: {
+    backgroundColor: blockTypeColors.algorithm.background,
+    textColor: defaultBlockColors.text,
+    borderColor: blockTypeColors.algorithm.border,
   },
   dataset: {
-    backgroundColor: "#fce7f3",
+    backgroundColor: blockTypeColors.dataset.background,
     textColor: defaultBlockColors.text,
-    borderColor: defaultBlockColors.border,
+    borderColor: blockTypeColors.dataset.border,
   },
   result: {
-    backgroundColor: defaultBlockColors.background,
+    backgroundColor: blockTypeColors.result.background,
     textColor: defaultBlockColors.text,
-    borderColor: defaultBlockColors.border,
+    borderColor: blockTypeColors.result.border,
     contentJson: orderedResultContentJson,
   },
-  citation: {
-    backgroundColor: defaultBlockColors.background,
+  reference: {
+    backgroundColor: blockTypeColors.reference.background,
     textColor: defaultBlockColors.text,
-    borderColor: defaultBlockColors.border,
+    borderColor: blockTypeColors.reference.border,
+  },
+  remark: {
+    backgroundColor: blockTypeColors.remark.background,
+    textColor: defaultBlockColors.text,
+    borderColor: blockTypeColors.remark.border,
+  },
+  example: {
+    backgroundColor: blockTypeColors.example.background,
+    textColor: defaultBlockColors.text,
+    borderColor: blockTypeColors.example.border,
   },
   warning: {
-    backgroundColor: "#fee2e2",
+    backgroundColor: blockTypeColors.warning.background,
     textColor: defaultBlockColors.text,
-    borderColor: defaultBlockColors.border,
-    emojis: ["⚠️"],
+    borderColor: blockTypeColors.warning.border,
+    emojis: ["!"],
   },
   todo: {
-    backgroundColor: defaultBlockColors.background,
+    backgroundColor: blockTypeColors.todo.background,
     textColor: defaultBlockColors.text,
-    borderColor: defaultBlockColors.border,
+    borderColor: blockTypeColors.todo.border,
     contentJson: todoContentJson,
   },
 }

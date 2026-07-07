@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1 - Block Type Color System
+
+- Reworked block type defaults so types control block background and border, not body text color.
+- Added Algorithm, Reference, Remark, and Example block types and migrated legacy Citation blocks to Reference.
+- Added English block type descriptions in the right inspector type picker.
+- Added a one-time local canvas migration that resets existing block-level colors to the new type color system while preserving rich-text colors and highlights.
+
 ## 0.5.0 - Reorderable Inspector Sections
 
 - Refactored the right inspector into VS Code-style collapsible sections.
