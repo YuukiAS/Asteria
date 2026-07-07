@@ -1,6 +1,6 @@
 import { BubbleMenu, type Editor } from "@tiptap/react"
 import { Bold, Code, Highlighter, Italic, Link as LinkIcon, Sigma, Strikethrough, Type, Underline } from "lucide-react"
-import { textPalette } from "../constants/palette"
+import { backgroundPalette, textPalette } from "../constants/palette"
 
 type RichTextBubbleMenuProps = {
   editor: Editor
@@ -66,11 +66,51 @@ function BubbleButton({
   )
 }
 
+function ColorSwatch({
+  color,
+  label,
+  onApply,
+}: {
+  color: string
+  label: string
+  onApply: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className="h-5 w-5 rounded-full border border-border shadow-sm transition hover:scale-110"
+      style={{ backgroundColor: color }}
+      aria-label={label}
+      title={label}
+      onMouseDown={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        onApply()
+      }}
+      onClick={(event) => {
+        event.stopPropagation()
+      }}
+    />
+  )
+}
+
 export function RichTextBubbleMenu({ editor }: RichTextBubbleMenuProps) {
   return (
     <BubbleMenu
       editor={editor}
-      tippyOptions={{ duration: 120, placement: "top", interactive: true, zIndex: 80 }}
+      tippyOptions={{
+        duration: 120,
+        placement: "auto",
+        interactive: true,
+        zIndex: 80,
+        appendTo: () => document.body,
+        popperOptions: {
+          modifiers: [
+            { name: "flip", options: { padding: 12 } },
+            { name: "preventOverflow", options: { padding: 12 } },
+          ],
+        },
+      }}
       shouldShow={({ editor: activeEditor, from, to }) => activeEditor.isFocused && from !== to}
     >
       <div
@@ -116,22 +156,25 @@ export function RichTextBubbleMenu({ editor }: RichTextBubbleMenuProps) {
             <Type size={14} />
           </BubbleButton>
         </div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Text color</div>
         <div className="grid grid-cols-12 gap-1.5">
           {textPalette.map((color) => (
-            <button
+            <ColorSwatch
               key={color}
-              type="button"
-              className="h-5 w-5 rounded-full border border-border shadow-sm transition hover:scale-110"
-              style={{ backgroundColor: color }}
-              aria-label={`Set text ${color}`}
-              onMouseDown={(event) => {
-                event.preventDefault()
-                event.stopPropagation()
-                applyMark(editor, "textStyle", { color }, false)
-              }}
-              onClick={(event) => {
-                event.stopPropagation()
-              }}
+              color={color}
+              label={`Set text ${color}`}
+              onApply={() => applyMark(editor, "textStyle", { color }, false)}
+            />
+          ))}
+        </div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Highlight</div>
+        <div className="grid grid-cols-12 gap-1.5">
+          {backgroundPalette.map((color) => (
+            <ColorSwatch
+              key={color}
+              color={color}
+              label={`Set highlight ${color}`}
+              onApply={() => applyMark(editor, "highlight", { color }, false)}
             />
           ))}
         </div>

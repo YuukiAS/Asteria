@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.10 - Bubble Highlight Palette
+
+- Split the inline rich-text bubble menu color controls into Text color and Highlight sections.
+- Added highlight color swatches directly to the selection bubble.
+- Reviewed the inspector Content editor and kept it because it still provides full block editing and block-level formatting that the selection bubble does not cover.
+
 ## 0.4.9 - Manual Math Color Overrides
 
 - Widened the inline rich-text bubble menu so the full text-color palette fits on one row.
