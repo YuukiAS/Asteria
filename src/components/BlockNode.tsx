@@ -282,11 +282,6 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
               {versionState.modeLabel}
             </span>
           )}
-          {versionState.isFallbackToDefault && (
-            <span className="version-badge version-badge-default" title={versionState.tooltip}>
-              DEFAULT
-            </span>
-          )}
           {data.showStatus && <span className={`status-marker ${blockStatus.className}`}>{blockStatus.label}</span>}
           {isEditableSelection ? (
             <select

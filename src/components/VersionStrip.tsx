@@ -1,6 +1,5 @@
 import type { CSSProperties } from "react"
 import type { ModelVersion } from "../types/map"
-import { versionShortLabel } from "../lib/blockVersionState"
 
 type VersionStripProps = {
   availableVersionIds: string[]
@@ -27,7 +26,7 @@ export function VersionStrip({ availableVersionIds, activeVersionId, modelVersio
             title={`${version.label}: ${exists ? "variant exists" : "uses default fallback"}`}
             aria-label={`${version.label}: ${exists ? "variant exists" : "uses default fallback"}${active ? ", active" : ""}`}
           >
-            {versionShortLabel(version).slice(0, 1)}
+            {index + 1}
           </span>
         )
       })}

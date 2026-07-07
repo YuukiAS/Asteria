@@ -5,10 +5,6 @@ export function versionLabel(version?: ModelVersion, fallback = "Version") {
   return version?.label || fallback
 }
 
-export function versionShortLabel(version?: ModelVersion) {
-  return version?.shortLabel || version?.label || "V"
-}
-
 export function resolveBlockVersionState(data: BlockData, activeVersionId: string, modelVersions: ModelVersion[]) {
   const pinnedVariantKey = data.activeVariantKey && data.activeVariantKey !== defaultVariantKey ? data.activeVariantKey : undefined
   const isAuto = !pinnedVariantKey

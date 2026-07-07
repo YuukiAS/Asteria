@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.8 - Clearer Version Header State
+
+- Removed the separate canvas `DEFAULT` fallback badge so it no longer competes with `AUTO` and `PINNED`.
+- Kept fallback information in the version strip marker state and tooltip.
+- Changed version strip marker labels to fixed numeric positions instead of truncating version short labels.
+
 ## 0.5.7 - Version Variant Strip
 
 - Replaced the old undifferentiated blue variant dots with a compact dynamic version strip in block headers.

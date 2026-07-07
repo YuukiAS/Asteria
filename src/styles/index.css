@@ -251,10 +251,6 @@ body {
     @apply border-accent/30 bg-accentSoft text-accent;
   }
 
-  .version-badge-default {
-    @apply border-slate-300 bg-slate-100 text-slate-500;
-  }
-
   .version-strip {
     @apply inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-panel/70 px-1 py-0.5;
   }
