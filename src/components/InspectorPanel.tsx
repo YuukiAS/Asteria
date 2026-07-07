@@ -2,7 +2,7 @@ import { Clipboard, Copy, Layers, Plus, RotateCcw } from "lucide-react"
 import { blockTypeDefaults } from "../constants/blockDefaults"
 import { blockStatusOptions, blockTypeByValue, blockTypeOptions } from "../constants/blockTypes"
 import { blockFitExtraPadding, blockHeaderHeight, blockPreviewHorizontalPadding, blockPreviewVerticalPadding, blockSizeLimits } from "../constants/layout"
-import { allVersionsId, blockDisplayModeOptions, commonVariantKey } from "../constants/versioning"
+import { allVersionsId, blockDisplayModeOptions, defaultVariantKey } from "../constants/versioning"
 import { backgroundPalette, textPalette } from "../constants/palette"
 import { ColorPickerRow } from "./ColorPickerRow"
 import { EdgeInspector } from "./EdgeInspector"
@@ -10,12 +10,13 @@ import { InspectorSectionStack } from "./InspectorSectionStack"
 import { RichTextEditor } from "./RichTextEditor"
 import { formatLocalDateTime } from "../lib/time"
 import { requestInlineBlockEdit } from "../lib/inlineEditEvents"
+import { resolveBlockVersionState } from "../lib/blockVersionState"
 import { resolveBlockContentHtml, resolveBlockContentJson, resolveBlockTitle } from "../lib/exportImport"
 import { stripScriptTags } from "../lib/sanitize"
 import { useMapStore } from "../store/useMapStore"
 import type { BlockData } from "../types/map"
 
-const emojiPresets = ["⚠️", "⭐", "📌", "✅", "❌", "💡", "📎", "🧪", "📊", "🔗", "❓", "🔥"]
+const emojiPresets = ["*", "!", "?", "+", "#", "%", "&", "@", "~", "^", "=", "/"]
 
 function clampBlockHeight(value: number) {
   return Math.min(Math.max(Math.ceil(value), blockSizeLimits.minHeight), blockSizeLimits.maxHeight)
@@ -42,7 +43,7 @@ function measureBlockContentHeight(html: string | undefined, width: number) {
 }
 
 function variantKeysForFit(data: BlockData, modelVersionIds: string[], activeVariantKey: string) {
-  return Array.from(new Set([commonVariantKey, activeVariantKey, ...modelVersionIds, ...Object.keys(data.variants || {})]))
+  return Array.from(new Set([defaultVariantKey, activeVariantKey, ...modelVersionIds, ...Object.keys(data.variants || {})]))
 }
 
 export function InspectorPanel() {
@@ -236,12 +237,12 @@ export function InspectorPanel() {
     const blockType = blockTypeByValue[node.data.nodeType] || blockTypeByValue.generic
     const blockTypePlaceholder = blockTypeDefaults[node.data.nodeType]?.placeholder
     const emojis = node.data.emojis || []
-    const activeVariantKey = node.data.activeVariantKey || (activeVersionId === allVersionsId ? commonVariantKey : activeVersionId)
-    const activeVersion = modelVersions.find((version) => version.id === activeVariantKey)
+    const versionState = resolveBlockVersionState(node.data, activeVersionId, modelVersions)
+    const activeVariantKey = versionState.requestedVariantKey
     const activeTitle = resolveBlockTitle(node.data, activeVariantKey)
     const activeContentJson = resolveBlockContentJson(node.data, activeVariantKey)
-    const hasVersionVariant = Boolean(node.data.variants?.[activeVariantKey])
-    const variantLabel = activeVariantKey === commonVariantKey ? "Default" : activeVersion?.label || "Version"
+    const hasVersionVariant = activeVariantKey === defaultVariantKey || Boolean(node.data.variants?.[activeVariantKey])
+    const variantLabel = `${versionState.renderedLabel} via ${versionState.modeLabel}`
     const setEditingVariant = (variantKey: string) => {
       setBlockActiveVariant(node.id, variantKey)
     }
@@ -250,7 +251,7 @@ export function InspectorPanel() {
       updateBlock(node.id, { emojis: emoji ? [emoji] : [] })
     }
     const fitCurrentContent = () => {
-      const height = measureBlockContentHeight(resolveBlockContentHtml(node.data, activeVariantKey), node.data.width)
+      const height = measureBlockContentHeight(resolveBlockContentHtml(node.data, versionState.renderedVariantKey), node.data.width)
       if (!height) {
         console.warn(`Failed to measure current content for block ${node.id}; using maximum fit height.`)
         updateBlock(node.id, { height: blockSizeLimits.maxHeight })
@@ -317,14 +318,14 @@ export function InspectorPanel() {
               Content version
               <select
                 className="field-input"
-                value={activeVariantKey}
+                value={node.data.activeVariantKey || defaultVariantKey}
                 onChange={(event) => setEditingVariant(event.target.value)}
-                title="Choose which content version this selected block displays and edits."
+                title="Choose AUTO to follow the toolbar version, or pin this block to a specific version."
               >
-                <option value={commonVariantKey}>Default</option>
+                <option value={defaultVariantKey}>AUTO: follow global version</option>
                 {modelVersions.map((version) => (
                   <option key={version.id} value={version.id}>
-                    {version.label}
+                    PIN {version.label}
                   </option>
                 ))}
               </select>
@@ -353,9 +354,9 @@ export function InspectorPanel() {
                   </div>
                   <div className="rounded-lg border border-border bg-app/60 p-2 text-xs text-secondary">
               Editing content: <span className="font-semibold text-foreground">{variantLabel}</span>
-              {!hasVersionVariant && activeVariantKey !== commonVariantKey ? " (currently showing Default fallback; typing here creates this version)" : ""}
+              {!hasVersionVariant && activeVariantKey !== defaultVariantKey ? ` (showing Default fallback; typing here creates ${versionState.requestedLabel})` : ""}
               <br />
-              The top toolbar switches every block; this selector switches only the selected block.
+              AUTO follows the top toolbar. PIN ignores global switching for this block.
               {displayModeOverride !== "block" ? ` Toolbar density override: ${displayModeOverride}.` : ""}
             </div>
                 </>

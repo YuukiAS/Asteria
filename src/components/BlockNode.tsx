@@ -3,14 +3,16 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { blockTypeDefaults } from "../constants/blockDefaults"
 import { blockStatusByValue, blockTypeByValue, blockTypeOptions } from "../constants/blockTypes"
 import { blockSizeLimits } from "../constants/layout"
-import { allVersionsId, commonVariantKey } from "../constants/versioning"
-import { getVariantKey, resolveBlockContentHtml, resolveBlockContentJson, resolveBlockTitle } from "../lib/exportImport"
+import { defaultVariantKey } from "../constants/versioning"
+import { resolveBlockVersionState } from "../lib/blockVersionState"
+import { resolveBlockContentHtml, resolveBlockContentJson, resolveBlockTitle } from "../lib/exportImport"
 import { requestInlineBlockEdit, requestInlineEditorFocus, type InlineEditTarget } from "../lib/inlineEditEvents"
 import { titleToHtml } from "../lib/titleMath"
 import type { BlockNode as BlockNodeType } from "../types/map"
 import { useMapStore } from "../store/useMapStore"
 import { RichTextEditor } from "./RichTextEditor"
 import { RichTextPreview } from "./RichTextPreview"
+import { VersionStrip } from "./VersionStrip"
 
 type BlockNodeProps = NodeProps<BlockNodeType> & {
   interactionMode: "move" | "edit"
@@ -55,17 +57,12 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
   const blockTypePlaceholder = blockTypeDefaults[data.nodeType]?.placeholder
   const blockStatus = data.status ? blockStatusByValue[data.status] : blockStatusByValue.undo
   const emoji = (data.emojis || []).filter(Boolean)[0] || ""
-  const effectiveVariantKey = data.activeVariantKey || getVariantKey(activeVersionId)
+  const versionState = resolveBlockVersionState(data, activeVersionId, modelVersions)
+  const effectiveVariantKey = versionState.renderedVariantKey
   const title = resolveBlockTitle(data, effectiveVariantKey)
   const contentJson = resolveBlockContentJson(data, effectiveVariantKey)
   const contentHtml = resolveBlockContentHtml(data, effectiveVariantKey)
   const displayMode = displayModeOverride === "block" ? data.displayMode || "full" : displayModeOverride
-  const activeVersion = modelVersions.find((version) => version.id === effectiveVariantKey)
-  const variantKeys = Object.keys(data.variants || {}).filter((key) => key !== commonVariantKey)
-  const variantBadge =
-    effectiveVariantKey === commonVariantKey
-      ? "DEFAULT"
-      : activeVersion?.shortLabel || activeVersion?.label || "VERSION"
   const titleHtml = useMemo(() => titleToHtml(title), [title])
   const visualBorderColor = getVisualBorderColor(data.borderColor)
   const visualDividerColor = getVisualDividerColor(data.borderColor)
@@ -257,31 +254,37 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
         ) : (
           <div className="block-title-display" title={title} dangerouslySetInnerHTML={{ __html: titleHtml }} />
         )}
-        {variantKeys.length > 0 && (
-          <span className="variant-dot-row mr-auto" title={`${variantKeys.length} saved content versions. Select the block and use Content version in the inspector to edit them.`}>
-            {variantKeys.map((key) => <span key={key} />)}
-          </span>
-        )}
+        <VersionStrip
+          activeVersionId={versionState.requestedVariantKey}
+          availableVersionIds={versionState.availableVersionIds}
+          modelVersions={modelVersions}
+          title={versionState.tooltip}
+        />
         <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1">
           {isEditableSelection ? (
             <select
               className="version-select nodrag nopan"
-              value={effectiveVariantKey}
+              value={data.activeVariantKey || defaultVariantKey}
               onChange={(event) => setBlockActiveVariant(id, event.target.value)}
               onPointerDown={(event) => event.stopPropagation()}
               aria-label="Block content version"
               title="Block content version"
             >
-              <option value={commonVariantKey}>Default</option>
+              <option value={defaultVariantKey}>AUTO</option>
               {modelVersions.map((version) => (
                 <option key={version.id} value={version.id}>
-                  {version.shortLabel || version.label}
+                  PIN {version.shortLabel || version.label}
                 </option>
               ))}
             </select>
           ) : (
-            <span className="version-badge" title={data.activeVariantKey ? "Block-specific content version" : "Version used by the current canvas preview"}>
-              {variantBadge}
+            <span className={`version-badge ${versionState.isPinned ? "version-badge-pinned" : "version-badge-auto"}`} title={versionState.tooltip}>
+              {versionState.modeLabel}
+            </span>
+          )}
+          {versionState.isFallbackToDefault && (
+            <span className="version-badge version-badge-default" title={versionState.tooltip}>
+              DEFAULT
             </span>
           )}
           {data.showStatus && <span className={`status-marker ${blockStatus.className}`}>{blockStatus.label}</span>}

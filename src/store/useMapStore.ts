@@ -8,7 +8,7 @@ import {
 } from "@xyflow/react"
 import { create } from "zustand"
 import { blockTypeDefaults } from "../constants/blockDefaults"
-import { allVersionsId, commonVariantKey, maxModelVersions, microStraightenTolerance, snapGridSize } from "../constants/versioning"
+import { allVersionsId, defaultVariantKey, maxModelVersions, microStraightenTolerance, snapGridSize } from "../constants/versioning"
 import { createDemoMap } from "../lib/demo"
 import {
   applyEdgePresentation,
@@ -266,11 +266,11 @@ function relativePositionFromAbsolute(node: MapNode, nodes: MapNode[], absolute:
 }
 
 function getBlockVariantKeyForState(state: Pick<MapState, "activeVersionId">, data: BlockData) {
-  return data.activeVariantKey || getVariantKey(state.activeVersionId)
+  return data.activeVariantKey && data.activeVariantKey !== defaultVariantKey ? data.activeVariantKey : getVariantKey(state.activeVersionId)
 }
 
 function patchBlockVariant(data: BlockData, key: string, patch: Partial<Pick<BlockData, "title" | "contentJson" | "contentHtml">>) {
-  const current = data.variants?.[key] || data.variants?.[commonVariantKey] || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt)
+  const current = data.variants?.[key] || data.variants?.[defaultVariantKey] || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt)
   const next: BlockVariant = {
     ...current,
     title: patch.title ?? current.title,
@@ -278,14 +278,14 @@ function patchBlockVariant(data: BlockData, key: string, patch: Partial<Pick<Blo
     contentHtml: patch.contentHtml ?? (patch.contentJson ? contentJsonToHtml(patch.contentJson) : current.contentHtml),
     updatedAt: nowIso(),
   }
-  const commonVariant =
-    key === commonVariantKey
+  const defaultVariant =
+    key === defaultVariantKey
       ? next
-      : data.variants?.[commonVariantKey] || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt)
+      : data.variants?.[defaultVariantKey] || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt)
   return {
     ...data.variants,
     [key]: next,
-    [commonVariantKey]: commonVariant,
+    [defaultVariantKey]: defaultVariant,
   }
 }
 
@@ -547,24 +547,9 @@ export const useMapStore = create<MapState>((set, get) => ({
     const activeVersionId = state.modelVersions.some((version) => version.id === versionId)
       ? versionId
       : state.modelVersions[0]?.id || allVersionsId
-    const variantKey = getVariantKey(activeVersionId)
     set({
       activeVersionId,
       selectedEdgeId: undefined,
-      nodes: state.nodes.map((node) => {
-        if (!isBlockNode(node)) return node
-        const variant = resolveBlockVariant(node.data, variantKey)
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            activeVariantKey: variantKey,
-            title: variant.title,
-            contentJson: variant.contentJson,
-            contentHtml: variant.contentHtml || contentJsonToHtml(variant.contentJson),
-          },
-        }
-      }),
     })
     get().markUnsaved()
   },
@@ -611,7 +596,7 @@ export const useMapStore = create<MapState>((set, get) => ({
         if (!isBlockNode(node)) return node
         const variants = { ...(node.data.variants || {}) }
         delete variants[id]
-        return { ...node, data: { ...node.data, variants, activeVariantKey: node.data.activeVariantKey === id ? commonVariantKey : node.data.activeVariantKey } }
+        return { ...node, data: { ...node.data, variants, activeVariantKey: node.data.activeVariantKey === id ? defaultVariantKey : node.data.activeVariantKey } }
       }),
       edges: state.edges.map((edge) => {
         const visibility = edge.data?.visibility
@@ -786,7 +771,7 @@ export const useMapStore = create<MapState>((set, get) => ({
         if (node.id !== id || !isBlockNode(node)) return node
         const variantKey = getBlockVariantKeyForState(state, node.data)
         const variants = Object.keys(variantPatch).length ? patchBlockVariant(node.data, variantKey, variantPatch) : node.data.variants
-        const resolvedVariant = variants?.[variantKey] || variants?.[commonVariantKey] || resolveBlockVariant(node.data, state.activeVersionId)
+        const resolvedVariant = variants?.[variantKey] || variants?.[defaultVariantKey] || resolveBlockVariant(node.data, state.activeVersionId)
         return {
           ...node,
           data: {
@@ -827,7 +812,7 @@ export const useMapStore = create<MapState>((set, get) => ({
   setBlockActiveVariant: (id, variantKey) => {
     const state = get()
     const key = getVariantKey(allVersionsId, variantKey)
-    if (key !== commonVariantKey && !state.modelVersions.some((version) => version.id === key)) return
+    if (key !== defaultVariantKey && !state.modelVersions.some((version) => version.id === key)) return
     set((nextState) => ({
       nodes: nextState.nodes.map((node) => {
         if (node.id !== id || !isBlockNode(node)) return node
@@ -851,12 +836,12 @@ export const useMapStore = create<MapState>((set, get) => ({
   updateBlockVariant: (id, variantKey, patch) => {
     const state = get()
     const key = getVariantKey(allVersionsId, variantKey)
-    if (key !== commonVariantKey && !state.modelVersions.some((version) => version.id === key)) return
+    if (key !== defaultVariantKey && !state.modelVersions.some((version) => version.id === key)) return
     set((nextState) => ({
       nodes: nextState.nodes.map((node) => {
         if (node.id !== id || !isBlockNode(node)) return node
         const variants = patchBlockVariant(node.data, key, patch)
-        const resolvedVariant = variants[key] || variants[commonVariantKey] || resolveBlockVariant(node.data, allVersionsId)
+        const resolvedVariant = variants[key] || variants[defaultVariantKey] || resolveBlockVariant(node.data, allVersionsId)
         return {
           ...node,
           data: {
@@ -902,22 +887,22 @@ export const useMapStore = create<MapState>((set, get) => ({
   },
 
   deleteBlockVariant: (id, variantKey) => {
-    if (variantKey === commonVariantKey) return
+    if (variantKey === defaultVariantKey) return
     set((state) => ({
       nodes: state.nodes.map((node) => {
         if (node.id !== id || !isBlockNode(node)) return node
         const variants = { ...(node.data.variants || {}) }
         delete variants[variantKey]
-        const common = variants[commonVariantKey] || createBlockVariant(node.data.title, node.data.contentJson, node.data.contentHtml, node.data.updatedAt)
+        const defaultVariant = variants[defaultVariantKey] || createBlockVariant(node.data.title, node.data.contentJson, node.data.contentHtml, node.data.updatedAt)
         return {
           ...node,
           data: {
             ...node.data,
             variants,
-            activeVariantKey: node.data.activeVariantKey === variantKey ? commonVariantKey : node.data.activeVariantKey,
-            title: common.title,
-            contentJson: common.contentJson,
-            contentHtml: common.contentHtml,
+            activeVariantKey: node.data.activeVariantKey === variantKey ? defaultVariantKey : node.data.activeVariantKey,
+            title: defaultVariant.title,
+            contentJson: defaultVariant.contentJson,
+            contentHtml: defaultVariant.contentHtml,
             updatedAt: nowIso(),
           },
         }

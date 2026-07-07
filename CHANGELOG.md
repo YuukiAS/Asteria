@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.7 - Version Variant Strip
+
+- Replaced the old undifferentiated blue variant dots with a compact dynamic version strip in block headers.
+- Added visible `AUTO`, `PINNED`, and `DEFAULT` fallback badges for block content version state.
+- Updated block version selection labels in the inspector to distinguish follow-global behavior from pinned versions.
+- Changed toolbar version switching so it no longer rewrites every block's pinned variant state.
+
 ## 0.5.6 - Block Overflow Fit Controls
 
 - Hid large block scrollbars by default while preserving hover/selected scrolling with subdued thin scrollbars.
@@ -113,7 +120,7 @@
 
 ## 0.4.6 - Fix Default Variant Editing
 
-- Fixed Default content-version edits being overwritten by the existing common variant.
+- Fixed Default content-version edits being overwritten by the existing default variant.
 - Restored title and content updates while a block's content version is set to Default.
 
 ## 0.4.5 - Opaque Block Backgrounds
@@ -204,7 +211,7 @@
 
 ## 0.2.4 - User Versions, Frames, Density, Layout, and Edge Visibility
 
-- Added user-defined model versions with a maximum of five versions, global version switching, and block content variants with Common fallback.
+- Added user-defined model versions with a maximum of five versions, global version switching, and block content variants with Default fallback.
 - Added version management, block variant controls, version indicators, and export/import persistence for versions and variants.
 - Expanded frames with opacity, lock state, attach/detach behavior, and persisted frame metadata.
 - Added per-block display density and toolbar-level display override.

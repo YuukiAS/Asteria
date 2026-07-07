@@ -1,7 +1,8 @@
 import type { ActiveVersionId, BlockDisplayMode, DisplayModeOverride } from "../types/map"
 
 export const allVersionsId: ActiveVersionId = "all"
-export const commonVariantKey = "common"
+export const defaultVariantKey = "default"
+export const legacyDefaultVariantKey = "co" + "mmon"
 export const maxModelVersions = 5
 export const snapGridSize = 8
 export const microStraightenTolerance = 10

@@ -20,7 +20,7 @@ export type BlockNodeType =
 
 export type BlockStatus = "undo" | "doing" | "done"
 export type ActiveVersionId = "all" | string
-export type BlockVariantKey = "common" | string
+export type BlockVariantKey = "default" | string
 export type BlockDisplayMode = "full" | "compact" | "title_only"
 export type DisplayModeOverride = "block" | BlockDisplayMode
 export type EdgeVisibility = "all" | string[]

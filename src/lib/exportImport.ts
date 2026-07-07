@@ -9,7 +9,7 @@ import {
 } from "../constants/blockTypes"
 import { blockTypeDefaults } from "../constants/blockDefaults"
 import { defaultBlockColors } from "../constants/palette"
-import { allVersionsId, commonVariantKey, maxModelVersions } from "../constants/versioning"
+import { allVersionsId, defaultVariantKey, legacyDefaultVariantKey, maxModelVersions } from "../constants/versioning"
 import type {
   ActiveVersionId,
   BlockData,
@@ -77,12 +77,12 @@ export function createBlockVariant(title: string, contentJson = defaultContentJs
 
 export function getVariantKey(activeVersionId?: ActiveVersionId, explicitVariantKey?: BlockVariantKey) {
   if (explicitVariantKey) return explicitVariantKey
-  return activeVersionId && activeVersionId !== allVersionsId ? activeVersionId : commonVariantKey
+  return activeVersionId && activeVersionId !== allVersionsId ? activeVersionId : defaultVariantKey
 }
 
 export function resolveBlockVariant(data: BlockData, activeVersionId?: ActiveVersionId): BlockVariant {
   const key = getVariantKey(activeVersionId)
-  const fallback = data.variants?.[commonVariantKey] || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt)
+  const fallback = data.variants?.[defaultVariantKey] || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt)
   return data.variants?.[key] || fallback
 }
 
@@ -119,8 +119,8 @@ export function createBlockNode(position = { x: 120, y: 120 }, title = "New bloc
       title,
       contentJson: defaultContentJson,
       contentHtml: "<p>New block</p>",
-      variants: { [commonVariantKey]: variant },
-      activeVariantKey: commonVariantKey,
+      variants: { [defaultVariantKey]: variant },
+      activeVariantKey: defaultVariantKey,
       backgroundColor: blockTypeDefaults.generic.backgroundColor,
       textColor: blockTypeDefaults.generic.textColor,
       borderColor: blockTypeDefaults.generic.borderColor,
@@ -277,18 +277,18 @@ function normalizeBlockVariant(input: unknown, fallbackTitle: string, fallbackCo
   }
 }
 
-function normalizeBlockVariants(input: unknown, commonVariant: BlockVariant): Partial<Record<BlockVariantKey, BlockVariant>> {
-  const variants: Partial<Record<BlockVariantKey, BlockVariant>> = { [commonVariantKey]: commonVariant }
+function normalizeBlockVariants(input: unknown, defaultVariant: BlockVariant): Partial<Record<BlockVariantKey, BlockVariant>> {
+  const variants: Partial<Record<BlockVariantKey, BlockVariant>> = { [defaultVariantKey]: defaultVariant }
   if (!input || typeof input !== "object") return variants
   Object.entries(input as Record<string, unknown>).forEach(([key, value]) => {
     if (!key) return
     try {
-      variants[key] = normalizeBlockVariant(value, commonVariant.title, commonVariant.contentJson, commonVariant.contentHtml)
+      variants[key === legacyDefaultVariantKey ? defaultVariantKey : key] = normalizeBlockVariant(value, defaultVariant.title, defaultVariant.contentJson, defaultVariant.contentHtml)
     } catch (error) {
       console.warn(`Recovered malformed block variant "${key}".`, error)
     }
   })
-  if (!variants[commonVariantKey]) variants[commonVariantKey] = commonVariant
+  if (!variants[defaultVariantKey]) variants[defaultVariantKey] = defaultVariant
   return variants
 }
 
@@ -358,19 +358,19 @@ function normalizeBlockData(input: Partial<BlockData> & { content?: string }): B
   if (!input.contentJson && input.content) {
     console.warn("Migrated legacy content string into Tiptap JSON.")
   }
-  const commonVariant = normalizeBlockVariant(
-    input.variants?.[commonVariantKey],
+  const defaultVariant = normalizeBlockVariant(
+    input.variants?.[defaultVariantKey] || input.variants?.[legacyDefaultVariantKey],
     input.title || "Untitled block",
     contentJson,
     input.contentHtml,
   )
-  const variants = normalizeBlockVariants(input.variants, commonVariant)
+  const variants = normalizeBlockVariants(input.variants, defaultVariant)
   return {
-    title: commonVariant.title,
-    contentJson: commonVariant.contentJson,
-    contentHtml: commonVariant.contentHtml,
+    title: defaultVariant.title,
+    contentJson: defaultVariant.contentJson,
+    contentHtml: defaultVariant.contentHtml,
     variants,
-    activeVariantKey: input.activeVariantKey || commonVariantKey,
+    activeVariantKey: input.activeVariantKey === legacyDefaultVariantKey ? defaultVariantKey : input.activeVariantKey || defaultVariantKey,
     backgroundColor: normalizeColor(input.backgroundColor, defaults.backgroundColor),
     textColor: normalizeColor(input.textColor, defaults.textColor),
     borderColor: normalizeColor(input.borderColor, defaults.borderColor),

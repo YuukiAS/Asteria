@@ -199,7 +199,7 @@ body {
   }
 
   .block-title-display {
-    @apply block h-7 min-w-0 max-w-[min(360px,calc(100%-110px))] truncate border-0 bg-transparent px-1 text-left text-[14px] font-semibold leading-7 text-inherit;
+    @apply block h-7 min-w-0 max-w-[min(320px,calc(100%-150px))] truncate border-0 bg-transparent px-1 text-left text-[14px] font-semibold leading-7 text-inherit;
   }
 
   .block-title-emoji,
@@ -243,12 +243,51 @@ body {
     @apply inline-flex max-w-[64px] shrink-0 truncate rounded border border-border bg-app px-1.5 py-0.5 text-[9px] font-semibold uppercase leading-none text-secondary;
   }
 
-  .variant-dot-row {
-    @apply inline-flex shrink-0 items-center gap-0.5;
+  .version-badge-auto {
+    @apply border-slate-300 bg-slate-50 text-slate-600;
   }
 
-  .variant-dot-row span {
-    @apply h-1.5 w-1.5 rounded-full bg-accent/70;
+  .version-badge-pinned {
+    @apply border-accent/30 bg-accentSoft text-accent;
+  }
+
+  .version-badge-default {
+    @apply border-slate-300 bg-slate-100 text-slate-500;
+  }
+
+  .version-strip {
+    @apply inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-panel/70 px-1 py-0.5;
+  }
+
+  .version-strip-marker {
+    width: 13px;
+    height: 13px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 999px;
+    border: 1px solid var(--version-marker-color);
+    color: var(--version-marker-color);
+    font-size: 7px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .version-strip-marker-filled {
+    background: var(--version-marker-color);
+    color: white;
+  }
+
+  .version-strip-marker-empty {
+    background: transparent;
+    opacity: 0.42;
+  }
+
+  .version-strip-marker-active {
+    opacity: 1;
+    box-shadow:
+      0 0 0 1px rgb(var(--color-panel)),
+      0 0 0 3px color-mix(in srgb, var(--version-marker-color) 34%, transparent);
+    transform: scale(1.08);
   }
 
   .version-manager-panel {

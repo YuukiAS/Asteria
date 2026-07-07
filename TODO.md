@@ -1,7 +1,7 @@
-````text id="asteria-overflow-task"
+````text
 ---
-id: asteria_0_2_overflow
-title: Improve block overflow, density modes, and fit-to-content behavior
+id: asteria_0_2_variant_indicator
+title: Improve version variant indicators and AUTO/PINNED display
 allow_code_change: true
 allow_shell_command: true
 allow_network: false
@@ -9,273 +9,258 @@ allow_external_upload: false
 requires_human_approval: false
 ---
 
-# Task: Improve block overflow, density modes, and fit-to-content behavior
+# Task: Improve version variant indicators and AUTO/PINNED display
 
 ## 1. Goal
 
-Improve how Asteria handles long block content. The current visible scrollbar inside blocks is functional but visually distracting, especially for presentation diagrams. Asteria should treat canvas blocks as structured summary cards, not full document pages.
+Improve how Asteria displays block version variants on the canvas. The current UI uses small blue dots near the title to indicate that a block has multiple variants, but this is not sufficiently informative. The new UI should clearly show:
 
-The goal is to keep layout stable while making long content readable when needed. Do not make blocks automatically grow whenever content changes. Default block size should remain stable so that global version switching, arrows, frames, and manual layout do not jump unexpectedly.
+1. Which model-version variants exist for the block.
+2. Which variant is currently being rendered.
+3. Whether the block follows the global version selector or is pinned to a specific version.
+4. Whether the current display falls back to default content because the selected version has no dedicated variant.
+
+Do not redesign the entire block UI. This is a focused visual and interaction refinement.
 
 ## 2. Product principle
 
-Canvas block = summary/diagram object.
+Asteria is a research diagram tool. The version indicator must be visually compact, readable, and stable. It should not dominate the block title or compete with block type badges such as MODEL, PRIOR, NOTATION, etc.
 
-Inspector/focus view = full reading/editing surface.
+Do not use a single pie-chart-like circle split into colors. Use a fixed-order version strip instead, because it is more explicit and easier to understand.
 
-Long content should not force the canvas layout to change automatically. Instead, provide clean overflow treatment, display density modes, and manual fit commands.
+## 3. Required version strip design
 
-## 3. Required behavior
+Replace the current title-side blue dots with a small `VersionStrip` component.
 
-Implement the following behavior:
-
-1. Blocks should not auto-resize as content grows.
-2. Long content should not show a large always-visible scrollbar by default.
-3. Overflow should be visually indicated by a subtle bottom fade.
-4. Scrollbar should appear only on hover or when the block is selected.
-5. Scrollbar should be thin and visually subdued.
-6. The user should be able to manually fit a block to its content.
-7. The user should be able to switch block display density: full, compact, title-only.
-8. Layout dimensions should remain shared across model versions, not per-version, unless the app already has a carefully implemented variant layout system.
-
-## 4. Display modes
-
-Add or refine per-block display mode:
+The version strip should show markers for the current app's actual model versions, in the same order as the toolbar/version manager. The TRACE names below are examples only, not hard-coded requirements:
 
 ```ts
-export type BlockDisplayMode = "full" | "compact" | "title_only"
+TRACE
+TRACE+HMSC
+Marked TRACE
 ````
 
-### full
-
-The block displays its rich text preview. If content exceeds the visible area, use fade overflow and scroll-on-hover/selected.
-
-### compact
-
-The block displays title, badges, status/emoji/version indicators, and a short content preview. Limit content to a small number of lines or a fixed compact preview height. Use fade overflow if needed. Math should not break the layout; if math is too wide, allow horizontal overflow inside the preview area.
-
-### title_only
-
-The block displays only title and lightweight indicators: type badge, version badge, status, emojis. It should be useful for high-level presentation diagrams.
-
-## 5. Global display density override
-
-Add a toolbar-level display density control:
+Example internal order if those versions exist:
 
 ```ts
-export type GlobalDisplayDensity = "block_settings" | "full" | "compact" | "title_only"
+["trace", "trace_hmsc", "marked_trace"]
 ```
 
-Labels:
+Each marker should correspond to one version position. The user should be able to infer not just "there are two versions", but which versions exist.
 
-* `Block settings`
-* `Full`
-* `Compact`
-* `Title only`
+## 4. Visual semantics
 
-Behavior:
+Each marker should encode three states:
 
-1. `Block settings` uses each block's own display mode.
-2. `Full`, `Compact`, and `Title only` override all blocks visually.
-3. The override should not permanently overwrite per-block display modes.
-4. Per-block display mode should remain editable in the inspector.
-5. The global override should persist in local state if appropriate, but it must not alter block data unless explicitly saved as block settings.
+### Variant exists
 
-## 6. Overflow styling
+If the block has content for that version, show a filled marker.
 
-For block content preview:
+### Variant missing
 
-1. Hide the large native scrollbar by default.
-2. On hover or selected block, show a thin scrollbar.
-3. Use a subtle bottom fade when content overflows.
-4. The fade should disappear or become less prominent when scrolled to the bottom if this is easy; otherwise a constant fade is acceptable.
-5. Avoid dark, thick scrollbars.
-6. Preserve usability: users must still be able to scroll block content with mouse wheel or trackpad when hovering over the block.
-7. Do not block React Flow drag interactions unnecessarily.
+If the block does not have content for that version, show an empty or low-opacity marker.
 
-Suggested CSS direction:
+### Currently rendered variant
 
-```css
-.block-preview-scroll {
-  overflow: auto;
-  scrollbar-width: thin;
-}
+If the block is currently rendering that version, show an active ring, outline, slight size increase, or similar subtle highlight.
 
-.block-preview-scroll:not(:hover):not(.selected) {
-  scrollbar-width: none;
-}
+The active state should not rely only on color, because the marker may already have version color. Use a ring or border.
 
-.block-preview-scroll:not(:hover):not(.selected)::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-}
+## 5. Suggested colors
 
-.block-preview-scroll::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
+Keep version colors separate from block type colors. The version colors are only for small indicators and tooltips; they should not recolor the block background.
 
-.block-preview-scroll::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.35);
-  border-radius: 999px;
-}
-```
-
-Adjust class names and theme colors to match current code.
-
-## 7. Fade overflow
-
-Add a fade overlay at the bottom of a block when content is longer than the preview area.
-
-Requirements:
-
-1. The fade should be subtle.
-2. It should adapt to block background color where reasonably possible.
-3. If exact background-aware fade is hard, use a neutral white/transparent gradient and document the limitation.
-4. The fade must not cover the block header.
-5. The fade should not interfere with selecting the block or connecting edges.
-6. A small `More` or `…` indicator is acceptable but optional.
-
-Implementation idea:
-
-* Add a `hasOverflow` state or compute via `scrollHeight > clientHeight`.
-* Recompute after content changes, block resize, display mode change, and global version switch.
-* Use `ResizeObserver` if already available or easy.
-* Otherwise, compute after render with `requestAnimationFrame`.
-
-## 8. Manual fit commands
-
-Add fit commands in the block inspector. If toolbar placement is cleaner, inspector is still required.
-
-### Fit to current content
-
-Button label:
-
-```text
-Fit current content
-```
-
-Behavior:
-
-1. Measure the rendered preview content for the currently visible variant/content.
-2. Increase block height so the current content can be seen without vertical scrolling.
-3. Respect a reasonable min height and max height.
-4. Suggested max height: 720px or a constant in `src/constants/layout.ts`.
-5. Do not change block width unless needed.
-6. If measurement fails, fall back to a safe approximate height and `console.warn`.
-
-### Fit to largest variant
-
-Button label:
-
-```text
-Fit largest variant
-```
-
-Behavior:
-
-1. If block variants/global model versions exist, measure all available variants for the block at the current width.
-2. Set block height to fit the largest variant content.
-3. This prevents global version switching from causing content to overflow unexpectedly.
-4. If variants are not implemented yet, disable this button or make it behave like `Fit current content` and document the behavior.
-5. Do not create per-version width/height unless explicitly already supported.
-
-### Optional: Equalize selected sizes
-
-If multi-select utilities already exist or are easy to implement, add:
-
-```text
-Equalize selected sizes
-```
-
-Behavior:
-
-1. Use the largest width and height among selected blocks.
-2. Apply those dimensions to all selected blocks.
-3. If multi-select is not stable yet, skip this and document it.
-
-## 9. Version-aware requirements
-
-If block variants and global model versions already exist:
-
-1. Block width and height should remain shared across variants by default.
-2. Version switching should not automatically resize blocks.
-3. Overflow/fade should update after version switch.
-4. `Fit current content` fits only the currently active version/variant.
-5. `Fit largest variant` fits across all variants.
-6. Display mode is block-level and shared across variants unless the current data model already supports variant-specific display settings. Do not add variant-specific layout in this task.
-
-If variants do not exist yet:
-
-1. Implement this task for current block content.
-2. Leave clean extension points for variants.
-3. Do not implement the entire variants system inside this task unless explicitly requested.
-
-## 10. Inspector UI
-
-Update the block inspector with a compact section, for example:
-
-```text
-Display
-- Mode: Full / Compact / Title only
-- Fit current content
-- Fit largest variant
-```
-
-Requirements:
-
-1. Keep this section compact.
-2. Do not push rich text editing too far down.
-3. Disable unavailable commands with a short tooltip or helper text.
-4. Make destructive behavior explicit. Fitting height is not destructive; resetting content is not part of this task.
-
-## 11. Canvas UI
-
-Update block rendering:
-
-1. Header remains always visible.
-2. Badges/status/emojis remain visible in all display modes.
-3. In compact/title-only mode, block should remain clean and readable.
-4. Long formula blocks should not destroy card layout.
-5. In presentation-like views, visible scrollbar should not dominate the diagram.
-6. Keep edge handles usable.
-
-## 12. Data model and persistence
-
-Add or update fields as needed:
+Suggested version colors:
 
 ```ts
-type BlockData = {
-  displayMode?: BlockDisplayMode
-}
+trace: "#2563eb"          // blue
+trace_hmsc: "#7c3aed"     // purple
+marked_trace: "#059669"   // green
+default: "#6b7280"         // gray
 ```
 
-If a global display override is stored, keep it in app/UI state, not necessarily in each block.
+Small adjustments are acceptable if they fit the current visual style.
+
+If `trace_hmsc` purple feels too close to Algorithm purple, that is acceptable because it only appears as a tiny marker. Do not recolor Algorithm blocks because of this.
+
+## 6. AUTO / PINNED badge
+
+The current UI appears to use `DEFAULT` to mean that the block follows the global version selector. Rename this concept in the canvas UI to `AUTO`.
+
+If the block is explicitly fixed to a version, show `PINNED` instead of `AUTO`.
+
+Required behavior:
+
+1. If block follows global version selector, show `AUTO`.
+2. If block is fixed to a specific version, show `PINNED`.
+3. Keep the block type badge, e.g. `MODEL`, `PRIOR`, `NOTATION`.
+4. Arrange badges so they do not clutter the title.
+5. It is acceptable to show `AUTO` / `PINNED` as small pill badges in the header.
+
+Do not change the underlying data model names unless necessary. If existing code uses `default`, it can remain internally, but the visible label should be `AUTO`.
+
+## 7. Default fallback display
+
+If the global selected version is, for example, `Marked TRACE`, but the block has no `marked_trace` variant and therefore renders `default` content, this fallback state should be clear.
+
+Required behavior:
+
+1. The version strip should show that the target version does not exist or is empty.
+2. The block can show a small `DEFAULT` badge or subtle fallback indicator.
+3. Tooltip should explain the fallback, for example:
+
+```text
+Showing default content because Marked TRACE variant is not available.
+```
+
+4. Do not make fallback look like an error. It is a normal state.
+
+## 8. Tooltip requirements
+
+Add hover tooltip or accessible title text for the version strip.
+
+Tooltip should include:
+
+1. Which variants exist.
+2. Which content is currently shown.
+3. Whether the block is AUTO or PINNED.
+4. Whether it is falling back to default.
+
+Examples:
+
+```text
+Variants: TRACE, Marked TRACE. Showing: TRACE via AUTO.
+```
+
+```text
+Variants: TRACE+HMSC. Showing: TRACE+HMSC via PINNED.
+```
+
+```text
+Variants: TRACE. Showing: Default fallback because Marked TRACE is not available.
+```
+
+A native `title` attribute is acceptable for first implementation. If the app already has a tooltip component, use it.
+
+## 9. Inspector behavior
+
+Update the block inspector labels to match the new language.
+
+Current behavior may have a selector like:
+
+```text
+default / TRACE / TRACE+HMSC / Marked TRACE
+```
+
+Change visible labels to:
+
+```text
+AUTO: follow global version
+PIN TRACE
+PIN TRACE+HMSC
+PIN Marked TRACE
+```
+
+or an equivalent compact UI.
 
 Requirements:
 
-1. Existing maps should load.
-2. Missing `displayMode` defaults to `full`.
-3. Export/import preserves per-block displayMode.
-4. Refresh preserves displayMode and any manually fitted dimensions.
-5. Fit commands should mark the map unsaved and persist after autosave.
+1. Make clear that `AUTO` means the block follows the global version selector.
+2. Make clear that pinned versions ignore global switching.
+3. If the selected pinned version has no variant, either:
 
-## 13. Do not implement
+   * offer to create/copy a variant, or
+   * show a clear fallback message.
+4. Do not automatically overwrite variant content.
+
+## 10. Component structure
+
+Prefer adding a dedicated component, for example:
+
+```text
+src/components/VersionStrip.tsx
+```
+
+or a suitable path consistent with current code.
+
+Suggested props:
+
+```ts
+type VersionStripProps = {
+  availableVersions: ModelVersionKey[]
+  activeVersion?: ModelVersionKey
+  requestedVersion?: ModelVersionKey
+  isAuto: boolean
+  isPinned: boolean
+  isFallbackToDefault: boolean
+  size?: "sm" | "md"
+}
+```
+
+Adjust names to match current implementation.
+
+Put version metadata in a centralized constants file if not already present:
+
+```text
+src/constants/modelVersions.ts
+```
+
+Suggested structure:
+
+```ts
+export const MODEL_VERSIONS = [
+  { key: "trace", label: "TRACE", shortLabel: "T", color: "#2563eb" },
+  { key: "trace_hmsc", label: "TRACE+HMSC", shortLabel: "H", color: "#7c3aed" },
+  { key: "marked_trace", label: "Marked TRACE", shortLabel: "M", color: "#059669" },
+]
+```
+
+## 11. Canvas layout
+
+Update block header layout carefully.
+
+Target layout:
+
+1. Left side: title + version strip.
+2. Right side: AUTO/PINNED badge + block type badge.
+3. If title is long, it should truncate gracefully.
+4. Version strip should remain visible if possible.
+5. Badges should not overlap with title.
+6. On very narrow blocks, hide or compress less important badges first rather than breaking layout.
+
+The version strip should be close to the title, replacing the old blue dots.
+
+## 12. Accessibility
+
+1. Version markers should have `aria-label` or the parent strip should have a descriptive label.
+2. Tooltip/title text should be useful.
+3. Do not rely only on color. Active marker needs a ring/outline/size difference.
+4. Empty markers should remain visible enough in both light and dark mode if dark mode exists.
+
+## 13. Compatibility
+
+1. Existing saved maps should load.
+2. Existing block variants should display correctly.
+3. Existing manual block styles should not be changed.
+4. Existing block type badges should remain.
+5. Export/import should not need a data migration unless current data model requires it.
+6. If old data uses `DEFAULT`, preserve data but display `AUTO`.
+
+## 14. Do not implement
 
 Do not implement in this task:
 
-1. Automatic block growth on every content edit.
-2. Per-version block positions/sizes.
-3. Full document editor inside the canvas.
-4. Full-screen presentation mode.
-5. PDF/SVG/PNG export.
+1. Pie-chart version indicator.
+2. Full redesign of block cards.
+3. Hard-coded model versions beyond the current app's existing model version system.
+4. User-customizable version colors.
+5. Per-version block layout.
 6. Semantic edge types.
-7. Automatic graph layout.
-8. Major visual redesign.
-9. AI content generation.
-10. Cloud sync.
+7. Group/frame changes.
+8. Export changes unless required for compatibility.
+9. AI generation or automatic model summarization.
 
-## 14. Testing
+## 15. Testing
 
 Run the strongest available checks.
 
@@ -285,45 +270,45 @@ At minimum:
 2. Production build.
 3. Browser/manual smoke test if available.
 
-Test cases:
+Manual test cases:
 
-1. Create a block with long content.
-2. Confirm the block does not auto-grow.
-3. Confirm large always-visible scrollbar is not shown by default.
-4. Hover/select the block and confirm scrolling remains possible.
-5. Confirm fade overflow appears when content is clipped.
-6. Switch block to compact mode.
-7. Switch block to title-only mode.
-8. Use global density override: Full / Compact / Title only / Block settings.
-9. Use `Fit current content`; confirm height changes and content is visible.
-10. If variants exist, use `Fit largest variant`; confirm it accounts for different variant lengths.
-11. Refresh and confirm block sizes and display modes persist.
-12. Export/import and confirm display modes and fitted sizes persist.
-13. Confirm math rendering remains stable.
+1. Create or use a block with only default content.
+2. Confirm it shows default/fallback state clearly.
+3. Create or use a block with TRACE and Marked TRACE variants.
+4. Confirm version strip shows exactly those available versions.
+5. Switch global version to TRACE and confirm active marker changes.
+6. Switch global version to Marked TRACE and confirm active marker changes.
+7. Pin block to TRACE and confirm badge shows PINNED.
+8. Change global version while block is pinned and confirm pinned content remains.
+9. Confirm AUTO block follows global version.
+10. Confirm fallback to default is visually indicated when requested version is missing.
+11. Confirm old blue dots no longer appear or are replaced by the new strip.
+12. Confirm block type badge still appears.
+13. Confirm long titles do not break header layout.
 
-## 15. Acceptance criteria
+## 16. Acceptance criteria
 
 This task is complete when:
 
-1. Blocks support full / compact / title-only display modes.
-2. Toolbar has a global display density override.
-3. Long block content no longer shows a large always-visible scrollbar by default.
-4. Overflow is indicated by a subtle fade.
-5. Scrolling still works on hover or selected block.
-6. `Fit current content` is available and works.
-7. `Fit largest variant` is available if variants exist, or disabled/fallback documented if not.
-8. Block dimensions are not automatically changed by content edits.
-9. Version switching, if present, does not change block size automatically.
-10. Display modes and fitted dimensions persist across refresh and export/import.
+1. The old undifferentiated blue-dot indicator is replaced by a fixed-order version strip.
+2. The version strip shows which of TRACE, TRACE+HMSC, and Marked TRACE variants exist.
+3. The active rendered version is visually distinguishable.
+4. AUTO/PINNED state is clearly shown.
+5. `DEFAULT` is no longer the visible label for follow-global behavior; visible label should be `AUTO`.
+6. Fallback to default content is understandable.
+7. Tooltips or title text explain variant availability and current display state.
+8. Block header remains visually clean.
+9. Existing block type badges and manual styles remain intact.
+10. Existing saved maps still load.
 11. Build passes without TypeScript errors.
 12. No obvious console errors during basic interaction.
 
-## 16. Result file
+## 17. Result file
 
 After implementation, create a result file:
 
 ```text
-results/asteria_v0_5_6_result.md
+results/asteria_v0_5_7_result.md
 ```
 
 The result should include:
@@ -337,3 +322,6 @@ The result should include:
 7. Known issues.
 8. Skipped or partially completed items.
 9. Recommended next task.
+
+```
+```
