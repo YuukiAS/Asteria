@@ -18,6 +18,11 @@ function renderMath(latex: string, displayMode: boolean) {
   }
 }
 
+function applyBlockMathStyle(dom: HTMLElement, attrs: Record<string, string | null | undefined>) {
+  dom.style.color = attrs.textColor || ""
+  dom.style.backgroundColor = attrs.highlightColor || ""
+}
+
 export const InlineMath = Node.create({
   name: "inlineMath",
   group: "inline",
@@ -26,7 +31,11 @@ export const InlineMath = Node.create({
   marks: "_",
 
   addAttributes() {
-    return { latex: { default: "" } }
+    return {
+      latex: { default: "" },
+      textColor: { default: null },
+      highlightColor: { default: null },
+    }
   },
 
   parseHTML() {
@@ -84,6 +93,12 @@ export const BlockMath = Node.create({
       mergeAttributes(HTMLAttributes, {
         "data-math-block": "",
         class: "math-block",
+        style: [
+          HTMLAttributes.textColor ? `color: ${HTMLAttributes.textColor}` : "",
+          HTMLAttributes.highlightColor ? `background-color: ${HTMLAttributes.highlightColor}` : "",
+        ]
+          .filter(Boolean)
+          .join("; "),
       }),
       HTMLAttributes.latex || "",
     ]
@@ -94,8 +109,19 @@ export const BlockMath = Node.create({
       const dom = document.createElement("div")
       dom.dataset.mathBlock = ""
       dom.className = "math-block"
+      applyBlockMathStyle(dom, node.attrs)
       dom.innerHTML = renderMath(node.attrs.latex, true)
-      return { dom }
+      return {
+        dom,
+        update(nextNode) {
+          if (nextNode.type.name !== "blockMath") return false
+          applyBlockMathStyle(dom, nextNode.attrs)
+          if (nextNode.attrs.latex !== node.attrs.latex) {
+            dom.innerHTML = renderMath(nextNode.attrs.latex, true)
+          }
+          return true
+        },
+      }
     }
   },
 

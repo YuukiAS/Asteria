@@ -67,6 +67,14 @@ function textAlignStyle(node: JSONContent) {
   return node.attrs?.textAlign ? ` style="text-align: ${escapeHtml(String(node.attrs.textAlign))}"` : ""
 }
 
+function blockMathStyle(node: JSONContent) {
+  const styles = [
+    node.attrs?.textColor ? `color: ${node.attrs.textColor}` : "",
+    node.attrs?.highlightColor ? `background-color: ${node.attrs.highlightColor}` : "",
+  ].filter(Boolean)
+  return styles.length ? styles.join("; ") : undefined
+}
+
 function renderNode(node: JSONContent): string {
   switch (node.type) {
     case "doc":
@@ -104,7 +112,7 @@ function renderNode(node: JSONContent): string {
     case "inlineMath":
       return renderMarks(`<span${renderAttrs({ "data-math-inline": "", class: "math-inline" })}>${renderMath(String(node.attrs?.latex || ""), false)}</span>`, node.marks)
     case "blockMath":
-      return `<div${renderAttrs({ "data-math-block": "", class: "math-block" })}>${renderMath(String(node.attrs?.latex || ""), true)}</div>`
+      return `<div${renderAttrs({ "data-math-block": "", class: "math-block", style: blockMathStyle(node) })}>${renderMath(String(node.attrs?.latex || ""), true)}</div>`
     default:
       return renderChildren(node)
   }

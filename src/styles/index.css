@@ -924,7 +924,7 @@ body {
   color: var(--asteria-rich-accent-color, inherit);
   overflow-x: auto;
   border-radius: 8px;
-  background: rgb(var(--color-app));
+  background: transparent;
   padding: 0.45em 0.6em;
 }
 

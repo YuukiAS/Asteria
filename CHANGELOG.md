@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.15 - Block Equation Styling
+
+- Made block equations transparent by default so they visually inherit the block surface.
+- Added text-color and highlight-color attributes for block equations.
+- Let rich-text color and highlight controls style selected block equations as well as inline text.
+
 ## 0.4.14 - Bubble Highlight and Palette Fit
 
 - Made the inline bubble menu preserve its visible selection range before applying color or highlight marks.

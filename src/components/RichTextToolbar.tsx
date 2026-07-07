@@ -21,6 +21,7 @@ import {
   Unlink,
 } from "lucide-react"
 import { backgroundPalette, textPalette } from "../constants/palette"
+import { applyBlockMathStyle } from "../editor/blockMathStyling"
 import { ColorPickerRow } from "./ColorPickerRow"
 import { EquationDialog } from "./EquationDialog"
 import { FontSizeSelect } from "./FontSizeSelect"
@@ -60,6 +61,10 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
   const [equationDialogMode, setEquationDialogMode] = useState<"inline" | "block" | null>(null)
   const textColor = (editor.getAttributes("textStyle").color as string) || "#111827"
   const highlight = (editor.getAttributes("highlight").color as string) || "#fef3c7"
+  const currentSelectionRange = () => {
+    const { from, to } = editor.state.selection
+    return from !== to ? { from, to } : undefined
+  }
 
   const setLink = () => {
     const previousUrl = editor.getAttributes("link").href as string | undefined
@@ -158,13 +163,19 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
           label="Text color"
           value={textColor}
           palette={textPalette}
-          onChange={(color) => editor.chain().focus().setColor(color).run()}
+          onChange={(color) => {
+            applyBlockMathStyle(editor, currentSelectionRange(), { textColor: color })
+            editor.chain().focus().setColor(color).run()
+          }}
         />
         <ColorPickerRow
           label="Highlight"
           value={highlight}
           palette={backgroundPalette}
-          onChange={(color) => editor.chain().focus().toggleHighlight({ color }).run()}
+          onChange={(color) => {
+            applyBlockMathStyle(editor, currentSelectionRange(), { highlightColor: color })
+            editor.chain().focus().setHighlight({ color }).run()
+          }}
         />
       </div>
       <EquationDialog

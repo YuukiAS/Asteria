@@ -1,6 +1,7 @@
 import { BubbleMenu, type Editor } from "@tiptap/react"
 import { Bold, Code, Highlighter, Italic, Link as LinkIcon, Sigma, Strikethrough, Type, Underline } from "lucide-react"
 import { backgroundPalette, textPalette } from "../constants/palette"
+import { applyBlockMathStyle } from "../editor/blockMathStyling"
 
 type RichTextBubbleMenuProps = {
   editor: Editor
@@ -22,6 +23,8 @@ function applyMark(editor: Editor, markName: string, attrs?: Record<string, stri
   const range = getSavedRange(editor)
   const markType = editor.state.schema.marks[markName]
   if (!range || !markType) return
+  if (attrs?.color && markName === "textStyle") applyBlockMathStyle(editor, range, { textColor: attrs.color })
+  if (attrs?.color && markName === "highlight") applyBlockMathStyle(editor, range, { highlightColor: attrs.color })
   const chain = editor.chain().focus().setTextSelection(range)
   const hasMark = editor.state.doc.rangeHasMark(range.from, range.to, markType)
   if (toggle && hasMark) {
@@ -42,6 +45,13 @@ function applySelectionCommand(editor: Editor, command: (chain: ReturnType<Edito
   command(chain).run()
   editor.commands.setTextSelection(range)
   editor.storage.asteriaSelection = range
+}
+
+function applyHighlight(editor: Editor, color: string) {
+  const range = getSavedRange(editor)
+  if (!range) return
+  applyBlockMathStyle(editor, range, { highlightColor: color })
+  applySelectionCommand(editor, (chain) => chain.setHighlight({ color }))
 }
 
 function BubbleButton({
@@ -155,7 +165,7 @@ export function RichTextBubbleMenu({ editor }: RichTextBubbleMenuProps) {
           >
             <Underline size={14} />
           </BubbleButton>
-          <BubbleButton label="Highlight" onClick={() => applySelectionCommand(editor, (chain) => chain.toggleHighlight({ color: "#fef3c7" }))}>
+          <BubbleButton label="Highlight" onClick={() => applyHighlight(editor, "#fef3c7")}>
             <Highlighter size={14} />
           </BubbleButton>
         </div>
@@ -194,7 +204,7 @@ export function RichTextBubbleMenu({ editor }: RichTextBubbleMenuProps) {
               key={color}
               color={color}
               label={`Set highlight ${color}`}
-              onApply={() => applySelectionCommand(editor, (chain) => chain.setHighlight({ color }))}
+              onApply={() => applyHighlight(editor, color)}
             />
           ))}
         </div>
