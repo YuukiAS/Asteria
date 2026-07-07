@@ -494,7 +494,7 @@ export const useMapStore = create<MapState>((set, get) => ({
     if (!source) return get().addBlockAndSelect()
     const variantKey = state.activeVersionId !== allVersionsId && state.modelVersions.some((version) => version.id === state.activeVersionId) ? state.activeVersionId : defaultVariantKey
     const node = createBlockNode(nextBlockPositionFrom(source, state.nodes), "New block", variantKey)
-    const edge = createEdge({ source: source.id, target: node.id, sourceHandle: "right", targetHandle: "left-target" })
+    const edge = createEdge({ source: source.id, target: node.id, sourceHandle: "right", targetHandle: "left" })
     set((nextState) => ({
       nodes: [...nextState.nodes, node],
       edges: addReactFlowEdge(edge, nextState.edges) as MapEdge[],

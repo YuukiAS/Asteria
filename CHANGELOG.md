@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.17 - Restore Four-Side Canvas Handles
+
+- Restored edit-mode resize and edge connection hit targets on all four block sides.
+- Switched block connection handles to loose-mode four-side handles so visible handles can both start and receive edges.
+- Recolored connection handles in amber so edge connectors are visually distinct from blue resize handles.
+- Normalized legacy `*-target` edge handles to the matching side to keep imported and existing maps attached.
+
 ## 0.5.16 - Empty Inline Equation Dialog
 
 - Open inline equation dialogs with a blank LaTeX field instead of prefilled sample math.

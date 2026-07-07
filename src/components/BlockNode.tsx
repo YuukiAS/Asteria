@@ -178,24 +178,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
                   ? Position.Bottom
                   : Position.Left
           }
-          className="!h-2.5 !w-2.5 !border-2 !border-white !bg-accent !opacity-45 transition group-hover:!opacity-100"
-        />
-      ))}
-      {(["top", "right", "bottom", "left"] as const).map((handle) => (
-        <Handle
-          key={`${handle}-target`}
-          id={`${handle}-target`}
-          type="target"
-          position={
-            handle === "top"
-              ? Position.Top
-              : handle === "right"
-                ? Position.Right
-                : handle === "bottom"
-                  ? Position.Bottom
-                  : Position.Left
-          }
-          className="!h-2.5 !w-2.5 !border-2 !border-white !bg-accent !opacity-0"
+          className="asteria-connection-handle !h-2.5 !w-2.5 !border-2 !opacity-70 transition group-hover:!opacity-100"
         />
       ))}
       <div className="asteria-block-header flex h-9 items-center gap-2 border-b px-3">

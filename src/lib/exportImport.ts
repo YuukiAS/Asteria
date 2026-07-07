@@ -172,6 +172,15 @@ function strokeDasharray(lineStyle: EdgeLineStyle) {
   return undefined
 }
 
+function normalizeConnectionHandle(handle: string | null | undefined) {
+  if (!handle) return handle
+  if (handle === "top-target") return "top"
+  if (handle === "right-target") return "right"
+  if (handle === "bottom-target") return "bottom"
+  if (handle === "left-target") return "left"
+  return handle
+}
+
 export function applyEdgePresentation(edge: MapEdge): MapEdge {
   const data = normalizeEdgeData(edge.data)
   const color = data.color || defaultEdgeData.color
@@ -180,6 +189,8 @@ export function applyEdgePresentation(edge: MapEdge): MapEdge {
   const marker = { type: MarkerType.ArrowClosed, color }
   return {
     ...edge,
+    sourceHandle: normalizeConnectionHandle(edge.sourceHandle),
+    targetHandle: normalizeConnectionHandle(edge.targetHandle),
     type: data.pathType || defaultEdgeData.pathType,
     data,
     markerEnd: data.arrow === "forward" || data.arrow === "both" ? marker : undefined,

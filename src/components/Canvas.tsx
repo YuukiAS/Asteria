@@ -1,6 +1,7 @@
 import {
   Background,
   BackgroundVariant,
+  ConnectionMode,
   Controls,
   MiniMap,
   ReactFlow,
@@ -152,6 +153,7 @@ export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChang
           onNodeDragStart={beginNodeDragHistory}
           onNodeDragStop={commitNodeDragHistory}
           onConnect={addEdge}
+          connectionMode={ConnectionMode.Loose}
           onNodeClick={(event, node) => {
             const target = event.target as HTMLElement
             const wasEditingThisNode = inlineEditTarget?.nodeId === node.id

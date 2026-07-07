@@ -791,7 +791,7 @@ body {
 
 .asteria-block {
   isolation: isolate;
-  overflow: hidden;
+  overflow: visible;
   border-color: var(--asteria-block-border-color, rgb(var(--color-strong-border)));
   background:
     linear-gradient(var(--asteria-block-background, #ffffff), var(--asteria-block-background, #ffffff)),
@@ -827,6 +827,14 @@ body {
 
 .asteria-block-header {
   border-color: var(--asteria-block-divider-color, rgb(var(--color-border)));
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  overflow: hidden;
+}
+
+.asteria-block-preview {
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
 }
 
 .asteria-block-resizing {
@@ -894,6 +902,28 @@ body {
   transition:
     opacity 120ms ease,
     transform 120ms ease;
+}
+
+.asteria-block .react-flow__handle {
+  z-index: 80 !important;
+  pointer-events: all !important;
+}
+
+.asteria-block .asteria-connection-handle {
+  border-color: #fff7ed !important;
+  background: #f59e0b !important;
+  box-shadow:
+    0 0 0 2px rgba(245, 158, 11, 0.22),
+    0 3px 8px rgba(146, 64, 14, 0.22);
+}
+
+.asteria-block .react-flow__resize-control {
+  z-index: 50 !important;
+  pointer-events: all !important;
+}
+
+.asteria-block .react-flow__resize-control.handle {
+  z-index: 90 !important;
 }
 
 .react-flow__handle:hover {
