@@ -18,6 +18,20 @@ type BlockNodeProps = NodeProps<BlockNodeType> & {
   onInlineEditTargetChange: (target?: InlineEditTarget) => void
 }
 
+const legacyDefaultBorderColors = new Set(["#111827", "rgb(17, 24, 39)"])
+
+function getVisualBorderColor(borderColor: string) {
+  const normalized = borderColor.trim().toLowerCase()
+  if (!normalized || legacyDefaultBorderColors.has(normalized)) return "rgb(var(--color-strong-border))"
+  return borderColor
+}
+
+function getVisualDividerColor(borderColor: string) {
+  const normalized = borderColor.trim().toLowerCase()
+  if (!normalized || legacyDefaultBorderColors.has(normalized)) return "rgb(var(--color-border))"
+  return borderColor
+}
+
 export function BlockNode({ id, data, selected, interactionMode, inlineEditTarget, onInlineEditTargetChange }: BlockNodeProps) {
   const updateBlock = useMapStore((state) => state.updateBlock)
   const updateBlockVariant = useMapStore((state) => state.updateBlockVariant)
@@ -52,6 +66,8 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
   const titleHtml = useMemo(() => titleToHtml(title), [title])
   const defaultTypeTextColor = blockTypeDefaults[data.nodeType]?.textColor
   const richTextAccentColor = defaultTypeTextColor && defaultTypeTextColor !== defaultBlockColors.text ? defaultTypeTextColor : data.textColor
+  const visualBorderColor = getVisualBorderColor(data.borderColor)
+  const visualDividerColor = getVisualDividerColor(data.borderColor)
 
   useEffect(() => {
     if (!isEditableSelection) {
@@ -82,8 +98,8 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
 
   return (
     <div
-      className={`asteria-block group relative rounded-xl border bg-white shadow-block transition ${
-        selected ? "ring-2 ring-accent ring-offset-2 ring-offset-canvas" : ""
+      className={`asteria-block group relative rounded-xl border bg-white transition ${
+        selected ? "asteria-block-selected" : ""
       } ${resizePreview ? "asteria-block-resizing" : ""}`}
       onDoubleClick={(event) => {
         const target = event.target as HTMLElement
@@ -95,10 +111,11 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
         width: visualWidth,
         height: visualHeight,
         "--asteria-block-background": data.backgroundColor,
+        "--asteria-block-border-color": visualBorderColor,
+        "--asteria-block-divider-color": visualDividerColor,
         "--asteria-node-height": `${visualHeight}px`,
         "--asteria-rich-accent-color": richTextAccentColor,
         backgroundColor: data.backgroundColor,
-        borderColor: selected ? "#2563eb" : data.borderColor,
         color: data.textColor,
       } as CSSProperties}
     >
@@ -159,7 +176,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
           className="!h-2.5 !w-2.5 !border-2 !border-white !bg-accent !opacity-0"
         />
       ))}
-      <div className="asteria-block-header flex h-9 items-center gap-2 border-b px-3" style={{ borderColor: data.borderColor }}>
+      <div className="asteria-block-header flex h-9 items-center gap-2 border-b px-3">
         {isEditableSelection && isEditingEmoji ? (
           <input
             ref={emojiInputRef}

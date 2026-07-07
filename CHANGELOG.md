@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.7 - Softer Block Borders
+
+- Replaced the legacy default black block border with a softer slate border for new blocks.
+- Rendered existing legacy black block borders as subdued canvas borders without changing saved map data.
+- Separated selected-block glow, block border, header divider, and resize guide styling so selected blocks no longer show heavy stacked edge lines.
+
 ## 0.4.6 - Fix Default Variant Editing
 
 - Fixed Default content-version edits being overwritten by the existing common variant.

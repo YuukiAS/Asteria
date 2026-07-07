@@ -27,6 +27,6 @@ export const backgroundPalette = [
 export const defaultBlockColors = {
   background: "#ffffff",
   text: "#111827",
-  border: "#111827",
+  border: "#cbd5e1",
   edge: "#94a3b8",
 }
