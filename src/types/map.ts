@@ -53,8 +53,8 @@ export type ResolvedVariantState = {
   isFallbackToBase: boolean
   isFallbackToDefault: boolean
   isHidden: boolean
-  isPinned: boolean
-  modeLabel: "AUTO" | "PINNED"
+  isFixed: boolean
+  modeLabel: "AUTO" | "FIXED"
   renderedLabel: string
   renderedVariantKey?: BlockVariantKey
   renderedVersion?: ModelVersion

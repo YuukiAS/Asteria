@@ -35,9 +35,9 @@ function findNearestOwnVersion(data: BlockData, modelVersions: ModelVersion[], r
   return undefined
 }
 
-function resolveRequestedVariantKey(activeVersionId: string, modelVersions: ModelVersion[], pinnedVariantKey?: BlockVariantKey) {
-  if (pinnedVariantKey && pinnedVariantKey !== defaultVariantKey && modelVersions.some((version) => version.id === pinnedVariantKey)) {
-    return pinnedVariantKey
+function resolveRequestedVariantKey(activeVersionId: string, modelVersions: ModelVersion[], fixedVariantKey?: BlockVariantKey) {
+  if (fixedVariantKey && fixedVariantKey !== defaultVariantKey && modelVersions.some((version) => version.id === fixedVariantKey)) {
+    return fixedVariantKey
   }
   return activeVersionId !== allVersionsId && modelVersions.some((version) => version.id === activeVersionId) ? activeVersionId : defaultVariantKey
 }
@@ -47,7 +47,7 @@ function resolveForVersion(data: BlockData, requestedVariantKey: BlockVariantKey
   const requestedIndex = modelVersionIndex(modelVersions, requestedVariantKey)
   const requestedVersion = versionById(modelVersions, requestedVariantKey)
   const requestedShortLabel = requestedVersion ? versionShortLabel(requestedVersion, requestedIndex) : undefined
-  const modeLabel = isAuto ? "AUTO" : "PINNED"
+  const modeLabel = isAuto ? "AUTO" : "FIXED"
 
   if (requestedVariantKey === defaultVariantKey || requestedIndex < 0) {
     const isHidden = !hasBaseVariant(data) && !data.title
@@ -59,7 +59,7 @@ function resolveForVersion(data: BlockData, requestedVariantKey: BlockVariantKey
       isFallbackToBase: false,
       isFallbackToDefault: false,
       isHidden,
-      isPinned: !isAuto,
+      isFixed: !isAuto,
       modeLabel,
       renderedLabel,
       renderedVariantKey: hasBaseVariant(data) ? defaultVariantKey : undefined,
@@ -80,7 +80,7 @@ function resolveForVersion(data: BlockData, requestedVariantKey: BlockVariantKey
       isFallbackToBase: false,
       isFallbackToDefault: false,
       isHidden: false,
-      isPinned: !isAuto,
+      isFixed: !isAuto,
       modeLabel,
       renderedLabel,
       renderedVariantKey: requestedVariantKey,
@@ -109,7 +109,7 @@ function resolveForVersion(data: BlockData, requestedVariantKey: BlockVariantKey
       isFallbackToBase: false,
       isFallbackToDefault: false,
       isHidden: false,
-      isPinned: !isAuto,
+      isFixed: !isAuto,
       modeLabel,
       renderedLabel: inheritedFromVersion.label,
       renderedVariantKey: inheritedFromVersion.id,
@@ -131,7 +131,7 @@ function resolveForVersion(data: BlockData, requestedVariantKey: BlockVariantKey
       isFallbackToBase: true,
       isFallbackToDefault: true,
       isHidden: false,
-      isPinned: !isAuto,
+      isFixed: !isAuto,
       modeLabel,
       renderedLabel: "Base",
       renderedVariantKey: defaultVariantKey,
@@ -151,7 +151,7 @@ function resolveForVersion(data: BlockData, requestedVariantKey: BlockVariantKey
     isFallbackToBase: false,
     isFallbackToDefault: false,
     isHidden: true,
-    isPinned: !isAuto,
+    isFixed: !isAuto,
     modeLabel,
     renderedLabel: "Hidden",
     requestedLabel: versionLabel(requestedVersion, requestedVariantKey),
@@ -164,12 +164,12 @@ function resolveForVersion(data: BlockData, requestedVariantKey: BlockVariantKey
 }
 
 export function resolveBlockVersionState(data: BlockData, activeVersionId: string, modelVersions: ModelVersion[]): ResolvedVariantState {
-  const pinnedVariantKey =
+  const fixedVariantKey =
     data.activeVariantKey && data.activeVariantKey !== defaultVariantKey && modelVersions.some((version) => version.id === data.activeVariantKey)
       ? data.activeVariantKey
       : undefined
-  const requestedVariantKey = resolveRequestedVariantKey(activeVersionId, modelVersions, pinnedVariantKey)
-  return resolveForVersion(data, requestedVariantKey, modelVersions, !pinnedVariantKey)
+  const requestedVariantKey = resolveRequestedVariantKey(activeVersionId, modelVersions, fixedVariantKey)
+  return resolveForVersion(data, requestedVariantKey, modelVersions, !fixedVariantKey)
 }
 
 export function resolveBlockVersionRows(data: BlockData, modelVersions: ModelVersion[]): VersionVariantRow[] {

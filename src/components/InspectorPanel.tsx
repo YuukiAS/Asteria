@@ -326,7 +326,7 @@ export function InspectorPanel() {
                 <option value={defaultVariantKey}>AUTO: follow global version</option>
                 {modelVersions.map((version) => (
                   <option key={version.id} value={version.id}>
-                    PIN {versionShortLabel(version, modelVersions.findIndex((item) => item.id === version.id))}
+                    {version.label} ({versionShortLabel(version, modelVersions.findIndex((item) => item.id === version.id))})
                   </option>
                 ))}
               </select>

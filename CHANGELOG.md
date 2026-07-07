@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.12 - Type Color Follow-up
+
+- Removed visible `PIN` wording from block version selectors and fixed-version badges; concrete versions now show compact labels such as `V1` or `TRACE (V1)`.
+- Made block type changes auto-follow the new type background and border when the block still uses the previous type defaults, while preserving manual colors.
+- Made new block content start empty so type-specific editor placeholders can appear during editing.
+
 ## 0.5.11 - Sequential Variant Inheritance
 
 - Replaced default-based block variants with ordered version inheritance: later versions inherit from the nearest earlier own variant, while earlier versions do not inherit backward.

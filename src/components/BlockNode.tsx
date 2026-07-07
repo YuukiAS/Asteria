@@ -64,6 +64,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
   const title = resolveBlockTitle(data, effectiveVariantKey)
   const contentJson = resolveBlockContentJson(data, effectiveVariantKey)
   const contentHtml = resolveBlockContentHtml(data, effectiveVariantKey)
+  const versionBadgeLabel = versionState.isFixed ? versionState.requestedShortLabel || versionState.requestedLabel : versionState.modeLabel
   const displayMode = displayModeOverride === "block" ? data.displayMode || "full" : displayModeOverride
   const titleHtml = useMemo(() => titleToHtml(title), [title])
   const visualBorderColor = getVisualBorderColor(data.borderColor)
@@ -276,13 +277,13 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
               <option value={defaultVariantKey}>AUTO</option>
               {modelVersions.map((version) => (
                 <option key={version.id} value={version.id}>
-                  PIN {versionShortLabel(version, modelVersions.findIndex((item) => item.id === version.id))}
+                  {versionShortLabel(version, modelVersions.findIndex((item) => item.id === version.id))}
                 </option>
               ))}
             </select>
           ) : (
-            <span className={`version-badge ${versionState.isPinned ? "version-badge-pinned" : "version-badge-auto"}`} title={versionState.tooltip}>
-              {versionState.modeLabel}
+            <span className={`version-badge ${versionState.isFixed ? "version-badge-fixed" : "version-badge-auto"}`} title={versionState.tooltip}>
+              {versionBadgeLabel}
             </span>
           )}
           {data.showStatus && <span className={`status-marker ${blockStatus.className}`}>{blockStatus.label}</span>}

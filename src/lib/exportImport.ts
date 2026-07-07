@@ -42,7 +42,7 @@ export const defaultMapTitle = "Local map"
 
 export const defaultContentJson: JSONContent = {
   type: "doc",
-  content: [{ type: "paragraph", content: [{ type: "text", text: "New block" }] }],
+  content: [{ type: "paragraph" }],
 }
 
 export function normalizeMapTitle(value: unknown) {
@@ -110,7 +110,7 @@ function contentJsonToSafeHtml(contentJson: BlockVariant["contentJson"]) {
 
 export function createBlockNode(position = { x: 120, y: 120 }, title = "New block", variantKey: BlockVariantKey = defaultVariantKey): BlockNode {
   const at = nowIso()
-  const variant = createBlockVariant(title, defaultContentJson, "<p>New block</p>", at)
+  const variant = createBlockVariant(title, defaultContentJson, "<p></p>", at)
   const normalizedVariantKey = variantKey && variantKey !== allVersionsId ? variantKey : defaultVariantKey
   return {
     id: createId("block"),
@@ -119,7 +119,7 @@ export function createBlockNode(position = { x: 120, y: 120 }, title = "New bloc
     data: {
       title,
       contentJson: defaultContentJson,
-      contentHtml: "<p>New block</p>",
+      contentHtml: "<p></p>",
       variants: { [normalizedVariantKey]: variant },
       activeVariantKey: defaultVariantKey,
       backgroundColor: blockTypeDefaults.generic.backgroundColor,

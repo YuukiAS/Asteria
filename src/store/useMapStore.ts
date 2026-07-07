@@ -366,6 +366,24 @@ function blockTypePatch(patch: Partial<BlockData>) {
   return patch.emojis ? { ...patch, emojis: patch.emojis.slice(0, 1) } : patch
 }
 
+function normalizeCssColor(value?: string) {
+  return (value || "").trim().toLowerCase()
+}
+
+function blockTypeColorFollowPatch(data: BlockData, patch: Partial<BlockData>) {
+  if (!patch.nodeType || patch.nodeType === data.nodeType) return {}
+  const previousDefaults = blockTypeDefaults[data.nodeType]
+  const nextDefaults = blockTypeDefaults[patch.nodeType]
+  return {
+    ...(patch.backgroundColor === undefined && normalizeCssColor(data.backgroundColor) === normalizeCssColor(previousDefaults.backgroundColor)
+      ? { backgroundColor: nextDefaults.backgroundColor }
+      : {}),
+    ...(patch.borderColor === undefined && normalizeCssColor(data.borderColor) === normalizeCssColor(previousDefaults.borderColor)
+      ? { borderColor: nextDefaults.borderColor }
+      : {}),
+  }
+}
+
 export const useMapStore = create<MapState>((set, get) => ({
   mapTitle: defaultMapTitle,
   modelVersions: [],
@@ -825,11 +843,13 @@ export const useMapStore = create<MapState>((set, get) => ({
         const variants = Object.keys(variantPatch).length ? patchBlockVariant(node.data, variantKey, variantPatch, state.modelVersions) : node.data.variants
         const nextData = { ...node.data, variants }
         const resolvedVariant = resolveVariantForMirror(nextData, variantKey, state.modelVersions)
+        const typeColorPatch = blockTypeColorFollowPatch(node.data, resolvedPatch)
         return {
           ...node,
           data: {
             ...node.data,
             ...resolvedPatch,
+            ...typeColorPatch,
             variants,
             activeVariantKey: state.activeVersionId === allVersionsId ? variantKey : node.data.activeVariantKey,
             title: resolvedVariant.title,

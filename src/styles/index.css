@@ -247,7 +247,7 @@ body {
     @apply border-slate-300 bg-slate-50 text-slate-600;
   }
 
-  .version-badge-pinned {
+  .version-badge-fixed {
     @apply border-accent/30 bg-accentSoft text-accent;
   }
 
