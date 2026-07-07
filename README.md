@@ -1,6 +1,8 @@
 # Asteria
 
-Asteria is a local-first visual block map for Bayesian model development, paper reading, and meeting preparation.
+Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
+
+Current app version: `0.5.12`.
 
 ## Run
 
@@ -8,6 +10,8 @@ Asteria is a local-first visual block map for Bayesian model development, paper 
 npm install
 npm run dev
 ```
+
+The dev server is configured for `http://127.0.0.1:5173/`.
 
 ## Build
 
@@ -17,41 +21,99 @@ npm run build
 
 ## Data
 
-Map data is saved locally in IndexedDB under the `asteria-map` database. JSON export and import are available from the top toolbar.
+Maps are stored locally in IndexedDB under the `asteria-map` database. The top toolbar provides JSON import and export. Exported maps include nodes, edges, block styling, rich-text JSON, model versions, variant content, and viewport state.
 
-## Block Color and Marker Notes
+## Core Workflow
 
-Asteria keeps block text and block background palettes separate so readable canvas notes do not accidentally use dark text colors as backgrounds.
+- Use the canvas to place model, prior, theorem, result, dataset, notation, and related research blocks.
+- Use Move mode for dragging and layout. Use Edit mode for direct block editing.
+- Double-click the canvas to create a new block at that position.
+- Double-click a block to enter inline editing.
+- Click an empty canvas background while editing to return to Move mode.
+- Drag undo is supported with `Ctrl+Z` / `Cmd+Z` when focus is not inside a text editor.
 
-- Text colors: `#111827`, `#374151`, `#6b7280`, `#ef4444`, `#f97316`, `#b45309`, `#eab308`, `#22c55e`, `#06b6d4`, `#3b82f6`, `#8b5cf6`, `#ec4899`.
-- Background colors: `#ffffff`, `#f9fafb`, `#fef3c7`, `#dbeafe`, `#dcfce7`, `#fce7f3`, `#fee2e2`, `#e5e7eb`.
-- Block borders are fixed to black for now and are not exposed as an editable color.
+## Model Versions
 
-Current block type defaults:
+Asteria supports ordered model versions such as `TRACE`, `TRACE+HMSC`, and `Marked TRACE`. The version names are user-defined; examples are not hard-coded.
 
-- Generic: default white background, black text, black badge.
-- Definition and Notation: terminology-style yellow background, black text.
-- Model: default background, yellow text.
-- Prior: blue background.
-- Assumption: gray background.
-- Theorem: default background, dark orange text.
-- Dataset: pink background.
-- Result: generic block body colors, blue badge, and an initial ordered list.
-- Citation: generic block body colors and gray badge.
-- Warning: warning background and a default warning emoji marker.
-- TODO: generic block colors and an initial checkbox list; pressing Enter in the list creates another checkbox item.
+Block content uses sequential inheritance:
 
-The single marker emoji keeps free-form input and also provides a small preset picker so users do not have to open an OS emoji input method for common markers. On the canvas, the emoji is shown directly before the block title and can be edited from the selected block header in Edit mode.
+- A block with own content in `V1` is visible in `V1` and inherited by later versions until a later own variant exists.
+- A block first created in `V2` is hidden in `V1`, own in `V2`, and inherited in `V3`.
+- A block first created in `V3` is hidden in `V1` and `V2`, and own in `V3`.
+- Editing inherited content creates an own variant for the requested version without changing the source version.
+- `All` mode shows every block, including hidden/recoverable blocks.
+- Concrete version views hide blocks with no content at or before that version, and also hide connected edges.
 
-## V2 TODO
+Block headers show compact version markers. Filled markers mean the block has own content for that version; empty markers mean inherited, base, or hidden state. Fixed-version blocks show the concrete short label such as `V1`, not a `PIN` label.
 
-- PWA offline install
-- More block types
-- Tags and search
-- Group/frame regions
-- Edge semantic types
-- LaTeX, SVG, PDF, and Obsidian export
-- Image and PDF screenshot paste
-- Cloud sync and version history
-- Automatic layout and minimap
-- Deeper mobile editing
+## Block Types And Colors
+
+Block types control background and border presets, not body text color. Body text remains readable by default, while rich text can still have manual text colors and highlights.
+
+Current block types:
+
+- Generic
+- Definition
+- Notation
+- Model
+- Prior
+- Assumption
+- Theorem
+- Algorithm
+- Dataset
+- Result
+- Reference
+- Remark
+- Example
+- Warning
+- TODO
+
+Changing a block type updates the block background and border only when the block still uses the previous type defaults. If the user manually changed the background or border, the manual color wins. The inspector also includes `Apply type style` to restore the selected type's background and border preset.
+
+New block bodies start empty so type-specific placeholders can appear during editing. Result and TODO templates are placeholders, not inserted content.
+
+## Rich Text
+
+Blocks use TipTap rich text with:
+
+- Text color and highlight color
+- Bold, italic, underline, strike, code, quote, headings, lists, links, and alignment
+- Inline math and display equations rendered with KaTeX
+- Notion-style divider insertion by typing `---` on an empty line
+- A floating selection menu for common inline formatting
+
+Equation editing uses a canvas-side dialog with live preview. Invalid or incomplete LaTeX displays an invalid-equation state until the expression parses.
+
+## Inspector
+
+The right inspector is split into collapsible, reorderable sections. Block editing is organized around object settings, variants, markers, appearance, content, and metadata. The Variants section shows compact rows such as:
+
+- `TRACE (V1)` - `Own`
+- `TRACE+HMSC (V2)` - `Inherits V1`
+- `Marked TRACE (V3)` - `Hidden`
+- `TRACE (V1)` - `Base`
+
+Each variant row has actions for copying the currently resolved content into that version and deleting own content when available.
+
+## Canvas And Layout
+
+- Blocks can be resized in Edit mode.
+- Large block content avoids heavy visible scrollbars and shows a subtle overflow fade.
+- Fit controls can resize the selected block to the current content or the largest variant content.
+- Groups/frames can contain blocks.
+- Edges support line style, path type, arrows, stroke width, labels, and version visibility.
+- The celestial canvas background stays behind all nodes and does not affect block text/background rendering.
+
+## Clipboard And Import
+
+Asteria supports internal block copy/paste, style copy/paste, block duplication, edge style editing, and JSON import/export. Imported legacy maps are normalized so older default/common content remains recoverable as base content.
+
+## Project Files
+
+- `src/` contains the React application.
+- `src/store/useMapStore.ts` contains the map state and edit actions.
+- `src/lib/blockVersionState.ts` centralizes block version resolution.
+- `src/lib/exportImport.ts` contains map normalization, import/export helpers, and node creation.
+- `results/` stores Codex result notes for completed local version tasks.
+- `TODO.md` tracks the current implementation plan and design notes.
