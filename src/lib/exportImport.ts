@@ -82,7 +82,7 @@ export function getVariantKey(activeVersionId?: ActiveVersionId, explicitVariant
 
 export function resolveBlockVariant(data: BlockData, activeVersionId?: ActiveVersionId): BlockVariant {
   const key = getVariantKey(activeVersionId)
-  const fallback = data.variants?.[defaultVariantKey] || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt)
+  const fallback = data.variants?.[defaultVariantKey] || Object.values(data.variants || {})[0] || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt)
   return data.variants?.[key] || fallback
 }
 
@@ -108,9 +108,10 @@ function contentJsonToSafeHtml(contentJson: BlockVariant["contentJson"]) {
   }
 }
 
-export function createBlockNode(position = { x: 120, y: 120 }, title = "New block"): BlockNode {
+export function createBlockNode(position = { x: 120, y: 120 }, title = "New block", variantKey: BlockVariantKey = defaultVariantKey): BlockNode {
   const at = nowIso()
   const variant = createBlockVariant(title, defaultContentJson, "<p>New block</p>", at)
+  const normalizedVariantKey = variantKey && variantKey !== allVersionsId ? variantKey : defaultVariantKey
   return {
     id: createId("block"),
     type: "block",
@@ -119,7 +120,7 @@ export function createBlockNode(position = { x: 120, y: 120 }, title = "New bloc
       title,
       contentJson: defaultContentJson,
       contentHtml: "<p>New block</p>",
-      variants: { [defaultVariantKey]: variant },
+      variants: { [normalizedVariantKey]: variant },
       activeVariantKey: defaultVariantKey,
       backgroundColor: blockTypeDefaults.generic.backgroundColor,
       textColor: blockTypeDefaults.generic.textColor,
@@ -278,8 +279,8 @@ function normalizeBlockVariant(input: unknown, fallbackTitle: string, fallbackCo
 }
 
 function normalizeBlockVariants(input: unknown, defaultVariant: BlockVariant): Partial<Record<BlockVariantKey, BlockVariant>> {
-  const variants: Partial<Record<BlockVariantKey, BlockVariant>> = { [defaultVariantKey]: defaultVariant }
-  if (!input || typeof input !== "object") return variants
+  const variants: Partial<Record<BlockVariantKey, BlockVariant>> = {}
+  if (!input || typeof input !== "object") return { [defaultVariantKey]: defaultVariant }
   Object.entries(input as Record<string, unknown>).forEach(([key, value]) => {
     if (!key) return
     try {
@@ -288,8 +289,12 @@ function normalizeBlockVariants(input: unknown, defaultVariant: BlockVariant): P
       console.warn(`Recovered malformed block variant "${key}".`, error)
     }
   })
-  if (!variants[defaultVariantKey]) variants[defaultVariantKey] = defaultVariant
+  if (Object.keys(variants).length === 0) variants[defaultVariantKey] = defaultVariant
   return variants
+}
+
+function firstRenderableVariant(variants: Partial<Record<BlockVariantKey, BlockVariant>>, fallback: BlockVariant) {
+  return variants[defaultVariantKey] || Object.values(variants)[0] || fallback
 }
 
 function normalizeEdgeVisibility(value: unknown, modelVersions: ModelVersion[]): EdgeVisibility {
@@ -365,10 +370,11 @@ function normalizeBlockData(input: Partial<BlockData> & { content?: string }): B
     input.contentHtml,
   )
   const variants = normalizeBlockVariants(input.variants, defaultVariant)
+  const renderedVariant = firstRenderableVariant(variants, defaultVariant)
   return {
-    title: defaultVariant.title,
-    contentJson: defaultVariant.contentJson,
-    contentHtml: defaultVariant.contentHtml,
+    title: renderedVariant.title,
+    contentJson: renderedVariant.contentJson,
+    contentHtml: renderedVariant.contentHtml,
     variants,
     activeVariantKey: input.activeVariantKey === legacyDefaultVariantKey ? defaultVariantKey : input.activeVariantKey || defaultVariantKey,
     backgroundColor: normalizeColor(input.backgroundColor, defaults.backgroundColor),

@@ -40,6 +40,43 @@ export type BlockVariant = {
   updatedAt: string
 }
 
+export type VariantSourceKind = "own" | "inherited" | "base" | "hidden"
+
+export type ResolvedVariantState = {
+  availableVersionIds: string[]
+  hasRequestedVariant: boolean
+  inheritedFromVersion?: ModelVersion
+  inheritedFromVersionId?: string
+  inheritedFromVersionLabel?: string
+  inheritedFromVersionShortLabel?: string
+  isAuto: boolean
+  isFallbackToBase: boolean
+  isFallbackToDefault: boolean
+  isHidden: boolean
+  isPinned: boolean
+  modeLabel: "AUTO" | "PINNED"
+  renderedLabel: string
+  renderedVariantKey?: BlockVariantKey
+  renderedVersion?: ModelVersion
+  requestedLabel: string
+  requestedShortLabel?: string
+  requestedVariantKey: BlockVariantKey
+  requestedVersion?: ModelVersion
+  sourceKind: VariantSourceKind
+  tooltip: string
+}
+
+export type VersionVariantRow = {
+  version: ModelVersion
+  versionLabel: string
+  versionShortLabel: string
+  sourceKind: VariantSourceKind
+  statusLabel: string
+  renderedVariantKey?: BlockVariantKey
+  inheritedFromVersion?: ModelVersion
+  tooltip: string
+}
+
 export type EdgeLineStyle = "solid" | "dashed" | "dotted"
 export type EdgePathType = "smoothstep" | "bezier" | "straight" | "step"
 export type EdgeArrow = "none" | "forward" | "backward" | "both"

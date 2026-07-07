@@ -4,7 +4,7 @@ import { blockTypeDefaults } from "../constants/blockDefaults"
 import { blockStatusByValue, blockTypeByValue, blockTypeOptions } from "../constants/blockTypes"
 import { blockSizeLimits } from "../constants/layout"
 import { defaultVariantKey } from "../constants/versioning"
-import { resolveBlockVersionState } from "../lib/blockVersionState"
+import { resolveBlockVersionRows, resolveBlockVersionState, versionShortLabel } from "../lib/blockVersionState"
 import { resolveBlockContentHtml, resolveBlockContentJson, resolveBlockTitle } from "../lib/exportImport"
 import { requestInlineBlockEdit, requestInlineEditorFocus, type InlineEditTarget } from "../lib/inlineEditEvents"
 import { titleToHtml } from "../lib/titleMath"
@@ -58,7 +58,9 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
   const blockStatus = data.status ? blockStatusByValue[data.status] : blockStatusByValue.undo
   const emoji = (data.emojis || []).filter(Boolean)[0] || ""
   const versionState = resolveBlockVersionState(data, activeVersionId, modelVersions)
-  const effectiveVariantKey = versionState.renderedVariantKey
+  const versionRows = resolveBlockVersionRows(data, modelVersions)
+  const effectiveVariantKey = versionState.renderedVariantKey || defaultVariantKey
+  const editingVariantKey = versionState.requestedVariantKey
   const title = resolveBlockTitle(data, effectiveVariantKey)
   const contentJson = resolveBlockContentJson(data, effectiveVariantKey)
   const contentHtml = resolveBlockContentHtml(data, effectiveVariantKey)
@@ -232,7 +234,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
             ref={titleInputRef}
             className="block-title-input nodrag nopan"
             value={title}
-            onChange={(event) => updateBlockVariant(id, effectiveVariantKey, { title: event.target.value })}
+            onChange={(event) => updateBlockVariant(id, editingVariantKey, { title: event.target.value })}
             onBlur={() => onInlineEditTargetChange(undefined)}
             onKeyDown={(event) => {
               if (event.key === "Enter") event.currentTarget.blur()
@@ -259,6 +261,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
           availableVersionIds={versionState.availableVersionIds}
           modelVersions={modelVersions}
           title={versionState.tooltip}
+          versionRows={versionRows}
         />
         <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1">
           {isEditableSelection ? (
@@ -273,7 +276,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
               <option value={defaultVariantKey}>AUTO</option>
               {modelVersions.map((version) => (
                 <option key={version.id} value={version.id}>
-                  {version.shortLabel || version.label}
+                  PIN {versionShortLabel(version, modelVersions.findIndex((item) => item.id === version.id))}
                 </option>
               ))}
             </select>
@@ -311,7 +314,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
         {isEditingContent && displayMode === "full" ? (
           <RichTextEditor
             content={contentJson}
-            onChange={(contentJson, contentHtml) => updateBlockVariant(id, effectiveVariantKey, { contentJson, contentHtml })}
+            onChange={(contentJson, contentHtml) => updateBlockVariant(id, editingVariantKey, { contentJson, contentHtml })}
             showToolbar={false}
             chrome={false}
             editorClassName="min-h-[calc(var(--asteria-node-height,220px)-60px)] cursor-text"

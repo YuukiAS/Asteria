@@ -25,6 +25,7 @@ import {
 } from "../lib/exportImport"
 import { loadPersistedMap, savePersistedMap } from "../lib/db"
 import { contentJsonToHtml } from "../editor/editorUtils"
+import { resolveBlockVersionState } from "../lib/blockVersionState"
 import { createId } from "../lib/ids"
 import { nowIso } from "../lib/time"
 import type {
@@ -32,6 +33,7 @@ import type {
   BlockDisplayMode,
   BlockNode,
   BlockVariant,
+  BlockVariantKey,
   DisplayModeOverride,
   EdgeArrow,
   EdgeVisibility,
@@ -289,12 +291,25 @@ function relativePositionFromAbsolute(node: MapNode, nodes: MapNode[], absolute:
   return { x: absolute.x - parentPosition.x, y: absolute.y - parentPosition.y }
 }
 
-function getBlockVariantKeyForState(state: Pick<MapState, "activeVersionId">, data: BlockData) {
+function getBlockVariantKeyForState(state: Pick<MapState, "activeVersionId" | "modelVersions">, data: BlockData) {
   return data.activeVariantKey && data.activeVariantKey !== defaultVariantKey ? data.activeVariantKey : getVariantKey(state.activeVersionId)
 }
 
-function patchBlockVariant(data: BlockData, key: string, patch: Partial<Pick<BlockData, "title" | "contentJson" | "contentHtml">>) {
-  const current = data.variants?.[key] || data.variants?.[defaultVariantKey] || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt)
+function firstExistingVariant(data: BlockData): BlockVariant | undefined {
+  return Object.values(data.variants || {}).find((variant): variant is BlockVariant => Boolean(variant))
+}
+
+function resolveVariantForMirror(data: BlockData, key: BlockVariantKey, modelVersions: ModelVersion[]): BlockVariant {
+  const state = resolveBlockVersionState({ ...data, activeVariantKey: key === defaultVariantKey ? defaultVariantKey : key }, key, modelVersions)
+  const renderedVariant = state.renderedVariantKey ? data.variants?.[state.renderedVariantKey] : undefined
+  if (renderedVariant) return renderedVariant
+  return firstExistingVariant(data) || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt)
+}
+
+function patchBlockVariant(data: BlockData, key: string, patch: Partial<Pick<BlockData, "title" | "contentJson" | "contentHtml">>, modelVersions: ModelVersion[]) {
+  const resolvedState = resolveBlockVersionState({ ...data, activeVariantKey: key === defaultVariantKey ? defaultVariantKey : key }, key, modelVersions)
+  const inheritedVariant = resolvedState.renderedVariantKey ? data.variants?.[resolvedState.renderedVariantKey] : undefined
+  const current = data.variants?.[key] || inheritedVariant || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt)
   const next: BlockVariant = {
     ...current,
     title: patch.title ?? current.title,
@@ -302,14 +317,9 @@ function patchBlockVariant(data: BlockData, key: string, patch: Partial<Pick<Blo
     contentHtml: patch.contentHtml ?? (patch.contentJson ? contentJsonToHtml(patch.contentJson) : current.contentHtml),
     updatedAt: nowIso(),
   }
-  const defaultVariant =
-    key === defaultVariantKey
-      ? next
-      : data.variants?.[defaultVariantKey] || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt)
   return {
     ...data.variants,
     [key]: next,
-    [defaultVariantKey]: defaultVariant,
   }
 }
 
@@ -441,7 +451,9 @@ export const useMapStore = create<MapState>((set, get) => ({
   },
 
   addBlockAndSelect: (position) => {
-    const node = createBlockNode(position)
+    const state = get()
+    const variantKey = state.activeVersionId !== allVersionsId && state.modelVersions.some((version) => version.id === state.activeVersionId) ? state.activeVersionId : defaultVariantKey
+    const node = createBlockNode(position, "New block", variantKey)
     set((state) => ({
       nodes: [...state.nodes, node],
       selectedNodeId: node.id,
@@ -462,7 +474,8 @@ export const useMapStore = create<MapState>((set, get) => ({
     const state = get()
     const source = findBlockNode(state.nodes, state.selectedNodeId)
     if (!source) return get().addBlockAndSelect()
-    const node = createBlockNode(nextBlockPositionFrom(source, state.nodes))
+    const variantKey = state.activeVersionId !== allVersionsId && state.modelVersions.some((version) => version.id === state.activeVersionId) ? state.activeVersionId : defaultVariantKey
+    const node = createBlockNode(nextBlockPositionFrom(source, state.nodes), "New block", variantKey)
     const edge = createEdge({ source: source.id, target: node.id, sourceHandle: "right", targetHandle: "left-target" })
     set((nextState) => ({
       nodes: [...nextState.nodes, node],
@@ -620,7 +633,18 @@ export const useMapStore = create<MapState>((set, get) => ({
         if (!isBlockNode(node)) return node
         const variants = { ...(node.data.variants || {}) }
         delete variants[id]
-        return { ...node, data: { ...node.data, variants, activeVariantKey: node.data.activeVariantKey === id ? defaultVariantKey : node.data.activeVariantKey } }
+        const activeVariantKey = node.data.activeVariantKey === id ? defaultVariantKey : node.data.activeVariantKey
+        const nextData = { ...node.data, variants, activeVariantKey }
+        const renderedVariant = resolveVariantForMirror(nextData, activeVariantKey || defaultVariantKey, state.modelVersions.filter((version) => version.id !== id))
+        return {
+          ...node,
+          data: {
+            ...nextData,
+            title: renderedVariant.title,
+            contentJson: renderedVariant.contentJson,
+            contentHtml: renderedVariant.contentHtml || contentJsonToHtml(renderedVariant.contentJson),
+          },
+        }
       }),
       edges: state.edges.map((edge) => {
         const visibility = edge.data?.visibility
@@ -641,12 +665,14 @@ export const useMapStore = create<MapState>((set, get) => ({
   },
 
   moveModelVersion: (id, direction) => {
+    if (!window.confirm("Reorder model versions? Version inheritance is sequential, so changing order can change which content later versions inherit.")) return
     set((state) => {
       const index = state.modelVersions.findIndex((version) => version.id === id)
       const nextIndex = index + direction
       if (index < 0 || nextIndex < 0 || nextIndex >= state.modelVersions.length) return {}
       const modelVersions = [...state.modelVersions]
       const [version] = modelVersions.splice(index, 1)
+      if (!version) return {}
       modelVersions.splice(nextIndex, 0, version)
       return { modelVersions }
     })
@@ -662,7 +688,9 @@ export const useMapStore = create<MapState>((set, get) => ({
     const selectedNodeId = get().selectedNodeId
     const node = findBlockNode(get().nodes, selectedNodeId)
     if (!selectedNodeId || !node) return
-    const contentJson = cloneJson(resolveBlockVariant(node.data, get().activeVersionId).contentJson)
+    const state = get()
+    const variantKey = getBlockVariantKeyForState(state, node.data)
+    const contentJson = cloneJson(resolveVariantForMirror(node.data, variantKey, state.modelVersions).contentJson)
     const content = Array.isArray(contentJson.content) ? contentJson.content : []
     get().updateBlock(selectedNodeId, {
       contentJson: {
@@ -794,8 +822,9 @@ export const useMapStore = create<MapState>((set, get) => ({
       nodes: state.nodes.map((node) => {
         if (node.id !== id || !isBlockNode(node)) return node
         const variantKey = getBlockVariantKeyForState(state, node.data)
-        const variants = Object.keys(variantPatch).length ? patchBlockVariant(node.data, variantKey, variantPatch) : node.data.variants
-        const resolvedVariant = variants?.[variantKey] || variants?.[defaultVariantKey] || resolveBlockVariant(node.data, state.activeVersionId)
+        const variants = Object.keys(variantPatch).length ? patchBlockVariant(node.data, variantKey, variantPatch, state.modelVersions) : node.data.variants
+        const nextData = { ...node.data, variants }
+        const resolvedVariant = resolveVariantForMirror(nextData, variantKey, state.modelVersions)
         return {
           ...node,
           data: {
@@ -840,7 +869,7 @@ export const useMapStore = create<MapState>((set, get) => ({
     set((nextState) => ({
       nodes: nextState.nodes.map((node) => {
         if (node.id !== id || !isBlockNode(node)) return node
-        const variant = resolveBlockVariant(node.data, key)
+        const variant = resolveVariantForMirror(node.data, key, nextState.modelVersions)
         return {
           ...node,
           data: {
@@ -864,8 +893,9 @@ export const useMapStore = create<MapState>((set, get) => ({
     set((nextState) => ({
       nodes: nextState.nodes.map((node) => {
         if (node.id !== id || !isBlockNode(node)) return node
-        const variants = patchBlockVariant(node.data, key, patch)
-        const resolvedVariant = variants[key] || variants[defaultVariantKey] || resolveBlockVariant(node.data, allVersionsId)
+        const variants = patchBlockVariant(node.data, key, patch, nextState.modelVersions)
+        const nextData = { ...node.data, variants }
+        const resolvedVariant = resolveVariantForMirror(nextData, key, nextState.modelVersions)
         return {
           ...node,
           data: {
@@ -888,7 +918,8 @@ export const useMapStore = create<MapState>((set, get) => ({
     if (!state.modelVersions.some((version) => version.id === versionId)) return
     const source = findBlockNode(state.nodes, id)
     if (!source) return
-    const current = resolveBlockVariant(source.data, source.data.activeVariantKey || state.activeVersionId)
+    const requestedKey = getBlockVariantKeyForState(state, source.data)
+    const current = resolveVariantForMirror(source.data, requestedKey, state.modelVersions)
     set((nextState) => ({
       nodes: nextState.nodes.map((node) =>
         node.id === id && isBlockNode(node)
@@ -917,16 +948,18 @@ export const useMapStore = create<MapState>((set, get) => ({
         if (node.id !== id || !isBlockNode(node)) return node
         const variants = { ...(node.data.variants || {}) }
         delete variants[variantKey]
-        const defaultVariant = variants[defaultVariantKey] || createBlockVariant(node.data.title, node.data.contentJson, node.data.contentHtml, node.data.updatedAt)
+        const nextActiveVariantKey = node.data.activeVariantKey === variantKey ? defaultVariantKey : node.data.activeVariantKey
+        const nextData = { ...node.data, variants, activeVariantKey: nextActiveVariantKey }
+        const resolvedVariant = resolveVariantForMirror(nextData, nextActiveVariantKey || defaultVariantKey, state.modelVersions)
         return {
           ...node,
           data: {
             ...node.data,
             variants,
-            activeVariantKey: node.data.activeVariantKey === variantKey ? defaultVariantKey : node.data.activeVariantKey,
-            title: defaultVariant.title,
-            contentJson: defaultVariant.contentJson,
-            contentHtml: defaultVariant.contentHtml,
+            activeVariantKey: nextActiveVariantKey,
+            title: resolvedVariant.title,
+            contentJson: resolvedVariant.contentJson,
+            contentHtml: resolvedVariant.contentHtml || contentJsonToHtml(resolvedVariant.contentJson),
             updatedAt: nowIso(),
           },
         }

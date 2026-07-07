@@ -224,7 +224,7 @@ body {
   }
 
   .version-select {
-    @apply h-6 max-w-[88px] shrink-0 rounded-md border border-border bg-panel px-1 text-[10px] font-semibold uppercase leading-none text-secondary outline-none transition focus:border-accent focus:text-foreground;
+    @apply h-6 max-w-[88px] shrink-0 rounded-md border border-border bg-panel px-1 text-[10px] font-semibold uppercase leading-none tracking-wide text-secondary outline-none transition focus:border-accent focus:text-foreground;
   }
 
   .shortcut {
@@ -240,7 +240,7 @@ body {
   }
 
   .version-badge {
-    @apply inline-flex max-w-[64px] shrink-0 truncate rounded border border-border bg-app px-1.5 py-0.5 text-[9px] font-semibold uppercase leading-none text-secondary;
+    @apply inline-flex max-w-[64px] shrink-0 items-center truncate rounded-md border border-border bg-app px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-secondary;
   }
 
   .version-badge-auto {

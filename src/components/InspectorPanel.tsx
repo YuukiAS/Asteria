@@ -2,7 +2,7 @@ import { Clipboard, Copy, Layers, Plus, RotateCcw } from "lucide-react"
 import { blockTypeDefaults } from "../constants/blockDefaults"
 import { blockStatusOptions, blockTypeByValue, blockTypeOptions } from "../constants/blockTypes"
 import { blockFitExtraPadding, blockHeaderHeight, blockPreviewHorizontalPadding, blockPreviewVerticalPadding, blockSizeLimits } from "../constants/layout"
-import { allVersionsId, blockDisplayModeOptions, defaultVariantKey } from "../constants/versioning"
+import { blockDisplayModeOptions, defaultVariantKey } from "../constants/versioning"
 import { backgroundPalette, textPalette } from "../constants/palette"
 import { ColorPickerRow } from "./ColorPickerRow"
 import { EdgeInspector } from "./EdgeInspector"
@@ -10,7 +10,7 @@ import { InspectorSectionStack } from "./InspectorSectionStack"
 import { RichTextEditor } from "./RichTextEditor"
 import { formatLocalDateTime } from "../lib/time"
 import { requestInlineBlockEdit } from "../lib/inlineEditEvents"
-import { resolveBlockVersionState } from "../lib/blockVersionState"
+import { resolveBlockVersionRows, resolveBlockVersionState, versionShortLabel } from "../lib/blockVersionState"
 import { resolveBlockContentHtml, resolveBlockContentJson, resolveBlockTitle } from "../lib/exportImport"
 import { stripScriptTags } from "../lib/sanitize"
 import { useMapStore } from "../store/useMapStore"
@@ -239,10 +239,11 @@ export function InspectorPanel() {
     const emojis = node.data.emojis || []
     const versionState = resolveBlockVersionState(node.data, activeVersionId, modelVersions)
     const activeVariantKey = versionState.requestedVariantKey
-    const activeTitle = resolveBlockTitle(node.data, activeVariantKey)
-    const activeContentJson = resolveBlockContentJson(node.data, activeVariantKey)
-    const hasVersionVariant = activeVariantKey === defaultVariantKey || Boolean(node.data.variants?.[activeVariantKey])
+    const renderedVariantKey = versionState.renderedVariantKey || defaultVariantKey
+    const activeTitle = resolveBlockTitle(node.data, renderedVariantKey)
+    const activeContentJson = resolveBlockContentJson(node.data, renderedVariantKey)
     const variantLabel = `${versionState.renderedLabel} via ${versionState.modeLabel}`
+    const variantRows = resolveBlockVersionRows(node.data, modelVersions)
     const setEditingVariant = (variantKey: string) => {
       setBlockActiveVariant(node.id, variantKey)
     }
@@ -251,7 +252,7 @@ export function InspectorPanel() {
       updateBlock(node.id, { emojis: emoji ? [emoji] : [] })
     }
     const fitCurrentContent = () => {
-      const height = measureBlockContentHeight(resolveBlockContentHtml(node.data, versionState.renderedVariantKey), node.data.width)
+      const height = measureBlockContentHeight(resolveBlockContentHtml(node.data, renderedVariantKey), node.data.width)
       if (!height) {
         console.warn(`Failed to measure current content for block ${node.id}; using maximum fit height.`)
         updateBlock(node.id, { height: blockSizeLimits.maxHeight })
@@ -325,7 +326,7 @@ export function InspectorPanel() {
                 <option value={defaultVariantKey}>AUTO: follow global version</option>
                 {modelVersions.map((version) => (
                   <option key={version.id} value={version.id}>
-                    {version.shortLabel || version.label}
+                    PIN {versionShortLabel(version, modelVersions.findIndex((item) => item.id === version.id))}
                   </option>
                 ))}
               </select>
@@ -354,7 +355,8 @@ export function InspectorPanel() {
                   </div>
                   <div className="rounded-lg border border-border bg-app/60 p-2 text-xs text-secondary">
               Editing content: <span className="font-semibold text-foreground">{variantLabel}</span>
-              {!hasVersionVariant && activeVariantKey !== defaultVariantKey ? ` (showing Default fallback; typing here creates ${versionState.requestedLabel})` : ""}
+              {versionState.sourceKind === "inherited" ? ` (typing here creates ${versionState.requestedShortLabel || versionState.requestedLabel} own content)` : ""}
+              {versionState.sourceKind === "hidden" ? ` (typing here creates ${versionState.requestedShortLabel || versionState.requestedLabel} own content)` : ""}
               <br />
               AUTO follows the top toolbar. Selecting a version pins this block and ignores global switching.
               {displayModeOverride !== "block" ? ` Toolbar density override: ${displayModeOverride}.` : ""}
@@ -370,28 +372,35 @@ export function InspectorPanel() {
                 <div className="grid gap-2">
               {modelVersions.length > 0 && (
                 <div className="text-xs text-secondary">
-                  Rows marked <span className="font-medium text-foreground">(inherit default)</span> do not have separate content yet.
+                  Versions inherit from the nearest earlier version with own content. Editing inherited content creates an own copy for the requested version.
                 </div>
               )}
               {modelVersions.length === 0 && <div className="text-xs text-secondary">Add versions from the top toolbar to create version-specific block content.</div>}
-              {modelVersions.map((version) => {
-                const hasVariant = Boolean(node.data.variants?.[version.id])
+              {variantRows.map((row) => {
+                const hasVariant = row.sourceKind === "own"
                 return (
-                  <div key={version.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
-                    <span className="min-w-0 text-xs text-secondary">
-                      {hasVariant ? <span className="truncate">{version.label}</span> : <span className="italic text-muted">(inherit default)</span>}
-                    </span>
-                    <button type="button" className="toolbar-button justify-center" onClick={() => copyBlockVariantToVersion(node.id, version.id)}>
-                      Use current content
-                    </button>
-                    <button
-                      type="button"
-                      className="danger-button justify-center disabled:cursor-not-allowed disabled:opacity-50"
-                      disabled={!hasVariant}
-                      onClick={() => deleteBlockVariant(node.id, version.id)}
-                    >
-                      Delete
-                    </button>
+                  <div key={row.version.id} className="grid gap-2 rounded-lg border border-border bg-app/45 p-2" title={row.tooltip}>
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                      <span className="min-w-0 truncate text-xs font-semibold text-foreground">
+                        {row.versionLabel} ({row.versionShortLabel})
+                      </span>
+                      <span className={`min-w-0 truncate text-xs ${row.sourceKind === "hidden" ? "text-muted" : "text-secondary"}`}>
+                        {row.statusLabel}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button type="button" className="toolbar-button justify-center" onClick={() => copyBlockVariantToVersion(node.id, row.version.id)}>
+                        Use current
+                      </button>
+                      <button
+                        type="button"
+                        className="danger-button justify-center disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={!hasVariant}
+                        onClick={() => deleteBlockVariant(node.id, row.version.id)}
+                      >
+                        Delete own
+                      </button>
+                    </div>
                   </div>
                 )
               })}

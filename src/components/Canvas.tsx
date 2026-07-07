@@ -13,6 +13,8 @@ import {
 import { createContext, useContext, useEffect, useMemo, type MouseEvent } from "react"
 import { BlockNode } from "./BlockNode"
 import { GroupNode } from "./GroupNode"
+import { allVersionsId } from "../constants/versioning"
+import { resolveBlockVersionState } from "../lib/blockVersionState"
 import { applyEdgePresentation } from "../lib/exportImport"
 import { requestInlineBlockEdit, type InlineEditTarget } from "../lib/inlineEditEvents"
 import { useMapStore } from "../store/useMapStore"
@@ -66,6 +68,7 @@ export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChang
     nodes,
     edges,
     activeVersionId,
+    modelVersions,
     viewport,
     onNodesChange,
     onEdgesChange,
@@ -84,9 +87,22 @@ export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChang
     onFitViewReady(() => reactFlow.fitView({ padding: 0.18, duration: 240 }))
   }, [onFitViewReady, reactFlow])
 
+  const presentedNodes = useMemo(() => {
+    const visibleNodes =
+      activeVersionId === allVersionsId
+        ? nodes
+        : nodes.filter((node) => node.type !== "block" || !resolveBlockVersionState(node.data, activeVersionId, modelVersions).isHidden)
+    return visibleNodes.map((node) => (node.type === "group" && node.data.locked ? { ...node, draggable: false } : node))
+  }, [activeVersionId, interactionMode, modelVersions, nodes])
+
+  const visibleNodeIds = useMemo(() => new Set(presentedNodes.map((node) => node.id)), [presentedNodes])
+
   const styledEdges = useMemo(
     () =>
-      edges.filter((edge) => activeVersionId === "all" || edge.data?.visibility === "all" || !edge.data?.visibility || edge.data.visibility.includes(activeVersionId)).map((edge) => {
+      edges.filter((edge) => {
+        if (!visibleNodeIds.has(edge.source) || !visibleNodeIds.has(edge.target)) return false
+        return activeVersionId === allVersionsId || edge.data?.visibility === "all" || !edge.data?.visibility || edge.data.visibility.includes(activeVersionId)
+      }).map((edge) => {
         const presented = applyEdgePresentation(edge)
         return {
           ...presented,
@@ -95,15 +111,7 @@ export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChang
           labelStyle: { fill: "var(--edge-label-text)", fontSize: 11 },
         }
       }),
-    [activeVersionId, edges],
-  )
-
-  const presentedNodes = useMemo(
-    () =>
-      nodes.map((node) =>
-        node.type === "group" && node.data.locked ? { ...node, draggable: false } : node,
-      ),
-    [interactionMode, nodes],
+    [activeVersionId, edges, visibleNodeIds],
   )
 
   const onNodeDoubleClick: NodeMouseHandler<MapNode> = (_event, node) => {

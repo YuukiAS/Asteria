@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.11 - Sequential Variant Inheritance
+
+- Replaced default-based block variants with ordered version inheritance: later versions inherit from the nearest earlier own variant, while earlier versions do not inherit backward.
+- Hid blocks and connected edges in concrete version views when no content exists at or before that version; All mode still shows every block for recovery.
+- Made editing inherited content create an own variant for the requested version while preserving the source version.
+- Reworked the Variants inspector into a compact version table with Own, Inherits Vn, Hidden, and Base states.
+- Kept AUTO and pinned block version selectors on the same sequential inheritance resolver and restored compact PIN Vn labels.
+- Preserved default/base content for imported maps and All-mode creation without presenting it as the primary workflow.
+
 ## 0.5.10 - Clearer Variant Labels
 
 - Replaced confusing `(default)` variant labels with `inherits default` and explanatory helper text.
