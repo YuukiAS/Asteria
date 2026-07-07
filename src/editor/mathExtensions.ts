@@ -48,6 +48,12 @@ export const InlineMath = Node.create({
       mergeAttributes(HTMLAttributes, {
         "data-math-inline": "",
         class: "math-inline",
+        style: [
+          HTMLAttributes.textColor ? `color: ${HTMLAttributes.textColor}` : "",
+          HTMLAttributes.highlightColor ? `background-color: ${HTMLAttributes.highlightColor}` : "",
+        ]
+          .filter(Boolean)
+          .join("; "),
       }),
       HTMLAttributes.latex || "",
     ]
@@ -55,11 +61,24 @@ export const InlineMath = Node.create({
 
   addNodeView() {
     return ({ node }) => {
+      let currentNode = node
       const dom = document.createElement("span")
       dom.dataset.mathInline = ""
       dom.className = "math-inline"
+      applyBlockMathStyle(dom, node.attrs)
       dom.innerHTML = renderMath(node.attrs.latex, false)
-      return { dom }
+      return {
+        dom,
+        update(nextNode) {
+          if (nextNode.type.name !== "inlineMath") return false
+          applyBlockMathStyle(dom, nextNode.attrs)
+          if (nextNode.attrs.latex !== currentNode.attrs.latex) {
+            dom.innerHTML = renderMath(nextNode.attrs.latex, false)
+          }
+          currentNode = nextNode
+          return true
+        },
+      }
     }
   },
 
@@ -80,7 +99,11 @@ export const BlockMath = Node.create({
   atom: true,
 
   addAttributes() {
-    return { latex: { default: "" } }
+    return {
+      latex: { default: "" },
+      textColor: { default: null },
+      highlightColor: { default: null },
+    }
   },
 
   parseHTML() {

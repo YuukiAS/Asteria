@@ -110,7 +110,10 @@ function renderNode(node: JSONContent): string {
     case "horizontalRule":
       return "<hr />"
     case "inlineMath":
-      return renderMarks(`<span${renderAttrs({ "data-math-inline": "", class: "math-inline" })}>${renderMath(String(node.attrs?.latex || ""), false)}</span>`, node.marks)
+      return renderMarks(
+        `<span${renderAttrs({ "data-math-inline": "", class: "math-inline", style: blockMathStyle(node) })}>${renderMath(String(node.attrs?.latex || ""), false)}</span>`,
+        node.marks,
+      )
     case "blockMath":
       return `<div${renderAttrs({ "data-math-block": "", class: "math-block", style: blockMathStyle(node) })}>${renderMath(String(node.attrs?.latex || ""), true)}</div>`
     default:

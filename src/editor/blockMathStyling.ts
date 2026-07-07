@@ -10,7 +10,7 @@ export function applyBlockMathStyle(editor: Editor, range: { from: number; to: n
   let changed = false
   const transaction = editor.state.tr
   editor.state.doc.nodesBetween(range.from, range.to, (node, pos) => {
-    if (node.type.name !== "blockMath") return
+    if (node.type.name !== "blockMath" && node.type.name !== "inlineMath") return
     transaction.setNodeMarkup(pos, undefined, { ...node.attrs, ...attrs })
     changed = true
   })

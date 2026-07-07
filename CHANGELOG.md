@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.13 - Fix Inline Block Text Color
+
+- Fixed text color swatches in the inline block bubble menu so selected content receives TipTap color marks reliably.
+- Applied selected text and highlight colors to inline and block math nodes inside block content.
+- Preserved math colors when rich block content leaves edit mode and renders as preview HTML.
+
 ## 0.5.12 - Type Color Follow-up
 
 - Removed visible `PIN` wording from block version selectors and fixed-version badges; concrete versions now show compact labels such as `V1` or `TRACE (V1)`.

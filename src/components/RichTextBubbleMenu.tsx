@@ -47,6 +47,13 @@ function applySelectionCommand(editor: Editor, command: (chain: ReturnType<Edito
   editor.storage.asteriaSelection = range
 }
 
+function applyTextColor(editor: Editor, color: string) {
+  const range = getSavedRange(editor)
+  if (!range) return
+  applyBlockMathStyle(editor, range, { textColor: color })
+  applySelectionCommand(editor, (chain) => chain.setColor(color))
+}
+
 function applyHighlight(editor: Editor, color: string) {
   const range = getSavedRange(editor)
   if (!range) return
@@ -114,7 +121,6 @@ function ColorSwatch({
       onClick={(event) => {
         event.preventDefault()
         event.stopPropagation()
-        onApply()
       }}
     />
   )
@@ -149,7 +155,7 @@ export function RichTextBubbleMenu({ editor }: RichTextBubbleMenuProps) {
         onClick={(event) => event.stopPropagation()}
       >
         <div className="grid grid-cols-5 gap-1">
-          <BubbleButton label="Text color" onClick={() => applyMark(editor, "textStyle", { color: "#2563eb" }, false)}>
+          <BubbleButton label="Text color" onClick={() => applyTextColor(editor, "#2563eb")}>
             <span className="grid h-[18px] w-[18px] place-items-center rounded-md border border-border text-[13px] font-semibold">A</span>
           </BubbleButton>
           <BubbleButton label="Bold" active={editor.isActive("bold")} onClick={() => applyMark(editor, "bold")}>
@@ -193,7 +199,7 @@ export function RichTextBubbleMenu({ editor }: RichTextBubbleMenuProps) {
               key={color}
               color={color}
               label={`Set text ${color}`}
-              onApply={() => applyMark(editor, "textStyle", { color }, false)}
+              onApply={() => applyTextColor(editor, color)}
             />
           ))}
         </div>
