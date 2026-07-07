@@ -1,5 +1,6 @@
 import katex from "katex"
 import { useEffect, useMemo, useState } from "react"
+import { createPortal } from "react-dom"
 
 type EquationDialogProps = {
   open: boolean
@@ -28,21 +29,27 @@ export function EquationDialog({
   }, [initialLatex, open])
 
   const preview = useMemo(() => {
+    const trimmed = latex.trim()
+    if (!trimmed) return { isValid: true, html: "" }
+
     try {
-      return katex.renderToString(latex || "\\text{}", { displayMode, throwOnError: false, strict: false })
+      return {
+        isValid: true,
+        html: katex.renderToString(trimmed, { displayMode, throwOnError: true, strict: false }),
+      }
     } catch {
-      return "<code>Invalid LaTeX</code>"
+      return { isValid: false, html: "" }
     }
   }, [displayMode, latex])
 
-  if (!open) return null
+  if (!open || typeof document === "undefined") return null
 
   const submit = () => {
     const trimmed = latex.trim()
-    if (trimmed) onConfirm(trimmed)
+    if (trimmed && preview.isValid) onConfirm(trimmed)
   }
 
-  return (
+  return createPortal(
     <div className="equation-dialog-backdrop" role="presentation" onClick={onCancel}>
       <form
         className="equation-dialog nodrag nopan nowheel"
@@ -77,18 +84,32 @@ export function EquationDialog({
               autoFocus
             />
           </label>
-          <div className="equation-dialog-preview" dangerouslySetInnerHTML={{ __html: preview }} />
+          <div
+            className={`equation-dialog-preview ${preview.isValid ? "" : "equation-dialog-preview-invalid"}`}
+            aria-live="polite"
+          >
+            {preview.isValid ? (
+              preview.html ? (
+                <div dangerouslySetInnerHTML={{ __html: preview.html }} />
+              ) : (
+                <span className="equation-dialog-preview-placeholder">Preview</span>
+              )
+            ) : (
+              <span className="equation-dialog-invalid-text">Invalid equation</span>
+            )}
+          </div>
         </div>
         <div className="equation-dialog-actions">
           <button
             type="submit"
             className="primary-button"
-            disabled={!latex.trim()}
+            disabled={!latex.trim() || !preview.isValid}
           >
             Insert
           </button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body,
   )
 }

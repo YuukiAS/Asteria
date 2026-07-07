@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.17 - Canvas Equation Dialog
+
+- Moved the equation editor into a top-level canvas-side overlay so dialogs opened from the inspector are not clipped by the right panel.
+- Added a live equation preview below the LaTeX input.
+- Showed a red `Invalid equation` state for incomplete or invalid LaTeX and disabled insert until the equation parses.
+
 ## 0.4.16 - Pane Click Returns to Move
 
 - Added a canvas pane click behavior that exits Edit mode and returns to Move mode.

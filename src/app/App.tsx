@@ -244,6 +244,14 @@ export function App() {
     localStorage.setItem(sidebarWidthKey, String(sidebarWidth))
   }, [sidebarWidth])
 
+  useEffect(() => {
+    const inspectorWidth = isSidebarCollapsed ? collapsedSidebarWidth : sidebarWidth
+    document.documentElement.style.setProperty("--asteria-inspector-width", `${inspectorWidth}px`)
+    return () => {
+      document.documentElement.style.removeProperty("--asteria-inspector-width")
+    }
+  }, [isSidebarCollapsed, sidebarWidth])
+
   if (!isHydrated) {
     return <div className="grid h-screen place-items-center bg-app text-sm text-secondary">Loading Asteria...</div>
   }

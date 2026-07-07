@@ -947,16 +947,19 @@ body {
 
 .equation-dialog-backdrop {
   position: fixed;
-  inset: 0;
+  inset: 52px var(--asteria-inspector-width, 0px) 0 0;
   z-index: 120;
   display: grid;
   place-items: center;
-  background: rgba(15, 23, 42, 0.36);
+  background: rgba(15, 23, 42, 0.18);
   padding: 20px;
 }
 
 .equation-dialog {
-  width: min(760px, calc(100vw - 32px));
+  display: flex;
+  max-height: calc(100vh - 92px);
+  width: min(760px, calc(100vw - var(--asteria-inspector-width, 0px) - 40px));
+  flex-direction: column;
   border: 1px solid rgb(var(--color-border));
   border-radius: 14px;
   background: rgb(var(--color-panel));
@@ -980,8 +983,8 @@ body {
 
 .equation-dialog-body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
+  overflow: auto;
   padding: 14px;
 }
 
@@ -1004,13 +1007,29 @@ body {
 }
 
 .equation-dialog-preview {
-  min-height: 180px;
+  min-height: 128px;
   overflow: auto;
   border: 1px solid rgb(var(--color-border));
   border-radius: 10px;
   background: rgb(var(--color-app));
   padding: 12px;
   color: rgb(var(--color-foreground));
+}
+
+.equation-dialog-preview-placeholder {
+  color: rgb(var(--color-muted));
+  font-size: 12px;
+}
+
+.equation-dialog-preview-invalid {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(254, 226, 226, 0.52);
+}
+
+.equation-dialog-invalid-text {
+  color: rgb(185, 28, 28);
+  font-size: 13px;
+  font-weight: 650;
 }
 
 .equation-dialog-actions {
