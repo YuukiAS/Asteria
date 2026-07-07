@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.19 - Remove Export Shortcut
+
+- Removed the global `Ctrl/Cmd+E` export shortcut so `Ctrl/Cmd+Shift+E` only opens inline equation entry.
+- Kept JSON export available through the toolbar Export button.
+
 ## 0.5.18 - Math Clipboard Round Trip
 
 - Copied inline math now uses `$latex$` in plain text so copy, cut, and external paste preserve math intent.

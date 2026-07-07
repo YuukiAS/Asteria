@@ -7,7 +7,6 @@ import type { PointerEvent as ReactPointerEvent } from "react"
 import { Canvas } from "../components/Canvas"
 import { InspectorPanel } from "../components/InspectorPanel"
 import { Toolbar } from "../components/Toolbar"
-import { createExportFilename, exportMapFile, normalizeMapTitle } from "../lib/exportImport"
 import { requestInlineBlockEdit, requestInlineEditorFocus, startInlineEditEvent, type InlineEditTarget } from "../lib/inlineEditEvents"
 import { useMapStore } from "../store/useMapStore"
 
@@ -67,15 +66,8 @@ export function App() {
     setSelectedEdge,
     saveNow,
     undoLastCanvasChange,
-    mapTitle,
-    modelVersions,
-    activeVersionId,
-    displayModeOverride,
     selectedNodeId,
     selectedNodeIds,
-    nodes,
-    edges,
-    viewport,
   } = useMapStore()
 
   useEffect(() => {
@@ -108,23 +100,6 @@ export function App() {
       setInlineEditTarget(undefined)
     }
   }, [inlineEditTarget, interactionMode, selectedNodeIds])
-
-  const exportJson = useCallback(() => {
-    exportMapFile(
-      {
-        version: 1,
-        title: normalizeMapTitle(mapTitle),
-        modelVersions,
-        activeVersionId,
-        displayModeOverride,
-        nodes,
-        edges,
-        viewport,
-        updatedAt: new Date().toISOString(),
-      },
-      createExportFilename(mapTitle),
-    )
-  }, [activeVersionId, displayModeOverride, edges, mapTitle, modelVersions, nodes, viewport])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -164,11 +139,6 @@ export function App() {
           requestInlineEditorFocus(selectedNodeId)
           window.dispatchEvent(new CustomEvent("asteria-open-inline-equation", { detail: { nodeId: selectedNodeId } }))
         }, 0)
-        return
-      }
-      if (isMod && event.key.toLowerCase() === "e") {
-        event.preventDefault()
-        exportJson()
         return
       }
       if (isMod && event.key.toLowerCase() === "d" && !isEditableTarget(event.target)) {
@@ -215,7 +185,6 @@ export function App() {
     copySelectedBlock,
     deleteSelected,
     duplicateSelectedBlock,
-    exportJson,
     inlineEditTarget,
     pasteBlock,
     saveNow,
