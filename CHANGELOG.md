@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.15 - Fix Bubble Menu Mouse Actions
+
+- Moved bubble menu formatting actions from pointer-down-only handling to mouse-down handling so normal clicks apply marks reliably.
+- Kept selection-preserving event prevention while restoring text color, highlight, and inline formatting actions inside block editing.
+
 ## 0.5.14 - Inline Equation Dialog
 
 - Added an inline equation dialog with live KaTeX preview for block content editing.

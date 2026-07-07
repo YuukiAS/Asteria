@@ -1,5 +1,6 @@
 import { BubbleMenu, type Editor } from "@tiptap/react"
 import { Bold, Code, Highlighter, Italic, Link as LinkIcon, Sigma, Strikethrough, Type, Underline } from "lucide-react"
+import { useEffect } from "react"
 import { backgroundPalette, textPalette } from "../constants/palette"
 import { applyBlockMathStyle } from "../editor/blockMathStyling"
 
@@ -66,11 +67,15 @@ function BubbleButton({
   label,
   active,
   onClick,
+  command,
+  value,
   children,
 }: {
   label: string
   active?: boolean
   onClick: () => void
+  command?: string
+  value?: string
   children: React.ReactNode
 }) {
   return (
@@ -81,12 +86,17 @@ function BubbleButton({
       }`}
       aria-label={label}
       title={label}
+      data-asteria-bubble-command={command}
+      data-asteria-bubble-value={value}
       onPointerDown={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+      }}
+      onMouseDown={(event) => {
         event.preventDefault()
         event.stopPropagation()
         onClick()
       }}
-      onMouseDown={(event) => event.preventDefault()}
       onClick={(event) => {
         event.preventDefault()
         event.stopPropagation()
@@ -113,12 +123,17 @@ function ColorSwatch({
       style={{ backgroundColor: color }}
       aria-label={label}
       title={label}
+      data-asteria-bubble-command={label.startsWith("Set text ") ? "text-color" : "highlight"}
+      data-asteria-bubble-value={color}
       onPointerDown={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+      }}
+      onMouseDown={(event) => {
         event.preventDefault()
         event.stopPropagation()
         onApply()
       }}
-      onMouseDown={(event) => event.preventDefault()}
       onClick={(event) => {
         event.preventDefault()
         event.stopPropagation()
@@ -128,6 +143,56 @@ function ColorSwatch({
 }
 
 export function RichTextBubbleMenu({ editor, onInlineMathRequest }: RichTextBubbleMenuProps) {
+  useEffect(() => {
+    const handleMouseDown = (event: MouseEvent) => {
+      if (!(event.target instanceof HTMLElement)) return
+      const button = event.target.closest<HTMLElement>("[data-asteria-bubble-command]")
+      if (!button || !button.closest("[data-asteria-bubble-menu]")) return
+      const command = button.dataset.asteriaBubbleCommand
+      const value = button.dataset.asteriaBubbleValue
+      if (!command) return
+
+      event.preventDefault()
+      event.stopPropagation()
+
+      switch (command) {
+        case "text-color":
+          if (value) applyTextColor(editor, value)
+          return
+        case "bold":
+          applyMark(editor, "bold")
+          return
+        case "italic":
+          selectionChain(editor).toggleItalic().run()
+          return
+        case "underline":
+          selectionChain(editor).toggleUnderline().run()
+          return
+        case "highlight":
+          applyHighlight(editor, value || "#fef3c7")
+          return
+        case "link":
+          selectionChain(editor).toggleLink({ href: "https://" }).run()
+          return
+        case "strike":
+          applyMark(editor, "strike")
+          return
+        case "code":
+          selectionChain(editor).toggleCode().run()
+          return
+        case "inline-math":
+          onInlineMathRequest()
+          return
+        case "clear-marks":
+          selectionChain(editor).unsetAllMarks().run()
+          return
+      }
+    }
+
+    document.addEventListener("mousedown", handleMouseDown, true)
+    return () => document.removeEventListener("mousedown", handleMouseDown, true)
+  }, [editor, onInlineMathRequest])
+
   return (
     <BubbleMenu
       editor={editor}
@@ -151,45 +216,47 @@ export function RichTextBubbleMenu({ editor, onInlineMathRequest }: RichTextBubb
       }}
     >
       <div
+        data-asteria-bubble-menu="true"
         className="nodrag nopan nowheel grid w-[382px] max-w-[calc(100vw-24px)] gap-2 rounded-2xl border border-border bg-panel p-3 shadow-float"
         onMouseDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="grid grid-cols-5 gap-1">
-          <BubbleButton label="Text color" onClick={() => applyTextColor(editor, "#2563eb")}>
+          <BubbleButton label="Text color" command="text-color" value="#2563eb" onClick={() => applyTextColor(editor, "#2563eb")}>
             <span className="grid h-[18px] w-[18px] place-items-center rounded-md border border-border text-[13px] font-semibold">A</span>
           </BubbleButton>
-          <BubbleButton label="Bold" active={editor.isActive("bold")} onClick={() => applyMark(editor, "bold")}>
+          <BubbleButton label="Bold" command="bold" active={editor.isActive("bold")} onClick={() => applyMark(editor, "bold")}>
           <Bold size={14} />
           </BubbleButton>
-          <BubbleButton label="Italic" active={editor.isActive("italic")} onClick={() => selectionChain(editor).toggleItalic().run()}>
+          <BubbleButton label="Italic" command="italic" active={editor.isActive("italic")} onClick={() => selectionChain(editor).toggleItalic().run()}>
             <Italic size={14} />
           </BubbleButton>
           <BubbleButton
             label="Underline"
+            command="underline"
             active={editor.isActive("underline")}
             onClick={() => selectionChain(editor).toggleUnderline().run()}
           >
             <Underline size={14} />
           </BubbleButton>
-          <BubbleButton label="Highlight" onClick={() => applyHighlight(editor, "#fef3c7")}>
+          <BubbleButton label="Highlight" command="highlight" value="#fef3c7" onClick={() => applyHighlight(editor, "#fef3c7")}>
             <Highlighter size={14} />
           </BubbleButton>
         </div>
         <div className="grid grid-cols-5 gap-1 border-b border-border pb-2">
-          <BubbleButton label="Link" active={editor.isActive("link")} onClick={() => selectionChain(editor).toggleLink({ href: "https://" }).run()}>
+          <BubbleButton label="Link" command="link" active={editor.isActive("link")} onClick={() => selectionChain(editor).toggleLink({ href: "https://" }).run()}>
             <LinkIcon size={14} />
           </BubbleButton>
-          <BubbleButton label="Strike" active={editor.isActive("strike")} onClick={() => applyMark(editor, "strike")}>
+          <BubbleButton label="Strike" command="strike" active={editor.isActive("strike")} onClick={() => applyMark(editor, "strike")}>
             <Strikethrough size={14} />
           </BubbleButton>
-          <BubbleButton label="Code" active={editor.isActive("code")} onClick={() => selectionChain(editor).toggleCode().run()}>
+          <BubbleButton label="Code" command="code" active={editor.isActive("code")} onClick={() => selectionChain(editor).toggleCode().run()}>
             <Code size={14} />
           </BubbleButton>
-          <BubbleButton label="Inline math" onClick={onInlineMathRequest}>
+          <BubbleButton label="Inline math" command="inline-math" onClick={onInlineMathRequest}>
             <Sigma size={14} />
           </BubbleButton>
-          <BubbleButton label="Clear marks" onClick={() => selectionChain(editor).unsetAllMarks().run()}>
+          <BubbleButton label="Clear marks" command="clear-marks" onClick={() => selectionChain(editor).unsetAllMarks().run()}>
             <Type size={14} />
           </BubbleButton>
         </div>
