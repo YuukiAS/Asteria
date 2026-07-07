@@ -32,7 +32,7 @@ export function ColorPickerRow({ label, value, onChange, palette }: ColorPickerR
           spellCheck={false}
         />
       </div>
-      <div className="flex flex-nowrap gap-1 overflow-hidden">
+      <div className="flex flex-wrap gap-1">
         {palette.map((color) => (
           <button
             key={color}

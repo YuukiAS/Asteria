@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.9 - Content Palette and Type Colors
+
+- Let inspector color swatches wrap so Content text and highlight palettes are fully visible.
+- Changed Prior block defaults and badges to a matching blue-purple palette instead of yellow.
+- Changed Result block defaults and badges to a matching neutral gray palette instead of green.
+- Aligned all block type badge backgrounds with their corresponding block background colors.
+
 ## 0.5.8 - Clearer Version Header State
 
 - Removed the separate canvas `DEFAULT` fallback badge so it no longer competes with `AUTO` and `PINNED`.

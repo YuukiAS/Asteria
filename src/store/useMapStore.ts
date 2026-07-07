@@ -219,6 +219,7 @@ function findBlockNode(nodes: MapNode[], id?: string): BlockNode | undefined {
 function applyContentHtml(nodes: MapNode[]): MapNode[] {
   return nodes.map((node) => {
     if (!isBlockNode(node)) return node
+    const colorPatch = blockTypeColorPatch(node.data)
     const variants = Object.fromEntries(
       Object.entries(node.data.variants || {}).map(([key, variant]) => [
         key,
@@ -234,11 +235,34 @@ function applyContentHtml(nodes: MapNode[]): MapNode[] {
       ...node,
       data: {
         ...node.data,
+        ...colorPatch,
         contentHtml: node.data.contentHtml || contentJsonToHtml(node.data.contentJson),
         variants,
       },
     }
   })
+}
+
+const legacyPriorBackgrounds = new Set(["#fef3c7", "#fef9c3", "#fff7ed", "#fffaf0"])
+const legacyPriorBorders = new Set(["#fde68a", "#facc15", "#f59e0b", "#fdba74", "#fed7aa"])
+const legacyResultBackgrounds = new Set(["#dcfce7", "#bbf7d0"])
+const legacyResultBorders = new Set(["#86efac", "#4ade80", "#22c55e"])
+
+function blockTypeColorPatch(data: BlockData): Partial<Pick<BlockData, "backgroundColor" | "borderColor">> {
+  const defaults = blockTypeDefaults[data.nodeType]
+  if (data.nodeType === "prior") {
+    return {
+      ...(legacyPriorBackgrounds.has(data.backgroundColor.toLowerCase()) ? { backgroundColor: defaults.backgroundColor } : {}),
+      ...(legacyPriorBorders.has(data.borderColor.toLowerCase()) ? { borderColor: defaults.borderColor } : {}),
+    }
+  }
+  if (data.nodeType === "result") {
+    return {
+      ...(legacyResultBackgrounds.has(data.backgroundColor.toLowerCase()) ? { backgroundColor: defaults.backgroundColor } : {}),
+      ...(legacyResultBorders.has(data.borderColor.toLowerCase()) ? { borderColor: defaults.borderColor } : {}),
+    }
+  }
+  return {}
 }
 
 function getNodeSize(node: MapNode) {

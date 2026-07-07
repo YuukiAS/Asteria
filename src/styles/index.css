@@ -469,91 +469,91 @@ body {
 
 .type-badge-generic {
   border-color: #d1d5db;
-  background: #f3f4f6;
+  background: #ffffff;
   color: #374151;
 }
 
 .type-badge-definition {
   border-color: #fed7aa;
-  background: #ffedd5;
+  background: #fff7ed;
   color: #9a3412;
 }
 
 .type-badge-notation {
   border-color: #fde68a;
-  background: #fef3c7;
+  background: #fef9c3;
   color: #854d0e;
 }
 
 .type-badge-model {
   border-color: #fdba74;
-  background: #ffedd5;
+  background: #fffaf0;
   color: #c2410c;
 }
 
 .type-badge-prior {
-  border-color: #93c5fd;
-  background: #bfdbfe;
-  color: #1d4ed8;
+  border-color: #a5b4fc;
+  background: #eef2ff;
+  color: #4338ca;
 }
 
 .type-badge-assumption {
   border-color: #ddd6fe;
-  background: #ede9fe;
+  background: #f5f3ff;
   color: #6d28d9;
 }
 
 .type-badge-theorem {
   border-color: #fb923c;
-  background: #fed7aa;
+  background: #ffedd5;
   color: #9a3412;
 }
 
 .type-badge-algorithm {
   border-color: #c084fc;
-  background: #e9d5ff;
+  background: #f3e8ff;
   color: #7e22ce;
 }
 
 .type-badge-dataset {
   border-color: #67e8f9;
-  background: #cffafe;
+  background: #ecfeff;
   color: #0e7490;
 }
 
 .type-badge-result {
-  border-color: #86efac;
-  background: #bbf7d0;
-  color: #15803d;
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+  color: #475569;
 }
 
 .type-badge-reference {
   border-color: #cbd5e1;
-  background: #e2e8f0;
+  background: #f8fafc;
   color: #334155;
 }
 
 .type-badge-remark {
   border-color: #f9a8d4;
-  background: #fbcfe8;
+  background: #fce7f3;
   color: #be185d;
 }
 
 .type-badge-example {
   border-color: #7dd3fc;
-  background: #bae6fd;
+  background: #e0f2fe;
   color: #0369a1;
 }
 
 .type-badge-warning {
   border-color: #fca5a5;
-  background: #fecaca;
+  background: #fee2e2;
   color: #b91c1c;
 }
 
 .type-badge-todo {
   border-color: #d1d5db;
-  background: #e5e7eb;
+  background: #f9fafb;
   color: #374151;
 }
 
