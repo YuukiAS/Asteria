@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.11 - Quiet Canvas Title and Dark Controls
+
+- Kept the canvas title as plain toolbar text by default, including in Edit mode.
+- Made the canvas title input appear only after double-clicking the title.
+- Improved the React Flow control buttons in dark mode with clearer button surfaces and icon contrast.
+
 ## 0.4.10 - Bubble Highlight Palette
 
 - Split the inline rich-text bubble menu color controls into Text color and Highlight sections.

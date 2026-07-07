@@ -125,7 +125,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
               <span>Asteria</span>
               <span className="text-[11px] font-semibold text-secondary">{appVersion}</span>
             </div>
-            {isEditingTitle || interactionMode === "edit" ? (
+            {isEditingTitle ? (
               <input
                 ref={titleInputRef}
                 className="map-title-input nodrag nopan hidden sm:block"
@@ -139,7 +139,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
                 aria-label="Map title"
               />
             ) : (
-              <button type="button" className="map-title-display hidden sm:block" onClick={startTitleEditing} title="Edit map title">
+              <button type="button" className="map-title-display hidden sm:block" onDoubleClick={startTitleEditing} title="Double-click to edit map title">
                 {normalizeMapTitle(mapTitle)}
               </button>
             )}

@@ -496,6 +496,44 @@ body {
   background: rgb(var(--color-canvas));
 }
 
+.react-flow__controls {
+  overflow: hidden;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 8px;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.12);
+}
+
+.react-flow__controls-button {
+  border-color: rgb(var(--color-border)) !important;
+  background: rgb(var(--color-panel)) !important;
+  color: rgb(var(--color-secondary)) !important;
+}
+
+.react-flow__controls-button:hover {
+  background: rgb(var(--color-app)) !important;
+  color: rgb(var(--color-foreground)) !important;
+}
+
+.react-flow__controls-button svg {
+  fill: currentColor;
+}
+
+[data-theme="dark"] .react-flow__controls {
+  border-color: rgba(148, 163, 184, 0.34);
+  box-shadow: 0 16px 34px rgba(2, 6, 23, 0.48);
+}
+
+[data-theme="dark"] .react-flow__controls-button {
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  background: rgb(30 41 59) !important;
+  color: rgb(226 232 240) !important;
+}
+
+[data-theme="dark"] .react-flow__controls-button:hover {
+  background: rgb(51 65 85) !important;
+  color: rgb(248 250 252) !important;
+}
+
 .asteria-canvas-shell {
   position: relative;
   overflow: hidden;
