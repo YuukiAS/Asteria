@@ -21,6 +21,7 @@ import type { BlockNode as BlockNodeType, GroupNode as GroupNodeType, MapEdge, M
 type CanvasProps = {
   onFitViewReady: (fitView: () => void) => void
   interactionMode: "move" | "edit"
+  onInteractionModeChange: (mode: "move" | "edit") => void
   inlineEditTarget?: InlineEditTarget
   onInlineEditTargetChange: (target?: InlineEditTarget) => void
 }
@@ -59,7 +60,7 @@ const nodeTypes = {
   group: GroupNodeRenderer,
 }
 
-export function Canvas({ onFitViewReady, interactionMode, inlineEditTarget, onInlineEditTargetChange }: CanvasProps) {
+export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChange, inlineEditTarget, onInlineEditTargetChange }: CanvasProps) {
   const reactFlow = useReactFlow<MapNode, MapEdge>()
   const {
     nodes,
@@ -164,6 +165,7 @@ export function Canvas({ onFitViewReady, interactionMode, inlineEditTarget, onIn
             onInlineEditTargetChange(undefined)
             setSelectedNodes([])
             setSelectedEdge(undefined)
+            if (interactionMode === "edit") onInteractionModeChange("move")
           }}
           onSelectionChange={onSelectionChange}
           onMoveEnd={(_, nextViewport) => setViewport(nextViewport)}

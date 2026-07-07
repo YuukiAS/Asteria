@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.16 - Pane Click Returns to Move
+
+- Added a canvas pane click behavior that exits Edit mode and returns to Move mode.
+- Kept the existing selection clearing behavior when clicking empty canvas space.
+- Verified the toolbar and React Flow mode classes switch back to Move after clicking the background.
+
 ## 0.4.15 - Block Equation Styling
 
 - Made block equations transparent by default so they visually inherit the block surface.

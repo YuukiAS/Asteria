@@ -262,6 +262,7 @@ export function App() {
           <Canvas
             onFitViewReady={setFitView}
             interactionMode={interactionMode}
+            onInteractionModeChange={setAppInteractionMode}
             inlineEditTarget={inlineEditTarget}
             onInlineEditTargetChange={setInlineEditTarget}
           />
