@@ -115,7 +115,6 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
         "--asteria-block-divider-color": visualDividerColor,
         "--asteria-node-height": `${visualHeight}px`,
         "--asteria-rich-accent-color": richTextAccentColor,
-        backgroundColor: data.backgroundColor,
         color: data.textColor,
       } as CSSProperties}
     >

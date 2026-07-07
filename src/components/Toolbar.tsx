@@ -6,6 +6,7 @@ import { requestInlineBlockEdit, requestInlineEditorFocus } from "../lib/inlineE
 import { useMapStore } from "../store/useMapStore"
 import type { DisplayModeOverride } from "../types/map"
 import { EquationDialog } from "./EquationDialog"
+import packageJson from "../../package.json"
 
 type ToolbarProps = {
   theme: "light" | "dark"
@@ -48,6 +49,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
     loadMap,
   } = useMapStore()
   const selectedBlock = nodes.find((node) => node.id === selectedNodeId && node.type === "block")
+  const appVersion = packageJson.version
 
   const exportJson = () => {
     exportMapFile(
@@ -119,7 +121,10 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
         <div className="flex items-center gap-2">
           <img src="/app-icon.png" alt="Asteria icon" className="h-8 w-8 rounded-lg object-cover" />
           <div className="leading-tight">
-            <div className="text-sm font-semibold text-foreground">Asteria</div>
+            <div className="flex items-baseline gap-1.5 text-sm font-semibold text-foreground">
+              <span>Asteria</span>
+              <span className="text-[11px] font-semibold text-secondary">{appVersion}</span>
+            </div>
             {isEditingTitle || interactionMode === "edit" ? (
               <input
                 ref={titleInputRef}

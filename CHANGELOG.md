@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.8 - Opaque Block Surfaces and Version Label
+
+- Fully isolated block surfaces from the celestial canvas background by compositing block backgrounds over the panel color inside each node.
+- Removed translucent content-area accents that made text and formulas look visually affected by the canvas artwork.
+- Added the current app version beside the Asteria label in the top-left toolbar.
+
 ## 0.4.7 - Softer Block Borders
 
 - Replaced the legacy default black block border with a softer slate border for new blocks.

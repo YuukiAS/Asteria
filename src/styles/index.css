@@ -600,10 +600,15 @@ body {
 
 .asteria-block {
   isolation: isolate;
+  overflow: hidden;
   border-color: var(--asteria-block-border-color, rgb(var(--color-strong-border)));
-  background: var(--asteria-block-background, #ffffff);
-  background-clip: padding-box;
+  background:
+    linear-gradient(var(--asteria-block-background, #ffffff), var(--asteria-block-background, #ffffff)),
+    rgb(var(--color-panel));
+  background-clip: border-box;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  mix-blend-mode: normal;
+  opacity: 1;
   transition:
     width 140ms ease,
     height 140ms ease,
@@ -622,7 +627,11 @@ body {
 
 .asteria-block-header,
 .asteria-block-preview {
-  background: var(--asteria-block-background, #ffffff);
+  background:
+    linear-gradient(var(--asteria-block-background, #ffffff), var(--asteria-block-background, #ffffff)),
+    rgb(var(--color-panel));
+  mix-blend-mode: normal;
+  opacity: 1;
 }
 
 .asteria-block-header {
@@ -658,18 +667,17 @@ body {
   z-index: 12;
   border: 1px solid rgb(var(--color-border));
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgb(var(--color-panel));
   padding: 3px 8px;
   color: rgb(var(--color-secondary));
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  opacity: 0.86;
+  opacity: 1;
   transform: translateY(0);
   transition:
     opacity 160ms ease,
     transform 160ms ease;
-  backdrop-filter: blur(8px);
 }
 
 .tippy-box {
@@ -748,7 +756,9 @@ body {
 
 .ProseMirror,
 .rich-preview {
+  color: inherit;
   line-height: 1.55;
+  opacity: 1;
   overflow-wrap: anywhere;
 }
 
@@ -868,7 +878,7 @@ body {
   color: var(--asteria-rich-accent-color, inherit);
   overflow-x: auto;
   border-radius: 8px;
-  background: rgba(148, 163, 184, 0.08);
+  background: rgb(var(--color-app));
   padding: 0.45em 0.6em;
 }
 
