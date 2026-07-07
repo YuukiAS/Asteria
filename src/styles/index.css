@@ -872,6 +872,11 @@ body {
   vertical-align: -0.12em;
 }
 
+.ProseMirror [style*="color"] .math-inline,
+.rich-preview [style*="color"] .math-inline {
+  color: inherit;
+}
+
 .math-block {
   margin: 0.75em 0;
   max-width: 100%;

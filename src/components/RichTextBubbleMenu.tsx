@@ -74,7 +74,7 @@ export function RichTextBubbleMenu({ editor }: RichTextBubbleMenuProps) {
       shouldShow={({ editor: activeEditor, from, to }) => activeEditor.isFocused && from !== to}
     >
       <div
-        className="nodrag nopan nowheel grid w-[310px] gap-2 rounded-2xl border border-border bg-panel p-3 shadow-float"
+        className="nodrag nopan nowheel grid w-[382px] max-w-[calc(100vw-24px)] gap-2 rounded-2xl border border-border bg-panel p-3 shadow-float"
         onMouseDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >
@@ -116,7 +116,7 @@ export function RichTextBubbleMenu({ editor }: RichTextBubbleMenuProps) {
             <Type size={14} />
           </BubbleButton>
         </div>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="grid grid-cols-12 gap-1.5">
           {textPalette.map((color) => (
             <button
               key={color}

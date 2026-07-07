@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.9 - Manual Math Color Overrides
+
+- Widened the inline rich-text bubble menu so the full text-color palette fits on one row.
+- Let manual text colors override block-type math accent colors for marked inline math.
+- Preserved inline-math color marks in the JSON-to-HTML preview renderer.
+
 ## 0.4.8 - Opaque Block Surfaces and Version Label
 
 - Fully isolated block surfaces from the celestial canvas background by compositing block backgrounds over the panel color inside each node.
