@@ -325,7 +325,7 @@ export function InspectorPanel() {
                 <option value={defaultVariantKey}>AUTO: follow global version</option>
                 {modelVersions.map((version) => (
                   <option key={version.id} value={version.id}>
-                    PIN {version.label}
+                    {version.shortLabel || version.label}
                   </option>
                 ))}
               </select>
@@ -356,7 +356,7 @@ export function InspectorPanel() {
               Editing content: <span className="font-semibold text-foreground">{variantLabel}</span>
               {!hasVersionVariant && activeVariantKey !== defaultVariantKey ? ` (showing Default fallback; typing here creates ${versionState.requestedLabel})` : ""}
               <br />
-              AUTO follows the top toolbar. PIN ignores global switching for this block.
+              AUTO follows the top toolbar. Selecting a version pins this block and ignores global switching.
               {displayModeOverride !== "block" ? ` Toolbar density override: ${displayModeOverride}.` : ""}
             </div>
                 </>
@@ -368,14 +368,18 @@ export function InspectorPanel() {
               defaultCollapsed: true,
               children: (
                 <div className="grid gap-2">
+              {modelVersions.length > 0 && (
+                <div className="text-xs text-secondary">
+                  Rows marked <span className="font-medium text-foreground">(inherit default)</span> do not have separate content yet.
+                </div>
+              )}
               {modelVersions.length === 0 && <div className="text-xs text-secondary">Add versions from the top toolbar to create version-specific block content.</div>}
               {modelVersions.map((version) => {
                 const hasVariant = Boolean(node.data.variants?.[version.id])
                 return (
                   <div key={version.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
-                    <span className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-baseline gap-2 text-xs text-secondary">
-                      <span className="truncate">{version.label}</span>
-                      {!hasVariant && <span className="justify-self-end text-[11px] italic text-muted">(default)</span>}
+                    <span className="min-w-0 text-xs text-secondary">
+                      {hasVariant ? <span className="truncate">{version.label}</span> : <span className="italic text-muted">(inherit default)</span>}
                     </span>
                     <button type="button" className="toolbar-button justify-center" onClick={() => copyBlockVariantToVersion(node.id, version.id)}>
                       Use current content

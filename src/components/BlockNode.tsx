@@ -273,7 +273,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
               <option value={defaultVariantKey}>AUTO</option>
               {modelVersions.map((version) => (
                 <option key={version.id} value={version.id}>
-                  PIN {version.shortLabel || version.label}
+                  {version.shortLabel || version.label}
                 </option>
               ))}
             </select>

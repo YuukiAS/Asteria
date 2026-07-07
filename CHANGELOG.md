@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.10 - Clearer Variant Labels
+
+- Replaced confusing `(default)` variant labels with `inherits default` and explanatory helper text.
+- Removed the `PIN` prefix from block version dropdown choices.
+- Used version short labels in block version dropdowns when available.
+
 ## 0.5.9 - Content Palette and Type Colors
 
 - Let inspector color swatches wrap so Content text and highlight palettes are fully visible.
