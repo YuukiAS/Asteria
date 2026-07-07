@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.18 - Math Clipboard Round Trip
+
+- Copied inline math now uses `$latex$` in plain text so copy, cut, and external paste preserve math intent.
+- Added math HTML `data-latex` attributes so same-app rich clipboard paste can restore inline and block math nodes.
+- Fixed pasting `$...$` inside an existing paragraph so it inserts inline math at the cursor instead of a block paragraph.
+
 ## 0.5.17 - Restore Four-Side Canvas Handles
 
 - Restored edit-mode resize and edge connection hit targets on all four block sides.

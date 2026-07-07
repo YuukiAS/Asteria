@@ -1,7 +1,8 @@
 import { EditorContent, type JSONContent, useEditor } from "@tiptap/react"
+import { Fragment, Slice } from "prosemirror-model"
 import { useEffect, useRef, useState } from "react"
 import { createEditorExtensions } from "../editor/createEditorExtensions"
-import { normalizeInlineDollarMath, preprocessPastedMath } from "../editor/mathPasteHandler"
+import { normalizeInlineDollarMath, preprocessPastedMath, serializeMathClipboardText } from "../editor/mathPasteHandler"
 import { EquationDialog } from "./EquationDialog"
 import { RichTextBubbleMenu } from "./RichTextBubbleMenu"
 import { RichTextToolbar } from "./RichTextToolbar"
@@ -47,12 +48,18 @@ export function RichTextEditor({
     content,
     editorProps: {
       attributes: editorAttributes,
+      clipboardTextSerializer: serializeMathClipboardText,
       handlePaste(view, event) {
         const text = event.clipboardData?.getData("text/plain")
         if (!text) return false
         const nodes = preprocessPastedMath(text)
         if (!nodes) return false
         event.preventDefault()
+        if (nodes.length === 1 && nodes[0].type === "paragraph" && view.state.selection.$from.parent.inlineContent) {
+          const inlineNodes = (nodes[0].content || []).map((node) => view.state.schema.nodeFromJSON(node))
+          view.dispatch(view.state.tr.replaceSelection(new Slice(Fragment.fromArray(inlineNodes), 0, 0)))
+          return true
+        }
         const parsedNodes = nodes.map((node) => view.state.schema.nodeFromJSON(node))
         const [firstNode, ...restNodes] = parsedNodes
         if (!firstNode) return false

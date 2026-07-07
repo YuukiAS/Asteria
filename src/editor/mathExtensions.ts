@@ -32,7 +32,11 @@ export const InlineMath = Node.create({
 
   addAttributes() {
     return {
-      latex: { default: "" },
+      latex: {
+        default: "",
+        parseHTML: (element) => element.getAttribute("data-latex") || element.textContent?.replace(/^\${1,2}|\${1,2}$/g, "") || "",
+        renderHTML: (attributes) => ({ "data-latex": attributes.latex }),
+      },
       textColor: { default: null },
       highlightColor: { default: null },
     }
@@ -64,6 +68,7 @@ export const InlineMath = Node.create({
       let currentNode = node
       const dom = document.createElement("span")
       dom.dataset.mathInline = ""
+      dom.dataset.latex = node.attrs.latex || ""
       dom.className = "math-inline"
       applyBlockMathStyle(dom, node.attrs)
       dom.innerHTML = renderMath(node.attrs.latex, false)
@@ -73,6 +78,7 @@ export const InlineMath = Node.create({
           if (nextNode.type.name !== "inlineMath") return false
           applyBlockMathStyle(dom, nextNode.attrs)
           if (nextNode.attrs.latex !== currentNode.attrs.latex) {
+            dom.dataset.latex = nextNode.attrs.latex || ""
             dom.innerHTML = renderMath(nextNode.attrs.latex, false)
           }
           currentNode = nextNode
@@ -100,7 +106,11 @@ export const BlockMath = Node.create({
 
   addAttributes() {
     return {
-      latex: { default: "" },
+      latex: {
+        default: "",
+        parseHTML: (element) => element.getAttribute("data-latex") || element.textContent?.replace(/^\${2,3}|\${2,3}$/g, "") || "",
+        renderHTML: (attributes) => ({ "data-latex": attributes.latex }),
+      },
       textColor: { default: null },
       highlightColor: { default: null },
     }
@@ -131,6 +141,7 @@ export const BlockMath = Node.create({
     return ({ node }) => {
       const dom = document.createElement("div")
       dom.dataset.mathBlock = ""
+      dom.dataset.latex = node.attrs.latex || ""
       dom.className = "math-block"
       applyBlockMathStyle(dom, node.attrs)
       dom.innerHTML = renderMath(node.attrs.latex, true)
@@ -140,6 +151,7 @@ export const BlockMath = Node.create({
           if (nextNode.type.name !== "blockMath") return false
           applyBlockMathStyle(dom, nextNode.attrs)
           if (nextNode.attrs.latex !== node.attrs.latex) {
+            dom.dataset.latex = nextNode.attrs.latex || ""
             dom.innerHTML = renderMath(nextNode.attrs.latex, true)
           }
           return true

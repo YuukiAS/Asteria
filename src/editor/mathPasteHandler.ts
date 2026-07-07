@@ -1,4 +1,5 @@
 import type { JSONContent } from "@tiptap/react"
+import type { Node as ProseMirrorNode, Slice } from "prosemirror-model"
 
 type TextNode = { type: "text"; text: string }
 type InlineMathNode = { type: "inlineMath"; attrs: { latex: string } }
@@ -99,4 +100,31 @@ export function normalizeInlineDollarMath(content: JSONContent): { content: JSON
   }
 
   return { content: normalizeNode(content), changed }
+}
+
+function mathText(latex: unknown, displayMode: boolean) {
+  const value = String(latex || "").trim()
+  return displayMode ? `$$\n${value}\n$$` : `$${value}$`
+}
+
+function serializeNodeText(node: ProseMirrorNode): string {
+  if (node.type.name === "text") return node.text || ""
+  if (node.type.name === "inlineMath") return mathText(node.attrs.latex, false)
+  if (node.type.name === "blockMath") return mathText(node.attrs.latex, true)
+
+  const children: string[] = []
+  node.forEach((child) => children.push(serializeNodeText(child)))
+  return children.join("")
+}
+
+export function serializeMathClipboardText(slice: Slice) {
+  const lines: string[] = []
+  slice.content.forEach((node) => {
+    if (node.type.name === "bulletList" || node.type.name === "orderedList") {
+      node.forEach((item) => lines.push(serializeNodeText(item)))
+      return
+    }
+    lines.push(serializeNodeText(node))
+  })
+  return lines.join("\n")
 }
