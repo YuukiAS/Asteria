@@ -114,6 +114,46 @@ body {
     @apply grid gap-3 rounded-xl border border-border bg-panel p-3;
   }
 
+  .inspector-section-stack {
+    @apply grid gap-2;
+  }
+
+  .inspector-accordion-section {
+    @apply gap-0 overflow-hidden p-0;
+  }
+
+  .inspector-accordion-section-collapsed {
+    @apply bg-app/40;
+  }
+
+  .inspector-section-header {
+    @apply flex min-w-0 items-center gap-1 border-b border-border/70 bg-app/50 px-2 py-1.5;
+  }
+
+  .inspector-accordion-section-collapsed .inspector-section-header {
+    @apply border-b-0;
+  }
+
+  .inspector-section-toggle {
+    @apply flex min-w-0 flex-1 items-center gap-1.5 rounded px-1.5 py-1 text-left transition hover:bg-panel;
+  }
+
+  .inspector-section-summary {
+    @apply min-w-0 truncate text-[11px] font-medium normal-case tracking-normal text-secondary;
+  }
+
+  .inspector-section-controls {
+    @apply flex shrink-0 items-center gap-0.5 text-muted;
+  }
+
+  .inspector-section-order-button {
+    @apply inline-flex h-6 w-6 items-center justify-center rounded text-muted transition hover:bg-panel hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30;
+  }
+
+  .inspector-section-content {
+    @apply grid gap-3 p-3;
+  }
+
   .section-title {
     @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-muted;
   }

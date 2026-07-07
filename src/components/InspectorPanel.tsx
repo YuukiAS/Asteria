@@ -4,6 +4,7 @@ import { allVersionsId, blockDisplayModeOptions, commonVariantKey } from "../con
 import { backgroundPalette, textPalette } from "../constants/palette"
 import { ColorPickerRow } from "./ColorPickerRow"
 import { EdgeInspector } from "./EdgeInspector"
+import { InspectorSectionStack } from "./InspectorSectionStack"
 import { RichTextEditor } from "./RichTextEditor"
 import { formatLocalDateTime } from "../lib/time"
 import { requestInlineBlockEdit } from "../lib/inlineEditEvents"
@@ -66,34 +67,47 @@ export function InspectorPanel() {
             <p>{selectedNodeIds.length} objects selected.</p>
           </div>
         </div>
-        <section className="panel-section">
-          <div className="section-title">Actions</div>
-          <button type="button" className="toolbar-button justify-center" onClick={groupSelectedBlocks}>
-            <Layers size={14} />
-            Group selected blocks
-          </button>
-          <button type="button" className="toolbar-button justify-center" onClick={attachSelectedBlocksToFrame}>
-            Attach to frame
-          </button>
-          <button type="button" className="toolbar-button justify-center" onClick={detachSelectedBlocksFromFrame}>
-            Detach from frame
-          </button>
-        </section>
-        <section className="panel-section">
-          <div className="section-title">Layout</div>
-          <div className="grid grid-cols-2 gap-2">
-            <button type="button" className="toolbar-button justify-center" onClick={() => alignSelectedBlocks("left")}>Align left</button>
-            <button type="button" className="toolbar-button justify-center" onClick={() => alignSelectedBlocks("right")}>Align right</button>
-            <button type="button" className="toolbar-button justify-center" onClick={() => alignSelectedBlocks("top")}>Align top</button>
-            <button type="button" className="toolbar-button justify-center" onClick={() => alignSelectedBlocks("bottom")}>Align bottom</button>
-            <button type="button" className="toolbar-button justify-center" onClick={() => alignSelectedBlocks("horizontal_center")}>Center X</button>
-            <button type="button" className="toolbar-button justify-center" onClick={() => alignSelectedBlocks("vertical_center")}>Center Y</button>
-            <button type="button" className="toolbar-button justify-center" onClick={() => distributeSelectedBlocks("horizontal")}>Distribute H</button>
-            <button type="button" className="toolbar-button justify-center" onClick={() => distributeSelectedBlocks("vertical")}>Distribute V</button>
-            <button type="button" className="toolbar-button justify-center" onClick={snapSelectedBlocksToGrid}>Snap selected</button>
-            <button type="button" className="toolbar-button justify-center" onClick={snapAllBlocksToGrid}>Snap all</button>
-          </div>
-        </section>
+        <InspectorSectionStack
+          storageKey="asteria-inspector-selection-layout"
+          sections={[
+            {
+              id: "actions",
+              title: "Actions",
+              children: (
+                <>
+                  <button type="button" className="toolbar-button justify-center" onClick={groupSelectedBlocks}>
+                    <Layers size={14} />
+                    Group selected blocks
+                  </button>
+                  <button type="button" className="toolbar-button justify-center" onClick={attachSelectedBlocksToFrame}>
+                    Attach to frame
+                  </button>
+                  <button type="button" className="toolbar-button justify-center" onClick={detachSelectedBlocksFromFrame}>
+                    Detach from frame
+                  </button>
+                </>
+              ),
+            },
+            {
+              id: "layout",
+              title: "Layout",
+              children: (
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" className="toolbar-button justify-center" onClick={() => alignSelectedBlocks("left")}>Align left</button>
+                  <button type="button" className="toolbar-button justify-center" onClick={() => alignSelectedBlocks("right")}>Align right</button>
+                  <button type="button" className="toolbar-button justify-center" onClick={() => alignSelectedBlocks("top")}>Align top</button>
+                  <button type="button" className="toolbar-button justify-center" onClick={() => alignSelectedBlocks("bottom")}>Align bottom</button>
+                  <button type="button" className="toolbar-button justify-center" onClick={() => alignSelectedBlocks("horizontal_center")}>Center X</button>
+                  <button type="button" className="toolbar-button justify-center" onClick={() => alignSelectedBlocks("vertical_center")}>Center Y</button>
+                  <button type="button" className="toolbar-button justify-center" onClick={() => distributeSelectedBlocks("horizontal")}>Distribute H</button>
+                  <button type="button" className="toolbar-button justify-center" onClick={() => distributeSelectedBlocks("vertical")}>Distribute V</button>
+                  <button type="button" className="toolbar-button justify-center" onClick={snapSelectedBlocksToGrid}>Snap selected</button>
+                  <button type="button" className="toolbar-button justify-center" onClick={snapAllBlocksToGrid}>Snap all</button>
+                </div>
+              ),
+            },
+          ]}
+        />
       </aside>
     )
   }
@@ -121,52 +135,67 @@ export function InspectorPanel() {
             <p>Frame for grouped blocks.</p>
           </div>
         </div>
-        <div className="grid gap-5">
-          <section className="panel-section">
-            <div className="section-title">Object</div>
-            <label className="field-label">
-              Title
-              <input className="field-input" value={node.data.title} onChange={(event) => updateGroup(node.id, { title: event.target.value })} />
-            </label>
-          </section>
-          <section className="panel-section">
-            <div className="section-title">Appearance</div>
-            <ColorPickerRow
-              label="Background"
-              value={node.data.backgroundColor}
-              palette={backgroundPalette}
-              onChange={(backgroundColor) => updateGroup(node.id, { backgroundColor })}
-            />
-            <label className="field-label">
-              Opacity
-              <input
-                className="field-input"
-                type="range"
-                min={0.04}
-                max={0.8}
-                step={0.02}
-                value={node.data.opacity ?? 0.22}
-                onChange={(event) => updateGroup(node.id, { opacity: Number(event.target.value) })}
-              />
-            </label>
-            <label className="inline-flex items-center gap-2 text-xs font-medium text-secondary">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-border text-accent"
-                checked={Boolean(node.data.locked)}
-                onChange={(event) => updateGroup(node.id, { locked: event.target.checked })}
-              />
-              Lock frame movement
-            </label>
-          </section>
-          <section className="panel-section">
-            <div className="section-title">Metadata</div>
-            <div className="grid gap-1 text-xs text-secondary">
-              <div>Created: {formatLocalDateTime(node.data.createdAt)}</div>
-              <div>Updated: {formatLocalDateTime(node.data.updatedAt)}</div>
-            </div>
-          </section>
-        </div>
+        <InspectorSectionStack
+          storageKey="asteria-inspector-group-layout"
+          sections={[
+            {
+              id: "object",
+              title: "Object",
+              children: (
+                <label className="field-label">
+                  Title
+                  <input className="field-input" value={node.data.title} onChange={(event) => updateGroup(node.id, { title: event.target.value })} />
+                </label>
+              ),
+            },
+            {
+              id: "appearance",
+              title: "Appearance",
+              children: (
+                <>
+                  <ColorPickerRow
+                    label="Background"
+                    value={node.data.backgroundColor}
+                    palette={backgroundPalette}
+                    onChange={(backgroundColor) => updateGroup(node.id, { backgroundColor })}
+                  />
+                  <label className="field-label">
+                    Opacity
+                    <input
+                      className="field-input"
+                      type="range"
+                      min={0.04}
+                      max={0.8}
+                      step={0.02}
+                      value={node.data.opacity ?? 0.22}
+                      onChange={(event) => updateGroup(node.id, { opacity: Number(event.target.value) })}
+                    />
+                  </label>
+                  <label className="inline-flex items-center gap-2 text-xs font-medium text-secondary">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-border text-accent"
+                      checked={Boolean(node.data.locked)}
+                      onChange={(event) => updateGroup(node.id, { locked: event.target.checked })}
+                    />
+                    Lock frame movement
+                  </label>
+                </>
+              ),
+            },
+            {
+              id: "metadata",
+              title: "Metadata",
+              defaultCollapsed: true,
+              children: (
+                <div className="grid gap-1 text-xs text-secondary">
+                  <div>Created: {formatLocalDateTime(node.data.createdAt)}</div>
+                  <div>Updated: {formatLocalDateTime(node.data.updatedAt)}</div>
+                </div>
+              ),
+            },
+          ]}
+        />
       </aside>
     )
   }
@@ -197,10 +226,16 @@ export function InspectorPanel() {
           </div>
           <span className={`type-badge ${blockType.badgeClass}`}>{blockType.label}</span>
         </div>
-        <div className="grid gap-5">
-          <section className="panel-section">
-            <div className="section-title">Object</div>
-            <label className="field-label">
+        <InspectorSectionStack
+          storageKey="asteria-inspector-block-layout"
+          sections={[
+            {
+              id: "object",
+              title: "Object",
+              summary: variantLabel,
+              children: (
+                <>
+                  <label className="field-label">
               Title
               <input
                 className="field-input"
@@ -208,7 +243,7 @@ export function InspectorPanel() {
                 onChange={(event) => updateBlockVariant(node.id, activeVariantKey, { title: event.target.value })}
               />
             </label>
-            <label className="field-label">
+                  <label className="field-label">
               Type
               <select
                 className="field-input"
@@ -222,7 +257,7 @@ export function InspectorPanel() {
                 ))}
               </select>
             </label>
-            <label className="field-label">
+                  <label className="field-label">
               Content version
               <select
                 className="field-input"
@@ -238,7 +273,7 @@ export function InspectorPanel() {
                 ))}
               </select>
             </label>
-            <label className="field-label">
+                  <label className="field-label">
               Display
               <select
                 className="field-input"
@@ -252,17 +287,22 @@ export function InspectorPanel() {
                 ))}
               </select>
             </label>
-            <div className="rounded-lg border border-border bg-app/60 p-2 text-xs text-secondary">
+                  <div className="rounded-lg border border-border bg-app/60 p-2 text-xs text-secondary">
               Editing content: <span className="font-semibold text-foreground">{variantLabel}</span>
               {!hasVersionVariant && activeVariantKey !== commonVariantKey ? " (currently showing Default fallback; typing here creates this version)" : ""}
               <br />
               The top toolbar switches every block; this selector switches only the selected block.
               {displayModeOverride !== "block" ? ` Toolbar density override: ${displayModeOverride}.` : ""}
             </div>
-          </section>
-          <section className="panel-section">
-            <div className="section-title">Variants</div>
-            <div className="grid gap-2">
+                </>
+              ),
+            },
+            {
+              id: "variants",
+              title: "Variants",
+              defaultCollapsed: true,
+              children: (
+                <div className="grid gap-2">
               {modelVersions.length === 0 && <div className="text-xs text-secondary">Add versions from the top toolbar to create version-specific block content.</div>}
               {modelVersions.map((version) => {
                 const hasVariant = Boolean(node.data.variants?.[version.id])
@@ -287,10 +327,15 @@ export function InspectorPanel() {
                 )
               })}
             </div>
-          </section>
-          <section className="panel-section">
-            <div className="section-title">Markers</div>
-            <label className="inline-flex items-center gap-2 text-xs font-medium text-secondary">
+              ),
+            },
+            {
+              id: "markers",
+              title: "Markers",
+              defaultCollapsed: true,
+              children: (
+                <>
+                  <label className="inline-flex items-center gap-2 text-xs font-medium text-secondary">
               <input
                 type="checkbox"
                 className="h-4 w-4 rounded border-border text-accent"
@@ -328,10 +373,15 @@ export function InspectorPanel() {
                 </div>
               </label>
             </div>
-          </section>
-          <section className="panel-section">
-            <div className="section-title">Appearance</div>
-            <button type="button" className="toolbar-button justify-center" onClick={() => resetBlockTypeDefaults(node.id)}>
+                </>
+              ),
+            },
+            {
+              id: "appearance",
+              title: "Appearance",
+              children: (
+                <>
+                  <button type="button" className="toolbar-button justify-center" onClick={() => resetBlockTypeDefaults(node.id)}>
               <RotateCcw size={14} />
               Reset {blockType.label} defaults
             </button>
@@ -403,22 +453,32 @@ export function InspectorPanel() {
                 Paste style
               </button>
             </div>
-          </section>
-          <section className="panel-section">
-            <div className="section-title">Content</div>
-            <RichTextEditor
-              content={activeContentJson}
-              onChange={(contentJson, contentHtml) => updateBlockVariant(node.id, activeVariantKey, { contentJson, contentHtml })}
-            />
-          </section>
-          <section className="panel-section">
-            <div className="section-title">Metadata</div>
-            <div className="grid gap-1 text-xs text-secondary">
-              <div>Created: {formatLocalDateTime(node.data.createdAt)}</div>
-              <div>Updated: {formatLocalDateTime(node.data.updatedAt)}</div>
-            </div>
-          </section>
-        </div>
+                </>
+              ),
+            },
+            {
+              id: "content",
+              title: "Content",
+              children: (
+                <RichTextEditor
+                  content={activeContentJson}
+                  onChange={(contentJson, contentHtml) => updateBlockVariant(node.id, activeVariantKey, { contentJson, contentHtml })}
+                />
+              ),
+            },
+            {
+              id: "metadata",
+              title: "Metadata",
+              defaultCollapsed: true,
+              children: (
+                <div className="grid gap-1 text-xs text-secondary">
+                  <div>Created: {formatLocalDateTime(node.data.createdAt)}</div>
+                  <div>Updated: {formatLocalDateTime(node.data.updatedAt)}</div>
+                </div>
+              ),
+            },
+          ]}
+        />
       </aside>
     )
   }
@@ -431,38 +491,52 @@ export function InspectorPanel() {
           <p>Visual block maps for Bayesian model work and paper notes.</p>
         </div>
       </div>
-      <section className="panel-section">
-        <div className="section-title">Current state</div>
-        <div className="rounded-lg border border-border bg-app/60 p-3 text-sm">
-          <div className="font-medium text-foreground">{saveStatus}</div>
-          <div className="mt-1 text-xs text-secondary">Last saved: {formatLocalDateTime(lastSavedAt)}</div>
-        </div>
-        <button type="button" className="primary-button mt-3" onClick={createBlock}>
-          <Plus size={15} />
-          Create block
-        </button>
-      </section>
-      <section className="panel-section">
-        <div className="section-title">Shortcuts</div>
-        <dl className="grid grid-cols-[96px_1fr] gap-2 text-xs text-secondary">
-          <dt className="shortcut">Del</dt>
-          <dd>Delete selected object</dd>
-          <dt className="shortcut">Ctrl/Cmd+S</dt>
-          <dd>Save</dd>
-          <dt className="shortcut">Ctrl/Cmd+E</dt>
-          <dd>Export JSON</dd>
-          <dt className="shortcut">Esc</dt>
-          <dd>Exit inline editing, then clear selection</dd>
-          <dt className="shortcut">Enter</dt>
-          <dd>Edit selected block content</dd>
-          <dt className="shortcut">Ctrl/Cmd+Enter</dt>
-          <dd>Create next block</dd>
-          <dt className="shortcut">Ctrl/Cmd+Shift+Enter</dt>
-          <dd>Create linked block</dd>
-          <dt className="shortcut">Double click</dt>
-          <dd>Create block or edit selected block</dd>
-        </dl>
-      </section>
+      <InspectorSectionStack
+        storageKey="asteria-inspector-empty-layout"
+        sections={[
+          {
+            id: "state",
+            title: "Current state",
+            children: (
+              <>
+                <div className="rounded-lg border border-border bg-app/60 p-3 text-sm">
+                  <div className="font-medium text-foreground">{saveStatus}</div>
+                  <div className="mt-1 text-xs text-secondary">Last saved: {formatLocalDateTime(lastSavedAt)}</div>
+                </div>
+                <button type="button" className="primary-button mt-3" onClick={createBlock}>
+                  <Plus size={15} />
+                  Create block
+                </button>
+              </>
+            ),
+          },
+          {
+            id: "shortcuts",
+            title: "Shortcuts",
+            defaultCollapsed: true,
+            children: (
+              <dl className="grid grid-cols-[96px_1fr] gap-2 text-xs text-secondary">
+                <dt className="shortcut">Del</dt>
+                <dd>Delete selected object</dd>
+                <dt className="shortcut">Ctrl/Cmd+S</dt>
+                <dd>Save</dd>
+                <dt className="shortcut">Ctrl/Cmd+E</dt>
+                <dd>Export JSON</dd>
+                <dt className="shortcut">Esc</dt>
+                <dd>Exit inline editing, then clear selection</dd>
+                <dt className="shortcut">Enter</dt>
+                <dd>Edit selected block content</dd>
+                <dt className="shortcut">Ctrl/Cmd+Enter</dt>
+                <dd>Create next block</dd>
+                <dt className="shortcut">Ctrl/Cmd+Shift+Enter</dt>
+                <dd>Create linked block</dd>
+                <dt className="shortcut">Double click</dt>
+                <dd>Create block or edit selected block</dd>
+              </dl>
+            ),
+          },
+        ]}
+      />
     </aside>
   )
 }

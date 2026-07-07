@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0 - Reorderable Inspector Sections
+
+- Refactored the right inspector into VS Code-style collapsible sections.
+- Added per-context section ordering controls with persisted order and collapse state.
+- Applied the section stack to block, edge, group, multi-selection, and empty inspector states.
+
 ## 0.4.17 - Canvas Equation Dialog
 
 - Moved the equation editor into a top-level canvas-side overlay so dialogs opened from the inspector are not clipped by the right panel.
