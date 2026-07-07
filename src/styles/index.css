@@ -950,6 +950,14 @@ body {
   color: rgb(var(--color-secondary));
 }
 
+.ProseMirror hr,
+.rich-preview hr {
+  margin: 0.85em 0;
+  height: 1px;
+  border: 0;
+  background: var(--asteria-block-divider-color, rgb(var(--color-border)));
+}
+
 .ProseMirror code,
 .rich-preview code {
   border-radius: 4px;

@@ -6,6 +6,7 @@ import TextAlign from "@tiptap/extension-text-align"
 import TextStyle from "@tiptap/extension-text-style"
 import Underline from "@tiptap/extension-underline"
 import StarterKit from "@tiptap/starter-kit"
+import { DividerRule } from "./dividerExtension"
 import { FontSizeExtension } from "./FontSizeExtension"
 import { BlockMath, InlineMath } from "./mathExtensions"
 import { TaskItem, TaskList } from "./taskListExtensions"
@@ -14,7 +15,9 @@ export function createEditorExtensions(placeholder = "Write a model note, prior,
   return [
     StarterKit.configure({
       heading: { levels: [1, 2] },
+      horizontalRule: false,
     }),
+    DividerRule,
     TextStyle,
     Color,
     Highlight.configure({ multicolor: true }),

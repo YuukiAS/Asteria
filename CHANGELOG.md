@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.5 - Divider Input Rule
+
+- Added a Notion-style divider rule so typing `---` in an empty editor line inserts a horizontal divider.
+- Styled dividers consistently in both editable block content and rendered previews.
+- Declared the horizontal rule TipTap extension explicitly.
+
 ## 0.5.4 - Drag Undo
 
 - Added a canvas drag history snapshot around block/group drag interactions.
