@@ -272,12 +272,12 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
         </button>
         <label
           className="density-control flex shrink-0 items-center gap-1 rounded-md border border-border bg-panel px-1.5 text-xs font-medium text-secondary"
-          title="Display density: Auto uses each block's saved display mode; other choices temporarily override all blocks."
+          title="Display density: Block settings uses each block's saved display mode; other choices temporarily override all blocks."
         >
           <Rows3 size={14} />
           <span className="sr-only">Display density</span>
           <select
-            className="h-7 max-w-[76px] border-0 bg-panel text-xs outline-none"
+            className="h-7 max-w-[128px] border-0 bg-panel text-xs outline-none"
             value={displayModeOverride}
             onChange={(event) => setDisplayModeOverride(event.target.value as DisplayModeOverride)}
             aria-label="Display density"

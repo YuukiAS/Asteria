@@ -1,11 +1,7 @@
-`Algorithm` 比 `Trick` 更合适。它可以覆盖 posterior computation、sampling scheme、Laplace approximation、matching algorithm、simulation algorithm、MCMC/Gibbs/variational/optimization 这类内容；紫色也很合适，因为它和橙色的 model/theorem、蓝色的 prior/example、粉色的 remark 能区分开。
-
-下面这段可以直接交给 Codex。它是一个独立 TODO/task，用来在现有 block type 基础上实现你这套颜色系统。
-
-````text
+````text id="asteria-overflow-task"
 ---
-id: asteria_block_type_style_system
-title: Implement block type style presets for research diagrams
+id: asteria_0_2_overflow
+title: Improve block overflow, density modes, and fit-to-content behavior
 allow_code_change: true
 allow_shell_command: true
 allow_network: false
@@ -13,577 +9,273 @@ allow_external_upload: false
 requires_human_approval: false
 ---
 
-# Task: Implement block type style presets for Asteria
+# Task: Improve block overflow, density modes, and fit-to-content behavior
 
 ## 1. Goal
 
-Implement a clean block type style system for Asteria, based on the user's research note color conventions. The goal is to make block types visually useful for Bayesian model diagrams and TRACE/Marked TRACE presentations, without forcing a rigid workflow.
+Improve how Asteria handles long block content. The current visible scrollbar inside blocks is functional but visually distracting, especially for presentation diagrams. Asteria should treat canvas blocks as structured summary cards, not full document pages.
 
-The app already supports block types and block colors. This task should refine the available block types and their default styles. It must not remove user freedom: users can still manually edit block background color, text color, border color, rich text colors, and math highlighting.
+The goal is to keep layout stable while making long content readable when needed. Do not make blocks automatically grow whenever content changes. Default block size should remain stable so that global version switching, arrows, frames, and manual layout do not jump unexpectedly.
 
-## 2. Background
+## 2. Product principle
 
-The user's note-taking color convention is:
+Canvas block = summary/diagram object.
 
-- Notation: yellow.
-- Theorem / formal mathematical statement: orange.
-- Model: also orange, but should be visually distinguishable from Theorem.
-- Algorithm / computation method: purple.
-- Remark: pink.
-- Very important warning: red.
-- Explanatory annotations: blue text.
-- Main body text: black.
-- Examples: blue background.
-- TODO: should look like a checklist, not like a strong warning.
+Inspector/focus view = full reading/editing surface.
 
-In Asteria, block type style should mainly control block background, border, badge color, and default type label. It should not automatically recolor every piece of rich text inside the block. Rich text color remains controlled by the user.
+Long content should not force the canvas layout to change automatically. Instead, provide clean overflow treatment, display density modes, and manual fit commands.
 
-## 3. Required block type list
+## 3. Required behavior
 
-Update the block type list to the following:
+Implement the following behavior:
+
+1. Blocks should not auto-resize as content grows.
+2. Long content should not show a large always-visible scrollbar by default.
+3. Overflow should be visually indicated by a subtle bottom fade.
+4. Scrollbar should appear only on hover or when the block is selected.
+5. Scrollbar should be thin and visually subdued.
+6. The user should be able to manually fit a block to its content.
+7. The user should be able to switch block display density: full, compact, title-only.
+8. Layout dimensions should remain shared across model versions, not per-version, unless the app already has a carefully implemented variant layout system.
+
+## 4. Display modes
+
+Add or refine per-block display mode:
 
 ```ts
-export type BlockNodeType =
-  | "generic"
-  | "definition"
-  | "notation"
-  | "model"
-  | "prior"
-  | "assumption"
-  | "theorem"
-  | "algorithm"
-  | "dataset"
-  | "result"
-  | "reference"
-  | "remark"
-  | "example"
-  | "warning"
-  | "todo"
+export type BlockDisplayMode = "full" | "compact" | "title_only"
 ````
 
-Important notes:
+### full
 
-1. Use `theorem` as the single type for theorem, lemma, proposition, corollary, and formal statement. Do not create separate lemma/proposition/corollary types.
-2. Use `algorithm` for posterior computation, inference algorithms, simulation procedures, matching methods, optimization routines, MCMC, Gibbs, Laplace approximation, bigMVP-style two-stage computation, etc.
-3. Use `reference`, not `citation`, because these blocks usually represent a paper or method reference, not just a formatted citation.
-4. Do not add `trick`.
-5. Keep `generic` as fallback.
-6. If existing saved data uses `citation`, migrate it to `reference`.
-7. If existing saved data uses `statement`, migrate it to `theorem`.
-8. Unknown imported block types should fallback to `generic` and `console.warn`.
+The block displays its rich text preview. If content exceeds the visible area, use fade overflow and scroll-on-hover/selected.
 
-## 4. Style presets
+### compact
 
-Create a centralized style preset file, preferably:
+The block displays title, badges, status/emoji/version indicators, and a short content preview. Limit content to a small number of lines or a fixed compact preview height. Use fade overflow if needed. Math should not break the layout; if math is too wide, allow horizontal overflow inside the preview area.
 
-```text
-src/constants/blockTypeStyles.ts
-```
+### title_only
 
-or extend an existing block type constants file if one already exists.
+The block displays only title and lightweight indicators: type badge, version badge, status, emojis. It should be useful for high-level presentation diagrams.
 
-Each block type should have metadata like:
+## 5. Global display density override
+
+Add a toolbar-level display density control:
 
 ```ts
-type BlockTypeStyle = {
-  label: string
-  badgeText: string
-  backgroundColor: string
-  borderColor: string
-  textColor: string
-  badgeBackgroundColor: string
-  badgeTextColor: string
-  accentColor: string
-  description?: string
+export type GlobalDisplayDensity = "block_settings" | "full" | "compact" | "title_only"
+```
+
+Labels:
+
+* `Block settings`
+* `Full`
+* `Compact`
+* `Title only`
+
+Behavior:
+
+1. `Block settings` uses each block's own display mode.
+2. `Full`, `Compact`, and `Title only` override all blocks visually.
+3. The override should not permanently overwrite per-block display modes.
+4. Per-block display mode should remain editable in the inspector.
+5. The global override should persist in local state if appropriate, but it must not alter block data unless explicitly saved as block settings.
+
+## 6. Overflow styling
+
+For block content preview:
+
+1. Hide the large native scrollbar by default.
+2. On hover or selected block, show a thin scrollbar.
+3. Use a subtle bottom fade when content overflows.
+4. The fade should disappear or become less prominent when scrolled to the bottom if this is easy; otherwise a constant fade is acceptable.
+5. Avoid dark, thick scrollbars.
+6. Preserve usability: users must still be able to scroll block content with mouse wheel or trackpad when hovering over the block.
+7. Do not block React Flow drag interactions unnecessarily.
+
+Suggested CSS direction:
+
+```css
+.block-preview-scroll {
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+.block-preview-scroll:not(:hover):not(.selected) {
+  scrollbar-width: none;
+}
+
+.block-preview-scroll:not(:hover):not(.selected)::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.block-preview-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.block-preview-scroll::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.35);
+  border-radius: 999px;
 }
 ```
 
-The exact field names can be adjusted, but the logic must be centralized and reusable.
+Adjust class names and theme colors to match current code.
 
-## 5. Recommended default styles
+## 7. Fade overflow
 
-Use restrained low-saturation colors. Do not use harsh primary colors for full block backgrounds. These are suggested values; small adjustments are acceptable if they fit the current app theme.
+Add a fade overlay at the bottom of a block when content is longer than the preview area.
 
-### Generic
+Requirements:
 
-Purpose: fallback block.
+1. The fade should be subtle.
+2. It should adapt to block background color where reasonably possible.
+3. If exact background-aware fade is hard, use a neutral white/transparent gradient and document the limitation.
+4. The fade must not cover the block header.
+5. The fade should not interfere with selecting the block or connecting edges.
+6. A small `More` or `…` indicator is acceptable but optional.
 
-```ts
-label: "Generic"
-badgeText: "GENERIC"
-backgroundColor: "#ffffff"
-borderColor: "#d1d5db"
-textColor: "#111827"
-badgeBackgroundColor: "#f3f4f6"
-badgeTextColor: "#374151"
-accentColor: "#6b7280"
-```
+Implementation idea:
 
-### Definition
+* Add a `hasOverflow` state or compute via `scrollHeight > clientHeight`.
+* Recompute after content changes, block resize, display mode change, and global version switch.
+* Use `ResizeObserver` if already available or easy.
+* Otherwise, compute after render with `requestAnimationFrame`.
 
-Purpose: formal concept definition, e.g. catalogue discovery, open-tail discovery, marked novelty.
+## 8. Manual fit commands
 
-```ts
-label: "Definition"
-badgeText: "DEFINITION"
-backgroundColor: "#fff7ed"
-borderColor: "#fed7aa"
-textColor: "#111827"
-badgeBackgroundColor: "#ffedd5"
-badgeTextColor: "#9a3412"
-accentColor: "#f97316"
-```
+Add fit commands in the block inspector. If toolbar placement is cleaner, inspector is still required.
 
-### Notation
+### Fit to current content
 
-Purpose: notation and symbol explanations, e.g. $$K$$, $$U$$, $$p_{U,g}$$, $$\gamma_g$$.
-
-```ts
-label: "Notation"
-badgeText: "NOTATION"
-backgroundColor: "#fef9c3"
-borderColor: "#fde68a"
-textColor: "#111827"
-badgeBackgroundColor: "#fef3c7"
-badgeTextColor: "#854d0e"
-accentColor: "#eab308"
-```
-
-### Model
-
-Purpose: model component, observation layer, catalogue component, open-tail component, residual copula.
-
-```ts
-label: "Model"
-badgeText: "MODEL"
-backgroundColor: "#fffaf0"
-borderColor: "#fdba74"
-textColor: "#111827"
-badgeBackgroundColor: "#ffedd5"
-badgeTextColor: "#c2410c"
-accentColor: "#f97316"
-```
-
-Model and Theorem are both orange-family, but Model should be slightly lighter/creamier than Theorem.
-
-### Prior
-
-Purpose: Bayesian prior, shrinkage prior, hierarchy, hyperprior.
-
-```ts
-label: "Prior"
-badgeText: "PRIOR"
-backgroundColor: "#dbeafe"
-borderColor: "#93c5fd"
-textColor: "#111827"
-badgeBackgroundColor: "#bfdbfe"
-badgeTextColor: "#1d4ed8"
-accentColor: "#3b82f6"
-```
-
-### Assumption
-
-Purpose: theorem or modeling assumptions, regularity, integrability, boundedness.
-
-```ts
-label: "Assumption"
-badgeText: "ASSUMPTION"
-backgroundColor: "#f5f3ff"
-borderColor: "#ddd6fe"
-textColor: "#111827"
-badgeBackgroundColor: "#ede9fe"
-badgeTextColor: "#6d28d9"
-accentColor: "#8b5cf6"
-```
-
-### Theorem
-
-Purpose: theorem, lemma, proposition, corollary, formal result.
-
-```ts
-label: "Theorem"
-badgeText: "THEOREM"
-backgroundColor: "#ffedd5"
-borderColor: "#fb923c"
-textColor: "#111827"
-badgeBackgroundColor: "#fed7aa"
-badgeTextColor: "#9a3412"
-accentColor: "#ea580c"
-```
-
-### Algorithm
-
-Purpose: computational method, posterior algorithm, simulation procedure, MCMC/Gibbs, bigMVP stage, matching routine.
-
-Use purple.
-
-```ts
-label: "Algorithm"
-badgeText: "ALGORITHM"
-backgroundColor: "#f3e8ff"
-borderColor: "#c084fc"
-textColor: "#111827"
-badgeBackgroundColor: "#e9d5ff"
-badgeTextColor: "#7e22ce"
-accentColor: "#9333ea"
-```
-
-### Dataset
-
-Purpose: real data or simulation dataset description.
-
-```ts
-label: "Dataset"
-badgeText: "DATASET"
-backgroundColor: "#ecfeff"
-borderColor: "#67e8f9"
-textColor: "#111827"
-badgeBackgroundColor: "#cffafe"
-badgeTextColor: "#0e7490"
-accentColor: "#06b6d4"
-```
-
-### Result
-
-Purpose: derived result, simulation result, empirical finding, expected richness limit, figure/table takeaway.
-
-```ts
-label: "Result"
-badgeText: "RESULT"
-backgroundColor: "#dcfce7"
-borderColor: "#86efac"
-textColor: "#111827"
-badgeBackgroundColor: "#bbf7d0"
-badgeTextColor: "#15803d"
-accentColor: "#22c55e"
-```
-
-### Reference
-
-Purpose: paper, method, citation source, literature note.
-
-```ts
-label: "Reference"
-badgeText: "REFERENCE"
-backgroundColor: "#f8fafc"
-borderColor: "#cbd5e1"
-textColor: "#111827"
-badgeBackgroundColor: "#e2e8f0"
-badgeTextColor: "#334155"
-accentColor: "#64748b"
-```
-
-### Remark
-
-Purpose: explanatory remark, modeling boundary, interpretation note, non-warning caveat.
-
-Use pink.
-
-```ts
-label: "Remark"
-badgeText: "REMARK"
-backgroundColor: "#fce7f3"
-borderColor: "#f9a8d4"
-textColor: "#111827"
-badgeBackgroundColor: "#fbcfe8"
-badgeTextColor: "#be185d"
-accentColor: "#ec4899"
-```
-
-### Example
-
-Purpose: toy example, explanatory example, intuitive illustration.
-
-Use blue background, distinct from Prior.
-
-```ts
-label: "Example"
-badgeText: "EXAMPLE"
-backgroundColor: "#e0f2fe"
-borderColor: "#7dd3fc"
-textColor: "#111827"
-badgeBackgroundColor: "#bae6fd"
-badgeTextColor: "#0369a1"
-accentColor: "#0ea5e9"
-```
-
-### Warning
-
-Purpose: important warning, statement to avoid, invalid modeling move, theorem-breaking issue.
-
-Use red, but still low-saturation.
-
-```ts
-label: "Warning"
-badgeText: "WARNING"
-backgroundColor: "#fee2e2"
-borderColor: "#fca5a5"
-textColor: "#111827"
-badgeBackgroundColor: "#fecaca"
-badgeTextColor: "#b91c1c"
-accentColor: "#ef4444"
-```
-
-### TODO
-
-Purpose: task list or unresolved action item.
-
-Use neutral gray or very light yellow-gray. It should not visually compete with Warning.
-
-```ts
-label: "TODO"
-badgeText: "TODO"
-backgroundColor: "#f9fafb"
-borderColor: "#d1d5db"
-textColor: "#111827"
-badgeBackgroundColor: "#e5e7eb"
-badgeTextColor: "#374151"
-accentColor: "#6b7280"
-```
-
-## 6. Type switching behavior
-
-Do not unexpectedly destroy user-customized colors.
-
-Required behavior:
-
-1. When a new block is created with a chosen type, apply that type's default style.
-2. When an existing block changes type, do not automatically overwrite backgroundColor, textColor, or borderColor unless the user explicitly chooses to apply the type style.
-3. Add a button in the block inspector: `Apply type style`.
-4. `Apply type style` should set backgroundColor, textColor, and borderColor from the selected block type preset.
-5. Type badge should always reflect the current type, even if the block's manual colors are different.
-6. If the user changes type and wants the new style, they should click `Apply type style`.
-
-If current implementation already auto-applies type style on type change, change it to the safer behavior above.
-
-## 7. Default content templates
-
-When creating a new block of a specific type, provide lightweight default content. Do not overfill the block.
-
-Suggested templates:
-
-### Generic
-
-Title: `New block`
-
-Content:
+Button label:
 
 ```text
-Write notes here.
+Fit current content
 ```
 
-### Definition
+Behavior:
 
-Title: `New definition`
+1. Measure the rendered preview content for the currently visible variant/content.
+2. Increase block height so the current content can be seen without vertical scrolling.
+3. Respect a reasonable min height and max height.
+4. Suggested max height: 720px or a constant in `src/constants/layout.ts`.
+5. Do not change block width unless needed.
+6. If measurement fails, fall back to a safe approximate height and `console.warn`.
 
-Content:
+### Fit to largest variant
+
+Button label:
 
 ```text
-Define the concept here.
+Fit largest variant
 ```
 
-### Notation
+Behavior:
 
-Title: `New notation`
+1. If block variants/global model versions exist, measure all available variants for the block at the current width.
+2. Set block height to fit the largest variant content.
+3. This prevents global version switching from causing content to overflow unexpectedly.
+4. If variants are not implemented yet, disable this button or make it behave like `Fit current content` and document the behavior.
+5. Do not create per-version width/height unless explicitly already supported.
 
-Content:
+### Optional: Equalize selected sizes
+
+If multi-select utilities already exist or are easy to implement, add:
 
 ```text
-Let $$x$$ denote ...
+Equalize selected sizes
 ```
 
-### Model
+Behavior:
 
-Title: `New model component`
+1. Use the largest width and height among selected blocks.
+2. Apply those dimensions to all selected blocks.
+3. If multi-select is not stable yet, skip this and document it.
 
-Content:
+## 9. Version-aware requirements
+
+If block variants and global model versions already exist:
+
+1. Block width and height should remain shared across variants by default.
+2. Version switching should not automatically resize blocks.
+3. Overflow/fade should update after version switch.
+4. `Fit current content` fits only the currently active version/variant.
+5. `Fit largest variant` fits across all variants.
+6. Display mode is block-level and shared across variants unless the current data model already supports variant-specific display settings. Do not add variant-specific layout in this task.
+
+If variants do not exist yet:
+
+1. Implement this task for current block content.
+2. Leave clean extension points for variants.
+3. Do not implement the entire variants system inside this task unless explicitly requested.
+
+## 10. Inspector UI
+
+Update the block inspector with a compact section, for example:
 
 ```text
-Model component:
-$$
-y_{ij} = \\mathbb{I}(z_{ij} > 0)
-$$
+Display
+- Mode: Full / Compact / Title only
+- Fit current content
+- Fit largest variant
 ```
 
-### Prior
+Requirements:
 
-Title: `New prior`
+1. Keep this section compact.
+2. Do not push rich text editing too far down.
+3. Disable unavailable commands with a short tooltip or helper text.
+4. Make destructive behavior explicit. Fitting height is not destructive; resetting content is not part of this task.
 
-Content:
-
-```text
-Prior:
-$$
-\\theta \\sim ...
-$$
-```
-
-### Assumption
-
-Title: `New assumption`
-
-Content:
-
-```text
-Assume that ...
-```
-
-### Theorem
-
-Title: `New theorem`
-
-Content:
-
-```text
-Statement:
-$$
-...
-$$
-```
-
-### Algorithm
-
-Title: `New algorithm`
-
-Content:
-
-```text
-Algorithm outline:
-1. Step one.
-2. Step two.
-3. Step three.
-```
-
-### Dataset
-
-Title: `New dataset`
-
-Content:
-
-```text
-Dataset role:
-- Samples:
-- Features/species:
-- Covariates:
-- Purpose:
-```
-
-### Result
-
-Title: `New result`
-
-Content:
-
-```text
-Result summary:
-```
-
-### Reference
-
-Title: `New reference`
-
-Content:
-
-```text
-Paper / method:
-Why it matters:
-```
-
-### Remark
-
-Title: `New remark`
-
-Content:
-
-```text
-Remark:
-```
-
-### Example
-
-Title: `New example`
-
-Content:
-
-```text
-Example:
-```
-
-### Warning
-
-Title: `New warning`
-
-Content:
-
-```text
-Warning:
-```
-
-### TODO
-
-Title: `New TODO`
-
-Content:
-
-```text
-TODO:
-- [ ] First item
-- [ ] Second item
-```
-
-If Tiptap does not support GitHub-style checkboxes yet, use a plain bullet list or add a simple task-list extension only if it is lightweight and does not destabilize the editor.
-
-## 8. Inspector UI requirements
-
-Update the block inspector:
-
-1. Type dropdown should use the updated type list.
-2. Show the type badge preview.
-3. Add `Apply type style` button.
-4. Add `Reset to type template` only if it is safe and clearly destructive. If implemented, require confirmation because it overwrites content.
-5. Keep controls compact.
-6. Do not make style controls harder to access.
-7. If block variants/global version support exists, template/style behavior should apply to the currently edited variant content but shared block style should remain block-level.
-
-## 9. Canvas UI requirements
+## 11. Canvas UI
 
 Update block rendering:
 
-1. Show compact type badge using the style metadata.
-2. Badge should be visually subtle and not dominate title/content.
-3. If status and emoji markers already exist, arrange them with the type badge without clutter.
-4. Warning blocks should be recognizable but not excessively red.
-5. TODO blocks should show checklist-like content if template is used.
-6. Math rendering must remain stable.
+1. Header remains always visible.
+2. Badges/status/emojis remain visible in all display modes.
+3. In compact/title-only mode, block should remain clean and readable.
+4. Long formula blocks should not destroy card layout.
+5. In presentation-like views, visible scrollbar should not dominate the diagram.
+6. Keep edge handles usable.
 
-## 10. Compatibility and migration
+## 12. Data model and persistence
 
-Required migration rules:
+Add or update fields as needed:
 
-1. Existing `generic`, `definition`, `notation`, `model`, `prior`, `assumption`, `dataset`, `result`, `warning`, `todo` remain valid.
-2. Existing `citation` becomes `reference`.
-3. Existing `statement` becomes `theorem`.
-4. Unknown type becomes `generic` with `console.warn`.
-5. Existing manually chosen block colors must be preserved on migration.
-6. Export/import should preserve the updated block types.
-7. IndexedDB data from older versions should continue to load.
+```ts
+type BlockData = {
+  displayMode?: BlockDisplayMode
+}
+```
 
-## 11. Do not implement
+If a global display override is stored, keep it in app/UI state, not necessarily in each block.
+
+Requirements:
+
+1. Existing maps should load.
+2. Missing `displayMode` defaults to `full`.
+3. Export/import preserves per-block displayMode.
+4. Refresh preserves displayMode and any manually fitted dimensions.
+5. Fit commands should mark the map unsaved and persist after autosave.
+
+## 13. Do not implement
 
 Do not implement in this task:
 
-1. More block types beyond the required list.
-2. Separate lemma/proposition/corollary types.
-3. Semantic edge types.
-4. Automatic TRACE/HMSC templates.
-5. AI generation.
-6. Cloud sync.
-7. Large redesign of the layout.
-8. Full group/frame or version-switching system unless it already exists and only needs compatibility updates.
+1. Automatic block growth on every content edit.
+2. Per-version block positions/sizes.
+3. Full document editor inside the canvas.
+4. Full-screen presentation mode.
+5. PDF/SVG/PNG export.
+6. Semantic edge types.
+7. Automatic graph layout.
+8. Major visual redesign.
+9. AI content generation.
+10. Cloud sync.
 
-This task is only about block type list, style presets, safe style application, and type-specific default templates.
-
-## 12. Testing
+## 14. Testing
 
 Run the strongest available checks.
 
@@ -591,41 +283,47 @@ At minimum:
 
 1. TypeScript build.
 2. Production build.
-3. Manual or browser smoke test if available:
+3. Browser/manual smoke test if available.
 
-   * Create each block type or at least several representative types.
-   * Confirm type badge changes.
-   * Confirm `Apply type style` works.
-   * Confirm changing type alone does not overwrite manual colors.
-   * Confirm TODO block gets TODO template.
-   * Confirm Algorithm block uses purple styling.
-   * Confirm Citation/Statement legacy migration if test data is easy to construct.
+Test cases:
 
-## 13. Acceptance criteria
+1. Create a block with long content.
+2. Confirm the block does not auto-grow.
+3. Confirm large always-visible scrollbar is not shown by default.
+4. Hover/select the block and confirm scrolling remains possible.
+5. Confirm fade overflow appears when content is clipped.
+6. Switch block to compact mode.
+7. Switch block to title-only mode.
+8. Use global density override: Full / Compact / Title only / Block settings.
+9. Use `Fit current content`; confirm height changes and content is visible.
+10. If variants exist, use `Fit largest variant`; confirm it accounts for different variant lengths.
+11. Refresh and confirm block sizes and display modes persist.
+12. Export/import and confirm display modes and fitted sizes persist.
+13. Confirm math rendering remains stable.
+
+## 15. Acceptance criteria
 
 This task is complete when:
 
-1. Block type list matches the required list.
-2. `Algorithm` exists and uses purple style.
-3. `Remark` exists and uses pink style.
-4. `Example` exists and uses blue background.
-5. `Reference` replaces `Citation`.
-6. `Theorem` replaces `Statement` as the single formal-claim type.
-7. Type presets are centralized in constants.
-8. New blocks can apply default style by type.
-9. Existing blocks do not lose manual colors just because their type changes.
-10. `Apply type style` works explicitly.
-11. TODO block provides a lightweight TODO list placeholder that disappears when editing starts.
-12. Existing saved maps/imported JSON still load.
-13. Build passes without TypeScript errors.
-14. No obvious console errors during basic interaction.
+1. Blocks support full / compact / title-only display modes.
+2. Toolbar has a global display density override.
+3. Long block content no longer shows a large always-visible scrollbar by default.
+4. Overflow is indicated by a subtle fade.
+5. Scrolling still works on hover or selected block.
+6. `Fit current content` is available and works.
+7. `Fit largest variant` is available if variants exist, or disabled/fallback documented if not.
+8. Block dimensions are not automatically changed by content edits.
+9. Version switching, if present, does not change block size automatically.
+10. Display modes and fitted dimensions persist across refresh and export/import.
+11. Build passes without TypeScript errors.
+12. No obvious console errors during basic interaction.
 
-## 14. Result file
+## 16. Result file
 
 After implementation, create a result file:
 
 ```text
-results/asteria_block_type_style_system_result.md
+results/asteria_v0_5_6_result.md
 ```
 
 The result should include:
@@ -637,4 +335,5 @@ The result should include:
 5. Tests performed.
 6. Acceptance criteria passed.
 7. Known issues.
-8. Any skipped or partially completed items.
+8. Skipped or partially completed items.
+9. Recommended next task.

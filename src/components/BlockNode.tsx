@@ -2,6 +2,7 @@ import { Handle, NodeResizer, Position, type NodeProps } from "@xyflow/react"
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { blockTypeDefaults } from "../constants/blockDefaults"
 import { blockStatusByValue, blockTypeByValue, blockTypeOptions } from "../constants/blockTypes"
+import { blockSizeLimits } from "../constants/layout"
 import { allVersionsId, commonVariantKey } from "../constants/versioning"
 import { getVariantKey, resolveBlockContentHtml, resolveBlockContentJson, resolveBlockTitle } from "../lib/exportImport"
 import { requestInlineBlockEdit, requestInlineEditorFocus, type InlineEditTarget } from "../lib/inlineEditEvents"
@@ -45,6 +46,8 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
   const titleInputRef = useRef<HTMLInputElement>(null)
   const emojiInputRef = useRef<HTMLInputElement>(null)
   const [resizePreview, setResizePreview] = useState<{ width: number; height: number } | null>(null)
+  const [hasPreviewOverflow, setHasPreviewOverflow] = useState(false)
+  const previewRef = useRef<HTMLDivElement>(null)
   const visualWidth = resizePreview?.width ?? data.width
   const visualHeight = resizePreview?.height ?? data.height
   const previewInteractionClass = interactionMode === "edit" ? "nodrag nopan nowheel" : ""
@@ -89,6 +92,28 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
     emojiInputRef.current?.select()
   }, [isEditingEmoji])
 
+  useEffect(() => {
+    const preview = previewRef.current
+    if (!preview || displayMode === "title_only") {
+      setHasPreviewOverflow(false)
+      return
+    }
+    let frame = 0
+    const updateOverflow = () => {
+      frame = window.requestAnimationFrame(() => {
+        setHasPreviewOverflow(preview.scrollHeight > preview.clientHeight + 2)
+      })
+    }
+    updateOverflow()
+    const observer = new ResizeObserver(updateOverflow)
+    observer.observe(preview)
+    Array.from(preview.children).forEach((child) => observer.observe(child))
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame)
+      observer.disconnect()
+    }
+  }, [contentHtml, displayMode, isEditingContent, visualHeight, visualWidth])
+
   const updateEmoji = (value: string) => {
     const next = value.trim()
     updateBlock(id, { emojis: next ? [next] : [] })
@@ -118,10 +143,10 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
     >
       <NodeResizer
         isVisible={selected && interactionMode === "edit"}
-        minWidth={220}
-        minHeight={160}
-        maxWidth={860}
-        maxHeight={720}
+        minWidth={blockSizeLimits.minWidth}
+        minHeight={blockSizeLimits.minHeight}
+        maxWidth={blockSizeLimits.maxWidth}
+        maxHeight={blockSizeLimits.maxHeight}
         handleClassName="asteria-resize-handle"
         lineClassName="asteria-resize-line"
         onResizeStart={() => setResizePreview({ width: data.width, height: data.height })}
@@ -281,7 +306,9 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
         </div>
       </div>
       <div
+        ref={previewRef}
         className={`asteria-block-preview asteria-block-preview-${displayMode} h-[calc(100%-36px)] overflow-auto px-3 py-2 text-[13px] leading-[1.45] ${previewInteractionClass}`}
+        data-has-overflow={hasPreviewOverflow ? "true" : "false"}
       >
         {isEditingContent && displayMode === "full" ? (
           <RichTextEditor

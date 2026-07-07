@@ -7,7 +7,7 @@ export const snapGridSize = 8
 export const microStraightenTolerance = 10
 
 export const displayModeOptions = [
-  { value: "block", label: "Auto" },
+  { value: "block", label: "Block settings" },
   { value: "full", label: "Full" },
   { value: "compact", label: "Compact" },
   { value: "title_only", label: "Title" },

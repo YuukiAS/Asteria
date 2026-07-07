@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.6 - Block Overflow Fit Controls
+
+- Hid large block scrollbars by default while preserving hover/selected scrolling with subdued thin scrollbars.
+- Added subtle bottom fade indicators for overflowing block previews.
+- Added inspector fit commands for current content and largest content variant.
+- Updated the global density label to `Block settings`.
+
 ## 0.5.5 - Divider Input Rule
 
 - Added a Notion-style divider rule so typing `---` in an empty editor line inserts a horizontal divider.

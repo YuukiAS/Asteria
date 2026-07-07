@@ -684,6 +684,53 @@ body {
   max-height: calc(100% - 36px);
 }
 
+.asteria-block-preview {
+  position: relative;
+  scrollbar-color: transparent transparent;
+  scrollbar-width: none;
+}
+
+.asteria-block-preview:hover,
+.asteria-block-selected .asteria-block-preview {
+  scrollbar-color: rgb(var(--color-muted) / 0.42) transparent;
+  scrollbar-width: thin;
+}
+
+.asteria-block-preview::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.asteria-block-preview:hover::-webkit-scrollbar,
+.asteria-block-selected .asteria-block-preview::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.asteria-block-preview::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgb(var(--color-muted) / 0.38);
+}
+
+.asteria-block-preview::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.asteria-block-preview[data-has-overflow="true"]::after {
+  content: "";
+  position: sticky;
+  bottom: -8px;
+  display: block;
+  height: 32px;
+  margin-top: -32px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--asteria-block-background, #ffffff) 82%);
+}
+
+.asteria-block-preview-title_only::after {
+  display: none;
+}
+
 .asteria-block-preview-compact .rich-preview {
   display: -webkit-box;
   overflow: hidden;

@@ -1,6 +1,7 @@
 import { Clipboard, Copy, Layers, Plus, RotateCcw } from "lucide-react"
 import { blockTypeDefaults } from "../constants/blockDefaults"
 import { blockStatusOptions, blockTypeByValue, blockTypeOptions } from "../constants/blockTypes"
+import { blockFitExtraPadding, blockHeaderHeight, blockPreviewHorizontalPadding, blockPreviewVerticalPadding, blockSizeLimits } from "../constants/layout"
 import { allVersionsId, blockDisplayModeOptions, commonVariantKey } from "../constants/versioning"
 import { backgroundPalette, textPalette } from "../constants/palette"
 import { ColorPickerRow } from "./ColorPickerRow"
@@ -9,10 +10,40 @@ import { InspectorSectionStack } from "./InspectorSectionStack"
 import { RichTextEditor } from "./RichTextEditor"
 import { formatLocalDateTime } from "../lib/time"
 import { requestInlineBlockEdit } from "../lib/inlineEditEvents"
-import { resolveBlockContentJson, resolveBlockTitle } from "../lib/exportImport"
+import { resolveBlockContentHtml, resolveBlockContentJson, resolveBlockTitle } from "../lib/exportImport"
+import { stripScriptTags } from "../lib/sanitize"
 import { useMapStore } from "../store/useMapStore"
+import type { BlockData } from "../types/map"
 
 const emojiPresets = ["⚠️", "⭐", "📌", "✅", "❌", "💡", "📎", "🧪", "📊", "🔗", "❓", "🔥"]
+
+function clampBlockHeight(value: number) {
+  return Math.min(Math.max(Math.ceil(value), blockSizeLimits.minHeight), blockSizeLimits.maxHeight)
+}
+
+function measureBlockContentHeight(html: string | undefined, width: number) {
+  if (typeof document === "undefined") return undefined
+  const measure = document.createElement("div")
+  measure.className = "rich-preview"
+  measure.style.position = "fixed"
+  measure.style.left = "-10000px"
+  measure.style.top = "0"
+  measure.style.visibility = "hidden"
+  measure.style.pointerEvents = "none"
+  measure.style.width = `${Math.max(blockSizeLimits.minWidth - blockPreviewHorizontalPadding, width - blockPreviewHorizontalPadding)}px`
+  measure.style.fontSize = "13px"
+  measure.style.lineHeight = "1.45"
+  measure.innerHTML = stripScriptTags(html || "<p>Empty block</p>")
+  document.body.appendChild(measure)
+  const measured = measure.scrollHeight
+  measure.remove()
+  if (!Number.isFinite(measured) || measured <= 0) return undefined
+  return clampBlockHeight(blockHeaderHeight + blockPreviewVerticalPadding + measured + blockFitExtraPadding)
+}
+
+function variantKeysForFit(data: BlockData, modelVersionIds: string[], activeVariantKey: string) {
+  return Array.from(new Set([commonVariantKey, activeVariantKey, ...modelVersionIds, ...Object.keys(data.variants || {})]))
+}
 
 export function InspectorPanel() {
   const {
@@ -218,6 +249,27 @@ export function InspectorPanel() {
       const emoji = value.trim()
       updateBlock(node.id, { emojis: emoji ? [emoji] : [] })
     }
+    const fitCurrentContent = () => {
+      const height = measureBlockContentHeight(resolveBlockContentHtml(node.data, activeVariantKey), node.data.width)
+      if (!height) {
+        console.warn(`Failed to measure current content for block ${node.id}; using maximum fit height.`)
+        updateBlock(node.id, { height: blockSizeLimits.maxHeight })
+        return
+      }
+      updateBlock(node.id, { height })
+    }
+    const fitLargestVariant = () => {
+      const modelVersionIds = modelVersions.map((version) => version.id)
+      const heights = variantKeysForFit(node.data, modelVersionIds, activeVariantKey)
+        .map((key) => measureBlockContentHeight(resolveBlockContentHtml(node.data, key), node.data.width))
+        .filter((height): height is number => Number.isFinite(height))
+      if (!heights.length) {
+        console.warn(`Failed to measure variant content for block ${node.id}; using maximum fit height.`)
+        updateBlock(node.id, { height: blockSizeLimits.maxHeight })
+        return
+      }
+      updateBlock(node.id, { height: Math.max(...heights) })
+    }
 
     return (
       <aside className="inspector">
@@ -291,6 +343,14 @@ export function InspectorPanel() {
                 ))}
               </select>
             </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button type="button" className="toolbar-button justify-center" onClick={fitCurrentContent} title="Resize this block height to fit the currently selected content version.">
+                      Fit current content
+                    </button>
+                    <button type="button" className="toolbar-button justify-center" onClick={fitLargestVariant} title="Resize this block height to fit the tallest saved content version at the current width.">
+                      Fit largest variant
+                    </button>
+                  </div>
                   <div className="rounded-lg border border-border bg-app/60 p-2 text-xs text-secondary">
               Editing content: <span className="font-semibold text-foreground">{variantLabel}</span>
               {!hasVersionVariant && activeVariantKey !== commonVariantKey ? " (currently showing Default fallback; typing here creates this version)" : ""}
