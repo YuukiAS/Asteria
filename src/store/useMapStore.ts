@@ -592,8 +592,9 @@ export const useMapStore = create<MapState>((set, get) => ({
 
   setActiveVersion: (versionId) => {
     const state = get()
-    const activeVersionId =
-      versionId === allVersionsId || state.modelVersions.some((version) => version.id === versionId) ? versionId : allVersionsId
+    const activeVersionId = state.modelVersions.some((version) => version.id === versionId)
+      ? versionId
+      : state.modelVersions[0]?.id || allVersionsId
     const variantKey = getVariantKey(activeVersionId)
     set({
       activeVersionId,
@@ -650,7 +651,10 @@ export const useMapStore = create<MapState>((set, get) => ({
   deleteModelVersion: (id) => {
     set((state) => ({
       modelVersions: state.modelVersions.filter((version) => version.id !== id),
-      activeVersionId: state.activeVersionId === id ? allVersionsId : state.activeVersionId,
+      activeVersionId:
+        state.activeVersionId === id
+          ? state.modelVersions.filter((version) => version.id !== id)[0]?.id || allVersionsId
+          : state.activeVersionId,
       nodes: state.nodes.map((node) => {
         if (!isBlockNode(node)) return node
         const variants = { ...(node.data.variants || {}) }

@@ -237,10 +237,10 @@ function normalizeDisplayModeOverride(value: unknown): DisplayModeOverride {
 }
 
 function normalizeActiveVersionId(value: unknown, modelVersions: ModelVersion[]): ActiveVersionId {
-  if (value === allVersionsId) return allVersionsId
+  if (value === allVersionsId) return modelVersions[0]?.id || allVersionsId
   if (typeof value === "string" && modelVersions.some((version) => version.id === value)) return value
-  if (value !== undefined) console.warn(`Unknown activeVersionId "${String(value)}"; falling back to all.`)
-  return allVersionsId
+  if (value !== undefined) console.warn(`Unknown activeVersionId "${String(value)}"; falling back to the first version.`)
+  return modelVersions[0]?.id || allVersionsId
 }
 
 function normalizeModelVersion(input: Partial<ModelVersion>, index: number): ModelVersion {

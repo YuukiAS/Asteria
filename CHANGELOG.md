@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.2 - Top Version Picker Cleanup
+
+- Removed `Default` from the top model-version picker so it only shows real user versions.
+- Kept `Default` available in the block inspector as the per-block fallback content version.
+- Migrated stale top-level `all` active-version state to the first available model version.
+
 ## 0.5.1 - Block Type Color System
 
 - Reworked block type defaults so types control block background and border, not body text color.

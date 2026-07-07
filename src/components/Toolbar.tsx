@@ -1,5 +1,5 @@
 import { Download, Group, Moon, MousePointer2, PencilLine, Plus, Rows3, Save, Scan, Settings2, Sigma, Sparkles, Sun, Trash2, Upload } from "lucide-react"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { displayModeOptions, maxModelVersions } from "../constants/versioning"
 import { createExportFilename, exportMapFile, normalizeExportedMap, normalizeMapTitle, readJsonFile } from "../lib/exportImport"
 import { requestInlineBlockEdit, requestInlineEditorFocus } from "../lib/inlineEditEvents"
@@ -50,6 +50,11 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
   } = useMapStore()
   const selectedBlock = nodes.find((node) => node.id === selectedNodeId && node.type === "block")
   const appVersion = packageJson.version
+  const activeToolbarVersionId = modelVersions.some((version) => version.id === activeVersionId) ? activeVersionId : modelVersions[0]?.id || "all"
+
+  useEffect(() => {
+    if (modelVersions.length > 0 && activeVersionId === "all") setActiveVersion(modelVersions[0].id)
+  }, [activeVersionId, modelVersions, setActiveVersion])
 
   const exportJson = () => {
     exportMapFile(
@@ -189,16 +194,20 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           <select
             id="active-version"
             className="h-7 max-w-[128px] rounded border-0 bg-panel px-1.5 text-xs font-medium text-secondary outline-none focus:text-foreground"
-            value={activeVersionId}
+            value={activeToolbarVersionId}
             onChange={(event) => setActiveVersion(event.target.value)}
-            title="Active version"
+            title={modelVersions.length > 0 ? "Active model version" : "Add a model version to enable version switching"}
+            disabled={modelVersions.length === 0}
           >
-            <option value="all">Default</option>
-            {modelVersions.map((version) => (
-              <option key={version.id} value={version.id}>
-                {version.label}
-              </option>
-            ))}
+            {modelVersions.length === 0 ? (
+              <option value="all">No versions</option>
+            ) : (
+              modelVersions.map((version) => (
+                <option key={version.id} value={version.id}>
+                  {version.label}
+                </option>
+              ))
+            )}
           </select>
           <button
             type="button"
