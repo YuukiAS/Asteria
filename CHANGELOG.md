@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.21 - Hover Equation Editing
+
+- Open the existing equation edit dialog when the pointer moves over inline or block math in edit mode.
+- Gate hover editing so a formula only auto-opens once until the pointer leaves that formula.
+- Kept the hover gate active while the edit dialog is open so cancelling does not immediately reopen under a stationary cursor.
+- Added pointer cursor styling to math nodes so editable formulas are easier to discover.
+- Changed the edit-equation confirmation button to `Update` while keeping new equation insertion labeled `Insert`.
+
 ## 0.5.20 - Title Editing Double Click
 
 - Removed canvas double-click block creation so new blocks are created from the toolbar button only.

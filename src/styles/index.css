@@ -1098,6 +1098,7 @@ body {
   display: inline-block;
   max-width: 100%;
   color: var(--asteria-rich-accent-color, inherit);
+  cursor: pointer;
   vertical-align: -0.12em;
 }
 
@@ -1112,6 +1113,7 @@ body {
   margin: 0.75em 0;
   max-width: 100%;
   color: var(--asteria-rich-accent-color, inherit);
+  cursor: pointer;
   overflow-x: auto;
   border-radius: 8px;
   background: transparent;

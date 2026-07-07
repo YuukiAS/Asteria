@@ -31,6 +31,10 @@ export function RichTextEditor({
   placeholder = "Write a model note, prior, theorem, or paper observation...",
 }: RichTextEditorProps) {
   const lastLocalContentRef = useRef<string | undefined>(undefined)
+  const equationHoverTimerRef = useRef<number | undefined>(undefined)
+  const equationHoverElementRef = useRef<HTMLElement | null>(null)
+  const blockedEquationHoverRef = useRef<string | undefined>(undefined)
+  const isEditingEquationDialogOpenRef = useRef(false)
   const [editingEquation, setEditingEquation] = useState<{ pos: number; latex: string; displayMode: boolean } | null>(null)
   const [isInlineEquationDialogOpen, setIsInlineEquationDialogOpen] = useState(false)
   const editorStyle = [
@@ -49,6 +53,48 @@ export function RichTextEditor({
     editorProps: {
       attributes: editorAttributes,
       clipboardTextSerializer: serializeMathClipboardText,
+      handleDOMEvents: {
+        mouseover(view, event) {
+          const target = event.target as HTMLElement | null
+          const mathElement = target?.closest?.(".math-inline, .math-block")
+          if (!(mathElement instanceof HTMLElement)) return false
+          const pos = view.posAtDOM(mathElement, 0)
+          const node = view.state.doc.nodeAt(pos)
+          const previousNode = view.state.doc.nodeAt(pos - 1)
+          const targetNode = node?.type.name === "inlineMath" || node?.type.name === "blockMath" ? node : previousNode
+          const targetPos = targetNode === node ? pos : pos - 1
+          if (!targetNode || (targetNode.type.name !== "inlineMath" && targetNode.type.name !== "blockMath")) return false
+          const hoverKey = `${targetPos}:${targetNode.type.name}:${String(targetNode.attrs.latex || "")}`
+          if (blockedEquationHoverRef.current === hoverKey) return false
+          if (equationHoverTimerRef.current) window.clearTimeout(equationHoverTimerRef.current)
+          equationHoverElementRef.current = mathElement
+          equationHoverTimerRef.current = window.setTimeout(() => {
+            blockedEquationHoverRef.current = hoverKey
+            isEditingEquationDialogOpenRef.current = true
+            setEditingEquation({
+              pos: targetPos,
+              latex: String(targetNode.attrs.latex || ""),
+              displayMode: targetNode.type.name === "blockMath",
+            })
+          }, 320)
+          return false
+        },
+        mouseout(_view, event) {
+          const target = event.target as HTMLElement | null
+          const mathElement = target?.closest?.(".math-inline, .math-block")
+          if (!(mathElement instanceof HTMLElement)) return false
+          const relatedTarget = event.relatedTarget as Node | null
+          if (relatedTarget && mathElement.contains(relatedTarget)) return false
+          if (equationHoverTimerRef.current) window.clearTimeout(equationHoverTimerRef.current)
+          equationHoverTimerRef.current = undefined
+          if (isEditingEquationDialogOpenRef.current) return false
+          if (equationHoverElementRef.current === mathElement) {
+            equationHoverElementRef.current = null
+            blockedEquationHoverRef.current = undefined
+          }
+          return false
+        },
+      },
       handlePaste(view, event) {
         const text = event.clipboardData?.getData("text/plain")
         if (!text) return false
@@ -178,6 +224,7 @@ export function RichTextEditor({
   const updateEquation = (latex: string) => {
     if (!editingEquation) return
     const target = editingEquation
+    isEditingEquationDialogOpenRef.current = false
     setEditingEquation(null)
     editor
       .chain()
@@ -220,7 +267,11 @@ export function RichTextEditor({
         title="Edit equation"
         initialLatex={editingEquation?.latex}
         displayMode={editingEquation?.displayMode ?? true}
-        onCancel={() => setEditingEquation(null)}
+        confirmLabel="Update"
+        onCancel={() => {
+          isEditingEquationDialogOpenRef.current = false
+          setEditingEquation(null)
+        }}
         onConfirm={updateEquation}
       />
     </div>

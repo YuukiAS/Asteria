@@ -7,6 +7,7 @@ type EquationDialogProps = {
   title?: string
   initialLatex?: string
   displayMode?: boolean
+  confirmLabel?: string
   submitOnEnter?: boolean
   onCancel: () => void
   onConfirm: (latex: string) => void
@@ -20,6 +21,7 @@ export function EquationDialog({
   title = "Block equation",
   initialLatex = defaultLatex,
   displayMode = true,
+  confirmLabel = "Insert",
   submitOnEnter = false,
   onCancel,
   onConfirm,
@@ -112,7 +114,7 @@ export function EquationDialog({
             className="primary-button"
             disabled={!latex.trim() || !preview.isValid}
           >
-            Insert
+            {confirmLabel}
           </button>
         </div>
       </form>
