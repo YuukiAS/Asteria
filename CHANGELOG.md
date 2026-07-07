@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.12 - Canvas Background Layering
+
+- Moved the readability overlay back into the background layer so it no longer sits above React Flow nodes.
+- Isolated the canvas stacking context and forced the React Flow surface above fixed background artwork.
+- Verified a centered Prior block now remains visually clear over the brightest background area.
+
 ## 0.4.11 - Quiet Canvas Title and Dark Controls
 
 - Kept the canvas title as plain toolbar text by default, including in Edit mode.
