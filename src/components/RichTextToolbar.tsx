@@ -181,7 +181,7 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
       <EquationDialog
         open={Boolean(equationDialogMode)}
         title={equationDialogMode === "inline" ? "Inline equation" : "Block equation"}
-        initialLatex={equationDialogMode === "inline" ? "\\beta_j \\sim N_q(\\nu,\\Psi)" : undefined}
+        initialLatex={equationDialogMode === "inline" ? "" : undefined}
         displayMode={equationDialogMode !== "inline"}
         submitOnEnter={equationDialogMode === "inline"}
         onCancel={() => setEquationDialogMode(null)}

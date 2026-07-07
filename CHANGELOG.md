@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.16 - Empty Inline Equation Dialog
+
+- Open inline equation dialogs with a blank LaTeX field instead of prefilled sample math.
+- Kept inline equation insertion at the current editor cursor when `Ctrl/Cmd+Shift+E` is pressed inside block text.
+- Kept the block equation dialog's display-math starter content unchanged.
+
 ## 0.5.15 - Fix Bubble Menu Mouse Actions
 
 - Moved bubble menu formatting actions from pointer-down-only handling to mouse-down handling so normal clicks apply marks reliably.

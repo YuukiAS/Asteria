@@ -67,7 +67,10 @@ export function RichTextEditor({
       },
       handleKeyDown(_view, event) {
         if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "e") {
+          if (!editor) return false
           event.preventDefault()
+          const { from, to } = editor.state.selection
+          editor.storage.asteriaSelection = { from, to }
           setIsInlineEquationDialogOpen(true)
           return true
         }
@@ -142,6 +145,10 @@ export function RichTextEditor({
       if (requestedTarget && !focusTargetId) return
       if (focusTargetId && requestedTarget !== focusTargetId) return
       editor?.commands.focus()
+      if (editor) {
+        const { from, to } = editor.state.selection
+        editor.storage.asteriaSelection = { from, to }
+      }
       setIsInlineEquationDialogOpen(true)
     }
     window.addEventListener("asteria-open-inline-equation", openInlineEquation)
@@ -153,7 +160,7 @@ export function RichTextEditor({
   const selectionChain = () => {
     const savedSelection = editor.storage.asteriaSelection as { from: number; to: number } | undefined
     const chain = editor.chain().focus()
-    return savedSelection && savedSelection.from !== savedSelection.to ? chain.setTextSelection(savedSelection) : chain
+    return savedSelection ? chain.setTextSelection(savedSelection) : chain
   }
 
   const insertInlineEquation = (latex: string) => {
@@ -195,7 +202,7 @@ export function RichTextEditor({
       <EquationDialog
         open={isInlineEquationDialogOpen}
         title="Inline equation"
-        initialLatex="\\beta_j \\sim N_q(\\nu,\\Psi)"
+        initialLatex=""
         displayMode={false}
         submitOnEnter
         onCancel={() => setIsInlineEquationDialogOpen(false)}

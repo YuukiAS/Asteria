@@ -157,7 +157,7 @@ export function App() {
         void saveNow()
         return
       }
-      if (isMod && event.shiftKey && event.key.toLowerCase() === "e" && selectedNodeId) {
+      if (isMod && event.shiftKey && event.key.toLowerCase() === "e" && selectedNodeId && !isEditableTarget(event.target)) {
         event.preventDefault()
         requestInlineBlockEdit(selectedNodeId, "content")
         window.setTimeout(() => {
