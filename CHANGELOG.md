@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.3 - Safe Type Presets and Result Directory
+
+- Updated block type colors to the completed TODO palette while keeping block body text at the default readable color.
+- Made block type changes preserve manual colors and exposed explicit `Apply type style` behavior for restoring only type background/border presets.
+- Converted Result and TODO type templates into placeholders so they do not persist as editable content.
+- Moved Codex result files to the root `results/` directory and updated the handoff rules/templates accordingly.
+
 ## 0.5.2 - Top Version Picker Cleanup
 
 - Removed `Default` from the top model-version picker so it only shows real user versions.

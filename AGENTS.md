@@ -8,7 +8,7 @@
 - `prompts/AGENT_RULES.md`：长期执行规则。
 - `prompts/CHATGPT_RULES.md`：ChatGPT 通过 GitHub MCP 或仓库工具写 task、note、review 时应读取的规则。
 - `prompts/tasks/*_task.md`：唯一默认任务入口。
-- `prompts/tasks/*_result.md`：Codex 的结果回写位置。
+- `results/*_result.md`：Codex 的结果回写位置。
 - `prompts/tasks/*_review.md`：ChatGPT 的复盘位置。
 - `docs/notes/`：参考笔记目录，不是默认任务入口。
 - `docs/wiki/`：长期研究知识库，不是默认任务入口。
@@ -17,7 +17,7 @@
 
 - Codex 开始任务前应读取 `prompts/AGENT_RULES.md` 和指定的 `prompts/tasks/<id>_task.md`。
 - Codex 必须遵守 task frontmatter、允许动作、禁止动作和停止条件。
-- Codex 完成后必须写 `prompts/tasks/<id>_result.md`。
+- Codex 完成后必须写 `results/<id>_result.md`。
 - Codex 完成已授权任务并通过必要验证后，应自动创建本地 git commit；commit message 应包含对应版本号或任务 id。Codex 不应自动 push，push 由用户手动执行。
 - Codex 不应主动执行 `docs/notes/` 或 `docs/wiki/` 中的内容，除非任务单显式引用某篇 note 或 wiki 页面作为背景材料。
 - 如果任务需要联网、上传、删除数据、运行昂贵命令或修改高风险配置，但 task 没有授权，Codex 必须停止并在 result 中请求人工批准。

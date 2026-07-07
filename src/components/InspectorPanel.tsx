@@ -1,4 +1,5 @@
 import { Clipboard, Copy, Layers, Plus, RotateCcw } from "lucide-react"
+import { blockTypeDefaults } from "../constants/blockDefaults"
 import { blockStatusOptions, blockTypeByValue, blockTypeOptions } from "../constants/blockTypes"
 import { allVersionsId, blockDisplayModeOptions, commonVariantKey } from "../constants/versioning"
 import { backgroundPalette, textPalette } from "../constants/palette"
@@ -27,7 +28,7 @@ export function InspectorPanel() {
     lastSavedAt,
     addBlockAndSelect,
     updateBlock,
-    resetBlockTypeDefaults,
+    applyBlockTypeStyle,
     updateGroup,
     updateEdge,
     deleteEdge,
@@ -202,6 +203,7 @@ export function InspectorPanel() {
 
   if (node?.type === "block") {
     const blockType = blockTypeByValue[node.data.nodeType] || blockTypeByValue.generic
+    const blockTypePlaceholder = blockTypeDefaults[node.data.nodeType]?.placeholder
     const emojis = node.data.emojis || []
     const activeVariantKey = node.data.activeVariantKey || (activeVersionId === allVersionsId ? commonVariantKey : activeVersionId)
     const activeVersion = modelVersions.find((version) => version.id === activeVariantKey)
@@ -383,9 +385,9 @@ export function InspectorPanel() {
               title: "Appearance",
               children: (
                 <>
-                  <button type="button" className="toolbar-button justify-center" onClick={() => resetBlockTypeDefaults(node.id)}>
+                  <button type="button" className="toolbar-button justify-center" onClick={() => applyBlockTypeStyle(node.id)}>
               <RotateCcw size={14} />
-              Reset {blockType.label} defaults
+              Apply {blockType.label} type style
             </button>
             <ColorPickerRow
               label="Background"
@@ -465,6 +467,7 @@ export function InspectorPanel() {
                 <RichTextEditor
                   content={activeContentJson}
                   onChange={(contentJson, contentHtml) => updateBlockVariant(node.id, activeVariantKey, { contentJson, contentHtml })}
+                  placeholder={blockTypePlaceholder}
                 />
               ),
             },

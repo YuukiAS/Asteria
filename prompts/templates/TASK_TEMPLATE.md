@@ -26,7 +26,7 @@ requires_human_approval: false
 - 读取与本任务直接相关的文件。
 - 运行明确必要且低风险的 shell command。
 - 按 frontmatter 授权进行文件修改。
-- 完成后写 `prompts/tasks/000_result.md`。
+- 完成后写 `results/000_result.md`。
 
 ## 禁止动作
 
@@ -38,7 +38,7 @@ requires_human_approval: false
 
 ## 预期产出
 
-- `prompts/tasks/000_result.md`。
+- `results/000_result.md`。
 - 如有代码修改，包含修改文件列表和 diff 摘要。
 - 如有命令运行，包含命令、目的和结果。
 

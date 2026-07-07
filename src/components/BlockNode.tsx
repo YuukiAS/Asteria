@@ -1,5 +1,6 @@
 import { Handle, NodeResizer, Position, type NodeProps } from "@xyflow/react"
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
+import { blockTypeDefaults } from "../constants/blockDefaults"
 import { blockStatusByValue, blockTypeByValue, blockTypeOptions } from "../constants/blockTypes"
 import { allVersionsId, commonVariantKey } from "../constants/versioning"
 import { getVariantKey, resolveBlockContentHtml, resolveBlockContentJson, resolveBlockTitle } from "../lib/exportImport"
@@ -48,6 +49,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
   const visualHeight = resizePreview?.height ?? data.height
   const previewInteractionClass = interactionMode === "edit" ? "nodrag nopan nowheel" : ""
   const blockType = blockTypeByValue[data.nodeType] || blockTypeByValue.generic
+  const blockTypePlaceholder = blockTypeDefaults[data.nodeType]?.placeholder
   const blockStatus = data.status ? blockStatusByValue[data.status] : blockStatusByValue.undo
   const emoji = (data.emojis || []).filter(Boolean)[0] || ""
   const effectiveVariantKey = data.activeVariantKey || getVariantKey(activeVersionId)
@@ -290,6 +292,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
             editorClassName="min-h-[calc(var(--asteria-node-height,220px)-60px)] cursor-text"
             editorTextColor={data.textColor}
             editorAccentColor={data.textColor}
+            placeholder={blockTypePlaceholder}
             focusTargetId={id}
           />
         ) : displayMode === "title_only" ? null : (

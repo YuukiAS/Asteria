@@ -15,6 +15,7 @@ type RichTextEditorProps = {
   focusTargetId?: string
   editorTextColor?: string
   editorAccentColor?: string
+  placeholder?: string
 }
 
 export function RichTextEditor({
@@ -26,6 +27,7 @@ export function RichTextEditor({
   focusTargetId,
   editorTextColor,
   editorAccentColor,
+  placeholder = "Write a model note, prior, theorem, or paper observation...",
 }: RichTextEditorProps) {
   const lastLocalContentRef = useRef<string | undefined>(undefined)
   const [editingEquation, setEditingEquation] = useState<{ pos: number; latex: string; displayMode: boolean } | null>(null)
@@ -40,7 +42,7 @@ export function RichTextEditor({
     ...(editorStyle ? { style: editorStyle } : {}),
   }
   const editor = useEditor({
-    extensions: createEditorExtensions(),
+    extensions: createEditorExtensions(placeholder),
     content,
     editorProps: {
       attributes: editorAttributes,
@@ -90,7 +92,7 @@ export function RichTextEditor({
         activeEditor.storage.asteriaSelection = { from, to }
       }
     },
-  })
+  }, [placeholder])
 
   useEffect(() => {
     if (!editor) return

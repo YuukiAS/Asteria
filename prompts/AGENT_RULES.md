@@ -25,7 +25,7 @@ prompts/CHATGPT_RULES.md
 Codex 结果回写到：
 
 ```text
-prompts/tasks/<id>_result.md
+results/<id>_result.md
 ```
 
 ChatGPT 复盘写到：
@@ -50,7 +50,7 @@ Codex 必须遵守 task frontmatter：
 
 ## 结果记录
 
-每次执行 task 后，Codex 必须写 `prompts/tasks/<id>_result.md`，至少记录：
+每次执行 task 后，Codex 必须写 `results/<id>_result.md`，至少记录：
 
 - 执行摘要。
 - 读取文件。

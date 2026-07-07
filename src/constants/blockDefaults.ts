@@ -1,33 +1,12 @@
-import type { JSONContent } from "@tiptap/react"
 import type { BlockNodeType } from "../types/map"
 import { blockTypeColors, defaultBlockColors } from "./palette"
-
-export const orderedResultContentJson: JSONContent = {
-  type: "doc",
-  content: [
-    {
-      type: "orderedList",
-      content: [{ type: "listItem", content: [{ type: "paragraph" }] }],
-    },
-  ],
-}
-
-export const todoContentJson: JSONContent = {
-  type: "doc",
-  content: [
-    {
-      type: "taskList",
-      content: [{ type: "taskItem", attrs: { checked: false }, content: [{ type: "paragraph" }] }],
-    },
-  ],
-}
 
 export type BlockTypeDefaults = {
   backgroundColor: string
   textColor: string
   borderColor: string
   emojis?: string[]
-  contentJson?: JSONContent
+  placeholder?: string
 }
 
 export const blockTypeDefaults: Record<BlockNodeType, BlockTypeDefaults> = {
@@ -80,7 +59,7 @@ export const blockTypeDefaults: Record<BlockNodeType, BlockTypeDefaults> = {
     backgroundColor: blockTypeColors.result.background,
     textColor: defaultBlockColors.text,
     borderColor: blockTypeColors.result.border,
-    contentJson: orderedResultContentJson,
+    placeholder: "1. State the result and key evidence...",
   },
   reference: {
     backgroundColor: blockTypeColors.reference.background,
@@ -107,6 +86,6 @@ export const blockTypeDefaults: Record<BlockNodeType, BlockTypeDefaults> = {
     backgroundColor: blockTypeColors.todo.background,
     textColor: defaultBlockColors.text,
     borderColor: blockTypeColors.todo.border,
-    contentJson: todoContentJson,
+    placeholder: "[ ] Add an actionable TODO...",
   },
 }
