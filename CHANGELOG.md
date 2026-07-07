@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.14 - Inline Equation Dialog
+
+- Added an inline equation dialog with live KaTeX preview for block content editing.
+- Changed the inline math bubble-menu action from inserting placeholder math to opening the dialog.
+- Added `Ctrl/Cmd+Shift+E` to open inline equation entry for the selected block without conflicting with `Ctrl/Cmd+E` export.
+- Let Enter confirm inline equations while Shift+Enter still allows line breaks.
+
 ## 0.5.13 - Fix Inline Block Text Color
 
 - Fixed text color swatches in the inline block bubble menu so selected content receives TipTap color marks reliably.

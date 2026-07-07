@@ -31,6 +31,7 @@ export function RichTextEditor({
 }: RichTextEditorProps) {
   const lastLocalContentRef = useRef<string | undefined>(undefined)
   const [editingEquation, setEditingEquation] = useState<{ pos: number; latex: string; displayMode: boolean } | null>(null)
+  const [isInlineEquationDialogOpen, setIsInlineEquationDialogOpen] = useState(false)
   const editorStyle = [
     editorTextColor ? `color: ${editorTextColor}` : "",
     editorAccentColor ? `--asteria-rich-accent-color: ${editorAccentColor}` : "",
@@ -63,6 +64,14 @@ export function RichTextEditor({
         }
         view.dispatch(transaction)
         return true
+      },
+      handleKeyDown(_view, event) {
+        if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "e") {
+          event.preventDefault()
+          setIsInlineEquationDialogOpen(true)
+          return true
+        }
+        return false
       },
       handleDoubleClickOn(_view, _pos, node, nodePos) {
         if (node.type.name !== "inlineMath" && node.type.name !== "blockMath") return false
@@ -127,7 +136,30 @@ export function RichTextEditor({
     return () => window.removeEventListener("asteria-focus-editor", focusEditor)
   }, [editor, focusTargetId])
 
+  useEffect(() => {
+    const openInlineEquation = (event: Event) => {
+      const requestedTarget = (event as CustomEvent<{ nodeId?: string }>).detail?.nodeId
+      if (requestedTarget && !focusTargetId) return
+      if (focusTargetId && requestedTarget !== focusTargetId) return
+      editor?.commands.focus()
+      setIsInlineEquationDialogOpen(true)
+    }
+    window.addEventListener("asteria-open-inline-equation", openInlineEquation)
+    return () => window.removeEventListener("asteria-open-inline-equation", openInlineEquation)
+  }, [editor, focusTargetId])
+
   if (!editor) return <div className="rounded-lg border border-border p-4 text-sm text-secondary">Loading editor...</div>
+
+  const selectionChain = () => {
+    const savedSelection = editor.storage.asteriaSelection as { from: number; to: number } | undefined
+    const chain = editor.chain().focus()
+    return savedSelection && savedSelection.from !== savedSelection.to ? chain.setTextSelection(savedSelection) : chain
+  }
+
+  const insertInlineEquation = (latex: string) => {
+    setIsInlineEquationDialogOpen(false)
+    selectionChain().insertInlineMath(latex).run()
+  }
 
   const updateEquation = (latex: string) => {
     if (!editingEquation) return
@@ -147,7 +179,7 @@ export function RichTextEditor({
 
   const contentElement = (
     <>
-      <RichTextBubbleMenu editor={editor} />
+      <RichTextBubbleMenu editor={editor} onInlineMathRequest={() => setIsInlineEquationDialogOpen(true)} />
       <EditorContent editor={editor} />
     </>
   )
@@ -160,6 +192,15 @@ export function RichTextEditor({
       ) : (
         contentElement
       )}
+      <EquationDialog
+        open={isInlineEquationDialogOpen}
+        title="Inline equation"
+        initialLatex="\\beta_j \\sim N_q(\\nu,\\Psi)"
+        displayMode={false}
+        submitOnEnter
+        onCancel={() => setIsInlineEquationDialogOpen(false)}
+        onConfirm={insertInlineEquation}
+      />
       <EquationDialog
         open={Boolean(editingEquation)}
         title="Edit equation"

@@ -7,6 +7,7 @@ type EquationDialogProps = {
   title?: string
   initialLatex?: string
   displayMode?: boolean
+  submitOnEnter?: boolean
   onCancel: () => void
   onConfirm: (latex: string) => void
 }
@@ -19,6 +20,7 @@ export function EquationDialog({
   title = "Block equation",
   initialLatex = defaultLatex,
   displayMode = true,
+  submitOnEnter = false,
   onCancel,
   onConfirm,
 }: EquationDialogProps) {
@@ -76,6 +78,11 @@ export function EquationDialog({
               value={latex}
               onChange={(event) => setLatex(event.target.value)}
               onKeyDown={(event) => {
+                if (submitOnEnter && event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault()
+                  submit()
+                  return
+                }
                 if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
                   event.preventDefault()
                   submit()

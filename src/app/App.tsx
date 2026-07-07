@@ -8,7 +8,7 @@ import { Canvas } from "../components/Canvas"
 import { InspectorPanel } from "../components/InspectorPanel"
 import { Toolbar } from "../components/Toolbar"
 import { createExportFilename, exportMapFile, normalizeMapTitle } from "../lib/exportImport"
-import { requestInlineBlockEdit, startInlineEditEvent, type InlineEditTarget } from "../lib/inlineEditEvents"
+import { requestInlineBlockEdit, requestInlineEditorFocus, startInlineEditEvent, type InlineEditTarget } from "../lib/inlineEditEvents"
 import { useMapStore } from "../store/useMapStore"
 
 function isEditableTarget(target: EventTarget | null) {
@@ -155,6 +155,15 @@ export function App() {
       if (isMod && event.key.toLowerCase() === "s") {
         event.preventDefault()
         void saveNow()
+        return
+      }
+      if (isMod && event.shiftKey && event.key.toLowerCase() === "e" && selectedNodeId) {
+        event.preventDefault()
+        requestInlineBlockEdit(selectedNodeId, "content")
+        window.setTimeout(() => {
+          requestInlineEditorFocus(selectedNodeId)
+          window.dispatchEvent(new CustomEvent("asteria-open-inline-equation", { detail: { nodeId: selectedNodeId } }))
+        }, 0)
         return
       }
       if (isMod && event.key.toLowerCase() === "e") {

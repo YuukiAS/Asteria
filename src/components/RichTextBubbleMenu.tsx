@@ -5,6 +5,7 @@ import { applyBlockMathStyle } from "../editor/blockMathStyling"
 
 type RichTextBubbleMenuProps = {
   editor: Editor
+  onInlineMathRequest: () => void
 }
 
 function selectionChain(editor: Editor) {
@@ -126,7 +127,7 @@ function ColorSwatch({
   )
 }
 
-export function RichTextBubbleMenu({ editor }: RichTextBubbleMenuProps) {
+export function RichTextBubbleMenu({ editor, onInlineMathRequest }: RichTextBubbleMenuProps) {
   return (
     <BubbleMenu
       editor={editor}
@@ -185,7 +186,7 @@ export function RichTextBubbleMenu({ editor }: RichTextBubbleMenuProps) {
           <BubbleButton label="Code" active={editor.isActive("code")} onClick={() => selectionChain(editor).toggleCode().run()}>
             <Code size={14} />
           </BubbleButton>
-          <BubbleButton label="Inline math" onClick={() => selectionChain(editor).insertInlineMath("x^2").run()}>
+          <BubbleButton label="Inline math" onClick={onInlineMathRequest}>
             <Sigma size={14} />
           </BubbleButton>
           <BubbleButton label="Clear marks" onClick={() => selectionChain(editor).unsetAllMarks().run()}>

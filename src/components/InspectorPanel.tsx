@@ -601,6 +601,8 @@ export function InspectorPanel() {
                 <dd>Save</dd>
                 <dt className="shortcut">Ctrl/Cmd+E</dt>
                 <dd>Export JSON</dd>
+                <dt className="shortcut">Ctrl/Cmd+Shift+E</dt>
+                <dd>Insert inline equation in selected block</dd>
                 <dt className="shortcut">Esc</dt>
                 <dd>Exit inline editing, then clear selection</dd>
                 <dt className="shortcut">Enter</dt>
