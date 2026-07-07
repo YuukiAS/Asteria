@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.4 - Drag Undo
+
+- Added a canvas drag history snapshot around block/group drag interactions.
+- Bound `Ctrl/Cmd+Z` outside text editing controls to restore the graph state before the most recent drag.
+- Restored nodes and edges together so connected edge presentation follows the reverted block positions.
+
 ## 0.5.3 - Safe Type Presets and Result Directory
 
 - Updated block type colors to the completed TODO palette while keeping block body text at the default readable color.

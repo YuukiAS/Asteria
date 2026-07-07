@@ -69,6 +69,8 @@ export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChang
     viewport,
     onNodesChange,
     onEdgesChange,
+    beginNodeDragHistory,
+    commitNodeDragHistory,
     addEdge,
     addBlockAndSelect,
     setSelectedNode,
@@ -139,6 +141,8 @@ export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChang
           maxZoom={2.2}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onNodeDragStart={beginNodeDragHistory}
+          onNodeDragStop={commitNodeDragHistory}
           onConnect={addEdge}
           onNodeClick={(event, node) => {
             const target = event.target as HTMLElement

@@ -68,12 +68,19 @@ type BlockClipboard = {
   pasteCount: number
 }
 
+type CanvasHistorySnapshot = {
+  nodes: MapNode[]
+  edges: MapEdge[]
+  signature: string
+}
+
 type AlignCommand = "left" | "right" | "top" | "bottom" | "horizontal_center" | "vertical_center"
 type DistributeCommand = "horizontal" | "vertical"
 
 const edgeStyleClipboardKey = "asteria-edge-style-clipboard"
 const blockStyleClipboardKey = "asteria-block-style-clipboard"
 const blockClipboardKey = "asteria-block-clipboard"
+const maxCanvasHistoryEntries = 50
 
 function readClipboard<T>(key: string): T | undefined {
   try {
@@ -98,6 +105,17 @@ function cloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
 }
 
+function createCanvasHistorySnapshot(nodes: MapNode[], edges: MapEdge[]): CanvasHistorySnapshot {
+  const snapshot = {
+    nodes: cloneJson(nodes),
+    edges: cloneJson(edges),
+  }
+  return {
+    ...snapshot,
+    signature: JSON.stringify(snapshot),
+  }
+}
+
 type MapState = {
   mapTitle: string
   modelVersions: ModelVersion[]
@@ -117,6 +135,8 @@ type MapState = {
   edgeStyleClipboard?: EdgeStyleClipboard
   blockStyleClipboard?: BlockStyleClipboard
   blockClipboard?: BlockClipboard
+  canvasHistory: CanvasHistorySnapshot[]
+  pendingDragSnapshot?: CanvasHistorySnapshot
   addBlock: (position?: { x: number; y: number }) => void
   addBlockAndSelect: (position?: { x: number; y: number }) => string
   addBlockNextToSelected: () => string
@@ -164,6 +184,9 @@ type MapState = {
   straightenNearAxisEdges: () => void
   clearMap: () => void
   loadMap: (map: ExportedMap, markUnsaved?: boolean) => void
+  beginNodeDragHistory: () => void
+  commitNodeDragHistory: () => void
+  undoLastCanvasChange: () => void
   onNodesChange: (changes: NodeChange<MapNode>[]) => void
   onEdgesChange: (changes: EdgeChange<MapEdge>[]) => void
   saveNow: () => Promise<void>
@@ -324,6 +347,7 @@ export const useMapStore = create<MapState>((set, get) => ({
   edgeStyleClipboard: readClipboard<EdgeStyleClipboard>(edgeStyleClipboardKey),
   blockStyleClipboard: readClipboard<BlockStyleClipboard>(blockStyleClipboardKey),
   blockClipboard: readClipboard<BlockClipboard>(blockClipboardKey),
+  canvasHistory: [],
 
   markUnsaved: () => {
     const timer = get().autosaveTimer
@@ -1148,6 +1172,8 @@ export const useMapStore = create<MapState>((set, get) => ({
       displayModeOverride: "block",
       nodes: [],
       edges: [],
+      canvasHistory: [],
+      pendingDragSnapshot: undefined,
       selectedNodeId: undefined,
       selectedNodeIds: [],
       selectedEdgeId: undefined,
@@ -1164,6 +1190,8 @@ export const useMapStore = create<MapState>((set, get) => ({
       displayModeOverride: map.displayModeOverride || "block",
       nodes: applyContentHtml(map.nodes),
       edges: map.edges.map(applyEdgePresentation),
+      canvasHistory: [],
+      pendingDragSnapshot: undefined,
       viewport: map.viewport ?? { x: 0, y: 0, zoom: 1 },
       selectedNodeId: undefined,
       selectedNodeIds: [],
@@ -1176,6 +1204,41 @@ export const useMapStore = create<MapState>((set, get) => ({
 
   onNodesChange: (changes) => {
     set((state) => ({ nodes: applyNodeChanges(changes, state.nodes) as MapNode[] }))
+    get().markUnsaved()
+  },
+
+  beginNodeDragHistory: () => {
+    const state = get()
+    if (state.pendingDragSnapshot) return
+    set({ pendingDragSnapshot: createCanvasHistorySnapshot(state.nodes, state.edges) })
+  },
+
+  commitNodeDragHistory: () => {
+    const state = get()
+    const pending = state.pendingDragSnapshot
+    if (!pending) return
+    const currentSignature = createCanvasHistorySnapshot(state.nodes, state.edges).signature
+    if (currentSignature === pending.signature) {
+      set({ pendingDragSnapshot: undefined })
+      return
+    }
+    set({
+      canvasHistory: [...state.canvasHistory, pending].slice(-maxCanvasHistoryEntries),
+      pendingDragSnapshot: undefined,
+    })
+  },
+
+  undoLastCanvasChange: () => {
+    const state = get()
+    const snapshot = state.canvasHistory[state.canvasHistory.length - 1]
+    if (!snapshot) return
+    set({
+      nodes: cloneJson(snapshot.nodes),
+      edges: cloneJson(snapshot.edges).map(applyEdgePresentation),
+      canvasHistory: state.canvasHistory.slice(0, -1),
+      pendingDragSnapshot: undefined,
+      saveStatus: "Unsaved",
+    })
     get().markUnsaved()
   },
 

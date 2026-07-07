@@ -66,6 +66,7 @@ export function App() {
     setSelectedNode,
     setSelectedEdge,
     saveNow,
+    undoLastCanvasChange,
     mapTitle,
     modelVersions,
     activeVersionId,
@@ -146,6 +147,11 @@ export function App() {
         requestInlineBlockEdit(nodeId, "title")
         return
       }
+      if (isMod && event.key.toLowerCase() === "z" && !event.shiftKey && !isEditableTarget(event.target)) {
+        event.preventDefault()
+        undoLastCanvasChange()
+        return
+      }
       if (isMod && event.key.toLowerCase() === "s") {
         event.preventDefault()
         void saveNow()
@@ -208,6 +214,7 @@ export function App() {
     setAppInteractionMode,
     setSelectedEdge,
     setSelectedNode,
+    undoLastCanvasChange,
   ])
 
   const toggleTheme = useCallback(() => setTheme((current) => (current === "dark" ? "light" : "dark")), [setTheme])
