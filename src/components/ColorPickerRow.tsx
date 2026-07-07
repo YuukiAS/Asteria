@@ -32,12 +32,12 @@ export function ColorPickerRow({ label, value, onChange, palette }: ColorPickerR
           spellCheck={false}
         />
       </div>
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-nowrap gap-1 overflow-hidden">
         {palette.map((color) => (
           <button
             key={color}
             type="button"
-            className="h-5 w-5 rounded-full border border-border shadow-sm"
+            className="h-[18px] w-[18px] shrink-0 rounded-full border border-border shadow-sm"
             style={{ backgroundColor: color }}
             aria-label={`Use ${color}`}
             onClick={() => onChange(color)}

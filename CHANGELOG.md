@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.14 - Bubble Highlight and Palette Fit
+
+- Made the inline bubble menu preserve its visible selection range before applying color or highlight marks.
+- Routed bubble highlight swatches through TipTap mark commands so selected text can receive highlight color.
+- Removed the brown text swatch and tightened color rows so the inspector text palette fits on one line at the default panel width.
+
 ## 0.4.13 - Model Math Default Reset
 
 - Restored Model block math accent colors for formulas without explicit manual text color.

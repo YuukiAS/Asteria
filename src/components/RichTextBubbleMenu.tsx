@@ -22,13 +22,24 @@ function applyMark(editor: Editor, markName: string, attrs?: Record<string, stri
   const range = getSavedRange(editor)
   const markType = editor.state.schema.marks[markName]
   if (!range || !markType) return
+  const chain = editor.chain().focus().setTextSelection(range)
   const hasMark = editor.state.doc.rangeHasMark(range.from, range.to, markType)
-  const transaction =
-    toggle && hasMark
-      ? editor.state.tr.removeMark(range.from, range.to, markType)
-      : editor.state.tr.addMark(range.from, range.to, markType.create(attrs))
-  editor.view.dispatch(transaction.scrollIntoView())
-  editor.commands.focus()
+  if (toggle && hasMark) {
+    chain.unsetMark(markName).run()
+  } else if (toggle) {
+    chain.toggleMark(markName, attrs).run()
+  } else {
+    chain.setMark(markName, attrs).run()
+  }
+  editor.commands.setTextSelection(range)
+  editor.storage.asteriaSelection = range
+}
+
+function applySelectionCommand(editor: Editor, command: (chain: ReturnType<Editor["chain"]>) => ReturnType<Editor["chain"]>) {
+  const range = getSavedRange(editor)
+  if (!range) return
+  const chain = editor.chain().focus().setTextSelection(range)
+  command(chain).run()
   editor.commands.setTextSelection(range)
   editor.storage.asteriaSelection = range
 }
@@ -52,12 +63,14 @@ function BubbleButton({
       }`}
       aria-label={label}
       title={label}
-      onMouseDown={(event) => {
+      onPointerDown={(event) => {
         event.preventDefault()
         event.stopPropagation()
         onClick()
       }}
+      onMouseDown={(event) => event.preventDefault()}
       onClick={(event) => {
+        event.preventDefault()
         event.stopPropagation()
       }}
     >
@@ -82,13 +95,16 @@ function ColorSwatch({
       style={{ backgroundColor: color }}
       aria-label={label}
       title={label}
-      onMouseDown={(event) => {
+      onPointerDown={(event) => {
         event.preventDefault()
         event.stopPropagation()
         onApply()
       }}
+      onMouseDown={(event) => event.preventDefault()}
       onClick={(event) => {
+        event.preventDefault()
         event.stopPropagation()
+        onApply()
       }}
     />
   )
@@ -111,7 +127,11 @@ export function RichTextBubbleMenu({ editor }: RichTextBubbleMenuProps) {
           ],
         },
       }}
-      shouldShow={({ editor: activeEditor, from, to }) => activeEditor.isFocused && from !== to}
+      shouldShow={({ editor: activeEditor, from, to }) => {
+        if (!activeEditor.isFocused || from === to) return false
+        editor.storage.asteriaSelection = { from, to }
+        return true
+      }}
     >
       <div
         className="nodrag nopan nowheel grid w-[382px] max-w-[calc(100vw-24px)] gap-2 rounded-2xl border border-border bg-panel p-3 shadow-float"
@@ -135,7 +155,7 @@ export function RichTextBubbleMenu({ editor }: RichTextBubbleMenuProps) {
           >
             <Underline size={14} />
           </BubbleButton>
-          <BubbleButton label="Highlight" onClick={() => selectionChain(editor).toggleHighlight({ color: "#fef3c7" }).run()}>
+          <BubbleButton label="Highlight" onClick={() => applySelectionCommand(editor, (chain) => chain.toggleHighlight({ color: "#fef3c7" }))}>
             <Highlighter size={14} />
           </BubbleButton>
         </div>
@@ -174,7 +194,7 @@ export function RichTextBubbleMenu({ editor }: RichTextBubbleMenuProps) {
               key={color}
               color={color}
               label={`Set highlight ${color}`}
-              onApply={() => applyMark(editor, "highlight", { color }, false)}
+              onApply={() => applySelectionCommand(editor, (chain) => chain.setHighlight({ color }))}
             />
           ))}
         </div>

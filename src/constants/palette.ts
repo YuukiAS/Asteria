@@ -4,7 +4,6 @@ export const textPalette = [
   "#6b7280",
   "#ef4444",
   "#f97316",
-  "#b45309",
   "#eab308",
   "#22c55e",
   "#06b6d4",
