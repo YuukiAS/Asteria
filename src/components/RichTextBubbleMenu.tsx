@@ -3,6 +3,7 @@ import { Bold, Code, Highlighter, Italic, Link as LinkIcon, Sigma, Strikethrough
 import { useEffect } from "react"
 import { backgroundPalette, textPalette } from "../constants/palette"
 import { applyBlockMathStyle } from "../editor/blockMathStyling"
+import { recordRichColor } from "../editor/richColorMemory"
 
 type RichTextBubbleMenuProps = {
   editor: Editor
@@ -50,6 +51,7 @@ function applySelectionCommand(editor: Editor, command: (chain: ReturnType<Edito
 }
 
 function applyTextColor(editor: Editor, color: string) {
+  recordRichColor("text", color)
   const range = getSavedRange(editor)
   if (!range) return
   applyBlockMathStyle(editor, range, { textColor: color })
@@ -57,6 +59,7 @@ function applyTextColor(editor: Editor, color: string) {
 }
 
 function applyHighlight(editor: Editor, color: string) {
+  recordRichColor("highlight", color)
   const range = getSavedRange(editor)
   if (!range) return
   applyBlockMathStyle(editor, range, { highlightColor: color })

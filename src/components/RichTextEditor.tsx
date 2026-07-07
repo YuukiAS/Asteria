@@ -3,6 +3,7 @@ import { Fragment, Slice } from "prosemirror-model"
 import { useEffect, useRef, useState } from "react"
 import { createEditorExtensions } from "../editor/createEditorExtensions"
 import { normalizeInlineDollarMath, preprocessPastedMath, serializeMathClipboardText } from "../editor/mathPasteHandler"
+import { applyRecentRichColor } from "../editor/richColorMemory"
 import { EquationDialog } from "./EquationDialog"
 import { RichTextBubbleMenu } from "./RichTextBubbleMenu"
 import { RichTextToolbar } from "./RichTextToolbar"
@@ -119,6 +120,12 @@ export function RichTextEditor({
         return true
       },
       handleKeyDown(_view, event) {
+        if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "h") {
+          if (!editor) return false
+          event.preventDefault()
+          applyRecentRichColor(editor)
+          return true
+        }
         if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "e") {
           if (!editor) return false
           event.preventDefault()

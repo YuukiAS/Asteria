@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.22 - Repeat Last Rich Color Shortcut
+
+- Added editor-level `Ctrl/Cmd+Shift+H` handling that reapplies the most recently used text color or highlight color.
+- Remembered colors from both the bubble menu and toolbar color controls, including math styling updates.
+- Pressing the shortcut again on a selection that already has the repeated color now clears that text color or highlight.
+- Kept the default shortcut fallback as yellow highlight until a text or highlight color is chosen.
+
 ## 0.5.21 - Hover Equation Editing
 
 - Open the existing equation edit dialog when the pointer moves over inline or block math in edit mode.

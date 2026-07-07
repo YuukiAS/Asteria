@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import { backgroundPalette, textPalette } from "../constants/palette"
 import { applyBlockMathStyle } from "../editor/blockMathStyling"
+import { recordRichColor } from "../editor/richColorMemory"
 import { ColorPickerRow } from "./ColorPickerRow"
 import { EquationDialog } from "./EquationDialog"
 import { FontSizeSelect } from "./FontSizeSelect"
@@ -164,6 +165,7 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
           value={textColor}
           palette={textPalette}
           onChange={(color) => {
+            recordRichColor("text", color)
             applyBlockMathStyle(editor, currentSelectionRange(), { textColor: color })
             editor.chain().focus().setColor(color).run()
           }}
@@ -173,6 +175,7 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
           value={highlight}
           palette={backgroundPalette}
           onChange={(color) => {
+            recordRichColor("highlight", color)
             applyBlockMathStyle(editor, currentSelectionRange(), { highlightColor: color })
             editor.chain().focus().setHighlight({ color }).run()
           }}
