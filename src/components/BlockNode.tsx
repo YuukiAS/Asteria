@@ -234,7 +234,14 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
             type="button"
             className="block-title-display nodrag nopan"
             title={title}
-            onClick={() => onInlineEditTargetChange({ nodeId: id, field: "title" })}
+            onClick={(event) => {
+              event.stopPropagation()
+              onInlineEditTargetChange({ nodeId: id, field: "title" })
+            }}
+            onDoubleClick={(event) => {
+              event.stopPropagation()
+              onInlineEditTargetChange({ nodeId: id, field: "title" })
+            }}
             dangerouslySetInnerHTML={{ __html: titleHtml }}
           />
         ) : (

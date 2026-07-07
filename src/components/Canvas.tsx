@@ -11,7 +11,7 @@ import {
   type NodeProps,
   type OnSelectionChangeParams,
 } from "@xyflow/react"
-import { createContext, useContext, useEffect, useMemo, type MouseEvent } from "react"
+import { createContext, useContext, useEffect, useMemo } from "react"
 import { BlockNode } from "./BlockNode"
 import { GroupNode } from "./GroupNode"
 import { allVersionsId } from "../constants/versioning"
@@ -76,7 +76,6 @@ export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChang
     beginNodeDragHistory,
     commitNodeDragHistory,
     addEdge,
-    addBlockAndSelect,
     setSelectedNode,
     selectedNodeIds,
     setSelectedNodes,
@@ -115,9 +114,14 @@ export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChang
     [activeVersionId, edges, visibleNodeIds],
   )
 
-  const onNodeDoubleClick: NodeMouseHandler<MapNode> = (_event, node) => {
+  const onNodeDoubleClick: NodeMouseHandler<MapNode> = (event, node) => {
     setSelectedNode(node.id)
     if (node.type !== "block") return
+    const target = event.target as HTMLElement
+    if (target.closest(".block-title-display, .block-title-input")) {
+      requestInlineBlockEdit(node.id, "title")
+      return
+    }
     requestInlineBlockEdit(node.id, "content")
   }
 
@@ -128,15 +132,8 @@ export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChang
     else if (selectedEdge) setSelectedEdge(selectedEdge.id)
   }
 
-  const onCanvasDoubleClick = (event: MouseEvent<HTMLElement>) => {
-    const target = event.target as HTMLElement
-    if (!target.closest(".react-flow__pane")) return
-    const nodeId = addBlockAndSelect(reactFlow.screenToFlowPosition({ x: event.clientX, y: event.clientY }))
-    requestInlineBlockEdit(nodeId, "title")
-  }
-
   return (
-    <main className="asteria-canvas-shell min-h-0 min-w-0 flex-1" onDoubleClick={onCanvasDoubleClick}>
+    <main className="asteria-canvas-shell min-h-0 min-w-0 flex-1">
       <div className="asteria-celestial-background" aria-hidden="true" />
       <div className="asteria-canvas-readability-overlay" aria-hidden="true" />
       <InteractionModeContext.Provider value={{ interactionMode, inlineEditTarget, selectedNodeIds, onInlineEditTargetChange }}>

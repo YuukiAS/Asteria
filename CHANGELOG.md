@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.20 - Title Editing Double Click
+
+- Removed canvas double-click block creation so new blocks are created from the toolbar button only.
+- Kept edit-mode title clicks and double-clicks focused on title editing instead of creating blocks or switching to content editing.
+
 ## 0.5.19 - Remove Export Shortcut
 
 - Removed the global `Ctrl/Cmd+E` export shortcut so `Ctrl/Cmd+Shift+E` only opens inline equation entry.
