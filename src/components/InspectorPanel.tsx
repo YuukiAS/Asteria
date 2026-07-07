@@ -1,4 +1,4 @@
-import { Clipboard, Copy, Layers, Plus } from "lucide-react"
+import { Clipboard, Copy, Layers, Plus, RotateCcw } from "lucide-react"
 import { blockStatusOptions, blockTypeByValue, blockTypeOptions } from "../constants/blockTypes"
 import { allVersionsId, blockDisplayModeOptions, commonVariantKey } from "../constants/versioning"
 import { backgroundPalette, textPalette } from "../constants/palette"
@@ -26,6 +26,7 @@ export function InspectorPanel() {
     lastSavedAt,
     addBlockAndSelect,
     updateBlock,
+    resetBlockTypeDefaults,
     updateGroup,
     updateEdge,
     deleteEdge,
@@ -330,6 +331,10 @@ export function InspectorPanel() {
           </section>
           <section className="panel-section">
             <div className="section-title">Appearance</div>
+            <button type="button" className="toolbar-button justify-center" onClick={() => resetBlockTypeDefaults(node.id)}>
+              <RotateCcw size={14} />
+              Reset {blockType.label} defaults
+            </button>
             <ColorPickerRow
               label="Background"
               value={node.data.backgroundColor}

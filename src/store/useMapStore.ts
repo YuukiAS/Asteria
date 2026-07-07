@@ -133,6 +133,7 @@ type MapState = {
   setDisplayModeOverride: (mode: DisplayModeOverride) => void
   appendBlockMathToSelectedBlock: (latex: string) => void
   updateBlock: (id: string, patch: Partial<BlockData>) => void
+  resetBlockTypeDefaults: (id: string) => void
   setBlockActiveVariant: (id: string, variantKey: string) => void
   updateBlockVariant: (id: string, variantKey: string, patch: Partial<Pick<BlockData, "title" | "contentJson" | "contentHtml">>) => void
   copyBlockVariantToVersion: (id: string, versionId: string) => void
@@ -312,6 +313,48 @@ function blockTypePatch(patch: Partial<BlockData>) {
     emojis: patch.emojis?.slice(0, 1) ?? (defaults.emojis ? [...defaults.emojis] : []),
     contentJson: patch.contentJson ?? (defaults.contentJson ? cloneJson(defaults.contentJson) : patch.contentJson),
   }
+}
+
+function clearTextColorMarks(content: BlockVariant["contentJson"]): BlockVariant["contentJson"] {
+  const next = cloneJson(content)
+  const visit = (node: typeof next) => {
+    if (!node || typeof node !== "object") return
+    if (Array.isArray(node.marks)) {
+      node.marks = node.marks
+        .map((mark) => {
+          if (mark.type !== "textStyle" || !mark.attrs?.color) return mark
+          const attrs = { ...mark.attrs }
+          delete attrs.color
+          return Object.keys(attrs).length ? { ...mark, attrs } : undefined
+        })
+        .filter(Boolean) as typeof node.marks
+    }
+    node.content?.forEach((child) => visit(child))
+  }
+  visit(next)
+  return next
+}
+
+function resetVariantsToTypeDefaults(data: BlockData) {
+  const sourceVariants = data.variants?.[commonVariantKey]
+    ? data.variants
+    : { ...data.variants, [commonVariantKey]: createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt) }
+  const variants = Object.fromEntries(
+    Object.entries(sourceVariants).map(([key, variant]) => {
+      if (!variant) return [key, variant]
+      const contentJson = clearTextColorMarks(variant.contentJson)
+      return [
+        key,
+        {
+          ...variant,
+          contentJson,
+          contentHtml: contentJsonToHtml(contentJson),
+          updatedAt: nowIso(),
+        },
+      ]
+    }),
+  )
+  return variants
 }
 
 export const useMapStore = create<MapState>((set, get) => ({
@@ -774,6 +817,33 @@ export const useMapStore = create<MapState>((set, get) => ({
             title: resolvedVariant.title,
             contentJson: resolvedVariant.contentJson,
             contentHtml: resolvedVariant.contentHtml || contentJsonToHtml(resolvedVariant.contentJson),
+            updatedAt: nowIso(),
+          },
+        }
+      }),
+    }))
+    get().markUnsaved()
+  },
+
+  resetBlockTypeDefaults: (id) => {
+    set((state) => ({
+      nodes: state.nodes.map((node) => {
+        if (node.id !== id || !isBlockNode(node)) return node
+        const defaults = blockTypeDefaults[node.data.nodeType]
+        const variants = resetVariantsToTypeDefaults(node.data)
+        const variantKey = getBlockVariantKeyForState(state, node.data)
+        const resolvedVariant = variants[variantKey] || variants[commonVariantKey] || resolveBlockVariant(node.data, state.activeVersionId)
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            backgroundColor: defaults.backgroundColor,
+            textColor: defaults.textColor,
+            borderColor: defaults.borderColor,
+            emojis: defaults.emojis ? [...defaults.emojis] : [],
+            contentJson: resolvedVariant.contentJson,
+            contentHtml: resolvedVariant.contentHtml || contentJsonToHtml(resolvedVariant.contentJson),
+            variants,
             updatedAt: nowIso(),
           },
         }

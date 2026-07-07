@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.13 - Model Math Default Reset
+
+- Restored Model block math accent colors for formulas without explicit manual text color.
+- Kept manually colored inline math as the higher-priority override for only the selected formula.
+- Added a block inspector action to reset the selected block back to its block-type defaults and clear manual text-color marks.
+
 ## 0.4.12 - Canvas Background Layering
 
 - Moved the readability overlay back into the background layer so it no longer sits above React Flow nodes.
