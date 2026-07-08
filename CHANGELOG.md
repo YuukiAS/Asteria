@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.2 - Toolbar Tooltips
+
+- Added a reusable top-toolbar tooltip helper so icon-only controls still explain their action on narrow screens.
+- Added consistent tooltip, title, and accessible label coverage for toolbar actions including theme, export, import, delete, density, and version controls.
+
 ## 0.6.1 - Story Version Label Clarity
 
 - Renamed Story export version modes to `Toolbar version`, `Default content`, and `Selected version`.

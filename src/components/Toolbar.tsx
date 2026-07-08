@@ -17,6 +17,12 @@ type ToolbarProps = {
   onFitView: () => void
 }
 
+type ToolbarTooltipState = {
+  text: string
+  left: number
+  top: number
+}
+
 export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionModeChange, onFitView }: ToolbarProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
@@ -26,6 +32,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
   const [isVersionPanelOpen, setIsVersionPanelOpen] = useState(false)
   const [isBackupPanelOpen, setIsBackupPanelOpen] = useState(false)
   const [versionPanelPosition, setVersionPanelPosition] = useState({ left: 12, top: 56 })
+  const [toolbarTooltip, setToolbarTooltip] = useState<ToolbarTooltipState>()
   const {
     mapTitle,
     modelVersions,
@@ -58,6 +65,23 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
   const selectedBlock = nodes.find((node) => node.id === selectedNodeId && node.type === "block")
   const appVersion = packageJson.version
   const activeToolbarVersionId = modelVersions.some((version) => version.id === activeVersionId) ? activeVersionId : modelVersions[0]?.id || "all"
+
+  const showToolbarTooltip = (text: string, target: HTMLElement) => {
+    const rect = target.getBoundingClientRect()
+    const tooltipWidth = Math.min(260, window.innerWidth - 24)
+    const left = Math.max(12 + tooltipWidth / 2, Math.min(rect.left + rect.width / 2, window.innerWidth - 12 - tooltipWidth / 2))
+    setToolbarTooltip({ text, left, top: rect.bottom + 9 })
+  }
+
+  const toolbarTip = (text: string) => ({
+    "aria-label": text,
+    "data-tooltip": text,
+    title: text,
+    onFocus: (event: { currentTarget: HTMLElement }) => showToolbarTooltip(text, event.currentTarget),
+    onBlur: () => setToolbarTooltip(undefined),
+    onPointerEnter: (event: { currentTarget: HTMLElement }) => showToolbarTooltip(text, event.currentTarget),
+    onPointerLeave: () => setToolbarTooltip(undefined),
+  })
 
   const formatRelativeBackupTime = (value: string) => {
     const elapsedMs = Date.now() - new Date(value).getTime()
@@ -210,9 +234,8 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           type="button"
           className="toolbar-button relative !px-2"
           onClick={() => setIsBackupPanelOpen((open) => !open)}
-          aria-label="Restore backup"
           aria-expanded={isBackupPanelOpen}
-          title="Restore backup"
+          {...toolbarTip("Restore backup")}
         >
           <History size={14} />
           <span className="toolbar-label">Restore</span>
@@ -249,7 +272,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
             type="button"
             className={`segmented-button ${interactionMode === "move" ? "segmented-button-active" : ""}`}
             onClick={() => onInteractionModeChange("move")}
-            title="Move mode: drag blocks around the canvas"
+            {...toolbarTip("Move mode")}
           >
             <MousePointer2 size={14} />
             <span className="toolbar-label">Move</span>
@@ -258,13 +281,13 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
             type="button"
             className={`segmented-button ${interactionMode === "edit" ? "segmented-button-active" : ""}`}
             onClick={() => onInteractionModeChange("edit")}
-            title="Edit mode: click a block to edit its text in the inspector"
+            {...toolbarTip("Edit mode")}
           >
             <PencilLine size={14} />
             <span className="toolbar-label">Edit</span>
           </button>
         </div>
-        <button type="button" className="primary-button" onClick={createBlock} title="New block">
+        <button type="button" className="primary-button" onClick={createBlock} {...toolbarTip("New block")}>
           <Plus size={15} />
           <span className="toolbar-label">New block</span>
         </button>
@@ -277,8 +300,8 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
             className="h-7 max-w-[128px] rounded border-0 bg-panel px-1.5 text-xs font-medium text-secondary outline-none focus:text-foreground"
             value={activeToolbarVersionId}
             onChange={(event) => setActiveVersion(event.target.value)}
-            title={modelVersions.length > 0 ? "Active model version" : "Add a model version to enable version switching"}
             disabled={modelVersions.length === 0}
+            {...toolbarTip(modelVersions.length > 0 ? "Active model version" : "Add a model version to enable version switching")}
           >
             {modelVersions.length === 0 ? (
               <option value="all">No versions</option>
@@ -295,15 +318,14 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
             type="button"
             className="segmented-button justify-center !px-1.5"
             onClick={toggleVersionPanel}
-            aria-label="Manage versions"
             aria-expanded={isVersionPanelOpen}
-            title="Manage versions"
+            {...toolbarTip("Manage versions")}
           >
             <Settings2 size={14} />
           </button>
         </div>
         {interactionMode === "move" && selectedNodeIds.length > 1 && (
-          <button type="button" className="toolbar-button" onClick={groupSelectedBlocks} title="Group selected blocks">
+          <button type="button" className="toolbar-button" onClick={groupSelectedBlocks} {...toolbarTip("Group selected blocks")}>
             <Group size={15} />
             <span className="toolbar-label">Group</span>
           </button>
@@ -314,13 +336,13 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
             className="toolbar-button disabled:cursor-not-allowed disabled:opacity-50"
             disabled={!selectedBlock}
             onClick={() => setIsEquationDialogOpen(true)}
-            title={selectedBlock ? "Insert display equation into selected block" : "Select a block before inserting an equation"}
+            {...toolbarTip(selectedBlock ? "Insert display equation" : "Select a block before inserting an equation")}
           >
             <Sigma size={15} />
             <span className="toolbar-label">Equation</span>
           </button>
         )}
-        <button type="button" className="toolbar-button" onClick={onFitView} title="Fit view">
+        <button type="button" className="toolbar-button" onClick={onFitView} {...toolbarTip("Fit view")}>
           <Scan size={15} />
           <span className="toolbar-label">Fit</span>
         </button>
@@ -331,34 +353,34 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
             event.currentTarget.blur()
             straightenNearAxisEdges()
           }}
-          title="Clean up small near-straight edge offsets"
+          {...toolbarTip("Clean up edges")}
         >
           <Sparkles size={15} />
           <span className="toolbar-label">Clean</span>
         </button>
-        <button type="button" className="toolbar-button" onClick={() => void saveNow()} title="Save">
+        <button type="button" className="toolbar-button" onClick={() => void saveNow()} {...toolbarTip("Save")}>
           <Save size={15} />
           <span className="toolbar-label">Save</span>
         </button>
-        <button type="button" className="toolbar-button" onClick={() => inputRef.current?.click()} title="Import">
+        <button type="button" className="toolbar-button" onClick={() => inputRef.current?.click()} {...toolbarTip("Import JSON")}>
           <Upload size={15} />
           <span className="toolbar-label">Import</span>
         </button>
-        <button type="button" className="toolbar-button" onClick={exportJson} title="Export JSON">
+        <button type="button" className="toolbar-button" onClick={exportJson} {...toolbarTip("Export JSON")}>
           <Download size={15} />
           <span className="toolbar-label">Export</span>
         </button>
-        <button type="button" className="toolbar-button" onClick={exportMarkdown} title="Export Markdown story deck">
+        <button type="button" className="toolbar-button" onClick={exportMarkdown} {...toolbarTip("Export Markdown story deck")}>
           <FileText size={15} />
           <span className="toolbar-label">Export Markdown</span>
         </button>
-        <button type="button" className="danger-button" onClick={clear} title="Delete canvas">
+        <button type="button" className="danger-button" onClick={clear} {...toolbarTip("Delete canvas")}>
           <Trash2 size={15} />
           <span className="toolbar-label">Delete</span>
         </button>
         <label
           className="density-control flex shrink-0 items-center gap-1 rounded-md border border-border bg-panel px-1.5 text-xs font-medium text-secondary"
-          title="Display density: Block settings uses each block's saved display mode; other choices temporarily override all blocks."
+          {...toolbarTip("Display density")}
         >
           <Rows3 size={14} />
           <span className="sr-only">Display density</span>
@@ -375,10 +397,15 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
             ))}
           </select>
         </label>
-        <button type="button" className="toolbar-button !px-2" onClick={onToggleTheme} aria-label="Toggle theme">
+        <button type="button" className="toolbar-button !px-2" onClick={onToggleTheme} {...toolbarTip("Toggle theme")}>
           {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
         </button>
       </div>
+      {toolbarTooltip ? (
+        <div className="toolbar-tooltip" style={{ left: toolbarTooltip.left, top: toolbarTooltip.top }} role="tooltip">
+          {toolbarTooltip.text}
+        </div>
+      ) : null}
       {isVersionPanelOpen && (
         <div className="version-manager-panel" style={{ left: versionPanelPosition.left, top: versionPanelPosition.top }}>
           <div className="flex items-center justify-between gap-3">
