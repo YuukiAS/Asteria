@@ -4,6 +4,7 @@ import { defaultBlockColors, textPalette } from "../constants/palette"
 import { useMapStore } from "../store/useMapStore"
 import type { MapEdge } from "../types/map"
 import { ColorPickerRow } from "./ColorPickerRow"
+import { FieldSelect } from "./FieldSelect"
 import { InspectorSectionStack } from "./InspectorSectionStack"
 
 type EdgeInspectorProps = {
@@ -65,59 +66,39 @@ export function EdgeInspector({ edge, onChange, onDelete }: EdgeInspectorProps) 
               <div className="grid grid-cols-2 gap-3">
                 <label className="field-label">
                   Line style
-                  <select
-                    className="field-input"
+                  <FieldSelect
                     value={edge.data?.lineStyle || "solid"}
-                    onChange={(event) => onChange({ ...edge.data, lineStyle: event.target.value as NonNullable<MapEdge["data"]>["lineStyle"] })}
-                  >
-                    {edgeLineStyleOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
+                    options={edgeLineStyleOptions.map((option) => ({ value: option, label: option }))}
+                    onChange={(value) => onChange({ ...edge.data, lineStyle: value as NonNullable<MapEdge["data"]>["lineStyle"] })}
+                    ariaLabel="Line style"
+                  />
                 </label>
                 <label className="field-label">
                   Path
-                  <select
-                    className="field-input"
+                  <FieldSelect
                     value={edge.data?.pathType || "smoothstep"}
-                    onChange={(event) => onChange({ ...edge.data, pathType: event.target.value as NonNullable<MapEdge["data"]>["pathType"] })}
-                  >
-                    {edgePathTypeOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
+                    options={edgePathTypeOptions.map((option) => ({ value: option, label: option }))}
+                    onChange={(value) => onChange({ ...edge.data, pathType: value as NonNullable<MapEdge["data"]>["pathType"] })}
+                    ariaLabel="Edge path"
+                  />
                 </label>
                 <label className="field-label">
                   Arrow
-                  <select
-                    className="field-input"
+                  <FieldSelect
                     value={edge.data?.arrow || "forward"}
-                    onChange={(event) => onChange({ ...edge.data, arrow: event.target.value as NonNullable<MapEdge["data"]>["arrow"] })}
-                  >
-                    {edgeArrowOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
+                    options={edgeArrowOptions.map((option) => ({ value: option, label: option }))}
+                    onChange={(value) => onChange({ ...edge.data, arrow: value as NonNullable<MapEdge["data"]>["arrow"] })}
+                    ariaLabel="Edge arrow"
+                  />
                 </label>
                 <label className="field-label">
                   Width
-                  <select
-                    className="field-input"
-                    value={edge.data?.strokeWidth || 1.5}
-                    onChange={(event) => onChange({ ...edge.data, strokeWidth: Number(event.target.value) })}
-                  >
-                    {edgeStrokeWidthOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}px
-                      </option>
-                    ))}
-                  </select>
+                  <FieldSelect
+                    value={String(edge.data?.strokeWidth || 1.5)}
+                    options={edgeStrokeWidthOptions.map((option) => ({ value: String(option), label: `${option}px` }))}
+                    onChange={(value) => onChange({ ...edge.data, strokeWidth: Number(value) })}
+                    ariaLabel="Edge width"
+                  />
                 </label>
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -145,14 +126,15 @@ export function EdgeInspector({ edge, onChange, onDelete }: EdgeInspectorProps) 
             <>
               <label className="field-label">
                 Version visibility
-                <select
-                  className="field-input"
+                <FieldSelect
                   value={visibility === "all" ? "all" : "custom"}
-                  onChange={(event) => onChange({ ...edge.data, visibility: event.target.value === "all" ? "all" : [] })}
-                >
-                  <option value="all">Visible in all versions</option>
-                  <option value="custom">Only selected versions</option>
-                </select>
+                  options={[
+                    { value: "all", label: "Visible in all versions" },
+                    { value: "custom", label: "Only selected versions" },
+                  ]}
+                  onChange={(value) => onChange({ ...edge.data, visibility: value === "all" ? "all" : [] })}
+                  ariaLabel="Version visibility"
+                />
               </label>
               {visibility !== "all" && (
                 <div className="grid gap-2 rounded-lg border border-border bg-app/60 p-2">

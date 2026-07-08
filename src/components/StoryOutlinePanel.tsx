@@ -5,6 +5,7 @@ import { resolveBlockVersionState } from "../lib/blockVersionState"
 import { buildStoryMarkdown, createStoryMarkdownFilename, exportMarkdownFile } from "../lib/storyMarkdownExport"
 import { useMapStore } from "../store/useMapStore"
 import type { BlockNode, GroupNode, MapNode, StoryExportDensity, StoryOutlineItem } from "../types/map"
+import { FieldSelect } from "./FieldSelect"
 
 const densityOptions: Array<{ value: StoryExportDensity; label: string }> = [
   { value: "title_only", label: "Title only" },
@@ -125,13 +126,7 @@ function StoryRow({
           </label>
           <label className="field-label">
             Density
-            <select className="field-input" value={item.density} onChange={(event) => onUpdate({ density: event.target.value as StoryExportDensity })}>
-              {densityOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <FieldSelect value={item.density} options={densityOptions} onChange={(value) => onUpdate({ density: value as StoryExportDensity })} ariaLabel="Story item density" />
           </label>
           <label className="field-label">
             Speaker notes
@@ -203,50 +198,28 @@ export function StoryOutlinePanel() {
           <div className="grid grid-cols-2 gap-2">
             <label className="field-label">
               Version mode
-              <select
-                className="field-input"
+              <FieldSelect
                 value={storyDeckSettings.versionMode}
-                title={versionModeOptions.find((option) => option.value === storyDeckSettings.versionMode)?.tooltip}
-                onChange={(event) => updateStoryDeckSettings({ versionMode: event.target.value as typeof storyDeckSettings.versionMode })}
-              >
-                {versionModeOptions.map((option) => (
-                  <option key={option.value} value={option.value} title={option.tooltip}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                options={versionModeOptions.map((option) => ({ value: option.value, label: option.label, description: option.tooltip }))}
+                onChange={(value) => updateStoryDeckSettings({ versionMode: value as typeof storyDeckSettings.versionMode })}
+                ariaLabel="Story version mode"
+                showDescriptions
+              />
             </label>
             <label className="field-label">
               Version
-              <select
-                className="field-input"
+              <FieldSelect
                 value={storyDeckSettings.selectedVersionId || modelVersions[0]?.id || ""}
+                options={modelVersions.length === 0 ? [{ value: "", label: "No versions" }] : modelVersions.map((version) => ({ value: version.id, label: version.label }))}
+                onChange={(value) => updateStoryDeckSettings({ selectedVersionId: value })}
+                ariaLabel="Story selected version"
                 disabled={storyDeckSettings.versionMode !== "selected" || modelVersions.length === 0}
-                title={
-                  storyDeckSettings.versionMode === "selected"
-                    ? "Choose the fixed model version used by Selected version mode."
-                    : "Enabled only when Version mode is Selected version."
-                }
-                onChange={(event) => updateStoryDeckSettings({ selectedVersionId: event.target.value })}
-              >
-                {modelVersions.length === 0 ? <option value="">No versions</option> : null}
-                {modelVersions.map((version) => (
-                  <option key={version.id} value={version.id}>
-                    {version.label}
-                  </option>
-                ))}
-              </select>
+              />
             </label>
           </div>
           <label className="field-label">
             Default density
-            <select className="field-input" value={storyDeckSettings.defaultDensity} onChange={(event) => updateStoryDeckSettings({ defaultDensity: event.target.value as StoryExportDensity })}>
-              {densityOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <FieldSelect value={storyDeckSettings.defaultDensity} options={densityOptions} onChange={(value) => updateStoryDeckSettings({ defaultDensity: value as StoryExportDensity })} ariaLabel="Default story density" />
           </label>
           <div className="grid gap-2 text-xs font-medium text-secondary">
             <label className="inline-flex items-center gap-2">

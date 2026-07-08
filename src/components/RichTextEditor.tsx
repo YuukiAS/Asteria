@@ -37,6 +37,7 @@ export function RichTextEditor({
   const [editingEquation, setEditingEquation] = useState<{ pos: number; latex: string; displayMode: boolean } | null>(null)
   const [isInlineEquationDialogOpen, setIsInlineEquationDialogOpen] = useState(false)
   const editorStyle = [
+    "white-space: normal",
     editorTextColor ? `color: ${editorTextColor}` : "",
     editorAccentColor ? `--asteria-rich-accent-color: ${editorAccentColor}` : "",
   ]

@@ -11,6 +11,7 @@ import { titleToHtml } from "../lib/titleMath"
 import type { InteractionMode } from "../types/interaction"
 import type { BlockNode as BlockNodeType } from "../types/map"
 import { useMapStore } from "../store/useMapStore"
+import { BlockHeaderSelect } from "./BlockHeaderSelect"
 import { RichTextEditor } from "./RichTextEditor"
 import { RichTextPreview } from "./RichTextPreview"
 import { VersionStrip } from "./VersionStrip"
@@ -68,6 +69,17 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
   const versionBadgeLabel = versionState.isFixed ? versionState.requestedShortLabel || versionState.requestedLabel : versionState.modeLabel
   const displayMode = displayModeOverride === "block" ? data.displayMode || "full" : displayModeOverride
   const titleHtml = useMemo(() => titleToHtml(title), [title])
+  const versionSelectOptions = useMemo(
+    () => [
+      { value: defaultVariantKey, label: "AUTO", description: "Follow toolbar version" },
+      ...modelVersions.map((version, index) => ({
+        value: version.id,
+        label: versionShortLabel(version, index),
+        description: version.label,
+      })),
+    ],
+    [modelVersions],
+  )
   const visualBorderColor = getVisualBorderColor(data.borderColor)
   const visualDividerColor = getVisualDividerColor(data.borderColor)
 
@@ -257,21 +269,15 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
         />
         <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1">
           {isEditableSelection ? (
-            <select
-              className="version-select nodrag nopan"
+            <BlockHeaderSelect
               value={data.activeVariantKey || defaultVariantKey}
-              onChange={(event) => setBlockActiveVariant(id, event.target.value)}
-              onPointerDown={(event) => event.stopPropagation()}
-              aria-label="Block content version"
+              options={versionSelectOptions}
+              onChange={(value) => setBlockActiveVariant(id, value)}
+              ariaLabel="Block content version"
               title="Block content version"
-            >
-              <option value={defaultVariantKey}>AUTO</option>
-              {modelVersions.map((version) => (
-                <option key={version.id} value={version.id}>
-                  {versionShortLabel(version, modelVersions.findIndex((item) => item.id === version.id))}
-                </option>
-              ))}
-            </select>
+              className="block-header-select-version"
+              minMenuWidth={84}
+            />
           ) : (
             <span className={`version-badge ${versionState.isFixed ? "version-badge-fixed" : "version-badge-auto"}`} title={versionState.tooltip}>
               {versionBadgeLabel}
@@ -279,20 +285,15 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
           )}
           {data.showStatus && <span className={`status-marker ${blockStatus.className}`}>{blockStatus.label}</span>}
           {isEditableSelection ? (
-            <select
-              className={`type-select nodrag nopan ${blockType.badgeClass}`}
+            <BlockHeaderSelect
               value={data.nodeType}
+              options={blockTypeOptions}
               title={blockType.description}
-              onChange={(event) => updateBlock(id, { nodeType: event.target.value as typeof data.nodeType })}
-              onPointerDown={(event) => event.stopPropagation()}
-              aria-label="Block type"
-            >
-              {blockTypeOptions.map((option) => (
-                <option key={option.value} value={option.value} title={option.description}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => updateBlock(id, { nodeType: value })}
+              ariaLabel="Block type"
+              className="block-header-select-type"
+              minMenuWidth={132}
+            />
           ) : (
             <span className={`type-badge ${blockType.badgeClass}`}>{blockType.label}</span>
           )}

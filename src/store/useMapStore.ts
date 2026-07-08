@@ -241,6 +241,10 @@ function mapContentSignature(map: ExportedMap) {
   })
 }
 
+function normalizeDisplayModeOverride(mode?: DisplayModeOverride): DisplayModeOverride {
+  return mode && mode !== "block" ? mode : "full"
+}
+
 function isBlockNode(node: MapNode): node is BlockNode {
   return node.type === "block"
 }
@@ -439,7 +443,7 @@ export const useMapStore = create<MapState>((set, get) => ({
   mapTitle: defaultMapTitle,
   modelVersions: [],
   activeVersionId: allVersionsId,
-  displayModeOverride: "block",
+  displayModeOverride: "full",
   storyOutline: [],
   storyDeckSettings: defaultStoryDeckSettings(defaultMapTitle),
   nodes: [],
@@ -474,7 +478,7 @@ export const useMapStore = create<MapState>((set, get) => ({
           mapTitle: normalizeMapTitle(map.title),
           modelVersions: map.modelVersions || [],
           activeVersionId: map.activeVersionId || allVersionsId,
-          displayModeOverride: map.displayModeOverride || "block",
+          displayModeOverride: normalizeDisplayModeOverride(map.displayModeOverride),
           storyOutline: map.storyOutline || [],
           storyDeckSettings: map.storyDeckSettings || defaultStoryDeckSettings(map.title),
           nodes: applyContentHtml(map.nodes),
@@ -493,7 +497,7 @@ export const useMapStore = create<MapState>((set, get) => ({
         mapTitle: normalizeMapTitle(demo.title),
         modelVersions: demo.modelVersions || [],
         activeVersionId: demo.activeVersionId || allVersionsId,
-        displayModeOverride: demo.displayModeOverride || "block",
+        displayModeOverride: normalizeDisplayModeOverride(demo.displayModeOverride),
         storyOutline: demo.storyOutline || [],
         storyDeckSettings: demo.storyDeckSettings || defaultStoryDeckSettings(demo.title),
         nodes: applyContentHtml(demo.nodes),
@@ -546,7 +550,7 @@ export const useMapStore = create<MapState>((set, get) => ({
       mapTitle: normalizeMapTitle(map.title),
       modelVersions: map.modelVersions || [],
       activeVersionId: map.activeVersionId || allVersionsId,
-      displayModeOverride: map.displayModeOverride || "block",
+      displayModeOverride: normalizeDisplayModeOverride(map.displayModeOverride),
       storyOutline: map.storyOutline || [],
       storyDeckSettings: map.storyDeckSettings || defaultStoryDeckSettings(map.title),
       nodes: applyContentHtml(map.nodes),
@@ -1403,7 +1407,7 @@ export const useMapStore = create<MapState>((set, get) => ({
     set({
       modelVersions: [],
       activeVersionId: allVersionsId,
-      displayModeOverride: "block",
+      displayModeOverride: "full",
       storyOutline: [],
       storyDeckSettings: defaultStoryDeckSettings(get().mapTitle),
       nodes: [],
@@ -1423,7 +1427,7 @@ export const useMapStore = create<MapState>((set, get) => ({
       mapTitle: normalizeMapTitle(map.title),
       modelVersions: map.modelVersions || [],
       activeVersionId: map.activeVersionId || allVersionsId,
-      displayModeOverride: map.displayModeOverride || "block",
+      displayModeOverride: normalizeDisplayModeOverride(map.displayModeOverride),
       storyOutline: map.storyOutline || [],
       storyDeckSettings: map.storyDeckSettings || defaultStoryDeckSettings(map.title),
       nodes: applyContentHtml(map.nodes),

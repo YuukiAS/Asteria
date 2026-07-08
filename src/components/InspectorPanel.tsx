@@ -7,6 +7,7 @@ import { blockDisplayModeOptions, defaultVariantKey } from "../constants/version
 import { backgroundPalette, textPalette } from "../constants/palette"
 import { ColorPickerRow } from "./ColorPickerRow"
 import { EdgeInspector } from "./EdgeInspector"
+import { FieldSelect } from "./FieldSelect"
 import { InspectorSectionStack } from "./InspectorSectionStack"
 import { RichTextEditor } from "./RichTextEditor"
 import { formatLocalDateTime } from "../lib/time"
@@ -17,7 +18,7 @@ import { stripScriptTags } from "../lib/sanitize"
 import { useMapStore } from "../store/useMapStore"
 import type { BlockData } from "../types/map"
 
-const emojiPresets = ["*", "!", "?", "+", "#", "%", "&", "@", "~", "^", "=", "/"]
+const emojiPresets = ["⭐", "📌", "💡", "⚠️", "✅", "❗", "❓", "🔬", "📈", "🧮", "📝", "🔎"]
 
 function clampBlockHeight(value: number) {
   return Math.min(Math.max(Math.ceil(value), blockSizeLimits.minHeight), blockSizeLimits.maxHeight)
@@ -54,7 +55,6 @@ export function InspectorPanel() {
     edges,
     modelVersions,
     activeVersionId,
-    displayModeOverride,
     selectedNodeId,
     selectedNodeIds,
     selectedEdgeId,
@@ -253,6 +253,13 @@ export function InspectorPanel() {
     const activeContentJson = resolveBlockContentJson(node.data, renderedVariantKey)
     const variantLabel = `${versionState.renderedLabel} via ${versionState.modeLabel}`
     const variantRows = resolveBlockVersionRows(node.data, modelVersions)
+    const contentVersionOptions = [
+      { value: defaultVariantKey, label: "AUTO (follow global version)" },
+      ...modelVersions.map((version, index) => ({
+        value: version.id,
+        label: `${version.label} (${versionShortLabel(version, index)})`,
+      })),
+    ]
     const setEditingVariant = (variantKey: string) => {
       setBlockActiveVariant(node.id, variantKey)
     }
@@ -310,49 +317,32 @@ export function InspectorPanel() {
             </label>
                   <label className="field-label">
               Type
-              <select
-                className="field-input"
+              <FieldSelect
                 value={node.data.nodeType}
-                title={blockType.description}
-                onChange={(event) => updateBlock(node.id, { nodeType: event.target.value as typeof node.data.nodeType })}
-              >
-                {blockTypeOptions.map((option) => (
-                  <option key={option.value} value={option.value} title={option.description}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                options={blockTypeOptions.map((option) => ({ value: option.value, label: option.label, description: option.description }))}
+                onChange={(value) => updateBlock(node.id, { nodeType: value as typeof node.data.nodeType })}
+                ariaLabel="Block type"
+                showDescriptions
+              />
               <span className="field-help" title={blockType.description}>{blockType.description}</span>
             </label>
                   <label className="field-label">
               Content version
-              <select
-                className="field-input"
+              <FieldSelect
                 value={node.data.activeVariantKey || defaultVariantKey}
-                onChange={(event) => setEditingVariant(event.target.value)}
-                title="Choose AUTO to follow the toolbar version, or pin this block to a specific version."
-              >
-                <option value={defaultVariantKey}>AUTO: follow global version</option>
-                {modelVersions.map((version) => (
-                  <option key={version.id} value={version.id}>
-                    {version.label} ({versionShortLabel(version, modelVersions.findIndex((item) => item.id === version.id))})
-                  </option>
-                ))}
-              </select>
+                options={contentVersionOptions}
+                onChange={setEditingVariant}
+                ariaLabel="Content version"
+              />
             </label>
                   <label className="field-label">
               Display
-              <select
-                className="field-input"
+              <FieldSelect
                 value={node.data.displayMode || "full"}
-                onChange={(event) => updateBlock(node.id, { displayMode: event.target.value as typeof node.data.displayMode })}
-              >
-                {blockDisplayModeOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                options={blockDisplayModeOptions}
+                onChange={(value) => updateBlock(node.id, { displayMode: value as typeof node.data.displayMode })}
+                ariaLabel="Block display"
+              />
             </label>
                   <div className="grid grid-cols-2 gap-2">
                     <button type="button" className="toolbar-button justify-center" onClick={fitCurrentContent} title="Resize this block height to fit the currently selected content version.">
@@ -368,7 +358,6 @@ export function InspectorPanel() {
               {versionState.sourceKind === "hidden" ? ` (typing here creates ${versionState.requestedShortLabel || versionState.requestedLabel} own content)` : ""}
               <br />
               AUTO follows the top toolbar. Selecting a version pins this block and ignores global switching.
-              {displayModeOverride !== "block" ? ` Toolbar density override: ${displayModeOverride}.` : ""}
             </div>
                 </>
               ),
@@ -434,17 +423,12 @@ export function InspectorPanel() {
             {node.data.showStatus && (
               <label className="field-label">
                 Status
-                <select
-                  className="field-input"
+                <FieldSelect
                   value={node.data.status || "undo"}
-                  onChange={(event) => updateBlock(node.id, { status: event.target.value as typeof node.data.status })}
-                >
-                  {blockStatusOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  options={blockStatusOptions}
+                  onChange={(value) => updateBlock(node.id, { status: value as typeof node.data.status })}
+                  ariaLabel="Block status"
+                />
               </label>
             )}
             <div className="grid gap-3">

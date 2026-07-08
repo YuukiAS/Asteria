@@ -8,11 +8,10 @@ export const snapGridSize = 8
 export const microStraightenTolerance = 10
 
 export const displayModeOptions = [
-  { value: "block", label: "Block settings" },
   { value: "full", label: "Full" },
   { value: "compact", label: "Compact" },
   { value: "title_only", label: "Title" },
-] as const satisfies ReadonlyArray<{ value: DisplayModeOverride; label: string }>
+] as const satisfies ReadonlyArray<{ value: DisplayModeOverride; label: string; description?: string }>
 
 export const blockDisplayModeOptions = [
   { value: "full", label: "Full" },

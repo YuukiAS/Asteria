@@ -290,19 +290,31 @@ export function App() {
                 onPointerDown={startSidebarResize}
               />
             )}
-            <button
-              type="button"
-              className="inspector-collapse-button"
-              onClick={() => setSidebarCollapsed(!isSidebarCollapsed)}
-              aria-label={isSidebarCollapsed ? "Expand inspector" : "Collapse inspector"}
-              title={isSidebarCollapsed ? "Expand inspector" : "Collapse inspector"}
-            >
-              {isSidebarCollapsed ? <PanelRightOpen size={17} /> : <PanelRightClose size={17} />}
-              <span className="sr-only">{isSidebarCollapsed ? "Expand" : "Collapse"}</span>
-            </button>
+            {isSidebarCollapsed && (
+              <button
+                type="button"
+                className="inspector-collapse-button inspector-collapse-button-collapsed"
+                onClick={() => setSidebarCollapsed(false)}
+                aria-label="Expand inspector"
+                title="Expand inspector"
+              >
+                <PanelRightOpen size={17} />
+                <span className="sr-only">Expand</span>
+              </button>
+            )}
             <div className="inspector-content-shell">
               {!isSidebarCollapsed && (
-                <div className="grid grid-cols-2 gap-1 border-b border-border bg-toolbar/80 p-2">
+                <div className="inspector-tab-bar grid gap-1 border-b border-border bg-toolbar/80 p-2">
+                  <button
+                    type="button"
+                    className="inspector-collapse-button inspector-collapse-button-inline"
+                    onClick={() => setSidebarCollapsed(true)}
+                    aria-label="Collapse inspector"
+                    title="Collapse inspector"
+                  >
+                    <PanelRightClose size={17} />
+                    <span className="sr-only">Collapse</span>
+                  </button>
                   <button
                     type="button"
                     className={`segmented-button justify-center ${sidebarTab === "inspector" ? "segmented-button-active" : ""}`}

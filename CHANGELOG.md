@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.8 - Block Header Menus And Preview Parity
+
+- Replaced canvas/topbar native dropdowns for active version, display density, block version, and block type with styled fixed-position menus.
+- Kept each dropdown panel aligned to the closed trigger width and position so menus no longer drift or resize independently of their controls.
+- Matched block-header version/type closed-state sizes between selected and unselected blocks, prevented dropdown horizontal scrollbars, and animated chevrons on open/close.
+- Removed the manual Save toolbar button, since canvas changes already autosave.
+- Removed the global density `Auto` option; the toolbar now exposes only explicit `Full`, `Compact`, and `Title` modes.
+- Unified toolbar tooltip styling with the dropdown menu surface, kept short tooltips on one line, and aligned tooltip arrows to the triggering button.
+- Replaced right-panel native dropdowns with the same styled fixed-position menu system used by block headers and the top toolbar.
+- Moved the right-panel collapse control into a fixed tab-bar slot so it no longer overlays the Inspector/Story tabs or panel content.
+- Replaced the block marker presets with actual emoji choices instead of ASCII symbols.
+- Unified rich-text whitespace handling between Edit and Move views so leading spaces before equations in list items no longer create mode-specific rendering differences.
+
 ## 0.6.7 - Equation Editing And Scroll Clearance
 
 - Changed equation editing so math nodes open the edit dialog only on explicit click or double-click, not hover.

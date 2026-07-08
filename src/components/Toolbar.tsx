@@ -1,6 +1,6 @@
 import { useReactFlow } from "@xyflow/react"
-import { Download, FileText, Group, History, Moon, MousePointer2, MoveDown, MoveUp, PencilLine, Plus, Rows3, Save, Scan, Settings2, Sigma, Sparkles, Sun, Trash2, Upload, ZoomIn } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
+import { Download, FileText, Group, History, Moon, MousePointer2, MoveDown, MoveUp, PencilLine, Plus, Rows3, Scan, Settings2, Sigma, Sparkles, Sun, Trash2, Upload, ZoomIn } from "lucide-react"
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react"
 import { blockSizePresets, type BlockSizePreset } from "../constants/layout"
 import { displayModeOptions, maxModelVersions } from "../constants/versioning"
 import { createExportFilename, exportMapFile, normalizeExportedMap, normalizeMapTitle, readJsonFile } from "../lib/exportImport"
@@ -9,6 +9,7 @@ import { buildStoryMarkdown, createStoryMarkdownFilename, exportMarkdownFile } f
 import { useMapStore } from "../store/useMapStore"
 import type { InteractionMode } from "../types/interaction"
 import type { DisplayModeOverride } from "../types/map"
+import { BlockHeaderSelect } from "./BlockHeaderSelect"
 import { EquationDialog } from "./EquationDialog"
 import packageJson from "../../package.json"
 
@@ -23,7 +24,10 @@ type ToolbarProps = {
 type ToolbarTooltipState = {
   text: string
   left: number
+  desiredLeft: number
+  arrowLeft: number
   top: number
+  nowrap: boolean
 }
 
 export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionModeChange, onFitView }: ToolbarProps) {
@@ -31,6 +35,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
   const inputRef = useRef<HTMLInputElement>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
   const versionSettingsRef = useRef<HTMLButtonElement>(null)
+  const toolbarTooltipRef = useRef<HTMLDivElement>(null)
   const addMenuCloseTimerRef = useRef<number>()
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [isEquationDialogOpen, setIsEquationDialogOpen] = useState(false)
@@ -64,7 +69,6 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
     moveModelVersion,
     setDisplayModeOverride,
     straightenNearAxisEdges,
-    saveNow,
     restoreBackup,
     clearMap,
     loadMap,
@@ -72,18 +76,31 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
   const selectedBlock = nodes.find((node) => node.id === selectedNodeId && node.type === "block")
   const appVersion = packageJson.version
   const activeToolbarVersionId = modelVersions.some((version) => version.id === activeVersionId) ? activeVersionId : modelVersions[0]?.id || "all"
+  const toolbarVersionOptions =
+    modelVersions.length > 0
+      ? modelVersions.map((version) => ({ value: version.id, label: version.label, description: version.shortLabel || version.label }))
+      : [{ value: "all", label: "No versions", description: "Add a model version to enable version switching" }]
 
   const showToolbarTooltip = (text: string, target: HTMLElement) => {
     const rect = target.getBoundingClientRect()
-    const tooltipWidth = Math.min(260, window.innerWidth - 24)
-    const left = Math.max(12 + tooltipWidth / 2, Math.min(rect.left + rect.width / 2, window.innerWidth - 12 - tooltipWidth / 2))
-    setToolbarTooltip({ text, left, top: rect.bottom + 9 })
+    const desiredLeft = rect.left + rect.width / 2
+    setToolbarTooltip({ text, left: desiredLeft, desiredLeft, arrowLeft: 0, top: rect.bottom + 9, nowrap: text.length <= 28 })
   }
+
+  useLayoutEffect(() => {
+    if (!toolbarTooltip || !toolbarTooltipRef.current) return
+    const rect = toolbarTooltipRef.current.getBoundingClientRect()
+    const halfWidth = rect.width / 2
+    const left = Math.max(12 + halfWidth, Math.min(toolbarTooltip.desiredLeft, window.innerWidth - 12 - halfWidth))
+    const arrowLeft = Math.max(12, Math.min(toolbarTooltip.desiredLeft - (left - halfWidth), rect.width - 12))
+    if (Math.abs(left - toolbarTooltip.left) > 0.5 || Math.abs(arrowLeft - toolbarTooltip.arrowLeft) > 0.5) {
+      setToolbarTooltip((current) => (current ? { ...current, left, arrowLeft } : current))
+    }
+  }, [toolbarTooltip])
 
   const toolbarTip = (text: string) => ({
     "aria-label": text,
     "data-tooltip": text,
-    title: text,
     onFocus: (event: { currentTarget: HTMLElement }) => showToolbarTooltip(text, event.currentTarget),
     onBlur: () => setToolbarTooltip(undefined),
     onPointerEnter: (event: { currentTarget: HTMLElement }) => showToolbarTooltip(text, event.currentTarget),
@@ -251,7 +268,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
                 aria-label="Map title"
               />
             ) : (
-              <button type="button" className="map-title-display hidden sm:block" onDoubleClick={startTitleEditing} title="Double-click to edit map title">
+              <button type="button" className="map-title-display hidden sm:block" onDoubleClick={startTitleEditing} aria-label="Double-click to edit map title">
                 {normalizeMapTitle(mapTitle)}
               </button>
             )}
@@ -344,34 +361,25 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
             aria-haspopup="menu"
             aria-expanded={isAddMenuOpen}
             aria-label="New medium block"
-            title="New medium block"
           >
             <Plus size={15} />
             <span className="toolbar-label">New block</span>
           </button>
         </div>
         <div className="flex shrink-0 items-center gap-1 rounded-md border border-border bg-panel p-0.5">
-          <label className="sr-only" htmlFor="active-version">
-            Active version
-          </label>
-          <select
-            id="active-version"
-            className="h-7 max-w-[128px] rounded border-0 bg-panel px-1.5 text-xs font-medium text-secondary outline-none focus:text-foreground"
-            value={activeToolbarVersionId}
-            onChange={(event) => setActiveVersion(event.target.value)}
-            disabled={modelVersions.length === 0}
-            {...toolbarTip(modelVersions.length > 0 ? "Active model version" : "Add a model version to enable version switching")}
-          >
-            {modelVersions.length === 0 ? (
-              <option value="all">No versions</option>
-            ) : (
-              modelVersions.map((version) => (
-                <option key={version.id} value={version.id}>
-                  {version.label}
-                </option>
-              ))
-            )}
-          </select>
+          <div {...toolbarTip(modelVersions.length > 0 ? "Active model version" : "Add a model version to enable version switching")}>
+            <BlockHeaderSelect
+              value={activeToolbarVersionId}
+              options={toolbarVersionOptions}
+              ariaLabel="Active version"
+              title="Active version"
+              className="toolbar-version-select-trigger"
+              minMenuWidth={128}
+              disabled={modelVersions.length === 0}
+              onOpenChange={() => setToolbarTooltip(undefined)}
+              onChange={(value) => setActiveVersion(value)}
+            />
+          </div>
           <span className="toolbar-control-divider" aria-hidden="true" />
           <button
             ref={versionSettingsRef}
@@ -422,10 +430,6 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           <Sparkles size={15} />
           <span className="toolbar-label">Clean</span>
         </button>
-        <button type="button" className="toolbar-button" onClick={() => void saveNow()} {...toolbarTip("Save")}>
-          <Save size={15} />
-          <span className="toolbar-label">Save</span>
-        </button>
         <button type="button" className="toolbar-button" onClick={() => inputRef.current?.click()} {...toolbarTip("Import JSON")}>
           <Upload size={15} />
           <span className="toolbar-label">Import</span>
@@ -448,25 +452,35 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
         >
           <Rows3 size={14} />
           <span className="sr-only">Display density</span>
-          <select
-            className="h-7 max-w-[128px] border-0 bg-panel text-xs outline-none"
+          <BlockHeaderSelect
             value={displayModeOverride}
-            onChange={(event) => setDisplayModeOverride(event.target.value as DisplayModeOverride)}
-            aria-label="Display density"
-          >
-            {displayModeOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            options={displayModeOptions}
+            ariaLabel="Display density"
+            title="Display density"
+            menuTitle="Display density"
+            className="toolbar-density-select-trigger"
+            minMenuWidth={128}
+            onOpenChange={() => setToolbarTooltip(undefined)}
+            onChange={(value) => setDisplayModeOverride(value as DisplayModeOverride)}
+          />
         </label>
         <button type="button" className="toolbar-button !px-2" onClick={onToggleTheme} {...toolbarTip("Toggle theme")}>
           {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
         </button>
       </div>
       {toolbarTooltip ? (
-        <div className="toolbar-tooltip" style={{ left: toolbarTooltip.left, top: toolbarTooltip.top }} role="tooltip">
+        <div
+          ref={toolbarTooltipRef}
+          className={`toolbar-tooltip ${toolbarTooltip.nowrap ? "toolbar-tooltip-nowrap" : ""}`}
+          style={
+            {
+              left: toolbarTooltip.left,
+              top: toolbarTooltip.top,
+              "--toolbar-tooltip-arrow-left": `${toolbarTooltip.arrowLeft}px`,
+            } as CSSProperties
+          }
+          role="tooltip"
+        >
           {toolbarTooltip.text}
         </div>
       ) : null}
