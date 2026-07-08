@@ -8,6 +8,7 @@ import {
 } from "@xyflow/react"
 import { create } from "zustand"
 import { blockTypeDefaults } from "../constants/blockDefaults"
+import type { BlockSize } from "../constants/layout"
 import { allVersionsId, defaultVariantKey, maxModelVersions, microStraightenTolerance, snapGridSize } from "../constants/versioning"
 import { createDemoMap } from "../lib/demo"
 import {
@@ -146,7 +147,7 @@ type MapState = {
   canvasHistory: CanvasHistorySnapshot[]
   pendingDragSnapshot?: CanvasHistorySnapshot
   addBlock: (position?: { x: number; y: number }) => void
-  addBlockAndSelect: (position?: { x: number; y: number }) => string
+  addBlockAndSelect: (position?: { x: number; y: number }, size?: BlockSize) => string
   addBlockNextToSelected: () => string
   addLinkedBlockFromSelected: () => string
   groupSelectedBlocks: () => void
@@ -575,10 +576,10 @@ export const useMapStore = create<MapState>((set, get) => ({
     get().addBlockAndSelect(position)
   },
 
-  addBlockAndSelect: (position) => {
+  addBlockAndSelect: (position, size) => {
     const state = get()
     const variantKey = state.activeVersionId !== allVersionsId && state.modelVersions.some((version) => version.id === state.activeVersionId) ? state.activeVersionId : defaultVariantKey
-    const node = createBlockNode(position, "New block", variantKey)
+    const node = createBlockNode(position, "New block", variantKey, size)
     set((state) => ({
       nodes: [...state.nodes, node],
       selectedNodeId: node.id,

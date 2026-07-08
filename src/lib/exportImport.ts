@@ -42,6 +42,7 @@ import { createId } from "./ids"
 import { formatJsonTimestamp, nowIso } from "./time"
 import { contentJsonToHtml } from "../editor/editorUtils"
 import type { JSONContent } from "@tiptap/react"
+import { blockSizePresets, type BlockSize } from "../constants/layout"
 
 export const defaultMapTitle = "Local map"
 
@@ -124,7 +125,7 @@ function contentJsonToSafeHtml(contentJson: BlockVariant["contentJson"]) {
   }
 }
 
-export function createBlockNode(position = { x: 120, y: 120 }, title = "New block", variantKey: BlockVariantKey = defaultVariantKey): BlockNode {
+export function createBlockNode(position = { x: 120, y: 120 }, title = "New block", variantKey: BlockVariantKey = defaultVariantKey, size: BlockSize = blockSizePresets.medium): BlockNode {
   const at = nowIso()
   const variant = createBlockVariant(title, defaultContentJson, "<p></p>", at)
   const normalizedVariantKey = variantKey && variantKey !== allVersionsId ? variantKey : defaultVariantKey
@@ -141,8 +142,8 @@ export function createBlockNode(position = { x: 120, y: 120 }, title = "New bloc
       backgroundColor: blockTypeDefaults.generic.backgroundColor,
       textColor: blockTypeDefaults.generic.textColor,
       borderColor: blockTypeDefaults.generic.borderColor,
-      width: 340,
-      height: 220,
+      width: size.width,
+      height: size.height,
       displayMode: "full",
       nodeType: "generic",
       showStatus: false,

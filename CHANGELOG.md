@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.6 - Block Size Presets
+
+- Added Small, Medium, and Large size presets to the top-toolbar Add block control.
+- Kept direct Add block clicks on the Medium `340 x 220 (default)` size while exposing all presets from the hover/focus menu.
+- Added a divider between the active version selector and version settings button.
+
 ## 0.6.5 - Toolbar Tooltip And List Continuation
 
 - Increased top-toolbar tooltip contrast and stacking so icon-only controls remain readable on narrow screens.

@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `0.6.5`.
+Current app version: `0.6.6`.
 
 ## Run
 
@@ -30,6 +30,7 @@ Asteria also keeps up to three changed local backup snapshots. Backups are check
 - Use the canvas to place model, prior, theorem, result, dataset, notation, and related research blocks.
 - Use Move mode for dragging and layout, Edit mode for direct block editing, and Zoom mode for near-fullscreen block reading.
 - Switch modes with `Alt+1`, `Alt+2`, and `Alt+3`, or use the top toolbar mode control.
+- Click Add block to create a Medium `340 x 220 (default)` block, or hover/focus the Add block control to choose Small, Medium, or Large.
 - Double-click the canvas to create a new block at that position.
 - Double-click a block to enter inline editing.
 - Click an empty canvas background while editing to return to Move mode.

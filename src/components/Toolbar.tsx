@@ -1,6 +1,7 @@
 import { useReactFlow } from "@xyflow/react"
 import { Download, FileText, Group, History, Moon, MousePointer2, MoveDown, MoveUp, PencilLine, Plus, Rows3, Save, Scan, Settings2, Sigma, Sparkles, Sun, Trash2, Upload, ZoomIn } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
+import { blockSizePresets, type BlockSizePreset } from "../constants/layout"
 import { displayModeOptions, maxModelVersions } from "../constants/versioning"
 import { createExportFilename, exportMapFile, normalizeExportedMap, normalizeMapTitle, readJsonFile } from "../lib/exportImport"
 import { requestBlockEquationInsert, requestInlineBlockEdit, requestInlineEditorFocus } from "../lib/inlineEditEvents"
@@ -30,11 +31,14 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
   const inputRef = useRef<HTMLInputElement>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
   const versionSettingsRef = useRef<HTMLButtonElement>(null)
+  const addMenuCloseTimerRef = useRef<number>()
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [isEquationDialogOpen, setIsEquationDialogOpen] = useState(false)
   const [isVersionPanelOpen, setIsVersionPanelOpen] = useState(false)
   const [isBackupPanelOpen, setIsBackupPanelOpen] = useState(false)
   const [versionPanelPosition, setVersionPanelPosition] = useState({ left: 12, top: 56 })
+  const [addMenuPosition, setAddMenuPosition] = useState({ left: 12, top: 56 })
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false)
   const [toolbarTooltip, setToolbarTooltip] = useState<ToolbarTooltipState>()
   const {
     mapTitle,
@@ -155,7 +159,30 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
     }
   }
 
-  const createBlock = () => {
+  const openAddMenu = (target: HTMLElement) => {
+    if (addMenuCloseTimerRef.current) window.clearTimeout(addMenuCloseTimerRef.current)
+    const rect = target.getBoundingClientRect()
+    const panelWidth = Math.min(286, window.innerWidth - 24)
+    setToolbarTooltip(undefined)
+    setAddMenuPosition({
+      left: Math.max(12, Math.min(rect.left, window.innerWidth - panelWidth - 12)),
+      top: rect.bottom + 8,
+    })
+    setIsAddMenuOpen(true)
+  }
+
+  const scheduleCloseAddMenu = () => {
+    if (addMenuCloseTimerRef.current) window.clearTimeout(addMenuCloseTimerRef.current)
+    addMenuCloseTimerRef.current = window.setTimeout(() => setIsAddMenuOpen(false), 180)
+  }
+
+  const keepAddMenuOpen = () => {
+    if (addMenuCloseTimerRef.current) window.clearTimeout(addMenuCloseTimerRef.current)
+    setIsAddMenuOpen(true)
+  }
+
+  const createBlock = (preset: BlockSizePreset = "medium") => {
+    const size = blockSizePresets[preset]
     const canvasBounds = document.querySelector(".asteria-flow-canvas")?.getBoundingClientRect()
     const flowCenter = canvasBounds
       ? reactFlow.screenToFlowPosition({
@@ -163,7 +190,8 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           y: canvasBounds.top + canvasBounds.height / 2,
         })
       : undefined
-    const nodeId = addBlockAndSelect(flowCenter ? { x: flowCenter.x - 170, y: flowCenter.y - 110 } : undefined)
+    const nodeId = addBlockAndSelect(flowCenter ? { x: flowCenter.x - size.width / 2, y: flowCenter.y - size.height / 2 } : undefined, size)
+    setIsAddMenuOpen(false)
     requestInlineBlockEdit(nodeId, "title")
   }
 
@@ -306,10 +334,22 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
             <span className="toolbar-label">Zoom</span>
           </button>
         </div>
-        <button type="button" className="primary-button" onClick={createBlock} {...toolbarTip("New block")}>
-          <Plus size={15} />
-          <span className="toolbar-label">New block</span>
-        </button>
+        <div className="relative shrink-0" onPointerEnter={(event) => openAddMenu(event.currentTarget)} onPointerLeave={scheduleCloseAddMenu}>
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => createBlock("medium")}
+            onFocus={(event) => openAddMenu(event.currentTarget)}
+            onBlur={scheduleCloseAddMenu}
+            aria-haspopup="menu"
+            aria-expanded={isAddMenuOpen}
+            aria-label="New medium block"
+            title="New medium block"
+          >
+            <Plus size={15} />
+            <span className="toolbar-label">New block</span>
+          </button>
+        </div>
         <div className="flex shrink-0 items-center gap-1 rounded-md border border-border bg-panel p-0.5">
           <label className="sr-only" htmlFor="active-version">
             Active version
@@ -332,6 +372,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
               ))
             )}
           </select>
+          <span className="toolbar-control-divider" aria-hidden="true" />
           <button
             ref={versionSettingsRef}
             type="button"
@@ -425,6 +466,39 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           {toolbarTooltip.text}
         </div>
       ) : null}
+      {isAddMenuOpen && (
+        <div
+          className="add-block-menu"
+          style={{ left: addMenuPosition.left, top: addMenuPosition.top }}
+          role="menu"
+          aria-label="Choose block size"
+          onPointerEnter={keepAddMenuOpen}
+          onPointerLeave={scheduleCloseAddMenu}
+        >
+          {(Object.keys(blockSizePresets) as BlockSizePreset[]).map((preset) => {
+            const option = blockSizePresets[preset]
+            const isDefault = preset === "medium"
+            return (
+              <button
+                key={preset}
+                type="button"
+                className={`add-block-menu-item ${isDefault ? "add-block-menu-item-default" : ""}`}
+                onClick={() => createBlock(preset)}
+                role="menuitem"
+              >
+                <span className="add-block-menu-preview" style={{ width: `${option.width / 8}px`, height: `${option.height / 8}px` }} aria-hidden="true" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs font-semibold text-foreground">{option.label}</span>
+                  <span className="block text-[11px] text-secondary">
+                    {option.width} x {option.height}
+                    {isDefault ? " (default)" : ""}
+                  </span>
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      )}
       {isVersionPanelOpen && (
         <div className="version-manager-panel" style={{ left: versionPanelPosition.left, top: versionPanelPosition.top }}>
           <div className="flex items-center justify-between gap-3">
