@@ -1147,10 +1147,6 @@ body {
   color: inherit !important;
 }
 
-.rich-preview .math-block {
-  font-size: 0.94em;
-}
-
 .katex-display {
   margin: 0.25em 0;
 }

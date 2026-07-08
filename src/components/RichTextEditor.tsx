@@ -288,6 +288,7 @@ export function RichTextEditor({
         initialLatex={editingEquation?.latex}
         displayMode={editingEquation?.displayMode ?? true}
         confirmLabel="Update"
+        submitOnEnter={editingEquation?.displayMode === false}
         onCancel={() => {
           isEditingEquationDialogOpenRef.current = false
           setEditingEquation(null)

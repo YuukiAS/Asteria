@@ -1,5 +1,6 @@
 import { mergeAttributes, Node } from "@tiptap/core"
 import katex from "katex"
+import { Plugin } from "prosemirror-state"
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -162,12 +163,25 @@ export const BlockMath = Node.create({
     }
   },
 
+  addProseMirrorPlugins() {
+    const blockMathName = this.name
+    return [
+      new Plugin({
+        appendTransaction(_transactions, _oldState, newState) {
+          const lastChild = newState.doc.lastChild
+          if (!lastChild || lastChild.type.name !== blockMathName) return null
+          return newState.tr.insert(newState.doc.content.size, newState.schema.nodes.paragraph.create())
+        },
+      }),
+    ]
+  },
+
   addCommands() {
     return {
       insertBlockMath:
         (latex) =>
         ({ commands }) =>
-          commands.insertContent({ type: this.name, attrs: { latex } }),
+          commands.insertContent([{ type: this.name, attrs: { latex } }, { type: "paragraph" }]),
     }
   },
 

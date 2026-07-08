@@ -1,3 +1,4 @@
+import { useReactFlow } from "@xyflow/react"
 import { Download, FileText, Group, History, Moon, MousePointer2, MoveDown, MoveUp, PencilLine, Plus, Rows3, Save, Scan, Settings2, Sigma, Sparkles, Sun, Trash2, Upload } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { displayModeOptions, maxModelVersions } from "../constants/versioning"
@@ -24,6 +25,7 @@ type ToolbarTooltipState = {
 }
 
 export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionModeChange, onFitView }: ToolbarProps) {
+  const reactFlow = useReactFlow()
   const inputRef = useRef<HTMLInputElement>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
   const versionSettingsRef = useRef<HTMLButtonElement>(null)
@@ -153,7 +155,14 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
   }
 
   const createBlock = () => {
-    const nodeId = addBlockAndSelect()
+    const canvasBounds = document.querySelector(".asteria-flow-canvas")?.getBoundingClientRect()
+    const flowCenter = canvasBounds
+      ? reactFlow.screenToFlowPosition({
+          x: canvasBounds.left + canvasBounds.width / 2,
+          y: canvasBounds.top + canvasBounds.height / 2,
+        })
+      : undefined
+    const nodeId = addBlockAndSelect(flowCenter ? { x: flowCenter.x - 170, y: flowCenter.y - 110 } : undefined)
     requestInlineBlockEdit(nodeId, "title")
   }
 

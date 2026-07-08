@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.3 - Block Creation And Equation Editing
+
+- Changed toolbar and empty-inspector block creation to place new blocks at the current canvas view center.
+- Let inline equation edit dialogs submit updates with Enter while block equation edit dialogs keep Ctrl/Cmd+Enter submission.
+- Ensured block equations leave a trailing editable paragraph so users can continue writing after a display equation at the end of a block.
+- Matched block equation sizing between canvas preview and inline edit mode.
+
 ## 0.6.2 - Toolbar Tooltips
 
 - Added a reusable top-toolbar tooltip helper so icon-only controls still explain their action on narrow screens.

@@ -1,4 +1,5 @@
 import { Clipboard, Copy, Layers, Plus, RotateCcw } from "lucide-react"
+import { useReactFlow } from "@xyflow/react"
 import { blockTypeDefaults } from "../constants/blockDefaults"
 import { blockStatusOptions, blockTypeByValue, blockTypeOptions } from "../constants/blockTypes"
 import { blockFitExtraPadding, blockHeaderHeight, blockPreviewHorizontalPadding, blockPreviewVerticalPadding, blockSizeLimits } from "../constants/layout"
@@ -47,6 +48,7 @@ function variantKeysForFit(data: BlockData, modelVersionIds: string[], activeVar
 }
 
 export function InspectorPanel() {
+  const reactFlow = useReactFlow()
   const {
     nodes,
     edges,
@@ -87,7 +89,14 @@ export function InspectorPanel() {
   const edge = edges.find((item) => item.id === selectedEdgeId)
 
   const createBlock = () => {
-    const nodeId = addBlockAndSelect()
+    const canvasBounds = document.querySelector(".asteria-flow-canvas")?.getBoundingClientRect()
+    const flowCenter = canvasBounds
+      ? reactFlow.screenToFlowPosition({
+          x: canvasBounds.left + canvasBounds.width / 2,
+          y: canvasBounds.top + canvasBounds.height / 2,
+        })
+      : undefined
+    const nodeId = addBlockAndSelect(flowCenter ? { x: flowCenter.x - 170, y: flowCenter.y - 110 } : undefined)
     requestInlineBlockEdit(nodeId, "title")
   }
 
