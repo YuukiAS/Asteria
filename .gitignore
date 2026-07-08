@@ -1,16 +1,52 @@
+# Dependencies and package-manager stores
 node_modules/
 .pnpm-store/
-dist/
-.tsbuild/
 
-.codex/
+# Build outputs and compiler caches
+dist/
+build/
+.tsbuild/
+*.tsbuildinfo
+
+# Vite and frontend tooling caches
+.vite/
 .vite-server*.log
-logging/
+
+# Local environment files
+.env
+.env.*
+!.env.example
 *.local
 
-asteria-*.png
+# Logs
+logs/
+logging/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Codex and local workflow artifacts
+.codex/
+archive/
+results/tmp/
+
+# Local screenshots and generated images
 images/
+asteria-*.png
+*.local.png
+!public/app-icon.png
+!public/backgrounds/
 !public/backgrounds/asteria-celestial-map.png
 
+# Coverage and test artifacts
+coverage/
+playwright-report/
+test-results/
+
+# Editor and OS metadata
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/
