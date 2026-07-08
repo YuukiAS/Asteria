@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.1 - Story Version Label Clarity
+
+- Renamed Story export version modes to `Toolbar version`, `Default content`, and `Selected version`.
+- Added tooltips that clarify whether Story export follows the toolbar, uses default/base content, or uses a fixed selected version.
+- Updated Story Markdown output and README terminology to match the clearer labels.
+
 ## 0.6.0 - Story Outline Markdown Export
 
 - Added a global Story panel for building an ordered story outline from selected blocks and groups.

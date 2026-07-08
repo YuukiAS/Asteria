@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `0.6.0`.
+Current app version: `0.6.1`.
 
 ## Run
 
@@ -47,7 +47,15 @@ Asteria includes a Story panel in the right sidebar for building a low-density r
 
 The toolbar action order is `Import`, `Export`, `Export Markdown`, `Delete`. `Export` remains the existing JSON map export. `Export Markdown` writes a story deck named like `<deck-title>-asteria-story-<timestamp>.md`.
 
-Story Markdown export resolves block content through the same version inheritance rules used by the canvas. The export includes one `## Slide N - <title>` section per outline item, optional source metadata, main message content, key formulas, optional speaker notes, and an optional final PPT-generation prompt. Inline and block equations are preserved as Markdown/LaTeX.
+`Add selected` records the selected source block/group, not a frozen copy of the currently visible version text. Story Markdown export resolves block content at export time through the same version inheritance rules used by the canvas.
+
+Story version modes:
+
+- `Toolbar version`: use the version currently selected in the top toolbar.
+- `Default content`: use each block's default/base content.
+- `Selected version`: use the fixed version selected inside the Story panel.
+
+The export includes one `## Slide N - <title>` section per outline item, optional source metadata, main message content, key formulas, optional speaker notes, and an optional final PPT-generation prompt. Inline and block equations are preserved as Markdown/LaTeX.
 
 ## Model Versions
 

@@ -20,6 +20,12 @@ const densityLabels: Record<StoryExportDensity, string> = {
   full: "Full",
 }
 
+const versionModeLabels: Record<StoryDeckSettings["versionMode"], string> = {
+  current: "Toolbar version",
+  all: "Default content",
+  selected: "Selected version",
+}
+
 function findNode(nodes: MapNode[], id: string) {
   return nodes.find((node) => node.id === id)
 }
@@ -39,7 +45,7 @@ function effectiveVersionId(settings: StoryDeckSettings, activeVersionId: string
 }
 
 function versionLabel(versionId: string, settings: StoryDeckSettings, modelVersions: ModelVersion[]) {
-  if (settings.versionMode === "all" || versionId === defaultVariantKey) return "All/base view"
+  if (settings.versionMode === "all" || versionId === defaultVariantKey) return "Default content"
   return modelVersions.find((version) => version.id === versionId)?.label || versionId
 }
 
@@ -122,7 +128,7 @@ export function buildStoryMarkdown(input: StoryMarkdownInput) {
     `# ${deckTitle}`,
     "",
     `Generated from Asteria story outline.`,
-    `Version mode: ${input.storyDeckSettings.versionMode}`,
+    `Version mode: ${versionModeLabels[input.storyDeckSettings.versionMode]}`,
     `Rendered version: ${renderedVersionLabel}`,
     "",
   ]

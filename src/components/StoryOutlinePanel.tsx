@@ -12,6 +12,24 @@ const densityOptions: Array<{ value: StoryExportDensity; label: string }> = [
   { value: "full", label: "Full" },
 ]
 
+const versionModeOptions = [
+  {
+    value: "current",
+    label: "Toolbar version",
+    tooltip: "Export each Story source using the version currently selected in the top toolbar.",
+  },
+  {
+    value: "all",
+    label: "Default content",
+    tooltip: "Export each Story source using its default/base block content.",
+  },
+  {
+    value: "selected",
+    label: "Selected version",
+    tooltip: "Export each Story source using the fixed version selected in this Story panel.",
+  },
+] as const
+
 function sourceTitle(source: MapNode | undefined) {
   if (!source) return "Missing source"
   return source.data.title || (source.type === "group" ? "Untitled group" : "Untitled block")
@@ -185,10 +203,17 @@ export function StoryOutlinePanel() {
           <div className="grid grid-cols-2 gap-2">
             <label className="field-label">
               Version mode
-              <select className="field-input" value={storyDeckSettings.versionMode} onChange={(event) => updateStoryDeckSettings({ versionMode: event.target.value as typeof storyDeckSettings.versionMode })}>
-                <option value="current">Current global</option>
-                <option value="all">All/base view</option>
-                <option value="selected">Selected version</option>
+              <select
+                className="field-input"
+                value={storyDeckSettings.versionMode}
+                title={versionModeOptions.find((option) => option.value === storyDeckSettings.versionMode)?.tooltip}
+                onChange={(event) => updateStoryDeckSettings({ versionMode: event.target.value as typeof storyDeckSettings.versionMode })}
+              >
+                {versionModeOptions.map((option) => (
+                  <option key={option.value} value={option.value} title={option.tooltip}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="field-label">
@@ -197,6 +222,11 @@ export function StoryOutlinePanel() {
                 className="field-input"
                 value={storyDeckSettings.selectedVersionId || modelVersions[0]?.id || ""}
                 disabled={storyDeckSettings.versionMode !== "selected" || modelVersions.length === 0}
+                title={
+                  storyDeckSettings.versionMode === "selected"
+                    ? "Choose the fixed model version used by Selected version mode."
+                    : "Enabled only when Version mode is Selected version."
+                }
                 onChange={(event) => updateStoryDeckSettings({ selectedVersionId: event.target.value })}
               >
                 {modelVersions.length === 0 ? <option value="">No versions</option> : null}
