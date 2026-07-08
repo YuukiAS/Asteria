@@ -1,20 +1,21 @@
 import { useReactFlow } from "@xyflow/react"
-import { Download, FileText, Group, History, Moon, MousePointer2, MoveDown, MoveUp, PencilLine, Plus, Rows3, Save, Scan, Settings2, Sigma, Sparkles, Sun, Trash2, Upload } from "lucide-react"
+import { Download, FileText, Group, History, Moon, MousePointer2, MoveDown, MoveUp, PencilLine, Plus, Rows3, Save, Scan, Settings2, Sigma, Sparkles, Sun, Trash2, Upload, ZoomIn } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { displayModeOptions, maxModelVersions } from "../constants/versioning"
 import { createExportFilename, exportMapFile, normalizeExportedMap, normalizeMapTitle, readJsonFile } from "../lib/exportImport"
 import { requestBlockEquationInsert, requestInlineBlockEdit, requestInlineEditorFocus } from "../lib/inlineEditEvents"
 import { buildStoryMarkdown, createStoryMarkdownFilename, exportMarkdownFile } from "../lib/storyMarkdownExport"
 import { useMapStore } from "../store/useMapStore"
+import type { InteractionMode } from "../types/interaction"
 import type { DisplayModeOverride } from "../types/map"
 import { EquationDialog } from "./EquationDialog"
 import packageJson from "../../package.json"
 
 type ToolbarProps = {
   theme: "light" | "dark"
-  interactionMode: "move" | "edit"
+  interactionMode: InteractionMode
   onToggleTheme: () => void
-  onInteractionModeChange: (mode: "move" | "edit") => void
+  onInteractionModeChange: (mode: InteractionMode) => void
   onFitView: () => void
 }
 
@@ -294,6 +295,15 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           >
             <PencilLine size={14} />
             <span className="toolbar-label">Edit</span>
+          </button>
+          <button
+            type="button"
+            className={`segmented-button ${interactionMode === "zoom" ? "segmented-button-active" : ""}`}
+            onClick={() => onInteractionModeChange("zoom")}
+            {...toolbarTip("Zoom mode")}
+          >
+            <ZoomIn size={14} />
+            <span className="toolbar-label">Zoom</span>
           </button>
         </div>
         <button type="button" className="primary-button" onClick={createBlock} {...toolbarTip("New block")}>

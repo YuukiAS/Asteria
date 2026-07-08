@@ -10,6 +10,7 @@ import { StoryOutlinePanel } from "../components/StoryOutlinePanel"
 import { Toolbar } from "../components/Toolbar"
 import { requestInlineBlockEdit, requestInlineEditorFocus, startInlineEditEvent, type InlineEditTarget } from "../lib/inlineEditEvents"
 import { useMapStore } from "../store/useMapStore"
+import type { InteractionMode } from "../types/interaction"
 
 function isEditableTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false
@@ -47,7 +48,7 @@ function clampSidebarWidth(width: number) {
 export function App() {
   const fitViewRef = useRef<() => void>(() => undefined)
   const [theme, setTheme] = useTheme()
-  const [interactionMode, setInteractionMode] = useState<"move" | "edit">("move")
+  const [interactionMode, setInteractionMode] = useState<InteractionMode>("move")
   const [sidebarTab, setSidebarTab] = useState<"inspector" | "story">("inspector")
   const [inlineEditTarget, setInlineEditTarget] = useState<InlineEditTarget | undefined>()
   const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -89,9 +90,9 @@ export function App() {
     fitViewRef.current = fitView
   }, [])
 
-  const setAppInteractionMode = useCallback((mode: "move" | "edit") => {
+  const setAppInteractionMode = useCallback((mode: InteractionMode) => {
     setInteractionMode(mode)
-    if (mode === "move") setInlineEditTarget(undefined)
+    if (mode !== "edit") setInlineEditTarget(undefined)
   }, [])
 
   useEffect(() => {
@@ -124,6 +125,11 @@ export function App() {
         if (event.key === "2") {
           event.preventDefault()
           setAppInteractionMode("edit")
+          return
+        }
+        if (event.key === "3") {
+          event.preventDefault()
+          setAppInteractionMode("zoom")
           return
         }
       }

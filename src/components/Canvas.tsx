@@ -11,26 +11,28 @@ import {
   type NodeProps,
   type OnSelectionChangeParams,
 } from "@xyflow/react"
-import { createContext, useContext, useEffect, useMemo } from "react"
+import { createContext, useContext, useEffect, useMemo, useState, type CSSProperties } from "react"
 import { BlockNode } from "./BlockNode"
 import { GroupNode } from "./GroupNode"
-import { allVersionsId } from "../constants/versioning"
+import { allVersionsId, defaultVariantKey } from "../constants/versioning"
 import { resolveBlockVersionState } from "../lib/blockVersionState"
-import { applyEdgePresentation } from "../lib/exportImport"
+import { applyEdgePresentation, resolveBlockContentHtml, resolveBlockTitle } from "../lib/exportImport"
 import { requestInlineBlockEdit, type InlineEditTarget } from "../lib/inlineEditEvents"
+import { titleToHtml } from "../lib/titleMath"
 import { useMapStore } from "../store/useMapStore"
-import type { BlockNode as BlockNodeType, GroupNode as GroupNodeType, MapEdge, MapNode } from "../types/map"
+import type { InteractionMode } from "../types/interaction"
+import type { BlockNode as BlockNodeType, GroupNode as GroupNodeType, MapEdge, MapNode, ModelVersion } from "../types/map"
 
 type CanvasProps = {
   onFitViewReady: (fitView: () => void) => void
-  interactionMode: "move" | "edit"
-  onInteractionModeChange: (mode: "move" | "edit") => void
+  interactionMode: InteractionMode
+  onInteractionModeChange: (mode: InteractionMode) => void
   inlineEditTarget?: InlineEditTarget
   onInlineEditTargetChange: (target?: InlineEditTarget) => void
 }
 
 const InteractionModeContext = createContext<{
-  interactionMode: "move" | "edit"
+  interactionMode: InteractionMode
   inlineEditTarget?: InlineEditTarget
   selectedNodeIds: string[]
   onInlineEditTargetChange: (target?: InlineEditTarget) => void
@@ -63,8 +65,58 @@ const nodeTypes = {
   group: GroupNodeRenderer,
 }
 
+function ZoomBlockOverlay({
+  node,
+  activeVersionId,
+  modelVersions,
+  onBackgroundClick,
+  onBlockClick,
+}: {
+  node: BlockNodeType
+  activeVersionId: string
+  modelVersions: ModelVersion[]
+  onBackgroundClick: () => void
+  onBlockClick: () => void
+}) {
+  const versionState = resolveBlockVersionState(node.data, activeVersionId, modelVersions)
+  const effectiveVariantKey = versionState.renderedVariantKey || defaultVariantKey
+  const title = resolveBlockTitle(node.data, effectiveVariantKey)
+  const contentHtml = resolveBlockContentHtml(node.data, effectiveVariantKey) || ""
+  const titleHtml = useMemo(() => titleToHtml(title), [title])
+  const borderColor = node.data.borderColor || "rgb(var(--color-strong-border))"
+
+  return (
+    <div className="zoom-block-backdrop" onClick={onBackgroundClick} role="presentation">
+      <article
+        className="zoom-block-card"
+        style={
+          {
+            "--asteria-block-background": node.data.backgroundColor,
+            "--asteria-block-border-color": borderColor,
+            "--asteria-rich-accent-color": node.data.textColor,
+            color: node.data.textColor,
+          } as CSSProperties
+        }
+        onClick={(event) => {
+          event.stopPropagation()
+          onBlockClick()
+        }}
+      >
+        <header className="zoom-block-header">
+          <div className="zoom-block-title" dangerouslySetInnerHTML={{ __html: titleHtml }} />
+          <span className="zoom-block-version" title={versionState.tooltip}>
+            {versionState.isFixed ? versionState.requestedShortLabel || versionState.requestedLabel : versionState.modeLabel}
+          </span>
+        </header>
+        <div className="zoom-block-body rich-preview" dangerouslySetInnerHTML={{ __html: contentHtml }} />
+      </article>
+    </div>
+  )
+}
+
 export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChange, inlineEditTarget, onInlineEditTargetChange }: CanvasProps) {
   const reactFlow = useReactFlow<MapNode, MapEdge>()
+  const [zoomedNodeId, setZoomedNodeId] = useState<string>()
   const {
     nodes,
     edges,
@@ -87,6 +139,10 @@ export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChang
     onFitViewReady(() => reactFlow.fitView({ padding: 0.18, duration: 240 }))
   }, [onFitViewReady, reactFlow])
 
+  useEffect(() => {
+    if (interactionMode !== "zoom") setZoomedNodeId(undefined)
+  }, [interactionMode])
+
   const presentedNodes = useMemo(() => {
     const visibleNodes =
       activeVersionId === allVersionsId
@@ -96,6 +152,7 @@ export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChang
   }, [activeVersionId, interactionMode, modelVersions, nodes])
 
   const visibleNodeIds = useMemo(() => new Set(presentedNodes.map((node) => node.id)), [presentedNodes])
+  const zoomedNode = useMemo(() => presentedNodes.find((node): node is BlockNodeType => node.id === zoomedNodeId && node.type === "block"), [presentedNodes, zoomedNodeId])
 
   const styledEdges = useMemo(
     () =>
@@ -116,6 +173,10 @@ export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChang
 
   const onNodeDoubleClick: NodeMouseHandler<MapNode> = (event, node) => {
     setSelectedNode(node.id)
+    if (interactionMode === "zoom") {
+      if (node.type === "block") setZoomedNodeId(node.id)
+      return
+    }
     if (node.type !== "block") return
     const target = event.target as HTMLElement
     if (target.closest(".block-title-display, .block-title-input")) {
@@ -156,6 +217,11 @@ export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChang
             const wasEditingThisNode = inlineEditTarget?.nodeId === node.id
             const wasSelected = selectedNodeIds.includes(node.id) || Boolean(node.selected)
             setSelectedNode(node.id)
+            if (interactionMode === "zoom") {
+              onInlineEditTargetChange(undefined)
+              if (node.type === "block") setZoomedNodeId(node.id)
+              return
+            }
             if (interactionMode !== "edit") {
               onInlineEditTargetChange(undefined)
               return
@@ -174,9 +240,10 @@ export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChang
           onNodeDoubleClick={onNodeDoubleClick}
           onPaneClick={() => {
             onInlineEditTargetChange(undefined)
+            setZoomedNodeId(undefined)
             setSelectedNodes([])
             setSelectedEdge(undefined)
-            if (interactionMode === "edit") onInteractionModeChange("move")
+            if (interactionMode === "edit" || interactionMode === "zoom") onInteractionModeChange("move")
           }}
           onSelectionChange={onSelectionChange}
           onMoveEnd={(_, nextViewport) => setViewport(nextViewport)}
@@ -185,9 +252,9 @@ export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChang
           selectionOnDrag={interactionMode === "move"}
           selectionKeyCode="Shift"
           multiSelectionKeyCode="Shift"
-          nodesConnectable
+          nodesConnectable={interactionMode !== "zoom"}
           elementsSelectable
-          className={`${interactionMode === "edit" ? "asteria-flow-edit" : "asteria-flow-move"} asteria-flow-canvas`}
+          className={`asteria-flow-${interactionMode} asteria-flow-canvas`}
           deleteKeyCode={null}
           proOptions={{ hideAttribution: true }}
         >
@@ -202,6 +269,18 @@ export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChang
             maskColor="var(--minimap-mask)"
           />
         </ReactFlow>
+        {zoomedNode ? (
+          <ZoomBlockOverlay
+            node={zoomedNode}
+            activeVersionId={activeVersionId}
+            modelVersions={modelVersions}
+            onBackgroundClick={() => {
+              setZoomedNodeId(undefined)
+              onInteractionModeChange("move")
+            }}
+            onBlockClick={() => setZoomedNodeId(undefined)}
+          />
+        ) : null}
       </InteractionModeContext.Provider>
     </main>
   )

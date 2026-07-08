@@ -1,10 +1,11 @@
 import { NodeResizer, type NodeProps } from "@xyflow/react"
 import type { CSSProperties } from "react"
+import type { InteractionMode } from "../types/interaction"
 import type { GroupNode as GroupNodeType } from "../types/map"
 import { useMapStore } from "../store/useMapStore"
 
 type GroupNodeProps = NodeProps<GroupNodeType> & {
-  interactionMode: "move" | "edit"
+  interactionMode: InteractionMode
 }
 
 export function GroupNode({ id, data, selected, interactionMode }: GroupNodeProps) {

@@ -8,6 +8,7 @@ import { resolveBlockVersionRows, resolveBlockVersionState, versionShortLabel } 
 import { resolveBlockContentHtml, resolveBlockContentJson, resolveBlockTitle } from "../lib/exportImport"
 import { requestInlineBlockEdit, requestInlineEditorFocus, type InlineEditTarget } from "../lib/inlineEditEvents"
 import { titleToHtml } from "../lib/titleMath"
+import type { InteractionMode } from "../types/interaction"
 import type { BlockNode as BlockNodeType } from "../types/map"
 import { useMapStore } from "../store/useMapStore"
 import { RichTextEditor } from "./RichTextEditor"
@@ -15,7 +16,7 @@ import { RichTextPreview } from "./RichTextPreview"
 import { VersionStrip } from "./VersionStrip"
 
 type BlockNodeProps = NodeProps<BlockNodeType> & {
-  interactionMode: "move" | "edit"
+  interactionMode: InteractionMode
   inlineEditTarget?: InlineEditTarget
   onInlineEditTargetChange: (target?: InlineEditTarget) => void
 }

@@ -807,6 +807,82 @@ body {
   cursor: grabbing;
 }
 
+.asteria-flow-zoom .react-flow__pane {
+  cursor: default;
+}
+
+.asteria-flow-zoom .asteria-block {
+  cursor: zoom-in;
+}
+
+.zoom-block-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 16;
+  display: grid;
+  place-items: center;
+  padding: clamp(18px, 4vw, 54px);
+  background: rgba(15, 23, 42, 0.24);
+  backdrop-filter: blur(2px);
+}
+
+.zoom-block-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(1040px, 92%);
+  height: min(760px, 88%);
+  max-height: calc(100% - 8px);
+  overflow: hidden;
+  border: 1px solid var(--asteria-block-border-color, rgb(var(--color-strong-border)));
+  border-radius: 14px;
+  background:
+    linear-gradient(var(--asteria-block-background, #ffffff), var(--asteria-block-background, #ffffff)),
+    rgb(var(--color-panel));
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.28);
+  cursor: zoom-out;
+}
+
+.zoom-block-header {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid var(--asteria-block-border-color, rgb(var(--color-border)));
+  padding: 12px 18px;
+}
+
+.zoom-block-title {
+  min-width: 0;
+  flex: 1;
+  font-size: clamp(18px, 2.2vw, 28px);
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.zoom-block-title .math-inline {
+  vertical-align: -0.08em;
+}
+
+.zoom-block-version {
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid rgb(var(--color-accent) / 0.28);
+  background: rgb(var(--color-accent) / 0.1);
+  padding: 3px 8px;
+  color: rgb(var(--color-accent));
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.zoom-block-body {
+  overflow: auto;
+  padding: clamp(16px, 3vw, 34px);
+  font-size: clamp(15px, 1.35vw, 19px);
+  line-height: 1.65;
+  scrollbar-color: rgb(var(--color-muted) / 0.42) transparent;
+  scrollbar-width: thin;
+}
+
 .asteria-block {
   isolation: isolate;
   overflow: visible;

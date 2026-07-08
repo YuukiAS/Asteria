@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.4 - Block Zoom Mode
+
+- Added a Zoom interaction mode next to Move and Edit, with toolbar access and `Alt+3` keyboard switching.
+- Let Zoom mode open a selected block in a near-fullscreen reading overlay while keeping canvas background visible around it.
+- Added Zoom overlay click behavior: clicking the zoomed block returns to the canvas while staying in Zoom mode, and clicking the background exits to Move mode.
+
 ## 0.6.3 - Block Creation And Equation Editing
 
 - Changed toolbar and empty-inspector block creation to place new blocks at the current canvas view center.
