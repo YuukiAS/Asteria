@@ -870,19 +870,9 @@ body {
   background: transparent;
 }
 
-.asteria-block-preview[data-has-overflow="true"]::after {
-  content: "";
-  position: sticky;
-  bottom: -8px;
-  display: block;
-  height: 32px;
-  margin-top: -32px;
-  pointer-events: none;
-  background: linear-gradient(to bottom, transparent, var(--asteria-block-background, #ffffff) 82%);
-}
-
-.asteria-block-preview-title_only::after {
-  display: none;
+.asteria-block-preview[data-has-overflow="true"] {
+  padding-bottom: 52px;
+  scroll-padding-bottom: 52px;
 }
 
 .asteria-block-preview-compact .rich-preview {
@@ -1306,6 +1296,7 @@ body {
 
 .math-block {
   margin: 0.75em 0;
+  width: fit-content;
   max-width: 100%;
   color: var(--asteria-rich-accent-color, inherit);
   cursor: pointer;

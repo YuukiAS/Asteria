@@ -390,18 +390,22 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
             <span className="toolbar-label">Group</span>
           </button>
         )}
-        {interactionMode === "edit" && (
-          <button
-            type="button"
-            className="toolbar-button disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!selectedBlock}
-            onClick={() => setIsEquationDialogOpen(true)}
-            {...toolbarTip(selectedBlock ? "Insert display equation" : "Select a block before inserting an equation")}
-          >
-            <Sigma size={15} />
-            <span className="toolbar-label">Equation</span>
-          </button>
-        )}
+        <button
+          type="button"
+          className="toolbar-button disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={interactionMode !== "edit" || !selectedBlock}
+          onClick={() => setIsEquationDialogOpen(true)}
+          {...toolbarTip(
+            interactionMode !== "edit"
+              ? "Switch to Edit mode to insert an equation"
+              : selectedBlock
+                ? "Insert display equation"
+                : "Select a block before inserting an equation",
+          )}
+        >
+          <Sigma size={15} />
+          <span className="toolbar-label">Equation</span>
+        </button>
         <button type="button" className="toolbar-button" onClick={onFitView} {...toolbarTip("Fit view")}>
           <Scan size={15} />
           <span className="toolbar-label">Fit</span>

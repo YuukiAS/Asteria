@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.7 - Equation Editing And Scroll Clearance
+
+- Changed equation editing so math nodes open the edit dialog only on explicit click or double-click, not hover.
+- Removed the overflow fade overlay from block previews and kept extra bottom scroll clearance for overflowing content.
+- Matched block equation horizontal placement between edit and move views by sizing display-math blocks to their rendered content.
+- Kept the Equation toolbar slot visible but disabled outside Edit mode so top-toolbar controls stay aligned across Move, Edit, and Zoom.
+
 ## 0.6.6 - Block Size Presets
 
 - Added Small, Medium, and Large size presets to the top-toolbar Add block control.
