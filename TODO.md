@@ -1,499 +1,449 @@
-# TODO — Sequential Variant Inheritance Workflow
+# TODO — Presentation Outline 与 Markdown Story Deck 导出
 
-This TODO is for the next Asteria implementation pass. Use it as a planning task first. Do not implement immediately without a concise plan.
+本 TODO 记录 Asteria 下一步要做的功能方向。请 Codex 先进入 plan mode，先读规则、理解当前实现，再给出简洁实施计划。计划清楚后再实现。不要直接进入大规模改代码。
 
-## Context sync
+## 1. 背景与判断
 
-Current repo conventions:
+老师反馈：当前思维导图式展示会“跳来跳去”，信息密度太高，不利于组会汇报。Asteria 现在适合研究阶段组织想法，但不适合作为最终汇报形式。
 
-- The current project version in `package.json` is `0.5.10`.
-- Codex task entry files live under `prompts/tasks/*_task.md`.
-- Codex result files live under `results/*_result.md`.
-- `AGENTS.md` requires Codex to read `prompts/AGENT_RULES.md` and the task file before execution.
-- Completed verified version tasks should create a local git commit, but must not push automatically.
-- Version commits should update `package.json` version and `CHANGELOG.md`.
+因此下一步不要做浏览器内的 online presentation，也不要做“点一下跳到下一个 block”的 canvas 演示模式。那种模式本质上仍然是在高密度画布中移动视角，只解决“怎么跳转”，没有解决“怎么降低密度、形成线性叙事”。
 
-This TODO should be translated into a proper `prompts/tasks/<id>_task.md` if the user wants a handoff task. For now it records the product logic and implementation requirements.
+更合理的方向是：Asteria 负责把网状研究画布整理成线性讲稿骨架；正式展示交给后续 PPT/PDF 工作流。
 
-## Problem
+核心目标：实现一个可以选择 block / group，指定顺序，并导出为 Markdown story deck 的功能。后续用户可以把导出的 Markdown 交给 GPT、Codex 或专门的 slides skill，制作低密度、美观、适合科研汇报的 PPT/PDF。
 
-The current variant UI treats `Default` as a base content row, and later versions show `(inherit default)` when they do not have separate content. This is not the desired workflow for model development.
+## 2. 产品原则
 
-The intended workflow is sequential:
+Asteria 不要变成 PPT 编辑器。Asteria 的角色是研究画布与线性讲稿之间的桥。
+
+网状画布用于思考，Markdown story deck 用于转化为正式汇报。导出内容应当强调线性叙事、低密度、清晰主线，而不是把所有 block 内容无差别堆出来。
+
+默认导出的内容应适合进一步生成科研 slides：一页一个主信息、公式可保留、speaker notes 可保留，但正文不要过密。
+
+## 3. 本任务目标
+
+实现 `Presentation Outline` 或 `Story Export` 功能：
+
+1. 用户可以从画布中选择 block 或 group/frame，加入一个可排序的 outline。
+2. outline 定义导出顺序，不用于网页端播放。
+3. 用户可以给每个 outline 条目设置 slide title、导出密度、notes。
+4. 用户可以按照当前全局版本或指定版本解析 block 内容。
+5. 用户可以导出一个结构良好的 Markdown 文件，用于后续制作 PPT/PDF。
+6. 导出的 Markdown 应包含一段可直接交给 GPT/Codex/slides skill 的生成提示词。
+
+## 4. 明确不做
+
+本任务不做：
+
+1. 不做浏览器内 presentation / slideshow 模式。
+2. 不做按空格跳转 block 的 canvas 演示。
+3. 不做 `.pptx` 直接导出。
+4. 不做 PDF 直接导出。
+5. 不做复杂 PPT 排版引擎。
+6. 不做 AI 自动总结或自动生成 slide 文案，除非用户后续单独要求。
+7. 不做云同步、多用户协作。
+8. 不做对画布视觉系统的大改。
+9. 不做新的 block type 系统。
+10. 不做 presentation-specific per-version layout。
+
+## 5. 交互设计
+
+建议新增一个右侧或可折叠面板，名称可以是：
 
 ```text
-Version 1 -> Version 2 -> Version 3 -> ...
+Story Outline
 ```
 
-When the user creates or edits a block while the global version is Version 2, that content should belong to Version 2. If Version 3 has no separate content, Version 3 should inherit from Version 2. Version 1 should not show that block/content unless it has its own earlier content.
-
-Equivalently:
-
-- Later versions inherit from the nearest earlier version with content.
-- Earlier versions do not inherit backward from later versions.
-- `Default` should no longer be presented as the normal conceptual base for every block.
-
-## Product principle
-
-Asteria variants should behave like ordered model evolution, not like one static default plus optional overrides.
-
-A block is a conceptual slot. Each model version may have its own content. If a version lacks content, it inherits from the nearest previous version with content. If there is no previous content, the block is hidden or empty in that version.
-
-This matches the real workflow:
+或
 
 ```text
-TRACE -> TRACE+HMSC -> Marked TRACE
+Export Outline
 ```
 
-For example:
+面板应支持：
 
-1. A block created in `TRACE` should appear in `TRACE`, `TRACE+HMSC`, and `Marked TRACE`, unless overridden later.
-2. A block created in `TRACE+HMSC` should be hidden in `TRACE`, appear as own content in `TRACE+HMSC`, and be inherited by `Marked TRACE` unless overridden.
-3. A block created in `Marked TRACE` should be hidden in earlier versions.
+1. `Add selected to outline`：把当前选中的 block 或 group 加入 outline。
+2. 拖拽排序 outline 条目。
+3. 删除 outline 条目。
+4. 重命名条目的 slide title。
+5. 设置每个条目的导出密度。
+6. 给每个条目添加 speaker notes。
+7. 点击 outline 条目时，可以在画布上选中或定位到对应 block/group，方便检查来源。
+8. 支持 `Export Markdown`。
 
-## Required semantics
+不要求做复杂动画、播放、全屏。
 
-Let model versions be ordered:
+## 6. Outline 条目类型
 
-```ts
-modelVersions = [v1, v2, v3, ...]
-```
+第一版至少支持 block。若 group/frame 已经稳定，支持 group/frame 更好。
 
-For a requested version `vk`, resolve a block's displayed content using this order:
-
-1. If the block has an own variant for `vk`, display it.
-2. Otherwise, find the nearest earlier version `vj`, where `j < k`, with an own variant. Display that content as inherited from `vj`.
-3. Otherwise, if the block has legacy/base/common content, display it only if the block is marked as globally visible/base content.
-4. Otherwise, hide the block in this version view or show an empty placeholder only in editing contexts.
-
-Do not inherit from later versions to earlier versions.
-
-## Editing semantics
-
-Editing an inherited row should create an own variant for the requested version.
-
-Examples:
-
-- A block has own content in `TRACE+HMSC` and `Marked TRACE` inherits from it.
-- The global version is `Marked TRACE`.
-- The user edits the title or rich text.
-- The app should create a `Marked TRACE` variant initialized from the inherited `TRACE+HMSC` content, then apply the edit to the new `Marked TRACE` variant.
-- The original `TRACE+HMSC` variant should remain unchanged.
-
-This should apply both to global AUTO mode and to a pinned version.
-
-## Creation semantics
-
-When creating a new block:
-
-1. If the global version is a concrete version, create the initial content as an own variant for that version.
-2. The block should be hidden in earlier versions.
-3. The block should be inherited by later versions until they get their own variants.
-4. If the global version is `All`, create base/common content visible in all versions, or ask the user later through UI. For the first implementation, base/common visible in all versions is acceptable.
-
-Do not always create new blocks as `Default` content when the user is working inside a concrete model version.
-
-## Pinning semantics
-
-A block can be AUTO or PINNED.
-
-- AUTO means the block follows the global version selector.
-- PINNED means the block requests a specific version regardless of the global selector.
-
-Pinned blocks should still use the same inheritance rule. If pinned to Version 3 and Version 3 has no own content, it should inherit from the nearest previous version with content.
-
-## Data model guidance
-
-Current code has:
+建议数据结构类似：
 
 ```ts
-export type ModelVersion = {
+type StoryOutlineItemType = "block" | "group"
+
+type StoryExportDensity = "title_only" | "summary" | "full"
+
+type StoryOutlineItem = {
   id: string
-  label: string
-  shortLabel?: string
+  sourceId: string
+  sourceType: StoryOutlineItemType
+  slideTitle?: string
+  density: StoryExportDensity
+  speakerNotes?: string
   createdAt: string
   updatedAt: string
 }
-
-export type BlockVariant = {
-  title: string
-  contentJson: JSONContent
-  contentHtml?: string
-  updatedAt: string
-}
-
-export type BlockData = {
-  title: string
-  contentJson: JSONContent
-  contentHtml?: string
-  variants?: Partial<Record<BlockVariantKey, BlockVariant>>
-  activeVariantKey?: BlockVariantKey
-  // shared style/layout fields
-}
 ```
 
-Keep backward compatibility with this structure, but add explicit resolution metadata and helper functions.
+如果当前 store 不方便扩展，可以先保存在 local state / persisted map state 中，但要保证刷新后不丢失。更理想的是把 outline 存进导出的 map JSON。
 
-Suggested additions:
+## 7. 导出密度
+
+每个 outline item 应支持三个导出密度：
+
+```text
+Title only
+Summary
+Full content
+```
+
+默认使用 `Summary`，因为老师已经反馈不喜欢密度太高。
+
+### Title only
+
+只导出标题、block type、版本来源、极短注释。适合后续让 GPT/Codex 自行扩展为 slide。
+
+### Summary
+
+导出标题、block type、当前解析后的核心内容摘要、关键公式、speaker notes。若目前没有自动摘要功能，就不要调用 AI，可以先导出 block 正文的前若干段或前若干字符，并标注为 `Draft content`。不要在本任务中实现 AI summarization。
+
+### Full content
+
+导出完整 rich text 内容转换成 Markdown，适合需要保留全部笔记时使用。
+
+## 8. 版本解析
+
+导出 Markdown 时必须明确版本。
+
+导出设置中至少支持：
+
+```text
+Use current global version
+Use All / base view
+Use a selected version
+```
+
+如果当前实现已有版本继承逻辑，则导出时应使用 resolver 得到当前版本实际显示的内容，并在 metadata 中标记来源：
+
+```text
+Version: V3
+Source: inherits V2
+```
+
+如果版本继承逻辑尚未完成，则先使用当前已有的 version resolver，并在 TODO/result 中说明限制。
+
+导出正文只放当前解析后的内容，不要把所有版本内容都堆进一个 slide。其他版本信息可以放在 metadata 或 notes 中。
+
+## 9. Markdown 导出格式
+
+导出的 Markdown 应该是线性 story deck，不是原始 block dump。
+
+建议格式：
+
+```markdown
+# <Deck Title>
+
+Generated from Asteria.
+Version view: <current version / selected version>
+Export density: <mixed / summary / full>
+
+## Slide 1 — <Slide Title>
+
+Source: <BlockType> / <Original block title>
+Version: <V3 · Marked TRACE>
+Variant source: <Own / Inherits V2 / Base legacy>
+
+Main message:
+<低密度正文或摘要>
+
+Key formulas:
+<公式，如有>
+
+Speaker notes:
+<speaker notes，如有>
+
+Related blocks:
+<可选，列出用户手动填或自动从连接边推断的相关 block，第一版可省略>
+
+---
+
+## Slide 2 — <Slide Title>
+...
+```
+
+如果 rich text 到 Markdown 的转换已有工具，就复用现有工具；如果没有，先实现一个保守转换，至少保留：
+
+1. 标题文本。
+2. 普通段落。
+3. bullet / ordered list。
+4. bold / italic 尽量保留。
+5. inline math 和 block math。
+6. code text。
+7. links 尽量保留。
+
+如果某些 Tiptap 节点暂时无法可靠转换，允许降级为纯文本，但要避免丢内容。
+
+## 10. Key formulas 提取
+
+第一版不需要复杂公式解析。可以采用简单规则：
+
+1. 如果内容里有 block math 节点，放入 `Key formulas`。
+2. 如果没有 block math，但有 inline math，可以保留在正文中。
+3. 不要为了公式提取而破坏原始内容。
+
+如果公式提取太复杂，先把所有内容放进 `Main message`，并在 result 中说明下一步可以优化。
+
+## 11. Speaker notes
+
+每个 outline item 应允许用户手动写 speaker notes。Notes 不应该显示在 canvas block 本体里，应该属于 story outline。
+
+导出时 speaker notes 单独放在对应 slide section 下。后续制作 PPT 时可以把它们转成演讲备注，而不是 slide 主体。
+
+## 12. Deck-level 信息
+
+导出前可以有一个简单设置区：
+
+1. Deck title。
+2. Export version view。
+3. Default density。
+4. Include speaker notes: yes/no。
+5. Include source metadata: yes/no。
+6. Include PPT generation prompt: yes/no。
+
+第一版 UI 要简单，不要做复杂 modal。可以使用现有右侧 panel 或 toolbar button 打开一个轻量导出面板。
+
+## 13. PPT generation prompt
+
+Markdown 文件末尾建议自动附加一段提示词，方便后续交给 GPT/Codex/slides skill。
+
+建议内容：
+
+```markdown
+---
+
+# Prompt for generating research slides
+
+Please convert the story deck above into a low-density academic presentation.
+
+Requirements:
+- One slide should communicate one main idea.
+- Keep slide text sparse and readable.
+- Preserve mathematical notation in LaTeX.
+- Move detailed explanations to speaker notes.
+- Use diagrams where helpful, especially for model decomposition and workflow.
+- Use a clean academic style suitable for a statistics/ecology research group meeting.
+- Do not copy all Markdown text onto slides.
+- Prefer concise slide titles that state the message.
+```
+
+可以是英文，因为后续生成科研 PPT 通常更适合英文。其余 UI 与 TODO 仍以中文为主。
+
+## 14. 与版本继承功能的关系
+
+如果 sequential variant inheritance 已经实现，本任务应复用它：
+
+1. 导出当前版本实际显示内容。
+2. 标记 `Own / Inherits V1 / Inherits V2 / Hidden / Base legacy`。
+3. Hidden block 不应进入某个 concrete version 的导出，除非用户在 All mode 或明确选择 include hidden。
+
+如果 sequential variant inheritance 尚未实现，本任务不要强行重构版本系统。应在 plan 中说明：
+
+1. 当前导出使用现有 resolver。
+2. 版本继承完成后，Markdown export 应切换到新的 central resolver。
+3. 不要复制一套新的版本解析逻辑。
+
+## 15. 与 group/frame 的关系
+
+如果 group/frame 已经稳定，outline item 可以支持 group/frame。Group 导出时可以：
+
+1. 使用 group title 作为 slide title。
+2. 收集 group 内 blocks 的标题作为 `Contained blocks`。
+3. 默认只导出 group-level summary 或 block titles，不要把 group 内全部内容堆到一页。
+
+如果 group/frame 还不稳定，第一版只支持 block，并在 result 中说明。
+
+## 16. UI 细节建议
+
+Story Outline 面板应尽量紧凑：
+
+```text
+Story Outline
+[Add selected]
+[Export Markdown]
+
+1. Motivation                 Summary
+2. TRACE baseline             Summary
+3. Catalogue decomposition    Summary
+4. Open-tail marked TRACE     Full
+5. Theorem targets            Summary
+```
+
+每行可显示：
+
+1. 序号。
+2. slide title。
+3. source type 小 badge。
+4. density 小 badge。
+5. 删除按钮。
+6. 拖拽 handle。
+
+点击条目展开编辑：
+
+1. Slide title。
+2. Density。
+3. Speaker notes。
+4. Source block title。
+5. Source version state。
+
+## 17. 文件下载
+
+`Export Markdown` 应生成 `.md` 文件下载。
+
+文件名建议：
+
+```text
+<deck-title>-asteria-story-<timestamp>.md
+```
+
+需要对文件名做 slugify，避免非法字符。
+
+## 18. 持久化与导入导出
+
+Story outline 应尽量随 map 一起保存和导出。建议给 `ExportedMap` 增加可选字段：
 
 ```ts
-type VariantSourceKind = "own" | "inherited" | "base" | "hidden"
-
-type ResolvedVariantState = {
-  requestedVersionId?: string
-  requestedVersionLabel?: string
-  requestedVersionShortLabel?: string
-  renderedVariantKey?: string
-  renderedVersionId?: string
-  renderedVersionLabel?: string
-  renderedVersionShortLabel?: string
-  sourceKind: VariantSourceKind
-  inheritedFromVersionId?: string
-  inheritedFromVersionLabel?: string
-  inheritedFromVersionShortLabel?: string
-  isAuto: boolean
-  isPinned: boolean
-  isFallbackToBase: boolean
-  isHidden: boolean
-  tooltip: string
-}
+storyOutline?: StoryOutlineItem[]
+storyDeckTitle?: string
 ```
 
-Implement a central resolver, for example:
+兼容性要求：
 
-```ts
-resolveSequentialBlockVariantState(data, activeVersionId, modelVersions)
-```
+1. 旧 map 可以正常加载。
+2. 没有 storyOutline 时默认为空。
+3. 导入旧 JSON 不报错。
+4. 导出新 JSON 时保留 storyOutline。
+5. Markdown 导出不改变 map 内容，除非用户编辑了 outline。
 
-or update the existing `resolveBlockVersionState` to support sequential inheritance.
+## 19. 可能涉及的文件
 
-Avoid duplicating inheritance logic across components.
+请 Codex plan mode 先检查实际文件结构，再决定修改位置。可能涉及：
 
-## UI: version labels and space constraints
-
-The right panel is narrow. Do not use full model names as the primary row labels in the variants panel.
-
-Use compact version labels as primary labels:
-
-```text
-V1
-V2
-V3
-```
-
-or `version.shortLabel` if the user has customized it.
-
-Use full names only in secondary text, tooltip/title attributes, or a details popover. The top toolbar already has enough room to show the full active version name, so the right panel should optimize for compact scanning.
-
-Recommended default mapping for the current project:
-
-```text
-V1 = TRACE
-V2 = TRACE+HMSC
-V3 = Marked TRACE
-```
-
-## UI: right panel variant section
-
-Replace the current `Default is the base content...` design.
-
-Current language such as `(inherit default)` is misleading. Instead, show a compact version table that reflects sequential inheritance.
-
-Recommended wording:
-
-```text
-Versions inherit from the nearest earlier version with content.
-Editing an inherited row creates an own copy for that version.
-```
-
-Each row should correspond to a model version, not to `Default`.
-
-Each row should show:
-
-1. Compact version label, e.g. `V1`, `V2`, `V3`.
-2. Source state:
-   - `Own`
-   - `Inherits V1`
-   - `Inherits V2`
-   - `Hidden`
-3. Actions:
-   - `Edit` or `Override` for inherited/hidden rows.
-   - `Use current` or `Copy here`.
-   - `Delete own` only if the row has own content.
-4. Tooltip/title containing the full version name and full inherited source name.
-
-Preferred compact examples:
-
-```text
-V1   Own
-V2   Own
-V3   Inherits V2
-```
-
-```text
-V1   Own
-V2   Inherits V1
-V3   Own
-```
-
-```text
-V1   Hidden
-V2   Own
-V3   Inherits V2
-```
-
-```text
-V1   Hidden
-V2   Own
-V3   Own
-```
-
-If every version has own content, keep the panel clean and show only compact labels plus `Own` states. Do not add `(default)` or `(inherit default)`.
-
-Do not put a large `Default` row at the top unless legacy/base content exists and needs to be managed. If legacy/base content exists, show it in a collapsed advanced section called `Base / legacy content`, not as the main variant model.
-
-## Four reference cases for the right panel
-
-Assume:
-
-```text
-V1 = TRACE
-V2 = TRACE+HMSC
-V3 = Marked TRACE
-```
-
-Case 1: block created in V1, edited in V2, untouched in V3.
-
-Right panel should show:
-
-```text
-V1   Own
-V2   Own
-V3   Inherits V2
-```
-
-Tooltips should clarify:
-
-```text
-V1 · TRACE: own content.
-V2 · TRACE+HMSC: own content.
-V3 · Marked TRACE: inherits from V2 · TRACE+HMSC.
-```
-
-Case 2: block created in V1, untouched in V2, edited in V3.
-
-```text
-V1   Own
-V2   Inherits V1
-V3   Own
-```
-
-Case 3: block created in V2, untouched in V3.
-
-```text
-V1   Hidden
-V2   Own
-V3   Inherits V2
-```
-
-Case 4: block created in V2, edited in V3.
-
-```text
-V1   Hidden
-V2   Own
-V3   Own
-```
-
-In all four cases, do not show `(default)` or `(inherit default)` in the main variants table. Those labels are only allowed in the optional collapsed `Base / legacy content` area for old data or All-mode base content.
-
-## UI: terminology
-
-Use these terms consistently:
-
-- `AUTO`: follows global version selector.
-- `PINNED`: fixed to a selected version.
-- `Own`: this version has its own content.
-- `Inherits V1`, `Inherits V2`, etc.: compact state label for the panel.
-- `Hidden`: no content exists at or before this version.
-- `Base / legacy`: only for old default/common content or content created in All mode.
-
-Avoid using `Default` as the primary user-facing concept for normal version inheritance.
-
-## UI: inspector selector
-
-The current content-version selector should be revised.
-
-Instead of:
-
-```text
-Default / Version 1 / Version 2 / Version 3
-```
-
-Use compact labels such as:
-
-```text
-AUTO
-PIN V1
-PIN V2
-PIN V3
-```
-
-The option tooltip/title should contain full names:
-
-```text
-AUTO: follow global version
-PIN V1 · TRACE
-PIN V2 · TRACE+HMSC
-PIN V3 · Marked TRACE
-```
-
-When the selected mode is AUTO, the editing target should normally be the currently requested global version. If that version currently inherits from an earlier version, editing should create an own variant for the requested global version.
-
-When pinned, editing should target the pinned version. If it inherits from an earlier version, editing should create an own variant for the pinned version.
-
-## UI: global version view
-
-When the global version is a concrete version:
-
-- Blocks with own or inherited content for that version should be shown.
-- Blocks with no content at or before that version should be hidden from the canvas by default.
-- Edges connected to hidden blocks should be hidden.
-- In `All` mode, show all blocks so users can recover/edit blocks hidden in specific versions.
-
-This is important: a block created in Version 2 should not clutter the Version 1 view.
-
-## UI: block header indicator
-
-The block header should continue using a compact version strip, but it must reflect sequential inheritance.
-
-Suggested behavior:
-
-- Filled marker: version has own content.
-- Empty marker: version has no own content.
-- Active ring: requested/current version.
-- If current content is inherited, tooltip should say `Showing V3 by inheriting V2` or equivalent, with full names in the tooltip.
-- If hidden in a version, it simply should not show in that version view.
-
-Tooltip examples:
-
-```text
-V1 TRACE: own. V2 TRACE+HMSC: own. V3 Marked TRACE: inherits from V2 TRACE+HMSC. Showing V3 via AUTO.
-```
-
-```text
-V1 TRACE: hidden. V2 TRACE+HMSC: own. V3 Marked TRACE: inherits from V2 TRACE+HMSC. Showing V2 via PINNED.
-```
-
-## Version deletion and reordering
-
-When deleting a model version:
-
-1. Remove that version's own variants.
-2. Recompute inheritance using the remaining order.
-3. Do not silently copy deleted content into later versions unless the user explicitly chooses to preserve it.
-
-When reordering model versions:
-
-1. Inheritance should follow the new order.
-2. Warn the user if reordering may change inheritance behavior.
-3. It is acceptable to use a browser `confirm` for the first implementation.
-
-## Import/export and migration
-
-Required compatibility:
-
-1. Existing maps with `default` variants should still load.
-2. Existing `default` content should be treated as base/legacy content visible across all versions unless the user converts it.
-3. Do not destroy old content.
-4. Export/import must preserve version order and own variants.
-5. New blocks created in a concrete version should export without requiring a `default` variant as the conceptual source, though legacy mirror fields may remain for compatibility.
-6. If internal legacy `title`, `contentJson`, and `contentHtml` fields remain, keep them synchronized to the currently resolved/rendered variant only as compatibility mirrors, not as the main semantic source.
-
-## Implementation notes
-
-Likely files to inspect/update:
-
-- `src/constants/versioning.ts`
 - `src/types/map.ts`
-- `src/lib/blockVersionState.ts`
-- `src/lib/exportImport.ts`
 - `src/store/useMapStore.ts`
+- `src/lib/exportImport.ts`
 - `src/components/InspectorPanel.tsx`
-- block rendering/header/version strip components
-- canvas filtering logic
-- demo data
+- `src/components/Toolbar.tsx` 或当前 toolbar 文件
+- 新增 `src/components/StoryOutlinePanel.tsx`
+- 新增 `src/lib/storyMarkdownExport.ts`
+- 新增 `src/lib/tiptapToMarkdown.ts` 或复用现有转换逻辑
 - `CHANGELOG.md`
 - `package.json`
 
-Centralize the inheritance logic. Do not implement separate ad hoc fallbacks in the inspector, block renderer, export/import, and store.
+如果已有类似 markdown/export helper，请优先复用，不要重复造轮子。
 
-## Suggested task id/version
+## 20. 推荐任务编号与版本
 
-Use a versioned task and commit. Suggested version:
+当前 `package.json` 版本如果仍为 `0.5.10`，建议本任务使用：
 
 ```text
 v0.5.11
 ```
 
-If a newer local version already exists, use the next patch version.
+如果本地已经有更新版本，请使用下一个 patch 版本。
 
-Create a task file if following the handoff protocol:
-
-```text
-prompts/tasks/asteria_0_5_11_sequential_variant_inheritance_task.md
-```
-
-Write the result to:
+若需要按照 handoff 协议生成正式 task 文件，建议：
 
 ```text
-results/asteria_0_5_11_sequential_variant_inheritance_result.md
+prompts/tasks/asteria_0_5_11_story_outline_markdown_export_task.md
 ```
 
-## Acceptance criteria
+结果文件：
 
-This task is complete when:
+```text
+results/asteria_0_5_11_story_outline_markdown_export_result.md
+```
 
-1. Creating a block while global version is Version 1 makes it visible in Version 1 and inherited by later versions.
-2. Creating a block while global version is Version 2 hides it in Version 1, shows own content in Version 2, and inherits it in Version 3.
-3. Creating a block while global version is Version 3 hides it in earlier versions and shows it in Version 3.
-4. Editing an inherited version creates an own variant for the requested version and does not modify the inherited source.
-5. AUTO follows global version and uses sequential inheritance.
-6. PINNED ignores global version but still uses sequential inheritance for the pinned version.
-7. The variants panel uses compact primary labels such as `V1`, `V2`, `V3`, with full names in tooltip/title or secondary text.
-8. The variants panel shows `Own`, `Inherits V1`, `Inherits V2`, or `Hidden`, not `(inherit default)`.
-9. The `Default is the base content...` explanation is removed or replaced by sequential inheritance wording.
-10. If all versions have own content, the panel is clean and does not show redundant `(default)` or `(inherit default)` labels.
-11. Blocks with no content at or before the active concrete version are hidden in that version view.
-12. `All` mode still shows all blocks for editing/recovery.
-13. Edges connected to hidden blocks are hidden in concrete version views.
-14. Existing maps with default/common content still load and remain recoverable.
-15. Export/import preserves ordered variants and inheritance behavior.
-16. Build passes.
-17. No obvious console errors during basic variant creation, editing, pinning, global switching, and import/export.
+## 21. Plan mode 要求
 
-## Out of scope
+实现前先输出计划，计划应覆盖：
 
-Do not implement in this task:
+1. 当前 map/store/export 数据流。
+2. outline 数据结构放在哪里。
+3. 如何从 block/group 解析当前内容。
+4. 如何做 rich text 到 Markdown 的转换。
+5. 如何设计 UI，避免 right panel 过载。
+6. 如何处理版本信息。
+7. 如何持久化与导入导出。
+8. 如何测试。
+9. 哪些功能本轮不做。
 
-1. Full branching/merge version control.
-2. Per-version block positions/sizes.
-3. Per-version edge styles unless already implemented and easy to preserve.
-4. AI-assisted migration or summarization.
-5. Cloud sync.
-6. Multi-user collaboration.
-7. Major visual redesign unrelated to the variants panel.
-8. Large new block type system.
+计划必须明确哪些是第一版必须实现，哪些是后续优化。
 
-## Plan mode request
+## 22. 测试要求
 
-Before implementation, produce a short plan covering:
+至少运行：
 
-1. Current variant data flow.
-2. Proposed resolver changes.
-3. Store action changes.
-4. Inspector UI changes.
-5. Canvas filtering changes.
-6. Migration strategy.
-7. Test strategy.
+1. TypeScript build。
+2. Production build。
+3. 浏览器手动 smoke test，如果当前环境支持。
 
-Only implement after the plan is clear.
+手动测试场景：
+
+1. 选择一个 block，加入 Story Outline。
+2. 加入多个 block，拖拽排序。
+3. 修改 slide title。
+4. 修改 density。
+5. 添加 speaker notes。
+6. 导出 Markdown。
+7. 检查 Markdown 是否按 outline 顺序排列。
+8. 检查公式是否尽量保留。
+9. 检查当前版本信息是否导出。
+10. 刷新页面后 outline 不丢失。
+11. 导出/import map 后 outline 不丢失。
+12. 删除 source block 后 outline 中应有合理提示或自动清理，不应崩溃。
+13. 旧 map 仍可加载。
+
+## 23. 验收标准
+
+本任务完成的标准：
+
+1. 用户可以把选中的 block 加入 Story Outline。
+2. Story Outline 可以排序、删除、编辑 slide title。
+3. 每个 outline item 可以设置导出密度。
+4. 每个 outline item 可以写 speaker notes。
+5. 可以导出 `.md` 文件。
+6. Markdown 是线性 story deck，而不是无序 block dump。
+7. Markdown 包含 deck title、版本信息、source metadata、slide sections。
+8. Markdown 能保留主要文本和公式。
+9. Markdown 末尾可包含用于后续生成科研 PPT 的 prompt。
+10. 不实现 online presentation / slideshow。
+11. 不直接导出 pptx/pdf。
+12. 旧地图兼容。
+13. story outline 能持久化。
+14. build 通过。
+15. result 文件说明完成项、跳过项、已知问题和下一步建议。
+
+## 24. 后续可能任务
+
+本任务之后，可以再考虑：
+
+1. 用 GPT/Codex/slides skill 将 Markdown story deck 生成正式 PPT。
+2. 根据导出的 Markdown 自动建议 slide grouping。
+3. 支持从 group/frame 自动生成 section。
+4. 支持导出 Marp / Quarto slides。
+5. 支持导出 speaker notes 到 PPT notes。
+6. 支持一键复制 Markdown 到剪贴板。
+7. 支持在 outline 中手动写 slide-level main message。
+
+这些都不是本轮任务。
