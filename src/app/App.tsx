@@ -65,6 +65,7 @@ export function App() {
     setSelectedNode,
     setSelectedEdge,
     saveNow,
+    createBackupNow,
     undoLastCanvasChange,
     selectedNodeId,
     selectedNodeIds,
@@ -73,6 +74,14 @@ export function App() {
   useEffect(() => {
     void hydrate()
   }, [hydrate])
+
+  useEffect(() => {
+    if (!isHydrated) return
+    const backupTimer = window.setInterval(() => {
+      void createBackupNow()
+    }, 5 * 60 * 1000)
+    return () => window.clearInterval(backupTimer)
+  }, [createBackupNow, isHydrated])
 
   const setFitView = useCallback((fitView: () => void) => {
     fitViewRef.current = fitView
@@ -172,7 +181,7 @@ export function App() {
         setSelectedEdge(undefined)
         return
       }
-      if ((event.key === "Delete" || event.key === "Backspace") && !isEditableTarget(event.target)) {
+      if (event.key === "Delete" && !isEditableTarget(event.target)) {
         event.preventDefault()
         deleteSelected()
       }

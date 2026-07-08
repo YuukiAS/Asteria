@@ -287,7 +287,7 @@ body {
   }
 
   .version-manager-panel {
-    @apply fixed right-3 top-[48px] z-[80] grid w-[min(520px,calc(100vw-24px))] gap-3 rounded-xl border border-border bg-panel p-3 text-foreground shadow-xl;
+    @apply fixed z-[80] grid w-[min(520px,calc(100vw-24px))] gap-3 rounded-xl border border-border bg-panel p-3 text-foreground shadow-xl;
   }
 
   .version-row {

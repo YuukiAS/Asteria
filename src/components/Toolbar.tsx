@@ -1,4 +1,4 @@
-import { Download, Group, Moon, MousePointer2, PencilLine, Plus, Rows3, Save, Scan, Settings2, Sigma, Sparkles, Sun, Trash2, Upload } from "lucide-react"
+import { Download, Group, History, Moon, MousePointer2, PencilLine, Plus, Rows3, Save, Scan, Settings2, Sigma, Sparkles, Sun, Trash2, Upload } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { displayModeOptions, maxModelVersions } from "../constants/versioning"
 import { createExportFilename, exportMapFile, normalizeExportedMap, normalizeMapTitle, readJsonFile } from "../lib/exportImport"
@@ -19,9 +19,12 @@ type ToolbarProps = {
 export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionModeChange, onFitView }: ToolbarProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
+  const versionSettingsRef = useRef<HTMLButtonElement>(null)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [isEquationDialogOpen, setIsEquationDialogOpen] = useState(false)
   const [isVersionPanelOpen, setIsVersionPanelOpen] = useState(false)
+  const [isBackupPanelOpen, setIsBackupPanelOpen] = useState(false)
+  const [versionPanelPosition, setVersionPanelPosition] = useState({ left: 12, top: 56 })
   const {
     mapTitle,
     modelVersions,
@@ -33,6 +36,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
     selectedNodeId,
     selectedNodeIds,
     saveStatus,
+    backups,
     addBlockAndSelect,
     groupSelectedBlocks,
     updateMapTitle,
@@ -45,12 +49,25 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
     appendBlockMathToSelectedBlock,
     straightenNearAxisEdges,
     saveNow,
+    restoreBackup,
     clearMap,
     loadMap,
   } = useMapStore()
   const selectedBlock = nodes.find((node) => node.id === selectedNodeId && node.type === "block")
   const appVersion = packageJson.version
   const activeToolbarVersionId = modelVersions.some((version) => version.id === activeVersionId) ? activeVersionId : modelVersions[0]?.id || "all"
+
+  const formatRelativeBackupTime = (value: string) => {
+    const elapsedMs = Date.now() - new Date(value).getTime()
+    if (!Number.isFinite(elapsedMs) || elapsedMs < 0) return "just now"
+    const minutes = Math.floor(elapsedMs / 60000)
+    if (minutes < 1) return "just now"
+    if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`
+    const days = Math.floor(hours / 24)
+    return `${days} day${days === 1 ? "" : "s"} ago`
+  }
 
   useEffect(() => {
     if (modelVersions.length > 0 && activeVersionId === "all") setActiveVersion(modelVersions[0].id)
@@ -98,6 +115,18 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
   const createBlock = () => {
     const nodeId = addBlockAndSelect()
     requestInlineBlockEdit(nodeId, "title")
+  }
+
+  const toggleVersionPanel = () => {
+    const rect = versionSettingsRef.current?.getBoundingClientRect()
+    if (rect) {
+      const panelWidth = Math.min(520, window.innerWidth - 24)
+      setVersionPanelPosition({
+        left: Math.max(12, Math.min(rect.left, window.innerWidth - panelWidth - 12)),
+        top: rect.bottom + 8,
+      })
+    }
+    setIsVersionPanelOpen((open) => !open)
   }
 
   const importJson = async (file?: File) => {
@@ -161,6 +190,42 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
         >
           {saveStatus}
         </span>
+        <button
+          type="button"
+          className="toolbar-button relative !px-2"
+          onClick={() => setIsBackupPanelOpen((open) => !open)}
+          aria-label="Restore backup"
+          aria-expanded={isBackupPanelOpen}
+          title="Restore backup"
+        >
+          <History size={14} />
+          <span className="toolbar-label">Restore</span>
+        </button>
+        {isBackupPanelOpen && (
+          <div className="absolute left-36 top-12 z-40 w-[260px] rounded-lg border border-border bg-panel p-3 shadow-xl">
+            <div className="mb-2 text-xs font-semibold text-foreground">Restore backup</div>
+            <div className="grid gap-2">
+              {backups.length === 0 && <div className="text-xs text-secondary">No backups yet.</div>}
+              {backups.map((backup) => (
+                <button
+                  key={backup.id}
+                  type="button"
+                  className="toolbar-button justify-between"
+                  onClick={() => {
+                    if (window.confirm(`Restore backup from ${formatRelativeBackupTime(backup.createdAt)}? Current canvas will be replaced.`)) {
+                      void restoreBackup(backup.id)
+                      setIsBackupPanelOpen(false)
+                    }
+                  }}
+                  title={new Date(backup.createdAt).toLocaleString()}
+                >
+                  <span>{formatRelativeBackupTime(backup.createdAt)}</span>
+                  <span className="text-[11px] text-secondary">Restore</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       <div className="toolbar-actions ml-auto flex min-w-0 items-center gap-1.5 overflow-hidden">
         <div className="flex shrink-0 rounded-md border border-border bg-panel p-0.5" aria-label="Canvas interaction mode">
@@ -210,9 +275,10 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
             )}
           </select>
           <button
+            ref={versionSettingsRef}
             type="button"
             className="segmented-button justify-center !px-1.5"
-            onClick={() => setIsVersionPanelOpen((open) => !open)}
+            onClick={toggleVersionPanel}
             aria-label="Manage versions"
             aria-expanded={isVersionPanelOpen}
             title="Manage versions"
@@ -262,13 +328,13 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           <Download size={15} />
           <span className="toolbar-label">Export</span>
         </button>
-        <button type="button" className="danger-button" onClick={clear} title="Clear">
-          <Trash2 size={15} />
-          <span className="toolbar-label">Clear</span>
-        </button>
         <button type="button" className="toolbar-button" onClick={() => inputRef.current?.click()} title="Import">
           <Upload size={15} />
           <span className="toolbar-label">Import</span>
+        </button>
+        <button type="button" className="danger-button" onClick={clear} title="Clear">
+          <Trash2 size={15} />
+          <span className="toolbar-label">Clear</span>
         </button>
         <label
           className="density-control flex shrink-0 items-center gap-1 rounded-md border border-border bg-panel px-1.5 text-xs font-medium text-secondary"
@@ -294,7 +360,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
         </button>
       </div>
       {isVersionPanelOpen && (
-        <div className="version-manager-panel">
+        <div className="version-manager-panel" style={{ left: versionPanelPosition.left, top: versionPanelPosition.top }}>
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-xs font-semibold text-foreground">Versions</div>

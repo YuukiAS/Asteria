@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.23 - Restore Backups
+
+- Removed the global `Backspace` selected-object deletion shortcut so only `Delete` removes selected blocks or edges.
+- Added IndexedDB map backups that run every five minutes, keep the latest three changed copies, and skip unchanged canvases.
+- Added a top-left Restore menu beside the Saved/Unsaved status with relative backup ages.
+- Moved Import between Export and Clear in the toolbar.
+- Anchored the version manager popover below its settings button instead of the far right of the toolbar.
+
 ## 0.5.22 - Repeat Last Rich Color Shortcut
 
 - Added editor-level `Ctrl/Cmd+Shift+H` handling that reapplies the most recently used text color or highlight color.

@@ -23,7 +23,7 @@ import {
   normalizeExportedMap,
   resolveBlockVariant,
 } from "../lib/exportImport"
-import { loadPersistedMap, savePersistedMap } from "../lib/db"
+import { createPersistedMapBackup, listPersistedMapBackups, loadPersistedMap, savePersistedMap, type PersistedMapBackup } from "../lib/db"
 import { contentJsonToHtml } from "../editor/editorUtils"
 import { resolveBlockVersionState } from "../lib/blockVersionState"
 import { createId } from "../lib/ids"
@@ -131,6 +131,7 @@ type MapState = {
   viewport: MapViewport
   saveStatus: SaveStatus
   lastSavedAt?: string
+  backups: PersistedMapBackup[]
   seededDemo: boolean
   isHydrated: boolean
   autosaveTimer?: number
@@ -192,6 +193,9 @@ type MapState = {
   onNodesChange: (changes: NodeChange<MapNode>[]) => void
   onEdgesChange: (changes: EdgeChange<MapEdge>[]) => void
   saveNow: () => Promise<void>
+  createBackupNow: () => Promise<void>
+  restoreBackup: (id: string) => Promise<void>
+  refreshBackups: () => Promise<void>
   hydrate: () => Promise<void>
   markUnsaved: () => void
 }
@@ -208,6 +212,18 @@ function mapFromState(state: Pick<MapState, "mapTitle" | "modelVersions" | "acti
     viewport: state.viewport,
     updatedAt: nowIso(),
   }
+}
+
+function mapContentSignature(map: ExportedMap) {
+  return JSON.stringify({
+    title: normalizeMapTitle(map.title),
+    modelVersions: map.modelVersions,
+    activeVersionId: map.activeVersionId,
+    displayModeOverride: map.displayModeOverride,
+    nodes: map.nodes,
+    edges: map.edges,
+    viewport: map.viewport,
+  })
 }
 
 function isBlockNode(node: MapNode): node is BlockNode {
@@ -394,6 +410,7 @@ export const useMapStore = create<MapState>((set, get) => ({
   selectedNodeIds: [],
   viewport: { x: 0, y: 0, zoom: 1 },
   saveStatus: "Saved",
+  backups: [],
   seededDemo: false,
   isHydrated: false,
   edgeStyleClipboard: readClipboard<EdgeStyleClipboard>(edgeStyleClipboardKey),
@@ -412,6 +429,7 @@ export const useMapStore = create<MapState>((set, get) => ({
 
   hydrate: async () => {
     try {
+      const backups = await listPersistedMapBackups()
       const persisted = await loadPersistedMap()
       if (persisted) {
         const map = normalizeExportedMap(persisted.map)
@@ -424,6 +442,7 @@ export const useMapStore = create<MapState>((set, get) => ({
           edges: map.edges.map(applyEdgePresentation),
           viewport: map.viewport ?? { x: 0, y: 0, zoom: 1 },
           lastSavedAt: persisted.updatedAt,
+          backups,
           seededDemo: persisted.seededDemo,
           isHydrated: true,
           saveStatus: "Saved",
@@ -439,6 +458,7 @@ export const useMapStore = create<MapState>((set, get) => ({
         nodes: applyContentHtml(demo.nodes),
         edges: demo.edges.map(applyEdgePresentation),
         viewport: demo.viewport ?? { x: 0, y: 0, zoom: 1 },
+        backups,
         seededDemo: true,
         isHydrated: true,
         saveStatus: "Unsaved",
@@ -461,6 +481,51 @@ export const useMapStore = create<MapState>((set, get) => ({
     } catch (error) {
       console.error("Failed to save map", error)
       set({ saveStatus: "Error" })
+    }
+  },
+
+  createBackupNow: async () => {
+    try {
+      const state = get()
+      const map = mapFromState(state)
+      const latestBackup = state.backups[0]
+      if (latestBackup && mapContentSignature(latestBackup.map) === mapContentSignature(map)) return
+      const backups = await createPersistedMapBackup(map, state.seededDemo)
+      set({ backups })
+    } catch (error) {
+      console.error("Failed to create map backup", error)
+    }
+  },
+
+  restoreBackup: async (id) => {
+    const backup = get().backups.find((item) => item.id === id)
+    if (!backup) return
+    const map = normalizeExportedMap(backup.map)
+    set({
+      mapTitle: normalizeMapTitle(map.title),
+      modelVersions: map.modelVersions || [],
+      activeVersionId: map.activeVersionId || allVersionsId,
+      displayModeOverride: map.displayModeOverride || "block",
+      nodes: applyContentHtml(map.nodes),
+      edges: map.edges.map(applyEdgePresentation),
+      canvasHistory: [],
+      pendingDragSnapshot: undefined,
+      viewport: map.viewport ?? { x: 0, y: 0, zoom: 1 },
+      selectedNodeId: undefined,
+      selectedNodeIds: [],
+      selectedEdgeId: undefined,
+      seededDemo: backup.seededDemo,
+      saveStatus: "Unsaved",
+    })
+    await get().saveNow()
+    await get().refreshBackups()
+  },
+
+  refreshBackups: async () => {
+    try {
+      set({ backups: await listPersistedMapBackups() })
+    } catch (error) {
+      console.error("Failed to load map backups", error)
     }
   },
 
