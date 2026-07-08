@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.24 - Equation Insertion Reliability
+
+- Added an AGENTS rule to check whether README updates are needed before version or feature commits.
+- Routed top-toolbar block equation insertion through the selected block's live TipTap editor instead of patching stored JSON directly.
+- Made active content editing render the live rich-text editor regardless of block display density so inserted equations are visible while editing.
+- Fixed block math node view updates so edited display equations reliably rerender.
+- Made inline equation dialogs submit on Enter without allowing newline entry, while block equation dialogs continue using Ctrl/Cmd+Enter for submit.
+- Cleaned up root-level local screenshots and logs into `images/` and `logging/`, with ignore rules and README notes.
+- Updated README version and notes for local backups, restore, and equation entry behavior.
+
 ## 0.5.23 - Restore Backups
 
 - Removed the global `Backspace` selected-object deletion shortcut so only `Delete` removes selected blocks or edges.

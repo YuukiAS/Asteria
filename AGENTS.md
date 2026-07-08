@@ -1,34 +1,34 @@
 <!-- ai-bridge-kit:start -->
 # Handoff Protocol
 
-本项目采用 `prompts/` handoff 协议，用于 ChatGPT 和 Codex 之间的文件化交接。
+This project uses the `prompts/` handoff protocol for file-based handoff between ChatGPT and Codex.
 
-## 默认入口
+## Default Entry Points
 
-- `prompts/AGENT_RULES.md`：长期执行规则。
-- `prompts/CHATGPT_RULES.md`：ChatGPT 通过 GitHub MCP 或仓库工具写 task、note、review 时应读取的规则。
-- `prompts/tasks/*_task.md`：唯一默认任务入口。
-- `results/*_result.md`：Codex 的结果回写位置。
-- `prompts/tasks/*_review.md`：ChatGPT 的复盘位置。
-- `docs/notes/`：参考笔记目录，不是默认任务入口。
-- `docs/wiki/`：长期研究知识库，不是默认任务入口。
+- `prompts/AGENT_RULES.md`: Long-term execution rules.
+- `prompts/CHATGPT_RULES.md`: Rules ChatGPT should read before writing tasks, notes, or reviews through GitHub MCP or repository tools.
+- `prompts/tasks/*_task.md`: The only default task entry point.
+- `results/*_result.md`: Where Codex writes task results.
+- `prompts/tasks/*_review.md`: Where ChatGPT writes reviews.
+- `docs/notes/`: Reference notes. This is not a default task entry point.
+- `docs/wiki/`: Long-term research knowledge base. This is not a default task entry point.
 
-## Codex 行为规则
+## Codex Rules
 
-- Codex 开始任务前应读取 `prompts/AGENT_RULES.md` 和指定的 `prompts/tasks/<id>_task.md`。
-- Codex 必须遵守 task frontmatter、允许动作、禁止动作和停止条件。
-- Codex 完成后必须写 `results/<id>_result.md`。
-- Codex 完成已授权任务并通过必要验证后，应自动创建本地 git commit；commit message 应包含对应版本号或任务 id。Codex 不应自动 push，push 由用户手动执行。
-- Codex 不应主动执行 `docs/notes/` 或 `docs/wiki/` 中的内容，除非任务单显式引用某篇 note 或 wiki 页面作为背景材料。
-- 如果任务需要联网、上传、删除数据、运行昂贵命令或修改高风险配置，但 task 没有授权，Codex 必须停止并在 result 中请求人工批准。
+- Before starting a task, Codex should read `prompts/AGENT_RULES.md` and the specified `prompts/tasks/<id>_task.md`.
+- Codex must follow task frontmatter, allowed actions, forbidden actions, and stop conditions.
+- After completion, Codex must write `results/<id>_result.md`.
+- After completing an authorized task and passing the required verification, Codex should automatically create a local git commit. The commit message should include the matching version number or task id. Codex must not push automatically; pushing is always done manually by the user.
+- Codex must not proactively execute content from `docs/notes/` or `docs/wiki/` unless a task explicitly references a note or wiki page as background material.
+- If a task needs network access, uploads, data deletion, expensive commands, or high-risk configuration changes but the task does not authorize them, Codex must stop and request human approval in the result.
 
-## ChatGPT / GitHub MCP 行为规则
+## ChatGPT / GitHub MCP Rules
 
-- ChatGPT 通过 GitHub MCP 处理本仓库时，应先读取 `AGENTS.md` 和 `prompts/CHATGPT_RULES.md`。
-- 需要 Codex 执行的内容必须写成 `prompts/tasks/<id>_task.md`。
-- 只作参考的研究分析、方案比较、会议记录和复盘应写到 `docs/notes/`。
-- 有长期复用价值的论文摘要、报告摘要、概念、对比、gap 和综合讨论应写到 `docs/wiki/`。
-- ChatGPT 不应把 issue、PR description 或聊天正文当作 Codex 的唯一任务来源。
+- When ChatGPT works on this repository through GitHub MCP, it should read `AGENTS.md` and `prompts/CHATGPT_RULES.md` first.
+- Work that requires Codex execution must be written as `prompts/tasks/<id>_task.md`.
+- Research analysis, option comparisons, meeting notes, and reviews that are only references should go under `docs/notes/`.
+- Reusable paper summaries, report summaries, concepts, comparisons, gaps, and syntheses should go under `docs/wiki/`.
+- ChatGPT should not treat an issue, PR description, or chat body as Codex's only task source.
 <!-- ai-bridge-kit:end -->
 
 <!-- asteria-local-rules:start -->
@@ -36,55 +36,63 @@
 
 ## Commit Naming
 
-- 完成已验证的版本任务后，Codex 应自动创建本地 commit，但不得自动 push；push 始终由用户手动完成。
-- 版本发布或版本修复的 commit message 使用精确版本号：`v0.3.0`、`v0.3.1`、`v0.4.0`。
-- 如果用户把当前改动称为“版本”、明确提到 `0.3.x` / patch 版本，或要求“作为版本”，Codex 必须使用下一个未使用的 patch 版本号作为 commit message，例如当前已有 `v0.3.1` 时应提交 `v0.3.2`，不要使用 `fix:` / `docs:` 等非版本前缀。
-- 版本提交前必须同步更新 `package.json` 的 `version` 和 `CHANGELOG.md` 顶部条目；如果发现已有版本 commit 但这些文件滞后，应在当前版本提交中补齐记录。
-- 同一版本内的补丁如果用户明确要求作为版本提交，也使用对应的新 patch 版本号，不要复用已经存在的版本号。
-- 非版本化维护提交使用简短任务前缀：`docs: ...`、`chore: ...`、`fix: ...`；如果有 handoff task id，message 应包含 task id。
-- 提交前至少确认 `git status --short`，只 stage 当前任务相关文件，不要把其他 thread 或用户的未相关改动混入 commit。
+- After a verified version task is complete, Codex should automatically create a local commit, but must not push. Pushes are always done manually by the user.
+- Release or version-fix commit messages use the exact version number, such as `v0.3.0`, `v0.3.1`, or `v0.4.0`.
+- If the user calls the current change a "version", explicitly mentions a `0.3.x` / patch version, or asks to treat it as a version, Codex must use the next unused patch version as the commit message. For example, if `v0.3.1` already exists, commit as `v0.3.2`; do not use non-version prefixes such as `fix:` or `docs:`.
+- Before a version commit, Codex must update `package.json` `version` and the top `CHANGELOG.md` entry. If an existing version commit is found but these files are stale, fix the records in the current version commit.
+- Before committing any completed version or feature task, Codex must check whether `README.md` also needs to be updated. At minimum, verify the displayed app version, newly added user-facing behavior, data/restore notes, and workflow instructions. If anything is stale, update `README.md` in the same commit.
+- If the user explicitly asks for a same-version patch to be committed as a version, use the corresponding new patch version number rather than reusing an existing version.
+- Non-version maintenance commits use short task prefixes such as `docs: ...`, `chore: ...`, or `fix: ...`. If there is a handoff task id, include the task id in the message.
+- Before committing, run at least `git status --short`, stage only files related to the current task, and do not mix in unrelated changes from other threads or the user.
 
 ## Dev Server
 
-- 默认开发服务器命令是 `npm run dev`，项目脚本已固定 `vite --host 127.0.0.1`。
-- 默认访问地址是 `http://127.0.0.1:5173/`。
-- 启动前先检查该地址或 5173 端口是否已有可用 Vite server；如果页面可访问，不要重复启动服务器。
-- 如果 5173 已被占用但不可用，先报告状态；需要临时备用端口时使用 `npm run dev -- --host 127.0.0.1 --port 5174`。
-- 不要为启动服务器而重新安装依赖；只有依赖确实缺失且用户批准后才运行安装命令。
-- 后台启动时应隐藏窗口，并把日志写到 repo 内的临时日志文件，例如 `.codex/vite-dev.log`，避免多个 thread 反复尝试同一启动路径。
-- 如果用户要求服务器在对话结束后仍可访问，不要依赖沙箱内启动的后台进程；沙箱可能在命令结束后清理子进程。应请求批准后在沙箱外启动隐藏后台进程，并在启动后至少等待几秒再次访问 `http://127.0.0.1:5173/` 确认仍返回 HTTP 200。
-- Windows 上如果 `npm run dev` 的后台包装层无法稳定保活，可直接启动 Vite 的 Node 入口作为等价 fallback：`node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5173`，仍需写入 `.codex/vite-dev.log` 并用 `netstat -ano` 确认 5173 处于 `LISTENING`。
+- The default dev server command is `npm run dev`; the project script pins Vite to `vite --host 127.0.0.1`.
+- The default URL is `http://127.0.0.1:5173/`.
+- Before starting the server, check whether that URL or port 5173 already has a usable Vite server. If the page is reachable, do not start a duplicate server.
+- If 5173 is occupied but unusable, report the state first. If a temporary fallback port is needed, use `npm run dev -- --host 127.0.0.1 --port 5174`.
+- Do not reinstall dependencies just to start the server. Only run an install command when dependencies are actually missing and the user approves it.
+- When starting the server in the background, hide the window and write logs to a temporary log file inside the repo, such as `.codex/vite-dev.log`, to avoid repeated startup attempts from multiple threads.
+- If the user asks for the server to remain available after the conversation ends, do not rely on a sandbox-started background process; the sandbox may clean up child processes after the command exits. Request approval to start a hidden background process outside the sandbox, then wait a few seconds and confirm `http://127.0.0.1:5173/` still returns HTTP 200.
+- On Windows, if the `npm run dev` background wrapper does not stay alive reliably, start Vite's Node entry directly as an equivalent fallback: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5173`. Still write logs to `.codex/vite-dev.log` and use `netstat -ano` to confirm 5173 is `LISTENING`.
 <!-- asteria-local-rules:end -->
 
 <!-- AI_SKILLS_COLLECTION_START -->
 # AI Skills Collection
 
 Installed: `2026-06-30T07:53:19+00:00`
+
 Target: `repo`
+
 Install mode: `profile:codex-webdev`
+
 Project skills: `.agents/skills/`
+
 Central collection: `D:/Code/AI_Skills_Collection`
 
-When a task matches an installed skill, read that skill's `SKILL.md` before acting. Keep progressive disclosure: load `references/` only when the skill says they are relevant.
+When a task matches an installed skill, read that skill's `SKILL.md` before acting. Keep progressive disclosure: load files under `references/` only when the skill says they are relevant.
 
 ## Skill Routing
 
 ### documents-media
-- `markitdown`: Convert files and office documents to Markdown. Supports PDF, DOCX, PPTX, XLSX, images (with OCR), audio (with transcription), HTML, CSV, JSON, XML, ZIP, YouTube URLs, EPubs and more. Path: `.agents/skills/tools-documents-media-markitdown/SKILL.md`
+
+- `markitdown`: Convert files and office documents to Markdown. Supports PDF, DOCX, PPTX, XLSX, images with OCR, audio transcription, HTML, CSV, JSON, XML, ZIP, YouTube URLs, EPubs, and more. Path: `.agents/skills/tools-documents-media-markitdown/SKILL.md`
 
 ### frontend
-- `design-system-tokens`: Create or refine frontend design systems: primitive, semantic, and component tokens; CSS variables; Tailwind theme config; typography scales; spacing; component states; brand consistency. Use when making reusable UI s... Path: `.agents/skills/tools-frontend-design-system-tokens/SKILL.md`
-- `figma-design-to-code`: Work with Figma design files and MCP workflows: inspect designs, extract tokens/assets, audit accessibility, sync styles, and generate frontend code from Figma context. Use when Figma, design handoff, or design-to-cod... Path: `.agents/skills/tools-frontend-figma-design-to-code/SKILL.md`
-- `implementation-react-tailwind`: Implement production-ready frontend code with React, TypeScript, Tailwind CSS, and shadcn/ui. Use for components, pages, dashboards, forms, tables, navigation, themes, and responsive UI implementation. Path: `.agents/skills/tools-frontend-implementation-react-tailwind/SKILL.md`
-- `motion-interaction`: Design and implement frontend motion: page-load choreography, transitions, hover states, scroll effects, feedback animation, and reduced-motion behavior. Use when adding or reviewing animation and interaction polish. Path: `.agents/skills/tools-frontend-motion-interaction/SKILL.md`
-- `product-ux-planning`: Plan frontend products before implementation: purpose, audience, information architecture, navigation, user flows, states, content discipline, and feature scope. Use when starting a new app/page, redesigning UX, or re... Path: `.agents/skills/tools-frontend-product-ux-planning/SKILL.md`
-- `responsive-accessibility-review`: Review and fix frontend responsiveness, accessibility, usability, keyboard behavior, text fitting, contrast, and visual regressions. Use before shipping UI or when asked to improve UX quality. Path: `.agents/skills/tools-frontend-responsive-accessibility-review/SKILL.md`
-- `visual-direction`: Choose and execute a deliberate frontend visual direction across typography, palette, structure, texture, imagery, and composition. Use when designing or restyling frontend UI and avoiding generic AI-looking output. Path: `.agents/skills/tools-frontend-visual-direction/SKILL.md`
-- `webapp-testing`: Toolkit for interacting with and testing local web applications using Playwright. Supports verifying frontend functionality, debugging UI behavior, capturing browser screenshots, and viewing browser logs. Path: `.agents/skills/tools-frontend-webapp-testing/SKILL.md`
+
+- `design-system-tokens`: Create or refine frontend design systems, including primitive, semantic, and component tokens; CSS variables; Tailwind theme config; typography scales; spacing; component states; and brand consistency. Path: `.agents/skills/tools-frontend-design-system-tokens/SKILL.md`
+- `figma-design-to-code`: Work with Figma design files and MCP workflows: inspect designs, extract tokens and assets, audit accessibility, sync styles, and generate frontend code from Figma context. Path: `.agents/skills/tools-frontend-figma-design-to-code/SKILL.md`
+- `implementation-react-tailwind`: Implement production-ready frontend code with React, TypeScript, Tailwind CSS, and shadcn/ui. Use for components, pages, dashboards, forms, tables, navigation, themes, and responsive UI. Path: `.agents/skills/tools-frontend-implementation-react-tailwind/SKILL.md`
+- `motion-interaction`: Design and implement frontend motion, including page-load choreography, transitions, hover states, scroll effects, feedback animation, and reduced-motion behavior. Path: `.agents/skills/tools-frontend-motion-interaction/SKILL.md`
+- `product-ux-planning`: Plan frontend products, including purpose, audience, information architecture, navigation, user flows, states, content discipline, and feature scope. Path: `.agents/skills/tools-frontend-product-ux-planning/SKILL.md`
+- `responsive-accessibility-review`: Review and fix frontend responsiveness, accessibility, usability, keyboard behavior, text fitting, contrast, and visual regressions. Path: `.agents/skills/tools-frontend-responsive-accessibility-review/SKILL.md`
+- `visual-direction`: Choose and execute a deliberate frontend visual direction across typography, palette, structure, texture, imagery, and composition. Path: `.agents/skills/tools-frontend-visual-direction/SKILL.md`
+- `webapp-testing`: Test local web applications with Playwright, including functionality verification, UI debugging, screenshots, and browser logs. Path: `.agents/skills/tools-frontend-webapp-testing/SKILL.md`
 
 ### visualization
-- `generate-image`: Generate or edit images using AI models (FLUX, Nano Banana 2). Use for general-purpose image generation including photos, illustrations, artwork, visual assets, concept art, and any image that is not a technical diagr... Path: `.agents/skills/tools-visualization-generate-image/SKILL.md`
-- `theme-factory`: Toolkit for styling artifacts with a theme. These artifacts can be slides, docs, reportings, HTML landing pages, etc. There are 10 pre-set themes with colors/fonts that you can apply to any artifact that has been crea... Path: `.agents/skills/tools-visualization-theme-factory/SKILL.md`
+
+- `generate-image`: Generate or edit images with AI models for photos, illustrations, artwork, visual assets, concept art, and non-technical diagram imagery. Path: `.agents/skills/tools-visualization-generate-image/SKILL.md`
+- `theme-factory`: Apply theme styling to artifacts such as slides, docs, reports, and HTML pages, using preset colors and fonts. Path: `.agents/skills/tools-visualization-theme-factory/SKILL.md`
 
 ## Skill Maintenance
 

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { createEditorExtensions } from "../editor/createEditorExtensions"
 import { normalizeInlineDollarMath, preprocessPastedMath, serializeMathClipboardText } from "../editor/mathPasteHandler"
 import { applyRecentRichColor } from "../editor/richColorMemory"
+import { insertBlockEquationEvent } from "../lib/inlineEditEvents"
 import { EquationDialog } from "./EquationDialog"
 import { RichTextBubbleMenu } from "./RichTextBubbleMenu"
 import { RichTextToolbar } from "./RichTextToolbar"
@@ -213,6 +214,18 @@ export function RichTextEditor({
     }
     window.addEventListener("asteria-open-inline-equation", openInlineEquation)
     return () => window.removeEventListener("asteria-open-inline-equation", openInlineEquation)
+  }, [editor, focusTargetId])
+
+  useEffect(() => {
+    const insertBlockEquation = (event: Event) => {
+      const detail = (event as CustomEvent<{ nodeId?: string; latex?: string }>).detail
+      if (!detail?.latex) return
+      if (detail.nodeId && !focusTargetId) return
+      if (focusTargetId && detail.nodeId !== focusTargetId) return
+      editor?.chain().focus("end").insertBlockMath(detail.latex).run()
+    }
+    window.addEventListener(insertBlockEquationEvent, insertBlockEquation)
+    return () => window.removeEventListener(insertBlockEquationEvent, insertBlockEquation)
   }, [editor, focusTargetId])
 
   if (!editor) return <div className="rounded-lg border border-border p-4 text-sm text-secondary">Loading editor...</div>

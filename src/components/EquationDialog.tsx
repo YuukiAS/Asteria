@@ -80,7 +80,7 @@ export function EquationDialog({
               value={latex}
               onChange={(event) => setLatex(event.target.value)}
               onKeyDown={(event) => {
-                if (submitOnEnter && event.key === "Enter" && !event.shiftKey) {
+                if (submitOnEnter && event.key === "Enter") {
                   event.preventDefault()
                   submit()
                   return

@@ -7,6 +7,7 @@ export type InlineEditTarget = {
 
 export const startInlineEditEvent = "asteria-start-inline-edit"
 export const focusEditorEvent = "asteria-focus-editor"
+export const insertBlockEquationEvent = "asteria-insert-block-equation"
 
 export function requestInlineBlockEdit(nodeId: string, field: InlineEditField = "content") {
   window.setTimeout(() => {
@@ -18,4 +19,10 @@ export function requestInlineEditorFocus(nodeId: string) {
   window.setTimeout(() => {
     window.dispatchEvent(new CustomEvent<{ nodeId: string }>(focusEditorEvent, { detail: { nodeId } }))
   }, 0)
+}
+
+export function requestBlockEquationInsert(nodeId: string, latex: string) {
+  window.setTimeout(() => {
+    window.dispatchEvent(new CustomEvent<{ nodeId: string; latex: string }>(insertBlockEquationEvent, { detail: { nodeId, latex } }))
+  }, 80)
 }

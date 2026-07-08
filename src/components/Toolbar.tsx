@@ -2,7 +2,7 @@ import { Download, Group, History, Moon, MousePointer2, PencilLine, Plus, Rows3,
 import { useEffect, useRef, useState } from "react"
 import { displayModeOptions, maxModelVersions } from "../constants/versioning"
 import { createExportFilename, exportMapFile, normalizeExportedMap, normalizeMapTitle, readJsonFile } from "../lib/exportImport"
-import { requestInlineBlockEdit, requestInlineEditorFocus } from "../lib/inlineEditEvents"
+import { requestBlockEquationInsert, requestInlineBlockEdit, requestInlineEditorFocus } from "../lib/inlineEditEvents"
 import { useMapStore } from "../store/useMapStore"
 import type { DisplayModeOverride } from "../types/map"
 import { EquationDialog } from "./EquationDialog"
@@ -46,7 +46,6 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
     deleteModelVersion,
     moveModelVersion,
     setDisplayModeOverride,
-    appendBlockMathToSelectedBlock,
     straightenNearAxisEdges,
     saveNow,
     restoreBackup,
@@ -105,10 +104,10 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
 
   const insertEquation = (latex: string) => {
     setIsEquationDialogOpen(false)
-    appendBlockMathToSelectedBlock(latex)
     if (selectedNodeId) {
       requestInlineBlockEdit(selectedNodeId, "content")
       requestInlineEditorFocus(selectedNodeId)
+      requestBlockEquationInsert(selectedNodeId, latex)
     }
   }
 

@@ -302,7 +302,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
         className={`asteria-block-preview asteria-block-preview-${displayMode} h-[calc(100%-36px)] overflow-auto px-3 py-2 text-[13px] leading-[1.45] ${previewInteractionClass}`}
         data-has-overflow={hasPreviewOverflow ? "true" : "false"}
       >
-        {isEditingContent && displayMode === "full" ? (
+        {isEditingContent ? (
           <RichTextEditor
             content={contentJson}
             onChange={(contentJson, contentHtml) => updateBlockVariant(id, editingVariantKey, { contentJson, contentHtml })}

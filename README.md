@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `0.5.12`.
+Current app version: `0.5.24`.
 
 ## Run
 
@@ -22,6 +22,8 @@ npm run build
 ## Data
 
 Maps are stored locally in IndexedDB under the `asteria-map` database. The top toolbar provides JSON import and export. Exported maps include nodes, edges, block styling, rich-text JSON, model versions, variant content, and viewport state.
+
+Asteria also keeps up to three changed local backup snapshots. Backups are checked every five minutes and unchanged canvases are skipped, so old restore points are not replaced by identical saves. Use the top-left Restore menu beside the Saved/Unsaved status to restore a recent backup.
 
 ## Core Workflow
 
@@ -83,7 +85,7 @@ Blocks use TipTap rich text with:
 - Notion-style divider insertion by typing `---` on an empty line
 - A floating selection menu for common inline formatting
 
-Equation editing uses a canvas-side dialog with live preview. Invalid or incomplete LaTeX displays an invalid-equation state until the expression parses.
+Equation editing uses a canvas-side dialog with live preview. Invalid or incomplete LaTeX displays an invalid-equation state until the expression parses. Inline equation dialogs submit with Enter and do not allow newline entry; block equation dialogs allow multiline LaTeX and submit with `Ctrl+Enter` / `Cmd+Enter`.
 
 ## Inspector
 
@@ -115,5 +117,7 @@ Asteria supports internal block copy/paste, style copy/paste, block duplication,
 - `src/store/useMapStore.ts` contains the map state and edit actions.
 - `src/lib/blockVersionState.ts` centralizes block version resolution.
 - `src/lib/exportImport.ts` contains map normalization, import/export helpers, and node creation.
+- `images/` is for local screenshots and visual debugging artifacts that should not live in the repo root.
+- `logging/` is for local dev-server logs and other transient log files that should not live in the repo root.
 - `results/` stores Codex result notes for completed local version tasks.
 - `TODO.md` tracks the current implementation plan and design notes.

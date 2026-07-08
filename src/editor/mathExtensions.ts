@@ -139,6 +139,7 @@ export const BlockMath = Node.create({
 
   addNodeView() {
     return ({ node }) => {
+      let currentNode = node
       const dom = document.createElement("div")
       dom.dataset.mathBlock = ""
       dom.dataset.latex = node.attrs.latex || ""
@@ -150,10 +151,11 @@ export const BlockMath = Node.create({
         update(nextNode) {
           if (nextNode.type.name !== "blockMath") return false
           applyBlockMathStyle(dom, nextNode.attrs)
-          if (nextNode.attrs.latex !== node.attrs.latex) {
+          if (nextNode.attrs.latex !== currentNode.attrs.latex) {
             dom.dataset.latex = nextNode.attrs.latex || ""
             dom.innerHTML = renderMath(nextNode.attrs.latex, true)
           }
+          currentNode = nextNode
           return true
         },
       }

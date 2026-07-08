@@ -5,9 +5,11 @@ dist/
 
 .codex/
 .vite-server*.log
+logging/
 *.local
 
 asteria-*.png
+images/
 !public/backgrounds/asteria-celestial-map.png
 
 .DS_Store
