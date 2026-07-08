@@ -16,6 +16,7 @@ import {
   createBlockVariant,
   createEdge,
   createGroupNode,
+  defaultStoryDeckSettings,
   defaultEdgeData,
   defaultMapTitle,
   getVariantKey,
@@ -47,6 +48,8 @@ import type {
   MapViewport,
   ModelVersion,
   SaveStatus,
+  StoryDeckSettings,
+  StoryOutlineItem,
 } from "../types/map"
 
 type XYPosition = { x: number; y: number }
@@ -123,6 +126,8 @@ type MapState = {
   modelVersions: ModelVersion[]
   activeVersionId: "all" | string
   displayModeOverride: DisplayModeOverride
+  storyOutline: StoryOutlineItem[]
+  storyDeckSettings: StoryDeckSettings
   nodes: MapNode[]
   edges: MapEdge[]
   selectedNodeId?: string
@@ -154,6 +159,11 @@ type MapState = {
   deleteModelVersion: (id: string) => void
   moveModelVersion: (id: string, direction: -1 | 1) => void
   setDisplayModeOverride: (mode: DisplayModeOverride) => void
+  addSelectedToStoryOutline: () => number
+  updateStoryOutlineItem: (id: string, patch: Partial<Pick<StoryOutlineItem, "slideTitle" | "density" | "speakerNotes">>) => void
+  removeStoryOutlineItem: (id: string) => void
+  moveStoryOutlineItem: (id: string, direction: -1 | 1) => void
+  updateStoryDeckSettings: (patch: Partial<StoryDeckSettings>) => void
   appendBlockMathToSelectedBlock: (latex: string) => void
   updateBlock: (id: string, patch: Partial<BlockData>) => void
   applyBlockTypeStyle: (id: string) => void
@@ -200,13 +210,15 @@ type MapState = {
   markUnsaved: () => void
 }
 
-function mapFromState(state: Pick<MapState, "mapTitle" | "modelVersions" | "activeVersionId" | "displayModeOverride" | "nodes" | "edges" | "viewport">): ExportedMap {
+function mapFromState(state: Pick<MapState, "mapTitle" | "modelVersions" | "activeVersionId" | "displayModeOverride" | "storyOutline" | "storyDeckSettings" | "nodes" | "edges" | "viewport">): ExportedMap {
   return {
     version: 1,
     title: normalizeMapTitle(state.mapTitle),
     modelVersions: state.modelVersions,
     activeVersionId: state.activeVersionId,
     displayModeOverride: state.displayModeOverride,
+    storyOutline: state.storyOutline,
+    storyDeckSettings: state.storyDeckSettings,
     nodes: state.nodes,
     edges: state.edges,
     viewport: state.viewport,
@@ -220,6 +232,8 @@ function mapContentSignature(map: ExportedMap) {
     modelVersions: map.modelVersions,
     activeVersionId: map.activeVersionId,
     displayModeOverride: map.displayModeOverride,
+    storyOutline: map.storyOutline,
+    storyDeckSettings: map.storyDeckSettings,
     nodes: map.nodes,
     edges: map.edges,
     viewport: map.viewport,
@@ -322,6 +336,26 @@ function resolveVariantForMirror(data: BlockData, key: BlockVariantKey, modelVer
   return firstExistingVariant(data) || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt)
 }
 
+function storyTitleForNode(node: MapNode, state: Pick<MapState, "activeVersionId" | "modelVersions">) {
+  if (node.type === "group") return node.data.title || "Group"
+  const variantKey = getBlockVariantKeyForState(state, node.data)
+  return resolveVariantForMirror(node.data, variantKey, state.modelVersions).title || node.data.title || "Untitled block"
+}
+
+function createStoryOutlineItem(node: MapNode, state: Pick<MapState, "activeVersionId" | "modelVersions" | "storyDeckSettings">): StoryOutlineItem {
+  const at = nowIso()
+  return {
+    id: createId("story"),
+    sourceId: node.id,
+    sourceType: node.type === "group" ? "group" : "block",
+    slideTitle: storyTitleForNode(node, state),
+    density: state.storyDeckSettings.defaultDensity,
+    speakerNotes: "",
+    createdAt: at,
+    updatedAt: at,
+  }
+}
+
 function patchBlockVariant(data: BlockData, key: string, patch: Partial<Pick<BlockData, "title" | "contentJson" | "contentHtml">>, modelVersions: ModelVersion[]) {
   const resolvedState = resolveBlockVersionState({ ...data, activeVariantKey: key === defaultVariantKey ? defaultVariantKey : key }, key, modelVersions)
   const inheritedVariant = resolvedState.renderedVariantKey ? data.variants?.[resolvedState.renderedVariantKey] : undefined
@@ -405,6 +439,8 @@ export const useMapStore = create<MapState>((set, get) => ({
   modelVersions: [],
   activeVersionId: allVersionsId,
   displayModeOverride: "block",
+  storyOutline: [],
+  storyDeckSettings: defaultStoryDeckSettings(defaultMapTitle),
   nodes: [],
   edges: [],
   selectedNodeIds: [],
@@ -438,6 +474,8 @@ export const useMapStore = create<MapState>((set, get) => ({
           modelVersions: map.modelVersions || [],
           activeVersionId: map.activeVersionId || allVersionsId,
           displayModeOverride: map.displayModeOverride || "block",
+          storyOutline: map.storyOutline || [],
+          storyDeckSettings: map.storyDeckSettings || defaultStoryDeckSettings(map.title),
           nodes: applyContentHtml(map.nodes),
           edges: map.edges.map(applyEdgePresentation),
           viewport: map.viewport ?? { x: 0, y: 0, zoom: 1 },
@@ -455,6 +493,8 @@ export const useMapStore = create<MapState>((set, get) => ({
         modelVersions: demo.modelVersions || [],
         activeVersionId: demo.activeVersionId || allVersionsId,
         displayModeOverride: demo.displayModeOverride || "block",
+        storyOutline: demo.storyOutline || [],
+        storyDeckSettings: demo.storyDeckSettings || defaultStoryDeckSettings(demo.title),
         nodes: applyContentHtml(demo.nodes),
         edges: demo.edges.map(applyEdgePresentation),
         viewport: demo.viewport ?? { x: 0, y: 0, zoom: 1 },
@@ -506,6 +546,8 @@ export const useMapStore = create<MapState>((set, get) => ({
       modelVersions: map.modelVersions || [],
       activeVersionId: map.activeVersionId || allVersionsId,
       displayModeOverride: map.displayModeOverride || "block",
+      storyOutline: map.storyOutline || [],
+      storyDeckSettings: map.storyDeckSettings || defaultStoryDeckSettings(map.title),
       nodes: applyContentHtml(map.nodes),
       edges: map.edges.map(applyEdgePresentation),
       canvasHistory: [],
@@ -712,6 +754,10 @@ export const useMapStore = create<MapState>((set, get) => ({
         state.activeVersionId === id
           ? state.modelVersions.filter((version) => version.id !== id)[0]?.id || allVersionsId
           : state.activeVersionId,
+      storyDeckSettings:
+        state.storyDeckSettings.selectedVersionId === id
+          ? { ...state.storyDeckSettings, selectedVersionId: state.modelVersions.filter((version) => version.id !== id)[0]?.id }
+          : state.storyDeckSettings,
       nodes: state.nodes.map((node) => {
         if (!isBlockNode(node)) return node
         const variants = { ...(node.data.variants || {}) }
@@ -764,6 +810,66 @@ export const useMapStore = create<MapState>((set, get) => ({
 
   setDisplayModeOverride: (mode) => {
     set({ displayModeOverride: mode })
+    get().markUnsaved()
+  },
+
+  addSelectedToStoryOutline: () => {
+    const state = get()
+    const selectedIds = state.selectedNodeIds.length ? state.selectedNodeIds : state.selectedNodeId ? [state.selectedNodeId] : []
+    const selected = selectedIds
+      .map((id) => state.nodes.find((node) => node.id === id))
+      .filter((node): node is MapNode => node !== undefined && (node.type === "block" || node.type === "group"))
+      .sort((a, b) => {
+        const aPosition = absolutePosition(a, state.nodes)
+        const bPosition = absolutePosition(b, state.nodes)
+        const yDelta = aPosition.y - bPosition.y
+        if (Math.abs(yDelta) > 2) return yDelta
+        return aPosition.x - bPosition.x
+      })
+    if (!selected.length) return 0
+    const items = selected.map((node) => createStoryOutlineItem(node, state))
+    set({ storyOutline: [...state.storyOutline, ...items] })
+    get().markUnsaved()
+    return items.length
+  },
+
+  updateStoryOutlineItem: (id, patch) => {
+    set((state) => ({
+      storyOutline: state.storyOutline.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              ...patch,
+              slideTitle: patch.slideTitle !== undefined ? patch.slideTitle : item.slideTitle,
+              updatedAt: nowIso(),
+            }
+          : item,
+      ),
+    }))
+    get().markUnsaved()
+  },
+
+  removeStoryOutlineItem: (id) => {
+    set((state) => ({ storyOutline: state.storyOutline.filter((item) => item.id !== id) }))
+    get().markUnsaved()
+  },
+
+  moveStoryOutlineItem: (id, direction) => {
+    set((state) => {
+      const index = state.storyOutline.findIndex((item) => item.id === id)
+      const nextIndex = index + direction
+      if (index < 0 || nextIndex < 0 || nextIndex >= state.storyOutline.length) return {}
+      const storyOutline = [...state.storyOutline]
+      const [item] = storyOutline.splice(index, 1)
+      if (!item) return {}
+      storyOutline.splice(nextIndex, 0, { ...item, updatedAt: nowIso() })
+      return { storyOutline }
+    })
+    get().markUnsaved()
+  },
+
+  updateStoryDeckSettings: (patch) => {
+    set((state) => ({ storyDeckSettings: { ...state.storyDeckSettings, ...patch } }))
     get().markUnsaved()
   },
 
@@ -1297,6 +1403,8 @@ export const useMapStore = create<MapState>((set, get) => ({
       modelVersions: [],
       activeVersionId: allVersionsId,
       displayModeOverride: "block",
+      storyOutline: [],
+      storyDeckSettings: defaultStoryDeckSettings(get().mapTitle),
       nodes: [],
       edges: [],
       canvasHistory: [],
@@ -1315,6 +1423,8 @@ export const useMapStore = create<MapState>((set, get) => ({
       modelVersions: map.modelVersions || [],
       activeVersionId: map.activeVersionId || allVersionsId,
       displayModeOverride: map.displayModeOverride || "block",
+      storyOutline: map.storyOutline || [],
+      storyDeckSettings: map.storyDeckSettings || defaultStoryDeckSettings(map.title),
       nodes: applyContentHtml(map.nodes),
       edges: map.edges.map(applyEdgePresentation),
       canvasHistory: [],

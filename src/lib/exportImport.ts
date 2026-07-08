@@ -32,6 +32,11 @@ import type {
   MapNode,
   MapViewport,
   ModelVersion,
+  StoryDeckSettings,
+  StoryExportDensity,
+  StoryOutlineItem,
+  StoryOutlineSourceType,
+  StoryVersionMode,
 } from "../types/map"
 import { createId } from "./ids"
 import { formatJsonTimestamp, nowIso } from "./time"
@@ -50,7 +55,7 @@ export function normalizeMapTitle(value: unknown) {
   return title || defaultMapTitle
 }
 
-function slugifyTitle(title: string) {
+export function slugifyTitle(title: string) {
   return title
     .trim()
     .toLowerCase()
@@ -62,6 +67,17 @@ export function createExportFilename(title: string, date = new Date()) {
   const slug = slugifyTitle(title)
   const prefix = slug || "asteria-map"
   return `${prefix}-${formatJsonTimestamp(date)}.json`
+}
+
+export function defaultStoryDeckSettings(title = defaultMapTitle): StoryDeckSettings {
+  return {
+    title: normalizeMapTitle(title),
+    versionMode: "current",
+    defaultDensity: "summary",
+    includeSpeakerNotes: true,
+    includeSourceMetadata: true,
+    includePrompt: true,
+  }
 }
 
 export function paragraphJson(text: string) {
@@ -246,6 +262,64 @@ function normalizeDisplayModeOverride(value: unknown): DisplayModeOverride {
   if (value === "block" || value === "compact" || value === "title_only" || value === "full") return value
   if (value !== undefined) console.warn(`Unknown displayModeOverride "${String(value)}"; falling back to block.`)
   return "block"
+}
+
+function normalizeStoryDensity(value: unknown): StoryExportDensity {
+  if (value === "title_only" || value === "summary" || value === "full") return value
+  if (value !== undefined) console.warn(`Unknown story density "${String(value)}"; falling back to summary.`)
+  return "summary"
+}
+
+function normalizeStoryVersionMode(value: unknown): StoryVersionMode {
+  if (value === "current" || value === "all" || value === "selected") return value
+  if (value !== undefined) console.warn(`Unknown story version mode "${String(value)}"; falling back to current.`)
+  return "current"
+}
+
+function normalizeStorySourceType(value: unknown): StoryOutlineSourceType {
+  if (value === "block" || value === "group") return value
+  if (value !== undefined) console.warn(`Unknown story source type "${String(value)}"; falling back to block.`)
+  return "block"
+}
+
+function normalizeStoryDeckSettings(value: unknown, mapTitle: string, modelVersions: ModelVersion[]): StoryDeckSettings {
+  const defaults = defaultStoryDeckSettings(mapTitle)
+  const raw = value && typeof value === "object" ? (value as Partial<StoryDeckSettings>) : {}
+  const selectedVersionId =
+    typeof raw.selectedVersionId === "string" && modelVersions.some((version) => version.id === raw.selectedVersionId)
+      ? raw.selectedVersionId
+      : modelVersions[0]?.id
+  return {
+    title: typeof raw.title === "string" && raw.title.trim() ? raw.title.trim() : defaults.title,
+    versionMode: normalizeStoryVersionMode(raw.versionMode),
+    selectedVersionId,
+    defaultDensity: normalizeStoryDensity(raw.defaultDensity),
+    includeSpeakerNotes: typeof raw.includeSpeakerNotes === "boolean" ? raw.includeSpeakerNotes : defaults.includeSpeakerNotes,
+    includeSourceMetadata: typeof raw.includeSourceMetadata === "boolean" ? raw.includeSourceMetadata : defaults.includeSourceMetadata,
+    includePrompt: typeof raw.includePrompt === "boolean" ? raw.includePrompt : defaults.includePrompt,
+  }
+}
+
+function normalizeStoryOutline(value: unknown): StoryOutlineItem[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((item, index): StoryOutlineItem | undefined => {
+      const raw = item && typeof item === "object" ? (item as Partial<StoryOutlineItem>) : {}
+      const sourceId = typeof raw.sourceId === "string" ? raw.sourceId.trim() : ""
+      if (!sourceId) return undefined
+      const at = nowIso()
+      return {
+        id: typeof raw.id === "string" && raw.id.trim() ? raw.id.trim() : createId("story"),
+        sourceId,
+        sourceType: normalizeStorySourceType(raw.sourceType),
+        slideTitle: typeof raw.slideTitle === "string" && raw.slideTitle.trim() ? raw.slideTitle.trim() : `Slide ${index + 1}`,
+        density: normalizeStoryDensity(raw.density),
+        speakerNotes: typeof raw.speakerNotes === "string" ? raw.speakerNotes : "",
+        createdAt: raw.createdAt || at,
+        updatedAt: raw.updatedAt || at,
+      }
+    })
+    .filter((item): item is StoryOutlineItem => Boolean(item))
 }
 
 function normalizeActiveVersionId(value: unknown, modelVersions: ModelVersion[]): ActiveVersionId {
@@ -458,6 +532,7 @@ export function normalizeExportedMap(input: unknown): ExportedMap {
   const modelVersions = normalizeModelVersions(raw.modelVersions)
   const activeVersionId = normalizeActiveVersionId(raw.activeVersionId, modelVersions)
   const displayModeOverride = normalizeDisplayModeOverride(raw.displayModeOverride)
+  const title = normalizeMapTitle(raw.title)
   const nodes = raw.nodes.map((node, index) => {
     try {
       return normalizeMapNode(node as Partial<MapNode>, index)
@@ -478,10 +553,12 @@ export function normalizeExportedMap(input: unknown): ExportedMap {
     : undefined
   return {
     version: 1,
-    title: normalizeMapTitle(raw.title),
+    title,
     modelVersions,
     activeVersionId,
     displayModeOverride,
+    storyOutline: normalizeStoryOutline(raw.storyOutline),
+    storyDeckSettings: normalizeStoryDeckSettings(raw.storyDeckSettings, title, modelVersions),
     nodes,
     edges,
     viewport,

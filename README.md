@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `0.5.24`.
+Current app version: `0.6.0`.
 
 ## Run
 
@@ -21,7 +21,7 @@ npm run build
 
 ## Data
 
-Maps are stored locally in IndexedDB under the `asteria-map` database. The top toolbar provides JSON import and export. Exported maps include nodes, edges, block styling, rich-text JSON, model versions, variant content, and viewport state.
+Maps are stored locally in IndexedDB under the `asteria-map` database. The top toolbar provides JSON import and export. Exported maps include nodes, edges, block styling, rich-text JSON, model versions, variant content, viewport state, Story outline items, and Story deck settings.
 
 Asteria also keeps up to three changed local backup snapshots. Backups are checked every five minutes and unchanged canvases are skipped, so old restore points are not replaced by identical saves. Use the top-left Restore menu beside the Saved/Unsaved status to restore a recent backup.
 
@@ -33,6 +33,21 @@ Asteria also keeps up to three changed local backup snapshots. Backups are check
 - Double-click a block to enter inline editing.
 - Click an empty canvas background while editing to return to Move mode.
 - Drag undo is supported with `Ctrl+Z` / `Cmd+Z` when focus is not inside a text editor.
+
+## Story Outline
+
+Asteria includes a Story panel in the right sidebar for building a low-density research story deck from existing canvas material. This is an outline and Markdown export workflow, not a slideshow editor or PPT editor.
+
+- Select one or more blocks/groups, then use `Add selected` in the Story panel to append them to the outline.
+- Multiple selected sources are appended in visual reading order: top-to-bottom, then left-to-right.
+- Reorder outline rows with visible Move Up / Move Down controls.
+- Clicking an outline row selects its source block/group on the canvas.
+- Each outline item can store a slide title, density, and speaker notes.
+- If a source block/group is deleted, the outline row remains marked as missing and Markdown export skips it without crashing.
+
+The toolbar action order is `Import`, `Export`, `Export Markdown`, `Delete`. `Export` remains the existing JSON map export. `Export Markdown` writes a story deck named like `<deck-title>-asteria-story-<timestamp>.md`.
+
+Story Markdown export resolves block content through the same version inheritance rules used by the canvas. The export includes one `## Slide N - <title>` section per outline item, optional source metadata, main message content, key formulas, optional speaker notes, and an optional final PPT-generation prompt. Inline and block equations are preserved as Markdown/LaTeX.
 
 ## Model Versions
 

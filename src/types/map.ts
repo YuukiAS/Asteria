@@ -130,12 +130,39 @@ export type GroupNode = Node<GroupData, "group">
 export type MapNode = BlockNode | GroupNode
 export type MapEdge = Edge<MapEdgeData>
 
+export type StoryOutlineSourceType = "block" | "group"
+export type StoryExportDensity = "title_only" | "summary" | "full"
+export type StoryVersionMode = "current" | "all" | "selected"
+
+export type StoryOutlineItem = {
+  id: string
+  sourceId: string
+  sourceType: StoryOutlineSourceType
+  slideTitle: string
+  density: StoryExportDensity
+  speakerNotes?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type StoryDeckSettings = {
+  title: string
+  versionMode: StoryVersionMode
+  selectedVersionId?: string
+  defaultDensity: StoryExportDensity
+  includeSpeakerNotes: boolean
+  includeSourceMetadata: boolean
+  includePrompt: boolean
+}
+
 export type ExportedMap = {
   version: 1
   title?: string
   modelVersions?: ModelVersion[]
   activeVersionId?: ActiveVersionId
   displayModeOverride?: DisplayModeOverride
+  storyOutline?: StoryOutlineItem[]
+  storyDeckSettings?: StoryDeckSettings
   nodes: MapNode[]
   edges: MapEdge[]
   viewport?: MapViewport

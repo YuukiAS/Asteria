@@ -1,8 +1,9 @@
-import { Download, Group, History, Moon, MousePointer2, PencilLine, Plus, Rows3, Save, Scan, Settings2, Sigma, Sparkles, Sun, Trash2, Upload } from "lucide-react"
+import { Download, FileText, Group, History, Moon, MousePointer2, MoveDown, MoveUp, PencilLine, Plus, Rows3, Save, Scan, Settings2, Sigma, Sparkles, Sun, Trash2, Upload } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { displayModeOptions, maxModelVersions } from "../constants/versioning"
 import { createExportFilename, exportMapFile, normalizeExportedMap, normalizeMapTitle, readJsonFile } from "../lib/exportImport"
 import { requestBlockEquationInsert, requestInlineBlockEdit, requestInlineEditorFocus } from "../lib/inlineEditEvents"
+import { buildStoryMarkdown, createStoryMarkdownFilename, exportMarkdownFile } from "../lib/storyMarkdownExport"
 import { useMapStore } from "../store/useMapStore"
 import type { DisplayModeOverride } from "../types/map"
 import { EquationDialog } from "./EquationDialog"
@@ -30,6 +31,8 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
     modelVersions,
     activeVersionId,
     displayModeOverride,
+    storyOutline,
+    storyDeckSettings,
     nodes,
     edges,
     viewport,
@@ -80,6 +83,8 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
         modelVersions,
         activeVersionId,
         displayModeOverride,
+        storyOutline,
+        storyDeckSettings,
         nodes,
         edges,
         viewport,
@@ -87,6 +92,18 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
       },
       createExportFilename(mapTitle),
     )
+  }
+
+  const exportMarkdown = () => {
+    const markdown = buildStoryMarkdown({
+      mapTitle: normalizeMapTitle(mapTitle),
+      modelVersions,
+      activeVersionId,
+      nodes,
+      storyOutline,
+      storyDeckSettings,
+    })
+    exportMarkdownFile(markdown, createStoryMarkdownFilename(storyDeckSettings.title || mapTitle))
   }
 
   const startTitleEditing = () => {
@@ -143,7 +160,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
   }
 
   const clear = () => {
-    if (window.confirm("Clear the current canvas? This keeps the app installed but removes current local map data.")) {
+    if (window.confirm("Delete the current canvas? This keeps the app installed but removes current local map data.")) {
       clearMap()
     }
   }
@@ -323,17 +340,21 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           <Save size={15} />
           <span className="toolbar-label">Save</span>
         </button>
-        <button type="button" className="toolbar-button" onClick={exportJson} title="Export">
-          <Download size={15} />
-          <span className="toolbar-label">Export</span>
-        </button>
         <button type="button" className="toolbar-button" onClick={() => inputRef.current?.click()} title="Import">
           <Upload size={15} />
           <span className="toolbar-label">Import</span>
         </button>
-        <button type="button" className="danger-button" onClick={clear} title="Clear">
+        <button type="button" className="toolbar-button" onClick={exportJson} title="Export JSON">
+          <Download size={15} />
+          <span className="toolbar-label">Export</span>
+        </button>
+        <button type="button" className="toolbar-button" onClick={exportMarkdown} title="Export Markdown story deck">
+          <FileText size={15} />
+          <span className="toolbar-label">Export Markdown</span>
+        </button>
+        <button type="button" className="danger-button" onClick={clear} title="Delete canvas">
           <Trash2 size={15} />
-          <span className="toolbar-label">Clear</span>
+          <span className="toolbar-label">Delete</span>
         </button>
         <label
           className="density-control flex shrink-0 items-center gap-1 rounded-md border border-border bg-panel px-1.5 text-xs font-medium text-secondary"
@@ -389,10 +410,10 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
                   aria-label="Version short label"
                 />
                 <button type="button" className="toolbar-button !px-2" disabled={index === 0} onClick={() => moveModelVersion(version.id, -1)} aria-label="Move version up">
-                  ↑
+                  <MoveUp size={13} />
                 </button>
                 <button type="button" className="toolbar-button !px-2" disabled={index === modelVersions.length - 1} onClick={() => moveModelVersion(version.id, 1)} aria-label="Move version down">
-                  ↓
+                  <MoveDown size={13} />
                 </button>
                 <button type="button" className="danger-button !px-2" onClick={() => deleteModelVersion(version.id)} aria-label="Delete version">
                   <Trash2 size={13} />

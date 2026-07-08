@@ -1,11 +1,12 @@
 import "@xyflow/react/dist/style.css"
 import "katex/dist/katex.min.css"
 import { ReactFlowProvider } from "@xyflow/react"
-import { ChevronLeft, ChevronRight, PanelRightClose, PanelRightOpen } from "lucide-react"
+import { ChevronLeft, ChevronRight, FileText, PanelRightClose, PanelRightOpen, SlidersHorizontal } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { PointerEvent as ReactPointerEvent } from "react"
 import { Canvas } from "../components/Canvas"
 import { InspectorPanel } from "../components/InspectorPanel"
+import { StoryOutlinePanel } from "../components/StoryOutlinePanel"
 import { Toolbar } from "../components/Toolbar"
 import { requestInlineBlockEdit, requestInlineEditorFocus, startInlineEditEvent, type InlineEditTarget } from "../lib/inlineEditEvents"
 import { useMapStore } from "../store/useMapStore"
@@ -47,6 +48,7 @@ export function App() {
   const fitViewRef = useRef<() => void>(() => undefined)
   const [theme, setTheme] = useTheme()
   const [interactionMode, setInteractionMode] = useState<"move" | "edit">("move")
+  const [sidebarTab, setSidebarTab] = useState<"inspector" | "story">("inspector")
   const [inlineEditTarget, setInlineEditTarget] = useState<InlineEditTarget | undefined>()
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const stored = Number(localStorage.getItem(sidebarWidthKey))
@@ -293,7 +295,27 @@ export function App() {
               <span className="sr-only">{isSidebarCollapsed ? "Expand" : "Collapse"}</span>
             </button>
             <div className="inspector-content-shell">
-              <InspectorPanel />
+              {!isSidebarCollapsed && (
+                <div className="grid grid-cols-2 gap-1 border-b border-border bg-toolbar/80 p-2">
+                  <button
+                    type="button"
+                    className={`segmented-button justify-center ${sidebarTab === "inspector" ? "segmented-button-active" : ""}`}
+                    onClick={() => setSidebarTab("inspector")}
+                  >
+                    <SlidersHorizontal size={14} />
+                    Inspector
+                  </button>
+                  <button
+                    type="button"
+                    className={`segmented-button justify-center ${sidebarTab === "story" ? "segmented-button-active" : ""}`}
+                    onClick={() => setSidebarTab("story")}
+                  >
+                    <FileText size={14} />
+                    Story
+                  </button>
+                </div>
+              )}
+              {sidebarTab === "story" ? <StoryOutlinePanel /> : <InspectorPanel />}
             </div>
             {!isSidebarCollapsed && (
               <div className="inspector-width-readout" aria-hidden="true">

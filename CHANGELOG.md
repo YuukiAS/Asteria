@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0 - Story Outline Markdown Export
+
+- Added a global Story panel for building an ordered story outline from selected blocks and groups.
+- Added deterministic visual-order append for multiple selected sources, plus per-row Move Up / Move Down controls.
+- Added Story deck settings for deck title, version mode, default density, speaker notes, source metadata, and PPT prompt inclusion.
+- Added Markdown story deck export with one linear slide section per outline item, source metadata, key formulas, speaker notes, and a final PPT-generation prompt.
+- Preserved story outline and deck settings through local save, backups, JSON export, and JSON import.
+- Added conservative TipTap JSON to Markdown conversion for rich text, links, lists, code, dividers, inline math, and block math.
+- Updated the toolbar action order to Import, Export, Export Markdown, Delete.
+
 ## 0.5.24 - Equation Insertion Reliability
 
 - Added an AGENTS rule to check whether README updates are needed before version or feature commits.
