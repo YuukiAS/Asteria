@@ -8,6 +8,7 @@ import Underline from "@tiptap/extension-underline"
 import StarterKit from "@tiptap/starter-kit"
 import { DividerRule } from "./dividerExtension"
 import { FontSizeExtension } from "./FontSizeExtension"
+import { ListContinuationExtension } from "./listContinuationExtension"
 import { BlockMath, InlineMath } from "./mathExtensions"
 import { TaskItem, TaskList } from "./taskListExtensions"
 
@@ -28,6 +29,7 @@ export function createEditorExtensions(placeholder = "Write a model note, prior,
     FontSizeExtension,
     InlineMath,
     BlockMath,
+    ListContinuationExtension,
     TaskList,
     TaskItem,
   ]

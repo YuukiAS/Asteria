@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `0.6.4`.
+Current app version: `0.6.5`.
 
 ## Run
 
@@ -33,6 +33,7 @@ Asteria also keeps up to three changed local backup snapshots. Backups are check
 - Double-click the canvas to create a new block at that position.
 - Double-click a block to enter inline editing.
 - Click an empty canvas background while editing to return to Move mode.
+- Inside nested lists, use `Enter`, `Tab`, or `Shift+Tab` on an empty nested item to continue writing in the parent list item.
 - Drag undo is supported with `Ctrl+Z` / `Cmd+Z` when focus is not inside a text editor.
 
 ## Story Outline

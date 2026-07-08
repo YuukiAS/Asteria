@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.5 - Toolbar Tooltip And List Continuation
+
+- Increased top-toolbar tooltip contrast and stacking so icon-only controls remain readable on narrow screens.
+- Added nested-list continuation handling so an empty nested bullet can return to the parent list item with Enter, Tab, or Shift+Tab instead of creating a new parent numbered item.
+
 ## 0.6.4 - Block Zoom Mode
 
 - Added a Zoom interaction mode next to Move and Edit, with toolbar access and `Alt+3` keyboard switching.
