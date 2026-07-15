@@ -1,3 +1,8 @@
+---
+name: agent-task-executor
+description: Execute repository handoff tasks defined in prompts/tasks/*_task.md. Use when Codex is asked to run a file-based task from the prompts handoff protocol, including reading AGENTS.md and prompts/AGENT_RULES.md, checking task frontmatter permissions, performing authorized actions, and writing the corresponding result file.
+---
+
 # Agent Task Executor
 
 这个 skill 是通用 Codex 执行规程。它可以复制到真实项目：
