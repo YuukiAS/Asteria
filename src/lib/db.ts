@@ -10,6 +10,7 @@ export type PersistedMap = {
 
 export type PersistedMapBackup = {
   id: string
+  kind?: "recent" | "fixed"
   map: ExportedMap
   seededDemo: boolean
   createdAt: string
@@ -28,11 +29,15 @@ class AsteriaDatabase extends Dexie {
       maps: "id, updatedAt",
       backups: "id, createdAt",
     })
+    this.version(3).stores({
+      maps: "id, updatedAt",
+      backups: "id, kind, createdAt",
+    })
   }
 }
 
 export const db = new AsteriaDatabase()
-const maxPersistedBackups = 3
+const maxPersistedBackupsByKind = 3
 
 export async function loadPersistedMap() {
   return db.maps.get("main")
@@ -43,15 +48,17 @@ export async function savePersistedMap(map: ExportedMap, seededDemo: boolean) {
 }
 
 export async function listPersistedMapBackups() {
-  return db.backups.orderBy("createdAt").reverse().toArray()
+  const backups = await db.backups.orderBy("createdAt").reverse().toArray()
+  return backups.map((backup) => ({ ...backup, kind: backup.kind || "recent" }))
 }
 
-export async function createPersistedMapBackup(map: ExportedMap, seededDemo: boolean) {
+export async function createPersistedMapBackup(map: ExportedMap, seededDemo: boolean, kind: PersistedMapBackup["kind"] = "recent") {
   const createdAt = new Date().toISOString()
   await db.transaction("rw", db.backups, async () => {
-    await db.backups.put({ id: `backup-${createdAt}`, map, seededDemo, createdAt })
+    const normalizedKind = kind || "recent"
+    await db.backups.put({ id: `${normalizedKind}-${createdAt}`, kind: normalizedKind, map, seededDemo, createdAt })
     const backups = await listPersistedMapBackups()
-    const staleBackups = backups.slice(maxPersistedBackups)
+    const staleBackups = backups.filter((backup) => (backup.kind || "recent") === normalizedKind).slice(maxPersistedBackupsByKind)
     if (staleBackups.length) await db.backups.bulkDelete(staleBackups.map((backup) => backup.id))
   })
   return listPersistedMapBackups()

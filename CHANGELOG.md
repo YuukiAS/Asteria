@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0 - Shared Save Choice And Local Restore Points
+
+- Changed shared deployment editing so server storage only holds the single shared version while recent and fixed restore points stay local to each browser.
+- Added a required startup choice on shared URLs when a shared version exists: use the shared version or start a new local draft.
+- Added a toolbar Save button before Import with a large confirmation dialog for saving either the shared version or a local fixed version.
+- Split Restore into the current shared version, three local recent versions, and three local fixed versions.
+- Removed repeated shared-revision alert loops by saving edits locally and publishing shared changes only through the explicit Save dialog.
+
 ## 0.6.9 - Shared Server Persistence
 
 - Added a same-origin shared persistence API for the Slurm/Cloudflare Asteria deployment so computers using the same public URL read and write the same map.

@@ -1,5 +1,5 @@
 import { useReactFlow } from "@xyflow/react"
-import { Download, FileText, Group, History, Moon, MousePointer2, MoveDown, MoveUp, PencilLine, Plus, Rows3, Scan, Settings2, Sigma, Sparkles, Sun, Trash2, Upload, ZoomIn } from "lucide-react"
+import { Download, FileText, Group, History, Moon, MousePointer2, MoveDown, MoveUp, PencilLine, Plus, Rows3, Save, Scan, Settings2, Sigma, Sparkles, Sun, Trash2, Upload, ZoomIn } from "lucide-react"
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react"
 import { blockSizePresets, type BlockSizePreset } from "../constants/layout"
 import { displayModeOptions, maxModelVersions } from "../constants/versioning"
@@ -19,6 +19,7 @@ type ToolbarProps = {
   onToggleTheme: () => void
   onInteractionModeChange: (mode: InteractionMode) => void
   onFitView: () => void
+  onOpenSaveDialog: () => void
 }
 
 type ToolbarTooltipState = {
@@ -30,7 +31,7 @@ type ToolbarTooltipState = {
   nowrap: boolean
 }
 
-export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionModeChange, onFitView }: ToolbarProps) {
+export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionModeChange, onFitView, onOpenSaveDialog }: ToolbarProps) {
   const reactFlow = useReactFlow()
   const inputRef = useRef<HTMLInputElement>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
@@ -60,6 +61,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
     saveStatus,
     backups,
     persistenceMode,
+    sharedRecord,
     addBlockAndSelect,
     groupSelectedBlocks,
     updateMapTitle,
@@ -71,6 +73,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
     setDisplayModeOverride,
     straightenNearAxisEdges,
     restoreBackup,
+    chooseSharedWorkspace,
     clearMap,
     loadMap,
   } = useMapStore()
@@ -81,6 +84,8 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
     modelVersions.length > 0
       ? modelVersions.map((version) => ({ value: version.id, label: version.label, description: version.shortLabel || version.label }))
       : [{ value: "all", label: "No versions", description: "Add a model version to enable version switching" }]
+  const recentBackups = backups.filter((backup) => (backup.kind || "recent") === "recent").slice(0, 3)
+  const fixedBackups = backups.filter((backup) => backup.kind === "fixed").slice(0, 3)
 
   const showToolbarTooltip = (text: string, target: HTMLElement) => {
     const rect = target.getBoundingClientRect()
@@ -229,7 +234,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
     if (!file) return
     const confirmMessage =
       persistenceMode === "remote"
-        ? "Importing JSON will replace the shared server map for every computer using this Asteria URL. Continue?"
+        ? "Importing JSON will replace this local workspace. Save to Shared afterward if it should become the shared version. Continue?"
         : "Importing JSON will replace the current local canvas. Continue?"
     if (!window.confirm(confirmMessage)) return
     try {
@@ -307,14 +312,53 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           <div className="absolute left-36 top-12 z-40 w-[260px] rounded-lg border border-border bg-panel p-3 shadow-xl">
             <div className="mb-2 text-xs font-semibold text-foreground">Restore backup</div>
             <div className="grid gap-2">
-              {backups.length === 0 && <div className="text-xs text-secondary">No backups yet.</div>}
-              {backups.map((backup) => (
+              {persistenceMode === "remote" && sharedRecord && (
+                <>
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">Shared version</div>
+                  <button
+                    type="button"
+                    className="toolbar-button justify-between"
+                    onClick={() => {
+                      if (window.confirm("Restore the current shared version into this local workspace?")) {
+                        chooseSharedWorkspace()
+                        setIsBackupPanelOpen(false)
+                      }
+                    }}
+                    title={new Date(sharedRecord.updatedAt).toLocaleString()}
+                  >
+                    <span>{formatRelativeBackupTime(sharedRecord.updatedAt)}</span>
+                    <span className="text-[11px] text-secondary">Restore</span>
+                  </button>
+                </>
+              )}
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">Recent versions</div>
+              {recentBackups.length === 0 && <div className="text-xs text-secondary">No recent versions yet.</div>}
+              {recentBackups.map((backup) => (
                 <button
                   key={backup.id}
                   type="button"
                   className="toolbar-button justify-between"
                   onClick={() => {
                     if (window.confirm(`Restore backup from ${formatRelativeBackupTime(backup.createdAt)}? Current canvas will be replaced.`)) {
+                      void restoreBackup(backup.id)
+                      setIsBackupPanelOpen(false)
+                    }
+                  }}
+                  title={new Date(backup.createdAt).toLocaleString()}
+                >
+                  <span>{formatRelativeBackupTime(backup.createdAt)}</span>
+                  <span className="text-[11px] text-secondary">Restore</span>
+                </button>
+              ))}
+              <div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted">Fixed versions</div>
+              {fixedBackups.length === 0 && <div className="text-xs text-secondary">No fixed versions yet.</div>}
+              {fixedBackups.map((backup) => (
+                <button
+                  key={backup.id}
+                  type="button"
+                  className="toolbar-button justify-between"
+                  onClick={() => {
+                    if (window.confirm(`Restore fixed version from ${formatRelativeBackupTime(backup.createdAt)}? Current canvas will be replaced.`)) {
                       void restoreBackup(backup.id)
                       setIsBackupPanelOpen(false)
                     }
@@ -437,6 +481,10 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
         >
           <Sparkles size={15} />
           <span className="toolbar-label">Clean</span>
+        </button>
+        <button type="button" className="toolbar-button" onClick={onOpenSaveDialog} {...toolbarTip("Save version")}>
+          <Save size={15} />
+          <span className="toolbar-label">Save</span>
         </button>
         <button type="button" className="toolbar-button" onClick={() => inputRef.current?.click()} {...toolbarTip("Import JSON")}>
           <Upload size={15} />

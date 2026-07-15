@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `0.6.9`.
+Current app version: `0.7.0`.
 
 ## Run
 
@@ -29,15 +29,15 @@ npm run build
 
 ## Data
 
-When Asteria is opened through the shared Slurm/Cloudflare server, maps are stored server-side in `.runtime/asteria-server/shared-map.json`, so every computer using the same public URL sees the same map. The app shows `Shared` in the top toolbar when this mode is active.
+When Asteria is opened through the shared Slurm/Cloudflare server, the server stores only one shared version in `.runtime/asteria-server/shared-map.json`. If a shared version already exists, Asteria requires a startup choice before editing: load the shared version or start a new local draft. The app shows `Shared` in the top toolbar when this mode is active.
 
 When the shared API is unavailable, including ordinary `npm run dev` sessions, maps are stored locally in IndexedDB under the `asteria-map` database. The app shows `Local` in the top toolbar in this fallback mode.
 
-The top toolbar provides JSON import and export. Exported maps include nodes, edges, block styling, rich-text JSON, model versions, variant content, viewport state, Story outline items, and Story deck settings. In shared mode, importing JSON replaces the shared server map for every computer using that Asteria URL.
+The top toolbar provides Save, JSON import, and export. Save opens a confirmation dialog: `Save shared version` publishes the current canvas as the single shared version, while `Save fixed version` creates a local fixed checkpoint. Exported maps include nodes, edges, block styling, rich-text JSON, model versions, variant content, viewport state, Story outline items, and Story deck settings.
 
-Asteria also keeps changed backup snapshots. Local mode keeps up to three IndexedDB backups. Shared mode keeps rotating server backups in `.runtime/asteria-server/backups/`. Backups are checked every five minutes and unchanged canvases are skipped, so old restore points are not replaced by identical saves. Use the top-left Restore menu beside the Saved/Unsaved status to restore a recent backup.
+Asteria keeps restore points locally in IndexedDB. Restore shows the current shared version when available, up to three recent local versions checked every five minutes, and up to three fixed local versions created with Save. Loading a restore point changes the current local workspace; publish it with Save if it should become the shared version.
 
-Shared saves use a revision check. If another computer saves first, the stale browser is blocked from silently overwriting that newer map and should be reloaded before saving again.
+Shared saves use a revision check only when Save publishes to the shared version. If another computer saved first, Asteria shows a confirmation dialog instead of repeatedly interrupting normal editing.
 
 ## Core Workflow
 
@@ -62,7 +62,7 @@ Asteria includes a Story panel in the right sidebar for building a low-density r
 - Each outline item can store a slide title, density, and speaker notes.
 - If a source block/group is deleted, the outline row remains marked as missing and Markdown export skips it without crashing.
 
-The toolbar action order is `Import`, `Export`, `Export Markdown`, `Delete`. `Export` remains the existing JSON map export. `Export Markdown` writes a story deck named like `<deck-title>-asteria-story-<timestamp>.md`.
+The toolbar action order is `Save`, `Import`, `Export`, `Export Markdown`, `Delete`. `Export` remains the existing JSON map export. `Export Markdown` writes a story deck named like `<deck-title>-asteria-story-<timestamp>.md`.
 
 `Add selected` records the selected source block/group, not a frozen copy of the currently visible version text. Story Markdown export resolves block content at export time through the same version inheritance rules used by the canvas.
 

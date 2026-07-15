@@ -1,4 +1,4 @@
-import type { PersistedMap, PersistedMapBackup } from "./db"
+import type { PersistedMap } from "./db"
 import type { ExportedMap } from "../types/map"
 
 export type PersistenceMode = "local" | "remote"
@@ -10,15 +10,13 @@ export type RemoteRecord = {
   seededDemo: boolean
 }
 
-type RemoteMapResponse = {
+export type RemoteSessionResponse = {
   exists: boolean
   record?: RemoteRecord
-  backups: PersistedMapBackup[]
 }
 
 type SaveRemoteMapResponse = {
   record: RemoteRecord
-  backups: PersistedMapBackup[]
 }
 
 export class RemoteRevisionConflictError extends Error {
@@ -66,31 +64,13 @@ export async function detectRemotePersistence() {
 }
 
 export async function loadRemoteMap() {
-  return fetchJson<RemoteMapResponse>("/api/asteria/map", { cache: "no-store" })
+  return fetchJson<RemoteSessionResponse>("/api/asteria/session", { cache: "no-store" })
 }
 
-export async function saveRemoteMap(map: ExportedMap, seededDemo: boolean, revision: string | null, reason = "save") {
+export async function saveRemoteMap(map: ExportedMap, seededDemo: boolean, revision: string | null) {
   return fetchJson<SaveRemoteMapResponse>("/api/asteria/map", {
     method: "PUT",
-    body: JSON.stringify({ revision, map, seededDemo, reason }),
-  })
-}
-
-export async function listRemoteBackups() {
-  return fetchJson<{ backups: PersistedMapBackup[] }>("/api/asteria/backups", { cache: "no-store" })
-}
-
-export async function createRemoteBackup(map: ExportedMap, seededDemo: boolean, revision: string | null) {
-  return fetchJson<{ backups: PersistedMapBackup[] }>("/api/asteria/backups", {
-    method: "POST",
     body: JSON.stringify({ revision, map, seededDemo }),
-  })
-}
-
-export async function restoreRemoteBackup(id: string, revision: string | null) {
-  return fetchJson<SaveRemoteMapResponse>("/api/asteria/restore", {
-    method: "POST",
-    body: JSON.stringify({ id, revision }),
   })
 }
 

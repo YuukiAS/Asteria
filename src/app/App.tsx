@@ -1,7 +1,7 @@
 import "@xyflow/react/dist/style.css"
 import "katex/dist/katex.min.css"
 import { ReactFlowProvider } from "@xyflow/react"
-import { ChevronLeft, ChevronRight, FileText, PanelRightClose, PanelRightOpen, SlidersHorizontal } from "lucide-react"
+import { ChevronLeft, ChevronRight, FileText, PanelRightClose, PanelRightOpen, Save, SlidersHorizontal } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { PointerEvent as ReactPointerEvent } from "react"
 import { Canvas } from "../components/Canvas"
@@ -51,6 +51,8 @@ export function App() {
   const [interactionMode, setInteractionMode] = useState<InteractionMode>("move")
   const [sidebarTab, setSidebarTab] = useState<"inspector" | "story">("inspector")
   const [inlineEditTarget, setInlineEditTarget] = useState<InlineEditTarget | undefined>()
+  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false)
+  const [showSaveConflict, setShowSaveConflict] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const stored = Number(localStorage.getItem(sidebarWidthKey))
     return Number.isFinite(stored) && stored > 0 ? clampSidebarWidth(stored) : 360
@@ -59,6 +61,13 @@ export function App() {
   const {
     hydrate,
     isHydrated,
+    workspaceReady,
+    persistenceMode,
+    sharedRecord,
+    chooseSharedWorkspace,
+    chooseNewWorkspace,
+    publishSharedVersion,
+    saveFixedVersion,
     deleteSelected,
     duplicateSelectedBlock,
     copySelectedBlock,
@@ -67,7 +76,6 @@ export function App() {
     addLinkedBlockFromSelected,
     setSelectedNode,
     setSelectedEdge,
-    saveNow,
     createBackupNow,
     undoLastCanvasChange,
     selectedNodeId,
@@ -79,12 +87,12 @@ export function App() {
   }, [hydrate])
 
   useEffect(() => {
-    if (!isHydrated) return
+    if (!isHydrated || !workspaceReady) return
     const backupTimer = window.setInterval(() => {
       void createBackupNow()
     }, 5 * 60 * 1000)
     return () => window.clearInterval(backupTimer)
-  }, [createBackupNow, isHydrated])
+  }, [createBackupNow, isHydrated, workspaceReady])
 
   const setFitView = useCallback((fitView: () => void) => {
     fitViewRef.current = fitView
@@ -115,6 +123,7 @@ export function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (!workspaceReady) return
       const isMod = event.ctrlKey || event.metaKey
       if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && !isTextEditingTarget(event.target)) {
         if (event.key === "1") {
@@ -146,7 +155,8 @@ export function App() {
       }
       if (isMod && event.key.toLowerCase() === "s") {
         event.preventDefault()
-        void saveNow()
+        setShowSaveConflict(false)
+        setIsSaveDialogOpen(true)
         return
       }
       if (isMod && event.shiftKey && event.key.toLowerCase() === "e" && selectedNodeId && !isEditableTarget(event.target)) {
@@ -204,16 +214,34 @@ export function App() {
     duplicateSelectedBlock,
     inlineEditTarget,
     pasteBlock,
-    saveNow,
     selectedNodeId,
     setAppInteractionMode,
     setSelectedEdge,
     setSelectedNode,
     undoLastCanvasChange,
+    workspaceReady,
   ])
 
   const toggleTheme = useCallback(() => setTheme((current) => (current === "dark" ? "light" : "dark")), [setTheme])
   const fitView = useMemo(() => () => fitViewRef.current(), [])
+
+  const saveToShared = useCallback(
+    async (force = false) => {
+      const ok = await publishSharedVersion(force)
+      if (ok) {
+        setShowSaveConflict(false)
+        setIsSaveDialogOpen(false)
+      } else {
+        setShowSaveConflict(true)
+      }
+    },
+    [publishSharedVersion],
+  )
+
+  const saveToFixed = useCallback(async () => {
+    await saveFixedVersion()
+    setIsSaveDialogOpen(false)
+  }, [saveFixedVersion])
 
   const setSidebarCollapsed = useCallback((collapsed: boolean) => {
     setIsSidebarCollapsed(collapsed)
@@ -267,6 +295,10 @@ export function App() {
           onInteractionModeChange={setAppInteractionMode}
           onToggleTheme={toggleTheme}
           onFitView={fitView}
+          onOpenSaveDialog={() => {
+            setShowSaveConflict(false)
+            setIsSaveDialogOpen(true)
+          }}
         />
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <Canvas
@@ -344,7 +376,118 @@ export function App() {
             )}
           </aside>
         </div>
+        {persistenceMode === "remote" && !workspaceReady && sharedRecord && (
+          <AsteriaChoiceDialog
+            title="Choose a starting version"
+            description="Select the workspace you want before editing Asteria on this computer."
+            primary={{
+              icon: <FileText size={18} />,
+              title: "Use shared version",
+              description: `Load the shared map last saved ${formatDialogDate(sharedRecord.updatedAt)}.`,
+              onClick: chooseSharedWorkspace,
+            }}
+            secondary={{
+              icon: <SlidersHorizontal size={18} />,
+              title: "New from scratch",
+              description: "Start an empty local draft. This does not replace the shared version until you save to Shared.",
+              onClick: chooseNewWorkspace,
+            }}
+          />
+        )}
+        {isSaveDialogOpen && (
+          <AsteriaChoiceDialog
+            title={showSaveConflict ? "Shared version changed" : "Save current version"}
+            description={
+              showSaveConflict
+                ? "Another computer saved the shared version after this workspace loaded. Choose how to continue."
+                : "Choose where to save the current canvas."
+            }
+            primary={{
+              icon: <Save size={18} />,
+              title: showSaveConflict ? "Overwrite shared version" : "Save shared version",
+              description: showSaveConflict
+                ? "Replace the current shared version with this canvas."
+                : "Publish this canvas as the single shared version for all computers.",
+              onClick: () => void saveToShared(showSaveConflict),
+            }}
+            secondary={{
+              icon: <FileText size={18} />,
+              title: showSaveConflict ? "Load shared version" : "Save fixed version",
+              description: showSaveConflict
+                ? "Discard this local draft and load the current shared version."
+                : "Save a local fixed checkpoint. The latest three fixed versions are kept on this computer.",
+              onClick: showSaveConflict
+                ? () => {
+                    chooseSharedWorkspace()
+                    setShowSaveConflict(false)
+                    setIsSaveDialogOpen(false)
+                  }
+                : () => void saveToFixed(),
+            }}
+            onCancel={() => {
+              setShowSaveConflict(false)
+              setIsSaveDialogOpen(false)
+            }}
+          />
+        )}
       </div>
     </ReactFlowProvider>
+  )
+}
+
+function formatDialogDate(value?: string) {
+  if (!value) return "unknown time"
+  return new Date(value).toLocaleString()
+}
+
+type DialogAction = {
+  icon: React.ReactNode
+  title: string
+  description: string
+  onClick: () => void
+}
+
+function AsteriaChoiceDialog({
+  title,
+  description,
+  primary,
+  secondary,
+  onCancel,
+}: {
+  title: string
+  description: string
+  primary: DialogAction
+  secondary: DialogAction
+  onCancel?: () => void
+}) {
+  return (
+    <div className="choice-dialog-backdrop" role="presentation">
+      <section className="choice-dialog nodrag nopan nowheel" role="dialog" aria-modal="true" aria-labelledby="choice-dialog-title">
+        <div className="choice-dialog-header">
+          <div>
+            <h2 id="choice-dialog-title">{title}</h2>
+            <p>{description}</p>
+          </div>
+        </div>
+        <div className="choice-dialog-options">
+          {[primary, secondary].map((action) => (
+            <button key={action.title} type="button" className="choice-dialog-option" onClick={action.onClick}>
+              <span className="choice-dialog-option-icon">{action.icon}</span>
+              <span>
+                <span className="choice-dialog-option-title">{action.title}</span>
+                <span className="choice-dialog-option-description">{action.description}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+        {onCancel && (
+          <div className="choice-dialog-actions">
+            <button type="button" className="toolbar-button" onClick={onCancel}>
+              Cancel
+            </button>
+          </div>
+        )}
+      </section>
+    </div>
   )
 }

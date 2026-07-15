@@ -1,6 +1,6 @@
 import { createServer } from "node:http"
 import { createHash, randomUUID } from "node:crypto"
-import { mkdir, readdir, readFile, rename, stat, unlink, writeFile } from "node:fs/promises"
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { createServer as createViteServer } from "vite"
@@ -8,10 +8,8 @@ import { createServer as createViteServer } from "vite"
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const runtimeDir = process.env.ASTERIA_RUNTIME_DIR || path.join(root, ".runtime", "asteria-server")
 const dataFile = process.env.ASTERIA_SHARED_MAP_FILE || path.join(runtimeDir, "shared-map.json")
-const backupDir = process.env.ASTERIA_BACKUP_DIR || path.join(runtimeDir, "backups")
 const host = process.env.HOST || "127.0.0.1"
 const port = Number(process.env.PORT || process.argv[2] || 5174)
-const maxBackups = Number(process.env.ASTERIA_MAX_BACKUPS || 10)
 const maxBodyBytes = Number(process.env.ASTERIA_MAX_BODY_BYTES || 25 * 1024 * 1024)
 
 function jsonResponse(res, status, value) {
@@ -57,7 +55,6 @@ function createRevision(map, previousRevision) {
 
 async function ensureStorage() {
   await mkdir(runtimeDir, { recursive: true })
-  await mkdir(backupDir, { recursive: true })
 }
 
 async function readRecord() {
@@ -74,57 +71,6 @@ async function writeRecord(record) {
   const tempFile = `${dataFile}.${process.pid}.${Date.now()}.tmp`
   await writeFile(tempFile, `${JSON.stringify(record, null, 2)}\n`, "utf8")
   await rename(tempFile, dataFile)
-}
-
-function contentSignature(record) {
-  const { updatedAt, ...mapContent } = record.map || {}
-  return JSON.stringify({
-    map: mapContent,
-    seededDemo: record.seededDemo,
-  })
-}
-
-async function pruneBackups() {
-  const files = (await readdir(backupDir)).filter((name) => name.endsWith(".json")).sort().reverse()
-  await Promise.all(files.slice(maxBackups).map((name) => unlink(path.join(backupDir, name)).catch(() => undefined)))
-}
-
-async function createBackup(record, reason = "save") {
-  if (!record) return
-  await ensureStorage()
-  const createdAt = new Date().toISOString()
-  const id = `backup-${createdAt.replace(/[:.]/g, "-")}-${record.revision || "initial"}`
-  const backup = {
-    id,
-    createdAt,
-    reason,
-    revision: record.revision,
-    map: record.map,
-    seededDemo: Boolean(record.seededDemo),
-  }
-  await writeFile(path.join(backupDir, `${id}.json`), `${JSON.stringify(backup, null, 2)}\n`, "utf8")
-  await pruneBackups()
-}
-
-async function listBackups() {
-  await ensureStorage()
-  const files = (await readdir(backupDir)).filter((name) => name.endsWith(".json")).sort().reverse()
-  const backups = []
-  for (const name of files) {
-    try {
-      const backup = JSON.parse(await readFile(path.join(backupDir, name), "utf8"))
-      assertMap(backup.map)
-      backups.push({
-        id: backup.id || name.replace(/\.json$/, ""),
-        createdAt: backup.createdAt || (await stat(path.join(backupDir, name))).mtime.toISOString(),
-        map: backup.map,
-        seededDemo: Boolean(backup.seededDemo),
-      })
-    } catch (error) {
-      console.warn(`Skipping invalid backup ${name}:`, error)
-    }
-  }
-  return backups
 }
 
 async function saveMap(body) {
@@ -146,16 +92,8 @@ async function saveMap(body) {
     map: body.map,
   }
 
-  if (current && contentSignature(current) !== contentSignature(next)) await createBackup(current, body.reason || "save")
   await writeRecord(next)
-  return { status: 200, value: { record: next, backups: await listBackups() } }
-}
-
-async function restoreBackup(body) {
-  const backups = await listBackups()
-  const backup = backups.find((item) => item.id === body.id)
-  if (!backup) return { status: 404, value: { error: "backup_not_found" } }
-  return saveMap({ revision: body.revision ?? null, map: backup.map, seededDemo: backup.seededDemo, reason: "restore" })
+  return { status: 200, value: { record: next } }
 }
 
 async function handleApi(req, res, pathname) {
@@ -168,46 +106,22 @@ async function handleApi(req, res, pathname) {
         ok: true,
         mode: "shared",
         dataFile,
-        backupDir,
         exists: Boolean(record),
         revision: record?.revision || null,
         updatedAt: record?.updatedAt,
       })
     }
 
-    if (pathname === "/api/asteria/map") {
+    if (pathname === "/api/asteria/session" || pathname === "/api/asteria/map") {
       if (req.method === "GET") {
         const record = await readRecord()
-        return jsonResponse(res, 200, record ? { exists: true, record, backups: await listBackups() } : { exists: false, backups: await listBackups() })
+        return jsonResponse(res, 200, record ? { exists: true, record } : { exists: false })
       }
       if (req.method === "PUT") {
         const result = await saveMap(await readJsonBody(req))
         return jsonResponse(res, result.status, result.value)
       }
       return methodNotAllowed(res)
-    }
-
-    if (pathname === "/api/asteria/backups") {
-      if (req.method === "GET") return jsonResponse(res, 200, { backups: await listBackups() })
-      if (req.method === "POST") {
-        const body = await readJsonBody(req)
-        const current = await readRecord()
-        if ((body.revision ?? null) !== (current?.revision || null)) {
-          return jsonResponse(res, 409, { error: "revision_conflict", revision: current?.revision || null, updatedAt: current?.updatedAt })
-        }
-        assertMap(body.map)
-        if (!current || contentSignature({ map: body.map, seededDemo: Boolean(body.seededDemo) }) !== contentSignature(current)) {
-          await createBackup({ revision: body.revision || "manual", map: body.map, seededDemo: Boolean(body.seededDemo) }, "manual")
-        }
-        return jsonResponse(res, 200, { backups: await listBackups() })
-      }
-      return methodNotAllowed(res)
-    }
-
-    if (pathname === "/api/asteria/restore") {
-      if (req.method !== "POST") return methodNotAllowed(res)
-      const result = await restoreBackup(await readJsonBody(req))
-      return jsonResponse(res, result.status, result.value)
     }
 
     return jsonResponse(res, 404, { error: "not_found" })

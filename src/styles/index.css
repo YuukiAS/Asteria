@@ -1537,6 +1537,112 @@ body {
   padding: 12px 14px;
 }
 
+.choice-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 180;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.34);
+  padding: 24px;
+}
+
+.choice-dialog {
+  display: flex;
+  width: min(840px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 14px;
+  background: rgb(var(--color-panel));
+  color: rgb(var(--color-foreground));
+  box-shadow: 0 26px 90px rgba(15, 23, 42, 0.3);
+}
+
+.choice-dialog-header {
+  border-bottom: 1px solid rgb(var(--color-border));
+  padding: 20px 22px 18px;
+}
+
+.choice-dialog-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.choice-dialog-header p {
+  margin-top: 8px;
+  color: rgb(var(--color-secondary));
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.choice-dialog-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  overflow: auto;
+  padding: 18px 22px 22px;
+}
+
+.choice-dialog-option {
+  display: flex;
+  min-height: 148px;
+  align-items: flex-start;
+  gap: 14px;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 10px;
+  background: rgb(var(--color-app));
+  padding: 18px;
+  text-align: left;
+  transition:
+    border-color 140ms ease,
+    transform 140ms ease,
+    background 140ms ease;
+}
+
+.choice-dialog-option:hover {
+  border-color: rgb(var(--color-accent));
+  background: rgb(var(--color-panel));
+  transform: translateY(-1px);
+}
+
+.choice-dialog-option-icon {
+  display: grid;
+  height: 34px;
+  width: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 8px;
+  background: rgb(var(--color-accent-soft));
+  color: rgb(var(--color-accent));
+}
+
+.choice-dialog-option-title,
+.choice-dialog-option-description {
+  display: block;
+}
+
+.choice-dialog-option-title {
+  color: rgb(var(--color-foreground));
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.choice-dialog-option-description {
+  margin-top: 8px;
+  color: rgb(var(--color-secondary));
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.choice-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid rgb(var(--color-border));
+  padding: 12px 22px;
+}
+
 @media (max-width: 900px) {
   .inspector-shell {
     position: absolute;
