@@ -59,6 +59,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
     selectedNodeIds,
     saveStatus,
     backups,
+    persistenceMode,
     addBlockAndSelect,
     groupSelectedBlocks,
     updateMapTitle,
@@ -226,7 +227,11 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
 
   const importJson = async (file?: File) => {
     if (!file) return
-    if (!window.confirm("Importing JSON will replace the current canvas. Continue?")) return
+    const confirmMessage =
+      persistenceMode === "remote"
+        ? "Importing JSON will replace the shared server map for every computer using this Asteria URL. Continue?"
+        : "Importing JSON will replace the current local canvas. Continue?"
+    if (!window.confirm(confirmMessage)) return
     try {
       const raw = await readJsonFile(file)
       loadMap(normalizeExportedMap(raw))
@@ -284,6 +289,9 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           }`}
         >
           {saveStatus}
+        </span>
+        <span className="status-pill rounded-full border border-border px-2 py-1 text-[11px] text-secondary">
+          {persistenceMode === "remote" ? "Shared" : "Local"}
         </span>
         <button
           type="button"

@@ -29,6 +29,7 @@ pnpm-debug.log*
 
 # Codex and local workflow artifacts
 .codex/
+.runtime/
 archive/
 results/tmp/
 

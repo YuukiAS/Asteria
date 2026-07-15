@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `0.6.8`.
+Current app version: `0.6.9`.
 
 ## Run
 
@@ -13,6 +13,14 @@ npm run dev
 
 The dev server is configured for `http://127.0.0.1:5173/`.
 
+For the shared server used by the Slurm/Cloudflare deployment:
+
+```bash
+npm run serve:shared
+```
+
+This starts Asteria with same-origin `/api/asteria/*` persistence on `http://127.0.0.1:5174/` by default.
+
 ## Build
 
 ```bash
@@ -21,9 +29,15 @@ npm run build
 
 ## Data
 
-Maps are stored locally in IndexedDB under the `asteria-map` database. The top toolbar provides JSON import and export. Exported maps include nodes, edges, block styling, rich-text JSON, model versions, variant content, viewport state, Story outline items, and Story deck settings.
+When Asteria is opened through the shared Slurm/Cloudflare server, maps are stored server-side in `.runtime/asteria-server/shared-map.json`, so every computer using the same public URL sees the same map. The app shows `Shared` in the top toolbar when this mode is active.
 
-Asteria also keeps up to three changed local backup snapshots. Backups are checked every five minutes and unchanged canvases are skipped, so old restore points are not replaced by identical saves. Use the top-left Restore menu beside the Saved/Unsaved status to restore a recent backup.
+When the shared API is unavailable, including ordinary `npm run dev` sessions, maps are stored locally in IndexedDB under the `asteria-map` database. The app shows `Local` in the top toolbar in this fallback mode.
+
+The top toolbar provides JSON import and export. Exported maps include nodes, edges, block styling, rich-text JSON, model versions, variant content, viewport state, Story outline items, and Story deck settings. In shared mode, importing JSON replaces the shared server map for every computer using that Asteria URL.
+
+Asteria also keeps changed backup snapshots. Local mode keeps up to three IndexedDB backups. Shared mode keeps rotating server backups in `.runtime/asteria-server/backups/`. Backups are checked every five minutes and unchanged canvases are skipped, so old restore points are not replaced by identical saves. Use the top-left Restore menu beside the Saved/Unsaved status to restore a recent backup.
+
+Shared saves use a revision check. If another computer saves first, the stale browser is blocked from silently overwriting that newer map and should be reloaded before saving again.
 
 ## Core Workflow
 

@@ -26,6 +26,18 @@ import {
   resolveBlockVariant,
 } from "../lib/exportImport"
 import { createPersistedMapBackup, listPersistedMapBackups, loadPersistedMap, savePersistedMap, type PersistedMapBackup } from "../lib/db"
+import {
+  createRemoteBackup,
+  detectRemotePersistence,
+  listRemoteBackups,
+  loadRemoteMap,
+  remoteRecordToPersisted,
+  RemoteRevisionConflictError,
+  restoreRemoteBackup,
+  saveRemoteMap,
+  type PersistenceMode,
+  type RemoteRecord,
+} from "../lib/persistence"
 import { contentJsonToHtml } from "../editor/editorUtils"
 import { resolveBlockVersionState } from "../lib/blockVersionState"
 import { createId } from "../lib/ids"
@@ -138,6 +150,9 @@ type MapState = {
   saveStatus: SaveStatus
   lastSavedAt?: string
   backups: PersistedMapBackup[]
+  persistenceMode: PersistenceMode
+  remoteRevision: string | null
+  remoteConflictRevision?: string | null
   seededDemo: boolean
   isHydrated: boolean
   autosaveTimer?: number
@@ -239,6 +254,27 @@ function mapContentSignature(map: ExportedMap) {
     edges: map.edges,
     viewport: map.viewport,
   })
+}
+
+function stateFromPersistedMap(persisted: { map: ExportedMap; seededDemo: boolean; updatedAt?: string }) {
+  const map = normalizeExportedMap(persisted.map)
+  return {
+    mapTitle: normalizeMapTitle(map.title),
+    modelVersions: map.modelVersions || [],
+    activeVersionId: map.activeVersionId || allVersionsId,
+    displayModeOverride: normalizeDisplayModeOverride(map.displayModeOverride),
+    storyOutline: map.storyOutline || [],
+    storyDeckSettings: map.storyDeckSettings || defaultStoryDeckSettings(map.title),
+    nodes: applyContentHtml(map.nodes),
+    edges: map.edges.map(applyEdgePresentation),
+    viewport: map.viewport ?? { x: 0, y: 0, zoom: 1 },
+    lastSavedAt: persisted.updatedAt,
+    seededDemo: persisted.seededDemo,
+  }
+}
+
+function stateFromRemoteRecord(record: RemoteRecord) {
+  return stateFromPersistedMap(remoteRecordToPersisted(record))
 }
 
 function normalizeDisplayModeOverride(mode?: DisplayModeOverride): DisplayModeOverride {
@@ -452,6 +488,8 @@ export const useMapStore = create<MapState>((set, get) => ({
   viewport: { x: 0, y: 0, zoom: 1 },
   saveStatus: "Saved",
   backups: [],
+  persistenceMode: "local",
+  remoteRevision: null,
   seededDemo: false,
   isHydrated: false,
   edgeStyleClipboard: readClipboard<EdgeStyleClipboard>(edgeStyleClipboardKey),
@@ -470,23 +508,45 @@ export const useMapStore = create<MapState>((set, get) => ({
 
   hydrate: async () => {
     try {
-      const backups = await listPersistedMapBackups()
       const persisted = await loadPersistedMap()
+      const hasRemotePersistence = await detectRemotePersistence()
+      if (hasRemotePersistence) {
+        const remote = await loadRemoteMap()
+        if (remote.exists && remote.record) {
+          set({
+            ...stateFromRemoteRecord(remote.record),
+            backups: remote.backups,
+            persistenceMode: "remote",
+            remoteRevision: remote.record.revision,
+            remoteConflictRevision: undefined,
+            isHydrated: true,
+            saveStatus: "Saved",
+          })
+          return
+        }
+        if (persisted) {
+          const result = await saveRemoteMap(normalizeExportedMap(persisted.map), persisted.seededDemo, null, "seed")
+          set({
+            ...stateFromRemoteRecord(result.record),
+            backups: result.backups,
+            persistenceMode: "remote",
+            remoteRevision: result.record.revision,
+            remoteConflictRevision: undefined,
+            isHydrated: true,
+            saveStatus: "Saved",
+          })
+          return
+        }
+      }
+
+      const backups = hasRemotePersistence ? (await listRemoteBackups()).backups : await listPersistedMapBackups()
       if (persisted) {
-        const map = normalizeExportedMap(persisted.map)
         set({
-          mapTitle: normalizeMapTitle(map.title),
-          modelVersions: map.modelVersions || [],
-          activeVersionId: map.activeVersionId || allVersionsId,
-          displayModeOverride: normalizeDisplayModeOverride(map.displayModeOverride),
-          storyOutline: map.storyOutline || [],
-          storyDeckSettings: map.storyDeckSettings || defaultStoryDeckSettings(map.title),
-          nodes: applyContentHtml(map.nodes),
-          edges: map.edges.map(applyEdgePresentation),
-          viewport: map.viewport ?? { x: 0, y: 0, zoom: 1 },
-          lastSavedAt: persisted.updatedAt,
+          ...stateFromPersistedMap(persisted),
           backups,
-          seededDemo: persisted.seededDemo,
+          persistenceMode: hasRemotePersistence ? "remote" : "local",
+          remoteRevision: null,
+          remoteConflictRevision: undefined,
           isHydrated: true,
           saveStatus: "Saved",
         })
@@ -504,11 +564,14 @@ export const useMapStore = create<MapState>((set, get) => ({
         edges: demo.edges.map(applyEdgePresentation),
         viewport: demo.viewport ?? { x: 0, y: 0, zoom: 1 },
         backups,
+        persistenceMode: hasRemotePersistence ? "remote" : "local",
+        remoteRevision: null,
+        remoteConflictRevision: undefined,
         seededDemo: true,
         isHydrated: true,
         saveStatus: "Unsaved",
       })
-      await get().saveNow()
+      if (!hasRemotePersistence) await get().saveNow()
     } catch (error) {
       console.error("Failed to hydrate map", error)
       set({ isHydrated: true, saveStatus: "Error" })
@@ -520,11 +583,31 @@ export const useMapStore = create<MapState>((set, get) => ({
     if (timer) window.clearTimeout(timer)
     set({ saveStatus: "Saving", autosaveTimer: undefined })
     try {
-      const map = mapFromState(get())
-      await savePersistedMap(map, get().seededDemo)
+      const state = get()
+      const map = mapFromState(state)
+      if (state.persistenceMode === "remote") {
+        const result = await saveRemoteMap(map, state.seededDemo, state.remoteRevision)
+        set({
+          backups: result.backups,
+          saveStatus: "Saved",
+          lastSavedAt: result.record.updatedAt,
+          remoteRevision: result.record.revision,
+          remoteConflictRevision: undefined,
+        })
+        return
+      }
+      await savePersistedMap(map, state.seededDemo)
       set({ saveStatus: "Saved", lastSavedAt: map.updatedAt })
     } catch (error) {
       console.error("Failed to save map", error)
+      if (error instanceof RemoteRevisionConflictError) {
+        const state = get()
+        set({ saveStatus: "Error", remoteConflictRevision: error.revision })
+        if (state.remoteConflictRevision !== error.revision) {
+          window.alert("The shared map changed on another computer. Reload the page to load the latest shared map before saving again.")
+        }
+        return
+      }
       set({ saveStatus: "Error" })
     }
   },
@@ -535,7 +618,10 @@ export const useMapStore = create<MapState>((set, get) => ({
       const map = mapFromState(state)
       const latestBackup = state.backups[0]
       if (latestBackup && mapContentSignature(latestBackup.map) === mapContentSignature(map)) return
-      const backups = await createPersistedMapBackup(map, state.seededDemo)
+      const backups =
+        state.persistenceMode === "remote"
+          ? (await createRemoteBackup(map, state.seededDemo, state.remoteRevision)).backups
+          : await createPersistedMapBackup(map, state.seededDemo)
       set({ backups })
     } catch (error) {
       console.error("Failed to create map backup", error)
@@ -543,25 +629,44 @@ export const useMapStore = create<MapState>((set, get) => ({
   },
 
   restoreBackup: async (id) => {
-    const backup = get().backups.find((item) => item.id === id)
+    const state = get()
+    if (state.persistenceMode === "remote") {
+      try {
+        const result = await restoreRemoteBackup(id, state.remoteRevision)
+        set({
+          ...stateFromRemoteRecord(result.record),
+          backups: result.backups,
+          persistenceMode: "remote",
+          remoteRevision: result.record.revision,
+          remoteConflictRevision: undefined,
+          canvasHistory: [],
+          pendingDragSnapshot: undefined,
+          selectedNodeId: undefined,
+          selectedNodeIds: [],
+          selectedEdgeId: undefined,
+          saveStatus: "Saved",
+        })
+      } catch (error) {
+        console.error("Failed to restore shared backup", error)
+        if (error instanceof RemoteRevisionConflictError) {
+          set({ saveStatus: "Error", remoteConflictRevision: error.revision })
+          window.alert("The shared map changed on another computer. Reload the page before restoring a backup.")
+        } else {
+          set({ saveStatus: "Error" })
+        }
+      }
+      return
+    }
+
+    const backup = state.backups.find((item) => item.id === id)
     if (!backup) return
-    const map = normalizeExportedMap(backup.map)
     set({
-      mapTitle: normalizeMapTitle(map.title),
-      modelVersions: map.modelVersions || [],
-      activeVersionId: map.activeVersionId || allVersionsId,
-      displayModeOverride: normalizeDisplayModeOverride(map.displayModeOverride),
-      storyOutline: map.storyOutline || [],
-      storyDeckSettings: map.storyDeckSettings || defaultStoryDeckSettings(map.title),
-      nodes: applyContentHtml(map.nodes),
-      edges: map.edges.map(applyEdgePresentation),
+      ...stateFromPersistedMap(backup),
       canvasHistory: [],
       pendingDragSnapshot: undefined,
-      viewport: map.viewport ?? { x: 0, y: 0, zoom: 1 },
       selectedNodeId: undefined,
       selectedNodeIds: [],
       selectedEdgeId: undefined,
-      seededDemo: backup.seededDemo,
       saveStatus: "Unsaved",
     })
     await get().saveNow()
@@ -570,7 +675,8 @@ export const useMapStore = create<MapState>((set, get) => ({
 
   refreshBackups: async () => {
     try {
-      set({ backups: await listPersistedMapBackups() })
+      const state = get()
+      set({ backups: state.persistenceMode === "remote" ? (await listRemoteBackups()).backups : await listPersistedMapBackups() })
     } catch (error) {
       console.error("Failed to load map backups", error)
     }
@@ -1418,6 +1524,7 @@ export const useMapStore = create<MapState>((set, get) => ({
       selectedNodeIds: [],
       selectedEdgeId: undefined,
       seededDemo: true,
+      remoteConflictRevision: undefined,
     })
     get().markUnsaved()
   },
@@ -1438,8 +1545,9 @@ export const useMapStore = create<MapState>((set, get) => ({
       selectedNodeId: undefined,
       selectedNodeIds: [],
       selectedEdgeId: undefined,
-      seededDemo: true,
+      seededDemo: false,
       saveStatus: markUnsaved ? "Unsaved" : "Saved",
+      remoteConflictRevision: undefined,
     })
     if (markUnsaved) get().markUnsaved()
   },

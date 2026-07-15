@@ -59,6 +59,7 @@ export function InspectorPanel() {
     selectedNodeIds,
     selectedEdgeId,
     saveStatus,
+    persistenceMode,
     lastSavedAt,
     addBlockAndSelect,
     updateBlock,
@@ -573,6 +574,7 @@ export function InspectorPanel() {
               <>
                 <div className="rounded-lg border border-border bg-app/60 p-3 text-sm">
                   <div className="font-medium text-foreground">{saveStatus}</div>
+                  <div className="mt-1 text-xs text-secondary">Storage: {persistenceMode === "remote" ? "Shared server" : "Local browser"}</div>
                   <div className="mt-1 text-xs text-secondary">Last saved: {formatLocalDateTime(lastSavedAt)}</div>
                 </div>
                 <button type="button" className="primary-button mt-3" onClick={createBlock}>

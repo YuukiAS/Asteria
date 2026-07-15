@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.9 - Shared Server Persistence
+
+- Added a same-origin shared persistence API for the Slurm/Cloudflare Asteria deployment so computers using the same public URL read and write the same map.
+- Kept IndexedDB as the fallback storage mode when the shared API is unavailable, including ordinary local `npm run dev` sessions.
+- Added revision checks so a stale browser cannot silently overwrite a map saved from another computer.
+- Routed shared backups through repo-local `.runtime/asteria-server/backups/` and kept Restore working in shared mode.
+- Updated JSON import confirmation text so shared imports clearly replace the server map for every computer using that URL.
+
 ## 0.6.8 - Block Header Menus And Preview Parity
 
 - Replaced canvas/topbar native dropdowns for active version, display density, block version, and block type with styled fixed-position menus.
