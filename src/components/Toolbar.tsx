@@ -319,8 +319,8 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
                     type="button"
                     className="toolbar-button justify-between"
                     onClick={() => {
-                      if (window.confirm("Restore the current shared version into this local workspace?")) {
-                        chooseSharedWorkspace()
+                      if (window.confirm("Restore the current shared version into this local workspace? A local safety backup will be created first, and newer block content on this computer will be kept.")) {
+                        void chooseSharedWorkspace()
                         setIsBackupPanelOpen(false)
                       }
                     }}
@@ -339,7 +339,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
                   type="button"
                   className="toolbar-button justify-between"
                   onClick={() => {
-                    if (window.confirm(`Restore backup from ${formatRelativeBackupTime(backup.createdAt)}? Current canvas will be replaced.`)) {
+                    if (window.confirm(`Restore backup from ${formatRelativeBackupTime(backup.createdAt)}? A local safety backup will be created first, and newer block content on this computer will be kept.`)) {
                       void restoreBackup(backup.id)
                       setIsBackupPanelOpen(false)
                     }
@@ -358,7 +358,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
                   type="button"
                   className="toolbar-button justify-between"
                   onClick={() => {
-                    if (window.confirm(`Restore fixed version from ${formatRelativeBackupTime(backup.createdAt)}? Current canvas will be replaced.`)) {
+                    if (window.confirm(`Restore fixed version from ${formatRelativeBackupTime(backup.createdAt)}? A local safety backup will be created first, and newer block content on this computer will be kept.`)) {
                       void restoreBackup(backup.id)
                       setIsBackupPanelOpen(false)
                     }

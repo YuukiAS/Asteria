@@ -96,6 +96,8 @@ const edgeStyleClipboardKey = "asteria-edge-style-clipboard"
 const blockStyleClipboardKey = "asteria-block-style-clipboard"
 const blockClipboardKey = "asteria-block-clipboard"
 const maxCanvasHistoryEntries = 50
+let activeLocalSave: Promise<void> | undefined
+let pendingLocalSave = false
 
 function readClipboard<T>(key: string): T | undefined {
   try {
@@ -224,7 +226,7 @@ type MapState = {
   restoreBackup: (id: string) => Promise<void>
   refreshBackups: () => Promise<void>
   hydrate: () => Promise<void>
-  chooseSharedWorkspace: () => void
+  chooseSharedWorkspace: () => Promise<void>
   chooseNewWorkspace: () => void
   markUnsaved: () => void
 }
@@ -259,6 +261,12 @@ function mapContentSignature(map: ExportedMap) {
   })
 }
 
+function timestampMs(value?: string) {
+  if (!value) return 0
+  const parsed = Date.parse(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
 function stateFromPersistedMap(persisted: { map: ExportedMap; seededDemo: boolean; updatedAt?: string }) {
   const map = normalizeExportedMap(persisted.map)
   return {
@@ -278,6 +286,45 @@ function stateFromPersistedMap(persisted: { map: ExportedMap; seededDemo: boolea
 
 function stateFromRemoteRecord(record: RemoteRecord) {
   return stateFromPersistedMap(remoteRecordToPersisted(record))
+}
+
+type RestoredMapState = ReturnType<typeof stateFromPersistedMap>
+
+function preserveNewerCurrentBlockContent(restored: RestoredMapState, current: Pick<MapState, "nodes" | "modelVersions">): RestoredMapState {
+  const currentBlocks = new Map(current.nodes.filter(isBlockNode).map((node) => [node.id, node]))
+  const modelVersions = restored.modelVersions || current.modelVersions || []
+  return {
+    ...restored,
+    nodes: restored.nodes.map((node) => {
+      if (!isBlockNode(node)) return node
+      const currentNode = currentBlocks.get(node.id)
+      if (!currentNode) return node
+      const variants = { ...(node.data.variants || {}) }
+      Object.entries(currentNode.data.variants || {}).forEach(([key, currentVariant]) => {
+        if (!currentVariant) return
+        const restoredVariant = variants[key]
+        if (!restoredVariant || timestampMs(currentVariant.updatedAt) > timestampMs(restoredVariant.updatedAt)) {
+          variants[key] = cloneJson(currentVariant)
+        }
+      })
+      const nextData = { ...node.data, variants }
+      const activeVariantKey = nextData.activeVariantKey || defaultVariantKey
+      const resolvedVariant = resolveVariantForMirror(nextData, activeVariantKey, modelVersions)
+      return {
+        ...node,
+        data: {
+          ...nextData,
+          title: resolvedVariant.title,
+          contentJson: resolvedVariant.contentJson,
+          contentHtml: resolvedVariant.contentHtml || contentJsonToHtml(resolvedVariant.contentJson),
+          updatedAt:
+            timestampMs(currentNode.data.updatedAt) > timestampMs(node.data.updatedAt)
+              ? currentNode.data.updatedAt
+              : node.data.updatedAt,
+        },
+      }
+    }),
+  }
 }
 
 function normalizeDisplayModeOverride(mode?: DisplayModeOverride): DisplayModeOverride {
@@ -579,16 +626,32 @@ export const useMapStore = create<MapState>((set, get) => ({
   saveNow: async () => {
     const timer = get().autosaveTimer
     if (timer) window.clearTimeout(timer)
-    set({ saveStatus: "Saving", autosaveTimer: undefined })
-    try {
-      const state = get()
-      const map = mapFromState(state)
-      await savePersistedMap(map, state.seededDemo)
-      set({ saveStatus: "Saved", lastSavedAt: map.updatedAt })
-    } catch (error) {
-      console.error("Failed to save map", error)
-      set({ saveStatus: "Error" })
+    if (activeLocalSave) {
+      pendingLocalSave = true
+      set({ saveStatus: "Saving", autosaveTimer: undefined })
+      return activeLocalSave
     }
+    set({ saveStatus: "Saving", autosaveTimer: undefined })
+    activeLocalSave = (async () => {
+      try {
+        let lastSavedAt: string | undefined
+        do {
+          pendingLocalSave = false
+          const state = get()
+          const map = mapFromState(state)
+          await savePersistedMap(map, state.seededDemo)
+          lastSavedAt = map.updatedAt
+        } while (pendingLocalSave)
+        set({ saveStatus: "Saved", lastSavedAt })
+      } catch (error) {
+        pendingLocalSave = false
+        console.error("Failed to save map", error)
+        set({ saveStatus: "Error" })
+      } finally {
+        activeLocalSave = undefined
+      }
+    })()
+    return activeLocalSave
   },
 
   publishSharedVersion: async (force = false) => {
@@ -598,7 +661,6 @@ export const useMapStore = create<MapState>((set, get) => ({
     set({ saveStatus: "Saving" })
     try {
       const result = await saveRemoteMap(map, state.seededDemo, force ? state.remoteConflictRevision ?? state.remoteRevision : state.remoteRevision)
-      await savePersistedMap(map, state.seededDemo)
       set({
         sharedRecord: result.record,
         remoteRevision: result.record.revision,
@@ -606,6 +668,7 @@ export const useMapStore = create<MapState>((set, get) => ({
         saveStatus: "Saved",
         lastSavedAt: result.record.updatedAt,
       })
+      await get().saveNow()
       return true
     } catch (error) {
       console.error("Failed to publish shared map", error)
@@ -628,8 +691,8 @@ export const useMapStore = create<MapState>((set, get) => ({
     const map = mapFromState(state)
     try {
       const backups = await createPersistedMapBackup(map, state.seededDemo, "fixed")
-      await savePersistedMap(map, state.seededDemo)
-      set({ backups, saveStatus: "Saved", lastSavedAt: map.updatedAt })
+      set({ backups })
+      await get().saveNow()
     } catch (error) {
       console.error("Failed to save fixed version", error)
       set({ saveStatus: "Error" })
@@ -653,8 +716,11 @@ export const useMapStore = create<MapState>((set, get) => ({
     const state = get()
     const backup = state.backups.find((item) => item.id === id)
     if (!backup) return
+    const safetyMap = mapFromState(state)
+    await createPersistedMapBackup(safetyMap, state.seededDemo, "recent")
+    const restored = preserveNewerCurrentBlockContent(stateFromPersistedMap(backup), state)
     set({
-      ...stateFromPersistedMap(backup),
+      ...restored,
       canvasHistory: [],
       pendingDragSnapshot: undefined,
       selectedNodeId: undefined,
@@ -674,11 +740,16 @@ export const useMapStore = create<MapState>((set, get) => ({
     }
   },
 
-  chooseSharedWorkspace: () => {
-    const record = get().sharedRecord
+  chooseSharedWorkspace: async () => {
+    const state = get()
+    const record = state.sharedRecord
     if (!record) return
+    const safetyMap = mapFromState(state)
+    const backups = await createPersistedMapBackup(safetyMap, state.seededDemo, "recent")
+    const restored = preserveNewerCurrentBlockContent(stateFromRemoteRecord(record), state)
     set({
-      ...stateFromRemoteRecord(record),
+      ...restored,
+      backups,
       remoteRevision: record.revision,
       remoteConflictRevision: undefined,
       workspaceReady: true,

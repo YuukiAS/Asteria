@@ -383,8 +383,8 @@ export function App() {
             primary={{
               icon: <FileText size={18} />,
               title: "Use shared version",
-              description: `Load the shared map last saved ${formatDialogDate(sharedRecord.updatedAt)}.`,
-              onClick: chooseSharedWorkspace,
+              description: `Load the shared map last saved ${formatDialogDate(sharedRecord.updatedAt)}. A local safety backup is created first, and newer block content on this computer is kept.`,
+              onClick: () => void chooseSharedWorkspace(),
             }}
             secondary={{
               icon: <SlidersHorizontal size={18} />,
@@ -414,11 +414,11 @@ export function App() {
               icon: <FileText size={18} />,
               title: showSaveConflict ? "Load shared version" : "Save fixed version",
               description: showSaveConflict
-                ? "Discard this local draft and load the current shared version."
+                ? "Create a local safety backup, load the shared version, and keep any newer block content from this computer."
                 : "Save a local fixed checkpoint. The latest three fixed versions are kept on this computer.",
               onClick: showSaveConflict
                 ? () => {
-                    chooseSharedWorkspace()
+                    void chooseSharedWorkspace()
                     setShowSaveConflict(false)
                     setIsSaveDialogOpen(false)
                   }

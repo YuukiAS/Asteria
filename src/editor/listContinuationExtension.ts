@@ -1,11 +1,20 @@
 import { Extension } from "@tiptap/core"
+import type { Node as ProseMirrorNode, NodeType } from "prosemirror-model"
 import { TextSelection } from "prosemirror-state"
 import type { EditorState, Transaction } from "prosemirror-state"
 
 const listTypes = new Set(["bulletList", "orderedList", "taskList"])
+const listItemTypes = new Set(["listItem", "taskItem"])
 
 function isEmptyListItem(node: EditorState["doc"]) {
-  return node.type.name === "listItem" && node.textContent.trim().length === 0
+  return listItemTypes.has(node.type.name) && node.textContent.trim().length === 0
+}
+
+function paragraphFromListItem(listItem: ProseMirrorNode, paragraphType: NodeType) {
+  const firstChild = listItem.firstChild
+  if (!firstChild || firstChild.type.name !== "paragraph") return paragraphType.create()
+  if (listItem.childCount > 1 && listItem.textContent.trim().length > 0) return undefined
+  return paragraphType.create(firstChild.attrs, firstChild.content)
 }
 
 function continueParentListItem(state: EditorState, dispatch?: (tr: Transaction) => void) {
@@ -52,14 +61,70 @@ function continueParentListItem(state: EditorState, dispatch?: (tr: Transaction)
   return true
 }
 
+function exitEmptyListItemToParagraph(state: EditorState, dispatch?: (tr: Transaction) => void) {
+  const { selection, schema } = state
+  if (!selection.empty) return false
+  const paragraphType = schema.nodes.paragraph
+  if (!paragraphType) return false
+
+  const $from = selection.$from
+  let listItemDepth = -1
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    if (listItemTypes.has($from.node(depth).type.name)) {
+      listItemDepth = depth
+      break
+    }
+  }
+  if (listItemDepth < 2) return false
+
+  const parentListDepth = listItemDepth - 1
+  const parentList = $from.node(parentListDepth)
+  if (!listTypes.has(parentList.type.name)) return false
+
+  const currentItemStart = $from.before(listItemDepth)
+  const currentItemEnd = $from.after(listItemDepth)
+  const currentItem = state.doc.nodeAt(currentItemStart)
+  if (!currentItem) return false
+
+  const itemIsEmpty = isEmptyListItem(currentItem)
+  const itemIndex = $from.index(parentListDepth)
+  const isTopLevelList = parentListDepth === 1
+  const isLastListItem = itemIndex === parentList.childCount - 1
+  const shouldExitNonEmptyTopLevelItem = !itemIsEmpty && isTopLevelList && isLastListItem
+  if (!itemIsEmpty && !shouldExitNonEmptyTopLevelItem) return false
+
+  const paragraph = itemIsEmpty ? paragraphType.create() : paragraphFromListItem(currentItem, paragraphType)
+  if (!paragraph) return false
+
+  if (!dispatch) return true
+
+  let tr = state.tr
+  if (parentList.childCount <= 1) {
+    const listStart = $from.before(parentListDepth)
+    const listEnd = $from.after(parentListDepth)
+    tr = tr.delete(listStart, listEnd)
+    const insertPosition = tr.mapping.map(listStart)
+    tr = tr.insert(insertPosition, paragraph)
+    tr = tr.setSelection(TextSelection.create(tr.doc, insertPosition + 1))
+  } else {
+    const listEnd = $from.after(parentListDepth)
+    tr = tr.delete(currentItemStart, currentItemEnd)
+    const insertPosition = tr.mapping.map(listEnd)
+    tr = tr.insert(insertPosition, paragraph)
+    tr = tr.setSelection(TextSelection.create(tr.doc, insertPosition + 1))
+  }
+  dispatch(tr.scrollIntoView())
+  return true
+}
+
 export const ListContinuationExtension = Extension.create({
   name: "listContinuation",
+  priority: 1000,
 
   addKeyboardShortcuts() {
     return {
       Enter: () => continueParentListItem(this.editor.state, this.editor.view.dispatch),
-      Tab: () => continueParentListItem(this.editor.state, this.editor.view.dispatch),
-      "Shift-Tab": () => continueParentListItem(this.editor.state, this.editor.view.dispatch),
+      "Shift-Tab": () => exitEmptyListItemToParagraph(this.editor.state, this.editor.view.dispatch),
     }
   },
 })

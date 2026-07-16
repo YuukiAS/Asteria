@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `0.7.0`.
+Current app version: `0.7.1`.
 
 ## Run
 
@@ -35,7 +35,7 @@ When the shared API is unavailable, including ordinary `npm run dev` sessions, m
 
 The top toolbar provides Save, JSON import, and export. Save opens a confirmation dialog: `Save shared version` publishes the current canvas as the single shared version, while `Save fixed version` creates a local fixed checkpoint. Exported maps include nodes, edges, block styling, rich-text JSON, model versions, variant content, viewport state, Story outline items, and Story deck settings.
 
-Asteria keeps restore points locally in IndexedDB. Restore shows the current shared version when available, up to three recent local versions checked every five minutes, and up to three fixed local versions created with Save. Loading a restore point changes the current local workspace; publish it with Save if it should become the shared version.
+Asteria keeps restore points locally in IndexedDB. Restore shows the current shared version when available, up to three recent local versions checked every five minutes, and up to three fixed local versions created with Save. Loading a restore point first creates a local safety backup, then restores the saved layout while keeping newer block variant content from the current workspace. Publish it with Save if the restored workspace should become the shared version.
 
 Shared saves use a revision check only when Save publishes to the shared version. If another computer saved first, Asteria shows a confirmation dialog instead of repeatedly interrupting normal editing.
 
@@ -48,7 +48,7 @@ Shared saves use a revision check only when Save publishes to the shared version
 - Double-click the canvas to create a new block at that position.
 - Double-click a block to enter inline editing.
 - Click an empty canvas background while editing to return to Move mode.
-- Inside nested lists, use `Enter`, `Tab`, or `Shift+Tab` on an empty nested item to continue writing in the parent list item.
+- Inside nested lists, use `Enter` on an empty nested item to continue writing in the parent list item. Use `Shift+Tab` on an empty list item, or on the final top-level list item after typing text, to exit into an unindented paragraph without moving or renumbering the previous list content; nested non-empty list items keep the editor's normal indent and outdent behavior.
 - Drag undo is supported with `Ctrl+Z` / `Cmd+Z` when focus is not inside a text editor.
 
 ## Story Outline

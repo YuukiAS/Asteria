@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.1 - Restore Safety And Editor Readability
+
+- Protected local restore and shared-version loading from overwriting newer block variant content with older backup snapshots, and created a safety backup before restore operations.
+- Serialized local IndexedDB saves so delayed autosaves cannot write older canvas snapshots after newer edits.
+- Fixed empty-list `Shift+Tab` handling so users can exit a bullet list into an unindented paragraph without moving the existing list.
+- Improved dark-mode readability for block type badges, version badges, status markers, and block-header dropdown controls.
+
 ## 0.7.0 - Shared Save Choice And Local Restore Points
 
 - Changed shared deployment editing so server storage only holds the single shared version while recent and fixed restore points stay local to each browser.
