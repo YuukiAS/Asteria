@@ -49,9 +49,11 @@ This project uses the `prompts/` handoff protocol for file-based handoff between
 
 - The default dev server command is `npm run dev`; the project script pins Vite to `vite --host 127.0.0.1`.
 - The default URL is `http://127.0.0.1:5173/`.
+- Always run dev-server commands from the repository root so Vite resolves the local `package.json` and `vite.config.ts` correctly. If launching through a wrapper, background runner, or sandboxed environment, make the working directory explicit before running `npm run dev`.
 - Before starting the server, check whether that URL or port 5173 already has a usable Vite server. If the page is reachable, do not start a duplicate server.
 - If 5173 is occupied but unusable, report the state first. If a temporary fallback port is needed, use `npm run dev -- --host 127.0.0.1 --port 5174`.
 - Do not reinstall dependencies just to start the server. Only run an install command when dependencies are actually missing and the user approves it.
+- If startup fails with a Vite temp-file or permission error, first retry `npm run dev` in a normal foreground terminal session from the repo root. Treat this as a way to distinguish a project problem from a constrained environment that blocks Vite from writing temporary config files.
 - When starting the server in the background, hide the window and write logs to a temporary log file inside the repo, such as `.codex/vite-dev.log`, to avoid repeated startup attempts from multiple threads.
 - If the user asks for the server to remain available after the conversation ends, do not rely on a sandbox-started background process; the sandbox may clean up child processes after the command exits. Request approval to start a hidden background process outside the sandbox, then wait a few seconds and confirm `http://127.0.0.1:5173/` still returns HTTP 200.
 - On Windows, if the `npm run dev` background wrapper does not stay alive reliably, start Vite's Node entry directly as an equivalent fallback: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5173`. Still write logs to `.codex/vite-dev.log` and use `netstat -ano` to confirm 5173 is `LISTENING`.
