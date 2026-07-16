@@ -1,7 +1,7 @@
 import "@xyflow/react/dist/style.css"
 import "katex/dist/katex.min.css"
 import { ReactFlowProvider } from "@xyflow/react"
-import { ChevronLeft, ChevronRight, FileText, PanelRightClose, PanelRightOpen, Save, SlidersHorizontal } from "lucide-react"
+import { Archive, ChevronLeft, ChevronRight, CloudUpload, FilePlus2, FileText, PanelRightClose, PanelRightOpen, Save, SlidersHorizontal } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { PointerEvent as ReactPointerEvent } from "react"
 import { Canvas } from "../components/Canvas"
@@ -381,13 +381,17 @@ export function App() {
             title="Choose a starting version"
             description="Select the workspace you want before editing Asteria on this computer."
             primary={{
-              icon: <FileText size={18} />,
+              icon: <CloudUpload size={18} />,
+              tone: "shared",
+              badge: "Shared",
               title: "Use shared version",
               description: `Load the shared map last saved ${formatDialogDate(sharedRecord.updatedAt)}. A local safety backup is created first, and newer block content on this computer is kept.`,
               onClick: () => void chooseSharedWorkspace(),
             }}
             secondary={{
-              icon: <SlidersHorizontal size={18} />,
+              icon: <FilePlus2 size={18} />,
+              tone: "new",
+              badge: "Local only",
               title: "New from scratch",
               description: "Start an empty local draft. This does not replace the shared version until you save to Shared.",
               onClick: chooseNewWorkspace,
@@ -403,7 +407,9 @@ export function App() {
                 : "Choose where to save the current canvas."
             }
             primary={{
-              icon: <Save size={18} />,
+              icon: showSaveConflict ? <Save size={18} /> : <CloudUpload size={18} />,
+              tone: showSaveConflict ? "overwrite" : "shared",
+              badge: showSaveConflict ? "Replace shared" : "All computers",
               title: showSaveConflict ? "Overwrite shared version" : "Save shared version",
               description: showSaveConflict
                 ? "Replace the current shared version with this canvas."
@@ -411,7 +417,9 @@ export function App() {
               onClick: () => void saveToShared(showSaveConflict),
             }}
             secondary={{
-              icon: <FileText size={18} />,
+              icon: showSaveConflict ? <CloudUpload size={18} /> : <Archive size={18} />,
+              tone: showSaveConflict ? "shared" : "fixed",
+              badge: showSaveConflict ? "Keep newer local" : "This computer",
               title: showSaveConflict ? "Load shared version" : "Save fixed version",
               description: showSaveConflict
                 ? "Create a local safety backup, load the shared version, and keep any newer block content from this computer."
@@ -442,6 +450,8 @@ function formatDialogDate(value?: string) {
 
 type DialogAction = {
   icon: React.ReactNode
+  tone: "shared" | "fixed" | "new" | "overwrite"
+  badge: string
   title: string
   description: string
   onClick: () => void
@@ -471,9 +481,10 @@ function AsteriaChoiceDialog({
         </div>
         <div className="choice-dialog-options">
           {[primary, secondary].map((action) => (
-            <button key={action.title} type="button" className="choice-dialog-option" onClick={action.onClick}>
+            <button key={action.title} type="button" className={`choice-dialog-option choice-dialog-option-${action.tone}`} onClick={action.onClick}>
               <span className="choice-dialog-option-icon">{action.icon}</span>
               <span>
+                <span className="choice-dialog-option-badge">{action.badge}</span>
                 <span className="choice-dialog-option-title">{action.title}</span>
                 <span className="choice-dialog-option-description">{action.description}</span>
               </span>

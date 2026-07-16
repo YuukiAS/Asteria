@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.2 - Clearer Save And Startup Choices
+
+- Added distinct visual treatments, icons, and badges to the save dialog so shared saves and local fixed checkpoints are harder to confuse.
+- Added distinct shared-versus-local styling to the startup workspace choice dialog shown on a new computer or browser profile.
+
 ## 0.7.1 - Restore Safety And Editor Readability
 
 - Protected local restore and shared-version loading from overwriting newer block variant content with older backup snapshots, and created a safety backup before restore operations.

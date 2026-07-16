@@ -1749,25 +1749,66 @@ body {
 }
 
 .choice-dialog-option {
+  --choice-option-accent: rgb(var(--color-accent));
+  --choice-option-accent-soft: rgb(var(--color-accent) / 0.1);
+  --choice-option-border: rgb(var(--color-border));
+  --choice-option-glow: rgb(var(--color-accent) / 0.12);
   display: flex;
   min-height: 148px;
   align-items: flex-start;
   gap: 14px;
-  border: 1px solid rgb(var(--color-border));
+  border: 1px solid var(--choice-option-border);
   border-radius: 10px;
-  background: rgb(var(--color-app));
+  background:
+    linear-gradient(135deg, var(--choice-option-accent-soft), transparent 52%),
+    rgb(var(--color-app));
   padding: 18px;
   text-align: left;
+  box-shadow: inset 0 0 0 1px transparent;
   transition:
     border-color 140ms ease,
+    box-shadow 140ms ease,
     transform 140ms ease,
     background 140ms ease;
 }
 
 .choice-dialog-option:hover {
-  border-color: rgb(var(--color-accent));
-  background: rgb(var(--color-panel));
+  border-color: var(--choice-option-accent);
+  background:
+    linear-gradient(135deg, var(--choice-option-accent-soft), transparent 48%),
+    rgb(var(--color-panel));
+  box-shadow:
+    inset 0 0 0 1px var(--choice-option-glow),
+    0 14px 30px var(--choice-option-glow);
   transform: translateY(-1px);
+}
+
+.choice-dialog-option-shared {
+  --choice-option-accent: #2563eb;
+  --choice-option-accent-soft: rgba(37, 99, 235, 0.12);
+  --choice-option-border: rgba(37, 99, 235, 0.38);
+  --choice-option-glow: rgba(37, 99, 235, 0.16);
+}
+
+.choice-dialog-option-fixed {
+  --choice-option-accent: #059669;
+  --choice-option-accent-soft: rgba(5, 150, 105, 0.12);
+  --choice-option-border: rgba(5, 150, 105, 0.4);
+  --choice-option-glow: rgba(5, 150, 105, 0.16);
+}
+
+.choice-dialog-option-new {
+  --choice-option-accent: #d97706;
+  --choice-option-accent-soft: rgba(217, 119, 6, 0.13);
+  --choice-option-border: rgba(217, 119, 6, 0.42);
+  --choice-option-glow: rgba(217, 119, 6, 0.16);
+}
+
+.choice-dialog-option-overwrite {
+  --choice-option-accent: #dc2626;
+  --choice-option-accent-soft: rgba(220, 38, 38, 0.12);
+  --choice-option-border: rgba(220, 38, 38, 0.42);
+  --choice-option-glow: rgba(220, 38, 38, 0.17);
 }
 
 .choice-dialog-option-icon {
@@ -1777,8 +1818,25 @@ body {
   flex: 0 0 auto;
   place-items: center;
   border-radius: 8px;
-  background: rgb(var(--color-accent-soft));
-  color: rgb(var(--color-accent));
+  background: var(--choice-option-accent);
+  color: white;
+  box-shadow: 0 10px 20px var(--choice-option-glow);
+}
+
+.choice-dialog-option-badge {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  border: 1px solid var(--choice-option-border);
+  border-radius: 999px;
+  background: var(--choice-option-accent-soft);
+  padding: 2px 8px;
+  color: var(--choice-option-accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
 }
 
 .choice-dialog-option-title,
@@ -1787,6 +1845,7 @@ body {
 }
 
 .choice-dialog-option-title {
+  margin-top: 9px;
   color: rgb(var(--color-foreground));
   font-size: 14px;
   font-weight: 700;
@@ -1797,6 +1856,34 @@ body {
   color: rgb(var(--color-secondary));
   font-size: 12px;
   line-height: 1.5;
+}
+
+[data-theme="dark"] .choice-dialog-option-shared {
+  --choice-option-accent: #60a5fa;
+  --choice-option-accent-soft: rgba(96, 165, 250, 0.14);
+  --choice-option-border: rgba(96, 165, 250, 0.44);
+  --choice-option-glow: rgba(96, 165, 250, 0.16);
+}
+
+[data-theme="dark"] .choice-dialog-option-fixed {
+  --choice-option-accent: #34d399;
+  --choice-option-accent-soft: rgba(52, 211, 153, 0.14);
+  --choice-option-border: rgba(52, 211, 153, 0.42);
+  --choice-option-glow: rgba(52, 211, 153, 0.15);
+}
+
+[data-theme="dark"] .choice-dialog-option-new {
+  --choice-option-accent: #fbbf24;
+  --choice-option-accent-soft: rgba(251, 191, 36, 0.14);
+  --choice-option-border: rgba(251, 191, 36, 0.44);
+  --choice-option-glow: rgba(251, 191, 36, 0.15);
+}
+
+[data-theme="dark"] .choice-dialog-option-overwrite {
+  --choice-option-accent: #f87171;
+  --choice-option-accent-soft: rgba(248, 113, 113, 0.14);
+  --choice-option-border: rgba(248, 113, 113, 0.44);
+  --choice-option-glow: rgba(248, 113, 113, 0.16);
 }
 
 .choice-dialog-actions {
