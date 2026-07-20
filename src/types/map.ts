@@ -5,6 +5,7 @@ export type BlockNodeType =
   | "generic"
   | "definition"
   | "notation"
+  | "symbols"
   | "model"
   | "prior"
   | "assumption"
@@ -33,10 +34,19 @@ export type ModelVersion = {
   updatedAt: string
 }
 
+export type SymbolEntry = {
+  id: string
+  latex: string
+  meaning: string
+  createdAt: string
+  updatedAt: string
+}
+
 export type BlockVariant = {
   title: string
   contentJson: JSONContent
   contentHtml?: string
+  symbolEntries?: SymbolEntry[]
   updatedAt: string
 }
 

@@ -32,6 +32,7 @@ import type {
   MapNode,
   MapViewport,
   ModelVersion,
+  SymbolEntry,
   StoryDeckSettings,
   StoryExportDensity,
   StoryOutlineItem,
@@ -114,6 +115,10 @@ export function resolveBlockContentJson(data: BlockData, activeVersionId?: Activ
 export function resolveBlockContentHtml(data: BlockData, activeVersionId?: ActiveVersionId) {
   const variant = resolveBlockVariant(data, activeVersionId)
   return contentJsonToSafeHtml(variant.contentJson) || variant.contentHtml
+}
+
+export function resolveBlockSymbolEntries(data: BlockData, activeVersionId?: ActiveVersionId) {
+  return resolveBlockVariant(data, activeVersionId).symbolEntries || []
 }
 
 function contentJsonToSafeHtml(contentJson: BlockVariant["contentJson"]) {
@@ -354,12 +359,34 @@ function normalizeModelVersions(value: unknown): ModelVersion[] {
   })
 }
 
+function normalizeSymbolEntries(value: unknown): SymbolEntry[] | undefined {
+  if (!Array.isArray(value)) return undefined
+  const entries = value
+    .map((item): SymbolEntry | undefined => {
+      const raw = item && typeof item === "object" ? (item as Partial<SymbolEntry>) : {}
+      const latex = typeof raw.latex === "string" ? raw.latex.trim() : ""
+      if (!latex) return undefined
+      const at = nowIso()
+      return {
+        id: typeof raw.id === "string" && raw.id.trim() ? raw.id.trim() : createId("symbol"),
+        latex,
+        meaning: typeof raw.meaning === "string" ? raw.meaning.trim() : "",
+        createdAt: raw.createdAt || at,
+        updatedAt: raw.updatedAt || at,
+      }
+    })
+    .filter((entry): entry is SymbolEntry => Boolean(entry))
+  return entries.length ? entries : undefined
+}
+
 function normalizeBlockVariant(input: unknown, fallbackTitle: string, fallbackContentJson: BlockVariant["contentJson"], fallbackContentHtml?: string): BlockVariant {
   const raw = input && typeof input === "object" ? (input as Partial<BlockVariant>) : {}
+  const symbolEntries = normalizeSymbolEntries(raw.symbolEntries)
   return {
     title: typeof raw.title === "string" ? raw.title : fallbackTitle,
     contentJson: raw.contentJson || fallbackContentJson,
     contentHtml: raw.contentHtml || fallbackContentHtml,
+    ...(symbolEntries ? { symbolEntries } : {}),
     updatedAt: raw.updatedAt || nowIso(),
   }
 }

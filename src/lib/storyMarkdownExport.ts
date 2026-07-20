@@ -1,6 +1,7 @@
 import { defaultVariantKey } from "../constants/versioning"
 import { resolveBlockVersionState } from "./blockVersionState"
-import { resolveBlockContentJson, resolveBlockTitle, slugifyTitle } from "./exportImport"
+import { resolveBlockContentJson, resolveBlockSymbolEntries, resolveBlockTitle, slugifyTitle } from "./exportImport"
+import { sortedSymbolEntries } from "./symbolEntries"
 import { formatJsonTimestamp } from "./time"
 import { contentJsonToMarkdown, extractBlockMath, plainTextFromContent } from "./tiptapToMarkdown"
 import type { BlockNode, GroupNode, MapNode, ModelVersion, StoryDeckSettings, StoryExportDensity, StoryOutlineItem } from "../types/map"
@@ -57,6 +58,20 @@ function truncateMarkdown(markdown: string, density: StoryExportDensity) {
   return `${trimmed.slice(0, 900).replace(/\s+\S*$/, "")}\n\n<!-- Content truncated for summary density. Switch this item to Full for complete source text. -->`
 }
 
+function escapeTableCell(value: string) {
+  return value.replace(/\|/g, "\\|").replace(/\n+/g, " ").trim()
+}
+
+function symbolsToMarkdown(block: BlockNode, renderedVariantKey: string) {
+  const entries = sortedSymbolEntries(resolveBlockSymbolEntries(block.data, renderedVariantKey))
+  if (!entries.length) return ""
+  return [
+    "| Symbol | Meaning |",
+    "|---|---|",
+    ...entries.map((entry) => `| \`${escapeTableCell(entry.latex)}\` | ${escapeTableCell(entry.meaning)} |`),
+  ].join("\n")
+}
+
 function sourceMetadataLines(source: MapNode, renderedVersion: string, sourceStatus?: string) {
   const title = source.type === "block" ? source.data.title : source.data.title
   return [`- Source: ${source.type} \`${source.id}\``, `- Source title: ${title}`, `- Version: ${renderedVersion}${sourceStatus ? ` (${sourceStatus})` : ""}`]
@@ -67,6 +82,9 @@ function renderBlockContent(block: BlockNode, versionId: string, modelVersions: 
   const renderedVariantKey = versionState.renderedVariantKey || defaultVariantKey
   const contentJson = resolveBlockContentJson(block.data, renderedVariantKey)
   const title = resolveBlockTitle(block.data, renderedVariantKey)
+  const bodyMarkdown = contentJsonToMarkdown(contentJson)
+  const symbolMarkdown = block.data.nodeType === "symbols" ? symbolsToMarkdown(block, renderedVariantKey) : ""
+  const markdown = [symbolMarkdown, bodyMarkdown].filter(Boolean).join("\n\n")
   return {
     title,
     versionStatus:
@@ -77,7 +95,7 @@ function renderBlockContent(block: BlockNode, versionId: string, modelVersions: 
           : versionState.sourceKind === "base"
             ? "Base"
             : "Hidden",
-    markdown: truncateMarkdown(contentJsonToMarkdown(contentJson), density),
+    markdown: truncateMarkdown(markdown, density),
     formulas: extractBlockMath(contentJson),
     plain: plainTextFromContent(contentJson),
   }

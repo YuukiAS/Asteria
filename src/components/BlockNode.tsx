@@ -5,7 +5,7 @@ import { blockStatusByValue, blockTypeByValue, blockTypeOptions } from "../const
 import { blockSizeLimits } from "../constants/layout"
 import { defaultVariantKey } from "../constants/versioning"
 import { resolveBlockVersionRows, resolveBlockVersionState, versionShortLabel } from "../lib/blockVersionState"
-import { resolveBlockContentHtml, resolveBlockContentJson, resolveBlockTitle } from "../lib/exportImport"
+import { resolveBlockContentHtml, resolveBlockContentJson, resolveBlockSymbolEntries, resolveBlockTitle } from "../lib/exportImport"
 import { requestInlineBlockEdit, requestInlineEditorFocus, type InlineEditTarget } from "../lib/inlineEditEvents"
 import { titleToHtml } from "../lib/titleMath"
 import type { InteractionMode } from "../types/interaction"
@@ -14,6 +14,7 @@ import { useMapStore } from "../store/useMapStore"
 import { BlockHeaderSelect } from "./BlockHeaderSelect"
 import { RichTextEditor } from "./RichTextEditor"
 import { RichTextPreview } from "./RichTextPreview"
+import { SymbolEntriesEditor, SymbolEntriesPreview } from "./SymbolEntries"
 import { VersionStrip } from "./VersionStrip"
 
 type BlockNodeProps = NodeProps<BlockNodeType> & {
@@ -47,6 +48,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
   const isEditingTitle = isEditableSelection && inlineEditTarget?.nodeId === id && inlineEditTarget.field === "title"
   const isEditingContent = isEditableSelection && inlineEditTarget?.nodeId === id && inlineEditTarget.field === "content"
   const [isEditingEmoji, setIsEditingEmoji] = useState(false)
+  const [isSearchHighlighted, setIsSearchHighlighted] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
   const emojiInputRef = useRef<HTMLInputElement>(null)
   const [resizePreview, setResizePreview] = useState<{ width: number; height: number } | null>(null)
@@ -66,6 +68,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
   const title = resolveBlockTitle(data, effectiveVariantKey)
   const contentJson = resolveBlockContentJson(data, effectiveVariantKey)
   const contentHtml = resolveBlockContentHtml(data, effectiveVariantKey)
+  const symbolEntries = resolveBlockSymbolEntries(data, effectiveVariantKey)
   const versionBadgeLabel = versionState.isFixed ? versionState.requestedShortLabel || versionState.requestedLabel : versionState.modeLabel
   const displayMode = displayModeOverride === "block" ? data.displayMode || "full" : displayModeOverride
   const titleHtml = useMemo(() => titleToHtml(title), [title])
@@ -98,6 +101,23 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
   useEffect(() => {
     if (isEditingContent) requestInlineEditorFocus(id)
   }, [id, isEditingContent])
+
+  useEffect(() => {
+    let timer = 0
+    const highlight = (event: Event) => {
+      const nodeId = (event as CustomEvent<{ nodeId?: string }>).detail?.nodeId
+      if (nodeId !== id) return
+      setIsSearchHighlighted(false)
+      window.requestAnimationFrame(() => setIsSearchHighlighted(true))
+      if (timer) window.clearTimeout(timer)
+      timer = window.setTimeout(() => setIsSearchHighlighted(false), 1900)
+    }
+    window.addEventListener("asteria-highlight-block", highlight)
+    return () => {
+      if (timer) window.clearTimeout(timer)
+      window.removeEventListener("asteria-highlight-block", highlight)
+    }
+  }, [id])
 
   useEffect(() => {
     if (!isEditingEmoji) return
@@ -136,7 +156,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
     <div
       className={`asteria-block group relative rounded-xl border bg-white transition ${
         selected ? "asteria-block-selected" : ""
-      } ${resizePreview ? "asteria-block-resizing" : ""}`}
+      } ${resizePreview ? "asteria-block-resizing" : ""} ${isSearchHighlighted ? "asteria-block-search-highlight" : ""}`}
       onDoubleClick={(event) => {
         const target = event.target as HTMLElement
         if (target.closest("input, select, button, .ProseMirror")) return
@@ -304,7 +324,9 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
         className={`asteria-block-preview asteria-block-preview-${displayMode} h-[calc(100%-36px)] overflow-auto px-3 py-2 text-[13px] leading-[1.45] ${previewInteractionClass}`}
         data-has-overflow={hasPreviewOverflow ? "true" : "false"}
       >
-        {isEditingContent ? (
+        {isEditingContent && data.nodeType === "symbols" ? (
+          <SymbolEntriesEditor entries={symbolEntries} onChange={(entries) => updateBlockVariant(id, editingVariantKey, { symbolEntries: entries })} />
+        ) : isEditingContent ? (
           <RichTextEditor
             content={contentJson}
             onChange={(contentJson, contentHtml) => updateBlockVariant(id, editingVariantKey, { contentJson, contentHtml })}
@@ -316,7 +338,9 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
             placeholder={blockTypePlaceholder}
             focusTargetId={id}
           />
-        ) : displayMode === "title_only" ? null : (
+        ) : displayMode === "title_only" ? null : data.nodeType === "symbols" ? (
+          <SymbolEntriesPreview entries={symbolEntries} />
+        ) : (
           <RichTextPreview html={contentHtml} color={data.textColor} accentColor={data.textColor} />
         )}
       </div>

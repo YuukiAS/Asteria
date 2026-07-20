@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.0 - Symbols Blocks And Math Search
+
+- Added a Symbols block type for compact mathematical symbol and meaning indexes, with yellow type defaults and editable background, border, and text colors.
+- Stored Symbols entries as versioned block variant data so entries follow existing inheritance, copy, duplicate, paste, JSON import/export, local persistence, shared persistence, and backup flows.
+- Added automatic mathematical sorting for Symbols entries, including Greek-letter ordering that keeps related formulas such as alpha and beta variants together.
+- Added global current-version search from the toolbar and `Ctrl`/`Cmd+F`, covering block titles, rich text, inline equation LaTeX, block equation LaTeX, Symbols LaTeX, and Symbols meanings.
+- Added result navigation that selects, centers, and briefly highlights the matched block.
+- Exported Symbols blocks in Story Markdown as compact `Symbol | Meaning` tables.
+
 ## 0.7.2 - Clearer Save And Startup Choices
 
 - Added distinct visual treatments, icons, and badges to the save dialog so shared saves and local fixed checkpoints are harder to confuse.

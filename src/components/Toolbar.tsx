@@ -1,10 +1,11 @@
 import { useReactFlow } from "@xyflow/react"
-import { Download, FileText, Group, History, Moon, MousePointer2, MoveDown, MoveUp, PencilLine, Plus, Rows3, Save, Scan, Settings2, Sigma, Sparkles, Sun, Trash2, Upload, ZoomIn } from "lucide-react"
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react"
+import { Download, FileText, Group, History, Moon, MousePointer2, MoveDown, MoveUp, PencilLine, Plus, Rows3, Save, Scan, Search, Settings2, Sigma, Sparkles, Sun, Trash2, Upload, X, ZoomIn } from "lucide-react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { blockSizePresets, type BlockSizePreset } from "../constants/layout"
 import { displayModeOptions, maxModelVersions } from "../constants/versioning"
 import { createExportFilename, exportMapFile, normalizeExportedMap, normalizeMapTitle, readJsonFile } from "../lib/exportImport"
 import { requestBlockEquationInsert, requestInlineBlockEdit, requestInlineEditorFocus } from "../lib/inlineEditEvents"
+import { searchRenderedBlocks, type SearchResult } from "../lib/mapSearch"
 import { buildStoryMarkdown, createStoryMarkdownFilename, exportMarkdownFile } from "../lib/storyMarkdownExport"
 import { useMapStore } from "../store/useMapStore"
 import type { InteractionMode } from "../types/interaction"
@@ -16,10 +17,12 @@ import packageJson from "../../package.json"
 type ToolbarProps = {
   theme: "light" | "dark"
   interactionMode: InteractionMode
+  isSearchPanelOpen: boolean
   onToggleTheme: () => void
   onInteractionModeChange: (mode: InteractionMode) => void
   onFitView: () => void
   onOpenSaveDialog: () => void
+  onSearchPanelOpenChange: (open: boolean) => void
 }
 
 type ToolbarTooltipState = {
@@ -31,9 +34,19 @@ type ToolbarTooltipState = {
   nowrap: boolean
 }
 
-export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionModeChange, onFitView, onOpenSaveDialog }: ToolbarProps) {
+export function Toolbar({
+  theme,
+  interactionMode,
+  isSearchPanelOpen,
+  onToggleTheme,
+  onInteractionModeChange,
+  onFitView,
+  onOpenSaveDialog,
+  onSearchPanelOpenChange,
+}: ToolbarProps) {
   const reactFlow = useReactFlow()
   const inputRef = useRef<HTMLInputElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
   const versionSettingsRef = useRef<HTMLButtonElement>(null)
   const toolbarTooltipRef = useRef<HTMLDivElement>(null)
@@ -45,6 +58,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
   const [versionPanelPosition, setVersionPanelPosition] = useState({ left: 12, top: 56 })
   const [addMenuPosition, setAddMenuPosition] = useState({ left: 12, top: 56 })
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
   const [toolbarTooltip, setToolbarTooltip] = useState<ToolbarTooltipState>()
   const {
     mapTitle,
@@ -76,6 +90,7 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
     chooseSharedWorkspace,
     clearMap,
     loadMap,
+    setSelectedNode,
   } = useMapStore()
   const selectedBlock = nodes.find((node) => node.id === selectedNodeId && node.type === "block")
   const appVersion = packageJson.version
@@ -86,6 +101,10 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
       : [{ value: "all", label: "No versions", description: "Add a model version to enable version switching" }]
   const recentBackups = backups.filter((backup) => (backup.kind || "recent") === "recent").slice(0, 3)
   const fixedBackups = backups.filter((backup) => backup.kind === "fixed").slice(0, 3)
+  const searchResults = useMemo(
+    () => searchRenderedBlocks(nodes, activeVersionId, modelVersions, searchQuery).slice(0, 80),
+    [activeVersionId, modelVersions, nodes, searchQuery],
+  )
 
   const showToolbarTooltip = (text: string, target: HTMLElement) => {
     const rect = target.getBoundingClientRect()
@@ -128,6 +147,42 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
   useEffect(() => {
     if (modelVersions.length > 0 && activeVersionId === "all") setActiveVersion(modelVersions[0].id)
   }, [activeVersionId, modelVersions, setActiveVersion])
+
+  useEffect(() => {
+    if (!isSearchPanelOpen) return
+    window.setTimeout(() => searchInputRef.current?.focus(), 0)
+  }, [isSearchPanelOpen])
+
+  const absoluteNodePosition = (nodeId: string) => {
+    const node = nodes.find((item) => item.id === nodeId)
+    if (!node) return undefined
+    let x = node.position.x
+    let y = node.position.y
+    let parentId = node.parentId
+    while (parentId) {
+      const parent = nodes.find((item) => item.id === parentId)
+      if (!parent) break
+      x += parent.position.x
+      y += parent.position.y
+      parentId = parent.parentId
+    }
+    return { x, y }
+  }
+
+  const openSearchResult = (result?: SearchResult) => {
+    if (!result) return
+    const node = nodes.find((item) => item.id === result.blockId && item.type === "block")
+    const position = absoluteNodePosition(result.blockId)
+    if (!node || !position || node.type !== "block") return
+    setSelectedNode(result.blockId)
+    onSearchPanelOpenChange(false)
+    const viewport = reactFlow.getViewport()
+    const zoom = Math.max(0.75, Math.min(viewport.zoom || 1, 1.25))
+    void reactFlow.setCenter(position.x + node.data.width / 2, position.y + node.data.height / 2, { zoom, duration: 420 })
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("asteria-highlight-block", { detail: { nodeId: result.blockId } }))
+    }, 120)
+  }
 
   const exportJson = () => {
     exportMapFile(
@@ -466,6 +521,15 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           <Sigma size={15} />
           <span className="toolbar-label">Equation</span>
         </button>
+        <button
+          type="button"
+          className={`toolbar-button ${isSearchPanelOpen ? "border-accent/40 text-accent" : ""}`}
+          onClick={() => onSearchPanelOpenChange(!isSearchPanelOpen)}
+          {...toolbarTip("Search current version")}
+        >
+          <Search size={15} />
+          <span className="toolbar-label">Search</span>
+        </button>
         <button type="button" className="toolbar-button" onClick={onFitView} {...toolbarTip("Fit view")}>
           <Scan size={15} />
           <span className="toolbar-label">Fit</span>
@@ -540,6 +604,50 @@ export function Toolbar({ theme, interactionMode, onToggleTheme, onInteractionMo
           {toolbarTooltip.text}
         </div>
       ) : null}
+      {isSearchPanelOpen && (
+        <section className="search-panel" role="dialog" aria-label="Search current version">
+          <form
+            className="search-panel-form"
+            onSubmit={(event) => {
+              event.preventDefault()
+              openSearchResult(searchResults[0])
+            }}
+          >
+            <Search size={15} />
+            <input
+              ref={searchInputRef}
+              className="search-panel-input"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  event.stopPropagation()
+                  onSearchPanelOpenChange(false)
+                }
+              }}
+              placeholder="Search title, text, or LaTeX"
+              spellCheck={false}
+            />
+            <button type="button" className="search-panel-close" aria-label="Close search" onClick={() => onSearchPanelOpenChange(false)}>
+              <X size={15} />
+            </button>
+          </form>
+          <div className="search-panel-results">
+            {searchQuery.trim() && searchResults.length === 0 ? <div className="search-panel-empty">No matches.</div> : null}
+            {!searchQuery.trim() ? <div className="search-panel-empty">Search the current model version.</div> : null}
+            {searchResults.map((result, index) => (
+              <button key={`${result.blockId}-${result.source}-${index}`} type="button" className="search-result-row" onClick={() => openSearchResult(result)}>
+                <span className="search-result-header">
+                  <span className="search-result-title">{result.blockTitle || "Untitled block"}</span>
+                  <span className="type-badge search-result-type">{result.blockType}</span>
+                </span>
+                <span className="search-result-meta">{result.source}</span>
+                <span className="search-result-snippet">{result.snippet}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
       {isAddMenuOpen && (
         <div
           className="add-block-menu"

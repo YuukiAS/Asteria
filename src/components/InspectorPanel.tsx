@@ -10,10 +10,11 @@ import { EdgeInspector } from "./EdgeInspector"
 import { FieldSelect } from "./FieldSelect"
 import { InspectorSectionStack } from "./InspectorSectionStack"
 import { RichTextEditor } from "./RichTextEditor"
+import { SymbolEntriesEditor } from "./SymbolEntries"
 import { formatLocalDateTime } from "../lib/time"
 import { requestInlineBlockEdit } from "../lib/inlineEditEvents"
 import { resolveBlockVersionRows, resolveBlockVersionState, versionShortLabel } from "../lib/blockVersionState"
-import { resolveBlockContentHtml, resolveBlockContentJson, resolveBlockTitle } from "../lib/exportImport"
+import { resolveBlockContentHtml, resolveBlockContentJson, resolveBlockSymbolEntries, resolveBlockTitle } from "../lib/exportImport"
 import { stripScriptTags } from "../lib/sanitize"
 import { useMapStore } from "../store/useMapStore"
 import type { BlockData } from "../types/map"
@@ -252,6 +253,7 @@ export function InspectorPanel() {
     const renderedVariantKey = versionState.renderedVariantKey || defaultVariantKey
     const activeTitle = resolveBlockTitle(node.data, renderedVariantKey)
     const activeContentJson = resolveBlockContentJson(node.data, renderedVariantKey)
+    const activeSymbolEntries = resolveBlockSymbolEntries(node.data, renderedVariantKey)
     const variantLabel = `${versionState.renderedLabel} via ${versionState.modeLabel}`
     const variantRows = resolveBlockVersionRows(node.data, modelVersions)
     const contentVersionOptions = [
@@ -469,6 +471,12 @@ export function InspectorPanel() {
               palette={textPalette}
               onChange={(textColor) => updateBlock(node.id, { textColor })}
             />
+            <ColorPickerRow
+              label="Border"
+              value={node.data.borderColor}
+              palette={backgroundPalette}
+              onChange={(borderColor) => updateBlock(node.id, { borderColor })}
+            />
             <div className="grid grid-cols-2 gap-3">
               <label className="field-label">
                 Width
@@ -532,11 +540,15 @@ export function InspectorPanel() {
               id: "content",
               title: "Content",
               children: (
-                <RichTextEditor
-                  content={activeContentJson}
-                  onChange={(contentJson, contentHtml) => updateBlockVariant(node.id, activeVariantKey, { contentJson, contentHtml })}
-                  placeholder={blockTypePlaceholder}
-                />
+                node.data.nodeType === "symbols" ? (
+                  <SymbolEntriesEditor entries={activeSymbolEntries} onChange={(symbolEntries) => updateBlockVariant(node.id, activeVariantKey, { symbolEntries })} />
+                ) : (
+                  <RichTextEditor
+                    content={activeContentJson}
+                    onChange={(contentJson, contentHtml) => updateBlockVariant(node.id, activeVariantKey, { contentJson, contentHtml })}
+                    placeholder={blockTypePlaceholder}
+                  />
+                )
               ),
             },
             {

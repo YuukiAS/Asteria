@@ -25,6 +25,11 @@ export const blockTypeDefaults: Record<BlockNodeType, BlockTypeDefaults> = {
     textColor: defaultBlockColors.text,
     borderColor: blockTypeColors.notation.border,
   },
+  symbols: {
+    backgroundColor: blockTypeColors.symbols.background,
+    textColor: defaultBlockColors.text,
+    borderColor: blockTypeColors.symbols.border,
+  },
   model: {
     backgroundColor: blockTypeColors.model.background,
     textColor: defaultBlockColors.text,

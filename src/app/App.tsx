@@ -52,6 +52,7 @@ export function App() {
   const [sidebarTab, setSidebarTab] = useState<"inspector" | "story">("inspector")
   const [inlineEditTarget, setInlineEditTarget] = useState<InlineEditTarget | undefined>()
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false)
+  const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false)
   const [showSaveConflict, setShowSaveConflict] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const stored = Number(localStorage.getItem(sidebarWidthKey))
@@ -125,6 +126,11 @@ export function App() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (!workspaceReady) return
       const isMod = event.ctrlKey || event.metaKey
+      if (isMod && event.key.toLowerCase() === "f" && !isTextEditingTarget(event.target)) {
+        event.preventDefault()
+        setIsSearchPanelOpen(true)
+        return
+      }
       if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && !isTextEditingTarget(event.target)) {
         if (event.key === "1") {
           event.preventDefault()
@@ -189,6 +195,11 @@ export function App() {
         return
       }
       if (event.key === "Escape") {
+        if (isSearchPanelOpen) {
+          event.preventDefault()
+          setIsSearchPanelOpen(false)
+          return
+        }
         if (inlineEditTarget) {
           event.preventDefault()
           setInlineEditTarget(undefined)
@@ -213,6 +224,7 @@ export function App() {
     deleteSelected,
     duplicateSelectedBlock,
     inlineEditTarget,
+    isSearchPanelOpen,
     pasteBlock,
     selectedNodeId,
     setAppInteractionMode,
@@ -292,6 +304,7 @@ export function App() {
         <Toolbar
           theme={theme}
           interactionMode={interactionMode}
+          isSearchPanelOpen={isSearchPanelOpen}
           onInteractionModeChange={setAppInteractionMode}
           onToggleTheme={toggleTheme}
           onFitView={fitView}
@@ -299,6 +312,7 @@ export function App() {
             setShowSaveConflict(false)
             setIsSaveDialogOpen(true)
           }}
+          onSearchPanelOpenChange={setIsSearchPanelOpen}
         />
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <Canvas

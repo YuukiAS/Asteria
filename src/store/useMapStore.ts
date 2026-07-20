@@ -185,7 +185,7 @@ type MapState = {
   updateBlock: (id: string, patch: Partial<BlockData>) => void
   applyBlockTypeStyle: (id: string) => void
   setBlockActiveVariant: (id: string, variantKey: string) => void
-  updateBlockVariant: (id: string, variantKey: string, patch: Partial<Pick<BlockData, "title" | "contentJson" | "contentHtml">>) => void
+  updateBlockVariant: (id: string, variantKey: string, patch: Partial<Pick<BlockVariant, "title" | "contentJson" | "contentHtml" | "symbolEntries">>) => void
   copyBlockVariantToVersion: (id: string, versionId: string) => void
   deleteBlockVariant: (id: string, variantKey: string) => void
   updateGroup: (id: string, patch: Partial<GroupNode["data"]>) => void
@@ -447,7 +447,7 @@ function createStoryOutlineItem(node: MapNode, state: Pick<MapState, "activeVers
   }
 }
 
-function patchBlockVariant(data: BlockData, key: string, patch: Partial<Pick<BlockData, "title" | "contentJson" | "contentHtml">>, modelVersions: ModelVersion[]) {
+function patchBlockVariant(data: BlockData, key: string, patch: Partial<Pick<BlockVariant, "title" | "contentJson" | "contentHtml" | "symbolEntries">>, modelVersions: ModelVersion[]) {
   const resolvedState = resolveBlockVersionState({ ...data, activeVariantKey: key === defaultVariantKey ? defaultVariantKey : key }, key, modelVersions)
   const inheritedVariant = resolvedState.renderedVariantKey ? data.variants?.[resolvedState.renderedVariantKey] : undefined
   const current = data.variants?.[key] || inheritedVariant || createBlockVariant(data.title, data.contentJson, data.contentHtml, data.updatedAt)
@@ -456,6 +456,7 @@ function patchBlockVariant(data: BlockData, key: string, patch: Partial<Pick<Blo
     title: patch.title ?? current.title,
     contentJson: patch.contentJson ?? current.contentJson,
     contentHtml: patch.contentHtml ?? (patch.contentJson ? contentJsonToHtml(patch.contentJson) : current.contentHtml),
+    symbolEntries: patch.symbolEntries ? cloneJson(patch.symbolEntries) : current.symbolEntries ? cloneJson(current.symbolEntries) : undefined,
     updatedAt: nowIso(),
   }
   return {
@@ -475,6 +476,14 @@ function roundToGrid(value: number) {
 function nextBlockPositionFrom(source: BlockNode, nodes: MapNode[]): XYPosition {
   const position = absolutePosition(source, nodes)
   return { x: position.x + source.data.width + 120, y: position.y }
+}
+
+function applyNodeSelection(nodes: MapNode[], selectedNodeIds: string[]) {
+  const selectedIds = new Set(selectedNodeIds)
+  return nodes.map((node) => {
+    const selected = selectedIds.has(node.id)
+    return node.selected === selected ? node : { ...node, selected }
+  })
 }
 
 function blockStyleFromData(data: BlockData): BlockStyleClipboard {
@@ -1453,7 +1462,7 @@ export const useMapStore = create<MapState>((set, get) => ({
     const state = get()
     if (state.selectedNodeId === id && state.selectedEdgeId === undefined) return
     const selectedNodeIds = id ? [id] : []
-    set({ selectedNodeId: id, selectedNodeIds, selectedEdgeId: undefined })
+    set({ selectedNodeId: id, selectedNodeIds, selectedEdgeId: undefined, nodes: applyNodeSelection(state.nodes, selectedNodeIds) })
   },
   setSelectedNodes: (ids) => {
     const state = get()
@@ -1465,12 +1474,12 @@ export const useMapStore = create<MapState>((set, get) => ({
       return
     }
     const selectedNodeId = ids[0]
-    set({ selectedNodeId, selectedNodeIds: ids, selectedEdgeId: undefined })
+    set({ selectedNodeId, selectedNodeIds: ids, selectedEdgeId: undefined, nodes: applyNodeSelection(state.nodes, ids) })
   },
   setSelectedEdge: (id) => {
     const state = get()
     if (state.selectedEdgeId === id && state.selectedNodeId === undefined) return
-    set({ selectedEdgeId: id, selectedNodeId: undefined, selectedNodeIds: [] })
+    set({ selectedEdgeId: id, selectedNodeId: undefined, selectedNodeIds: [], nodes: applyNodeSelection(state.nodes, []) })
   },
 
   setViewport: (viewport) => {
