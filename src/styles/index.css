@@ -1824,7 +1824,7 @@ body {
 
 .symbols-editor-row {
   display: grid;
-  grid-template-columns: minmax(104px, 0.8fr) minmax(132px, 1.2fr) 28px;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) 28px;
   align-items: start;
   gap: 6px;
   border: 1px solid rgb(var(--color-border));
@@ -1843,9 +1843,22 @@ body {
   line-height: 1.1;
 }
 
+.symbols-editor-field .field-input {
+  width: 100%;
+  min-width: 0;
+}
+
 .symbols-latex-input {
   font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
   font-size: 12px;
+}
+
+.symbols-meaning-input {
+  color: inherit;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.55;
 }
 
 .symbols-latex-preview-button {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.8 - Fixed-Version Edge Anchors
+
+- Registered block connection handles as both source and target anchors so fixed-version edges attach to the visible block boundary instead of a fallback blank point.
+- Added `npm run test:edges` to validate shared-map visible edge endpoints, including the Motivation/Main Idea -> Main Model connection.
+
 ## 0.8.7 - Search Click Safety
 
 - Hardened search result clicks so unsafe or stale result targets cannot drive React Flow navigation with invalid positions or hidden blocks.

@@ -17,10 +17,11 @@ const vite = await createServer({
 })
 
 try {
-  const [{ searchRenderedBlocks, getSearchResultNavigationTarget }, { createEditorExtensions }, { titleToHtml }] = await Promise.all([
+  const [{ searchRenderedBlocks, getSearchResultNavigationTarget }, { createEditorExtensions }, { titleToHtml }, { renderSymbolMeaningHtml }] = await Promise.all([
     vite.ssrLoadModule("/src/lib/mapSearch.ts"),
     vite.ssrLoadModule("/src/editor/createEditorExtensions.ts"),
     vite.ssrLoadModule("/src/lib/titleMath.ts"),
+    vite.ssrLoadModule("/src/lib/symbolEntries.ts"),
   ])
   const schema = getSchema(createEditorExtensions(""))
   const record = JSON.parse(await readFile(sharedMapPath, "utf8"))
@@ -65,6 +66,10 @@ try {
   else if (!getSearchResultNavigationTarget(priorForAlpha, nodes, activeVersionId, modelVersions)) {
     fail('"Prior for alpha" does not have a safe navigation target.')
   }
+
+  const renderedMeaning = renderSymbolMeaningHtml("depends on $\\alpha$ <script>")
+  if (!renderedMeaning.includes("katex")) fail("Expected Symbol meaning inline math to render with KaTeX.")
+  if (renderedMeaning.includes("<script>")) fail("Expected Symbol meaning text to be HTML-escaped.")
 
   if (!process.exitCode) console.log(`Validated ${checkedResults} shared-map search click targets.`)
 } finally {

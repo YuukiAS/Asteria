@@ -81,7 +81,7 @@ function escapeHtml(value: string) {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
 }
 
-export function renderSymbolLatexHtml(latex: string) {
+function renderInlineLatexHtml(latex: string) {
   const normalized = normalizeLatexText(latex)
   if (!normalized) return ""
   try {
@@ -89,4 +89,21 @@ export function renderSymbolLatexHtml(latex: string) {
   } catch {
     return `<code>${escapeHtml(normalized)}</code>`
   }
+}
+
+export function renderSymbolLatexHtml(latex: string) {
+  return renderInlineLatexHtml(latex)
+}
+
+export function renderSymbolMeaningHtml(meaning: string) {
+  const inlineMathPattern = /\$(?!\$)([^$]+?)\$/g
+  let html = ""
+  let lastIndex = 0
+  for (const match of meaning.matchAll(inlineMathPattern)) {
+    html += escapeHtml(meaning.slice(lastIndex, match.index))
+    html += renderInlineLatexHtml(match[1])
+    lastIndex = match.index + match[0].length
+  }
+  html += escapeHtml(meaning.slice(lastIndex))
+  return html
 }

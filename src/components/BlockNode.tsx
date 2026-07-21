@@ -2,6 +2,7 @@ import { Handle, NodeResizer, Position, type NodeProps } from "@xyflow/react"
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { blockTypeDefaults } from "../constants/blockDefaults"
 import { blockStatusByValue, blockTypeByValue, blockTypeOptions } from "../constants/blockTypes"
+import { blockConnectionHandleIds } from "../constants/handles"
 import { blockSizeLimits } from "../constants/layout"
 import { defaultVariantKey } from "../constants/versioning"
 import { resolveBlockVersionRows, resolveBlockVersionState, versionShortLabel } from "../lib/blockVersionState"
@@ -197,23 +198,26 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
           {resizePreview ? resizePreview.width : Math.round(data.width)} x {resizePreview ? resizePreview.height : Math.round(data.height)}
         </div>
       )}
-      {(["top", "right", "bottom", "left"] as const).map((handle) => (
-        <Handle
-          key={handle}
-          id={handle}
-          type="source"
-          position={
-            handle === "top"
-              ? Position.Top
-              : handle === "right"
-                ? Position.Right
-                : handle === "bottom"
-                  ? Position.Bottom
-                  : Position.Left
-          }
-          className="asteria-connection-handle !h-2.5 !w-2.5 !border-2 !opacity-70 transition group-hover:!opacity-100"
-        />
-      ))}
+      {blockConnectionHandleIds.map((handle) => {
+        const position =
+          handle === "top" ? Position.Top : handle === "right" ? Position.Right : handle === "bottom" ? Position.Bottom : Position.Left
+        return (
+          <div key={handle}>
+            <Handle
+              id={handle}
+              type="target"
+              position={position}
+              className="asteria-connection-handle !h-2.5 !w-2.5 !border-2 !opacity-70 transition group-hover:!opacity-100"
+            />
+            <Handle
+              id={handle}
+              type="source"
+              position={position}
+              className="asteria-connection-handle !h-2.5 !w-2.5 !border-2 !opacity-70 transition group-hover:!opacity-100"
+            />
+          </div>
+        )
+      })}
       <div className="asteria-block-header flex h-9 items-center gap-2 border-b px-3">
         {isEditableSelection && isEditingEmoji ? (
           <input
