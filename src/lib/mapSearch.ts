@@ -23,16 +23,16 @@ export type SearchResult = SearchableContent & {
   snippet: string
 }
 
-function stripHtml(value: string) {
-  return value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
+function stripHtml(value: unknown) {
+  return String(value ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
 }
 
-function normalizeText(value: string) {
-  return value.toLowerCase().replace(/\s+/g, " ").trim()
+function normalizeText(value: unknown) {
+  return String(value ?? "").toLowerCase().replace(/\s+/g, " ").trim()
 }
 
-function normalizeMathForSearch(value: string) {
-  return normalizeLatexText(value).replace(/\s+/g, "").toLowerCase()
+function normalizeMathForSearch(value: unknown) {
+  return normalizeLatexText(String(value ?? "")).replace(/\s+/g, "").toLowerCase()
 }
 
 export function normalizeSearchQuery(query: string) {
@@ -44,7 +44,8 @@ export function normalizeSearchQuery(query: string) {
   }
 }
 
-function pushText(items: SearchableContent[], block: BlockNode, title: string, source: SearchSource, text: string) {
+function pushText(items: SearchableContent[], block: BlockNode, title: string, source: SearchSource, text: unknown) {
+  const rawText = String(text ?? "")
   const normalized = normalizeText(text)
   if (!normalized) return
   const type = blockTypeByValue[block.data.nodeType] || blockTypeByValue.generic
@@ -53,19 +54,27 @@ function pushText(items: SearchableContent[], block: BlockNode, title: string, s
     blockTitle: title,
     blockType: type.label,
     source,
-    text,
+    text: rawText,
     normalizedText: normalized,
-    mathText: source === "Inline equation" || source === "Block equation" || source === "Symbol" ? normalizeMathForSearch(text) : undefined,
+    mathText: source === "Inline equation" || source === "Block equation" || source === "Symbol" ? normalizeMathForSearch(rawText) : undefined,
   })
 }
 
 function visitContentJson(items: SearchableContent[], block: BlockNode, title: string, node?: JSONContent) {
-  if (!node) return
-  if (node.type === "text" && node.text) pushText(items, block, title, "Text", node.text)
-  if ((node.type === "inlineMath" || node.type === "blockMath") && node.attrs?.latex) {
-    pushText(items, block, title, node.type === "inlineMath" ? "Inline equation" : "Block equation", String(node.attrs.latex))
+  const stack = node ? [node] : []
+  const seen = new Set<JSONContent>()
+  let visited = 0
+  while (stack.length && visited < 5000) {
+    const current = stack.pop()
+    if (!current || seen.has(current)) continue
+    seen.add(current)
+    visited += 1
+    if (current.type === "text" && current.text) pushText(items, block, title, "Text", current.text)
+    if ((current.type === "inlineMath" || current.type === "blockMath") && current.attrs?.latex) {
+      pushText(items, block, title, current.type === "inlineMath" ? "Inline equation" : "Block equation", current.attrs.latex)
+    }
+    current.content?.forEach((child) => stack.push(child))
   }
-  node.content?.forEach((child) => visitContentJson(items, block, title, child))
 }
 
 function renderedVariantKey(block: BlockNode, activeVersionId: string, modelVersions: ModelVersion[]) {
@@ -82,17 +91,21 @@ export function extractSearchableContent(nodes: MapNode[], activeVersionId: stri
   const items: SearchableContent[] = []
   nodes.forEach((node) => {
     if (node.type !== "block") return
-    const variantKey = renderedVariantKey(node, activeVersionId, modelVersions)
-    if (!variantKey) return
-    const title = resolveBlockTitle(node.data, variantKey)
-    pushText(items, node, title, "Title", title)
-    const contentJson = resolveBlockContentJson(node.data, variantKey)
-    if (contentJson) visitContentJson(items, node, title, contentJson)
-    else pushText(items, node, title, "Text", stripHtml(resolveBlockContentHtml(node.data, variantKey) || ""))
-    resolveBlockSymbolEntries(node.data, variantKey).forEach((entry) => {
-      pushText(items, node, title, "Symbol", entry.latex)
-      pushText(items, node, title, "Symbol meaning", entry.meaning)
-    })
+    try {
+      const variantKey = renderedVariantKey(node, activeVersionId, modelVersions)
+      if (!variantKey) return
+      const title = resolveBlockTitle(node.data, variantKey)
+      pushText(items, node, title, "Title", title)
+      const contentJson = resolveBlockContentJson(node.data, variantKey)
+      if (contentJson) visitContentJson(items, node, title, contentJson)
+      else pushText(items, node, title, "Text", stripHtml(resolveBlockContentHtml(node.data, variantKey) || ""))
+      resolveBlockSymbolEntries(node.data, variantKey).forEach((entry) => {
+        pushText(items, node, title, "Symbol", entry.latex)
+        pushText(items, node, title, "Symbol meaning", entry.meaning)
+      })
+    } catch {
+      // Skip only the malformed block so one bad record cannot blank the app.
+    }
   })
   return items
 }
@@ -133,4 +146,3 @@ export function searchRenderedBlocks(nodes: MapNode[], activeVersionId: string, 
     }))
     .sort((a, b) => a.rank - b.rank || a.blockTitle.localeCompare(b.blockTitle) || a.source.localeCompare(b.source))
 }
-

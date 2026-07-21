@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.5 - Search Stability
+
+- Hardened global search so malformed block content, oversized rich-text JSON, or unexpected Symbol data cannot blank the app during result calculation.
+- Limited search calculation to the open search panel and guarded result navigation against invalid block dimensions.
+
 ## 0.8.4 - Symbol Edit Ordering
 
 - Kept Symbol block editing rows in the same mathematical sort order used by Symbol preview mode.

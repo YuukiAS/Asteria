@@ -101,10 +101,15 @@ export function Toolbar({
       : [{ value: "all", label: "No versions", description: "Add a model version to enable version switching" }]
   const recentBackups = backups.filter((backup) => (backup.kind || "recent") === "recent").slice(0, 3)
   const fixedBackups = backups.filter((backup) => backup.kind === "fixed").slice(0, 3)
-  const searchResults = useMemo(
-    () => searchRenderedBlocks(nodes, activeVersionId, modelVersions, searchQuery).slice(0, 80),
-    [activeVersionId, modelVersions, nodes, searchQuery],
-  )
+  const searchResults = useMemo(() => {
+    if (!isSearchPanelOpen || !searchQuery.trim()) return []
+    try {
+      return searchRenderedBlocks(nodes, activeVersionId, modelVersions, searchQuery).slice(0, 80)
+    } catch (error) {
+      console.error("Asteria search failed", error)
+      return []
+    }
+  }, [activeVersionId, isSearchPanelOpen, modelVersions, nodes, searchQuery])
 
   const showToolbarTooltip = (text: string, target: HTMLElement) => {
     const rect = target.getBoundingClientRect()
@@ -178,7 +183,9 @@ export function Toolbar({
     onSearchPanelOpenChange(false)
     const viewport = reactFlow.getViewport()
     const zoom = Math.max(0.75, Math.min(viewport.zoom || 1, 1.25))
-    void reactFlow.setCenter(position.x + node.data.width / 2, position.y + node.data.height / 2, { zoom, duration: 420 })
+    const width = Number.isFinite(node.data.width) ? node.data.width : 340
+    const height = Number.isFinite(node.data.height) ? node.data.height : 220
+    void reactFlow.setCenter(position.x + width / 2, position.y + height / 2, { zoom, duration: 420 })
     window.setTimeout(() => {
       window.dispatchEvent(new CustomEvent("asteria-highlight-block", { detail: { nodeId: result.blockId } }))
     }, 120)
