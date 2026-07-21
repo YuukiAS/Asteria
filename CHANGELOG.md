@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.3 - Symbol Preview Editing
+
+- Changed Symbol block editing so the left `LaTeX` column defaults to a rendered KaTeX preview instead of always showing raw LaTeX text.
+- Kept the Symbol block layout to two content columns: `LaTeX` preview and `Meaning`.
+- Preserved raw LaTeX editing by clicking the preview cell, and kept `Ctrl`/`Cmd+Shift+E` routed through the equation dialog.
+
 ## 0.8.2 - Symbol Equation Entry Fix
 
 - Changed `Ctrl`/`Cmd+Shift+E` in Symbol blocks to open the same equation dialog used elsewhere instead of directly adding an empty Symbol row.

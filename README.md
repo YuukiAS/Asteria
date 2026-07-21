@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `0.8.2`.
+Current app version: `0.8.3`.
 
 ## Run
 
@@ -115,7 +115,7 @@ Current block types:
 
 Changing a block type updates the block background and border only when the block still uses the previous type defaults. If the user manually changed the background or border, the manual color wins. The inspector also includes `Apply type style` to restore the selected type's background and border preset.
 
-Symbol blocks store a compact `Symbol` + `Meaning` list for short mathematical notation indexes. Symbols are rendered with KaTeX in preview mode, automatically sorted by mathematical reading order, and exported in Story Markdown as a small table. While editing a Symbol block, `Ctrl+Shift+E` / `Cmd+Shift+E` opens the equation dialog for the current Symbol row. Notation blocks remain the place for longer explanations, examples, data semantics, and usage boundaries.
+Symbol blocks store a compact `Symbol` + `Meaning` list for short mathematical notation indexes. The left Symbol column renders KaTeX previews in both viewing and editing flows; click the preview cell for raw LaTeX editing, or use `Ctrl+Shift+E` / `Cmd+Shift+E` to open the equation dialog for the current Symbol row. Symbols are automatically sorted by mathematical reading order and exported in Story Markdown as a small table. Notation blocks remain the place for longer explanations, examples, data semantics, and usage boundaries.
 
 New block bodies start empty so type-specific placeholders can appear during editing. Result and TODO templates are placeholders, not inserted content.
 

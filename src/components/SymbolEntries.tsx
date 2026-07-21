@@ -57,12 +57,14 @@ export function SymbolEntriesPreview({ entries = [] }: SymbolEntriesPreviewProps
 
 export function SymbolEntriesEditor({ entries = [], nodeId, enableEquationShortcut = false, onChange }: SymbolEntriesEditorProps) {
   const [equationTargetId, setEquationTargetId] = useState<string | null>(null)
+  const [editingLatexEntryId, setEditingLatexEntryId] = useState<string | null>(null)
   const lastFocusedEntryIdRef = useRef<string | null>(null)
   const equationTarget = useMemo(() => entries.find((entry) => entry.id === equationTargetId), [entries, equationTargetId])
 
   const addEntry = useCallback(() => {
     const entry = createSymbolEntry()
     onChange([...entries, entry])
+    setEditingLatexEntryId(entry.id)
     window.setTimeout(() => {
       document.querySelector<HTMLInputElement>(`.symbols-latex-input[data-symbol-id="${entry.id}"]`)?.focus()
     }, 0)
@@ -72,9 +74,11 @@ export function SymbolEntriesEditor({ entries = [], nodeId, enableEquationShortc
     (entryId?: string | null) => {
       const targetId = entryId || entries[0]?.id
       if (targetId) {
+        setEditingLatexEntryId(null)
         setEquationTargetId(targetId)
         return
       }
+      setEditingLatexEntryId(null)
       setEquationTargetId(createId("symbol"))
     },
     [entries],
@@ -96,6 +100,7 @@ export function SymbolEntriesEditor({ entries = [], nodeId, enableEquationShortc
   const confirmEquation = (latex: string) => {
     const targetId = equationTargetId
     setEquationTargetId(null)
+    setEditingLatexEntryId(null)
     if (!targetId) return
 
     const existing = entries.find((entry) => entry.id === targetId)
@@ -116,16 +121,44 @@ export function SymbolEntriesEditor({ entries = [], nodeId, enableEquationShortc
         <div key={entry.id} className="symbols-editor-row" data-symbol-row-id={entry.id}>
           <label className="symbols-editor-field">
             <span>LaTeX</span>
-            <input
-              className="field-input symbols-latex-input"
-              data-symbol-id={entry.id}
-              value={entry.latex}
-              spellCheck={false}
-              onFocus={() => {
-                lastFocusedEntryIdRef.current = entry.id
-              }}
-              onChange={(event) => onChange(updateEntry(entries, entry.id, { latex: event.target.value }))}
-            />
+            {editingLatexEntryId === entry.id ? (
+              <input
+                className="field-input symbols-latex-input"
+                data-symbol-id={entry.id}
+                value={entry.latex}
+                spellCheck={false}
+                onFocus={() => {
+                  lastFocusedEntryIdRef.current = entry.id
+                }}
+                onBlur={() => setEditingLatexEntryId(null)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === "Escape") {
+                    event.preventDefault()
+                    event.currentTarget.blur()
+                  }
+                }}
+                onChange={(event) => onChange(updateEntry(entries, entry.id, { latex: event.target.value }))}
+              />
+            ) : (
+              <button
+                type="button"
+                className={`symbols-latex-preview-button ${entry.latex.trim() ? "" : "symbols-latex-preview-button-empty"}`}
+                data-symbol-id={entry.id}
+                aria-label="Edit symbol LaTeX"
+                title="Edit symbol LaTeX"
+                onClick={() => {
+                  lastFocusedEntryIdRef.current = entry.id
+                  setEditingLatexEntryId(entry.id)
+                  window.setTimeout(() => {
+                    document.querySelector<HTMLInputElement>(`.symbols-latex-input[data-symbol-id="${entry.id}"]`)?.focus()
+                  }, 0)
+                }}
+                onFocus={() => {
+                  lastFocusedEntryIdRef.current = entry.id
+                }}
+                dangerouslySetInnerHTML={{ __html: renderSymbolLatexHtml(entry.latex) || "Preview" }}
+              />
+            )}
           </label>
           <label className="symbols-editor-field">
             <span>Meaning</span>
