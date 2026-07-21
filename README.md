@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `0.8.5`.
+Current app version: `0.8.6`.
 
 ## Run
 
@@ -34,6 +34,8 @@ When Asteria is opened through the shared Slurm/Cloudflare server, the server st
 When the shared API is unavailable, including ordinary `npm run dev` sessions, maps are stored locally in IndexedDB under the `asteria-map` database. The app shows `Local` in the top toolbar in this fallback mode.
 
 The top toolbar provides Save, JSON import, and export. Save opens a confirmation dialog: `Save shared version` publishes the current canvas as the single shared version, while `Save fixed version` creates a local fixed checkpoint. Exported maps include nodes, edges, block styling, rich-text JSON, Symbol entries, model versions, variant content, viewport state, Story outline items, and Story deck settings.
+
+The full toolbar with text labels is intended for browser viewports at least `1600px` wide. Below that width, including a typical 15.6-inch 1920x1080 laptop at 125% OS scaling where the browser viewport is about `1536px`, toolbar actions stay icon-only to prevent label overlap.
 
 Asteria keeps restore points locally in IndexedDB. Restore shows the current shared version when available, up to three recent local versions checked every five minutes, and up to three fixed local versions created with Save. Loading a restore point first creates a local safety backup, then restores the saved layout while keeping newer block variant content from the current workspace. Publish it with Save if the restored workspace should become the shared version.
 

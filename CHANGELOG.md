@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.6 - Toolbar Fit Breakpoint
+
+- Kept toolbar action labels hidden until the viewport is at least `1600px` wide so common 15.6-inch laptop layouts do not squeeze or overlap text beside every icon.
+- Documented that full toolbar sizing depends on CSS viewport width rather than physical screen inches; a 15.6-inch 1080p display at 125% scaling is about `1536px` wide and should use compact toolbar mode.
+
 ## 0.8.5 - Search Stability
 
 - Hardened global search so malformed block content, oversized rich-text JSON, or unexpected Symbol data cannot blank the app during result calculation.

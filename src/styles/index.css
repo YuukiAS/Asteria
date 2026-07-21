@@ -2227,7 +2227,7 @@ body {
   }
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1599px) {
   .toolbar-actions .toolbar-label {
     display: none;
   }
