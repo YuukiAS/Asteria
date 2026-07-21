@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.2 - Symbol Equation Entry Fix
+
+- Changed `Ctrl`/`Cmd+Shift+E` in Symbol blocks to open the same equation dialog used elsewhere instead of directly adding an empty Symbol row.
+- Simplified Symbol editing rows to `LaTeX`, `Meaning`, and delete controls so the canvas editor no longer squeezes a KaTeX preview into the row.
+- Limited Symbol shortcut handling to the active canvas editor so the hidden Inspector editor cannot duplicate rows while the Inspector is collapsed.
+
 ## 0.8.1 - Symbol Selection Stability
 
 - Renamed the block type value and label from `symbols` / `Symbols` to `symbol` / `Symbol`, with import compatibility for older `symbols` maps.

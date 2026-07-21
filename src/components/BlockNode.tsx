@@ -325,7 +325,12 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
         data-has-overflow={hasPreviewOverflow ? "true" : "false"}
       >
         {isEditingContent && data.nodeType === "symbol" ? (
-          <SymbolEntriesEditor nodeId={id} entries={symbolEntries} onChange={(entries) => updateBlockVariant(id, editingVariantKey, { symbolEntries: entries })} />
+          <SymbolEntriesEditor
+            nodeId={id}
+            entries={symbolEntries}
+            enableEquationShortcut
+            onChange={(entries) => updateBlockVariant(id, editingVariantKey, { symbolEntries: entries })}
+          />
         ) : isEditingContent ? (
           <RichTextEditor
             content={contentJson}

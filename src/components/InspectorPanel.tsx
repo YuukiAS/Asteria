@@ -607,7 +607,7 @@ export function InspectorPanel() {
                 <dt className="shortcut">Ctrl/Cmd+S</dt>
                 <dd>Save</dd>
                 <dt className="shortcut">Ctrl/Cmd+Shift+E</dt>
-                <dd>Insert inline equation in selected block</dd>
+                <dd>Insert equation in selected block</dd>
                 <dt className="shortcut">Esc</dt>
                 <dd>Exit inline editing, then clear selection</dd>
                 <dt className="shortcut">Enter</dt>

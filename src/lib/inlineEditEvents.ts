@@ -8,7 +8,7 @@ export type InlineEditTarget = {
 export const startInlineEditEvent = "asteria-start-inline-edit"
 export const focusEditorEvent = "asteria-focus-editor"
 export const insertBlockEquationEvent = "asteria-insert-block-equation"
-export const insertSymbolEntryEvent = "asteria-insert-symbol-entry"
+export const openSymbolEquationEvent = "asteria-open-symbol-equation"
 
 export function requestInlineBlockEdit(nodeId: string, field: InlineEditField = "content") {
   window.setTimeout(() => {
@@ -28,8 +28,8 @@ export function requestBlockEquationInsert(nodeId: string, latex: string) {
   }, 80)
 }
 
-export function requestSymbolEntryInsert(nodeId: string) {
+export function requestSymbolEquationInsert(nodeId: string) {
   window.setTimeout(() => {
-    window.dispatchEvent(new CustomEvent<{ nodeId: string }>(insertSymbolEntryEvent, { detail: { nodeId } }))
+    window.dispatchEvent(new CustomEvent<{ nodeId: string }>(openSymbolEquationEvent, { detail: { nodeId } }))
   }, 80)
 }

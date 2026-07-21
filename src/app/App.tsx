@@ -8,7 +8,7 @@ import { Canvas } from "../components/Canvas"
 import { InspectorPanel } from "../components/InspectorPanel"
 import { StoryOutlinePanel } from "../components/StoryOutlinePanel"
 import { Toolbar } from "../components/Toolbar"
-import { requestInlineBlockEdit, requestInlineEditorFocus, requestSymbolEntryInsert, startInlineEditEvent, type InlineEditTarget } from "../lib/inlineEditEvents"
+import { requestInlineBlockEdit, requestInlineEditorFocus, requestSymbolEquationInsert, startInlineEditEvent, type InlineEditTarget } from "../lib/inlineEditEvents"
 import { useMapStore } from "../store/useMapStore"
 import type { InteractionMode } from "../types/interaction"
 
@@ -177,7 +177,7 @@ export function App() {
         event.preventDefault()
         requestInlineBlockEdit(selectedNodeId, "content")
         if (isSymbolBlock) {
-          requestSymbolEntryInsert(selectedNodeId)
+          requestSymbolEquationInsert(selectedNodeId)
           return
         }
         window.setTimeout(() => {

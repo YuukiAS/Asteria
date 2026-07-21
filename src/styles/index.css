@@ -1824,7 +1824,7 @@ body {
 
 .symbols-editor-row {
   display: grid;
-  grid-template-columns: minmax(84px, 1fr) minmax(64px, 0.8fr) minmax(120px, 1.4fr) 28px;
+  grid-template-columns: minmax(104px, 0.8fr) minmax(132px, 1.2fr) 28px;
   align-items: end;
   gap: 6px;
   border: 1px solid rgb(var(--color-border));
@@ -1846,18 +1846,6 @@ body {
 .symbols-latex-input {
   font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
   font-size: 12px;
-}
-
-.symbols-editor-preview {
-  display: grid;
-  min-width: 0;
-  min-height: 32px;
-  align-items: center;
-  overflow-x: auto;
-  border: 1px solid rgb(var(--color-border));
-  border-radius: 6px;
-  background: rgb(var(--color-app));
-  padding: 5px 7px;
 }
 
 .symbols-delete-button {
