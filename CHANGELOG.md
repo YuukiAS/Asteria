@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.4 - Symbol Edit Ordering
+
+- Kept Symbol block editing rows in the same mathematical sort order used by Symbol preview mode.
+- Wrote sorted Symbol entries back to the active block variant after add, edit, modal insert, and delete operations, with empty new rows kept after filled symbols.
+
 ## 0.8.3 - Symbol Preview Editing
 
 - Changed Symbol block editing so the left `LaTeX` column defaults to a rendered KaTeX preview instead of always showing raw LaTeX text.

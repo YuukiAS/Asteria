@@ -1,7 +1,7 @@
 import { Plus, Trash2 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { openSymbolEquationEvent } from "../lib/inlineEditEvents"
-import { renderSymbolLatexHtml, sortedSymbolEntries } from "../lib/symbolEntries"
+import { compareSymbolEntries, renderSymbolLatexHtml, sortedSymbolEntries } from "../lib/symbolEntries"
 import { createId } from "../lib/ids"
 import { nowIso } from "../lib/time"
 import type { SymbolEntry } from "../types/map"
@@ -21,6 +21,17 @@ type SymbolEntriesEditorProps = {
 function updateEntry(entries: SymbolEntry[], id: string, patch: Partial<Pick<SymbolEntry, "latex" | "meaning">>) {
   const updatedAt = nowIso()
   return entries.map((entry) => (entry.id === id ? { ...entry, ...patch, updatedAt } : entry))
+}
+
+function sortEditableSymbolEntries(entries: readonly SymbolEntry[]) {
+  return entries.slice().sort((left, right) => {
+    const leftHasLatex = Boolean(left.latex.trim())
+    const rightHasLatex = Boolean(right.latex.trim())
+    if (leftHasLatex && rightHasLatex) return compareSymbolEntries(left, right)
+    if (leftHasLatex) return -1
+    if (rightHasLatex) return 1
+    return left.createdAt.localeCompare(right.createdAt)
+  })
 }
 
 function createSymbolEntry(latex = "", meaning = "", id = createId("symbol")): SymbolEntry {
@@ -59,16 +70,19 @@ export function SymbolEntriesEditor({ entries = [], nodeId, enableEquationShortc
   const [equationTargetId, setEquationTargetId] = useState<string | null>(null)
   const [editingLatexEntryId, setEditingLatexEntryId] = useState<string | null>(null)
   const lastFocusedEntryIdRef = useRef<string | null>(null)
+  const sortedEntries = useMemo(() => sortEditableSymbolEntries(entries), [entries])
   const equationTarget = useMemo(() => entries.find((entry) => entry.id === equationTargetId), [entries, equationTargetId])
+
+  const commitEntries = useCallback((nextEntries: SymbolEntry[]) => onChange(sortEditableSymbolEntries(nextEntries)), [onChange])
 
   const addEntry = useCallback(() => {
     const entry = createSymbolEntry()
-    onChange([...entries, entry])
+    commitEntries([...entries, entry])
     setEditingLatexEntryId(entry.id)
     window.setTimeout(() => {
       document.querySelector<HTMLInputElement>(`.symbols-latex-input[data-symbol-id="${entry.id}"]`)?.focus()
     }, 0)
-  }, [entries, onChange])
+  }, [commitEntries, entries])
 
   const openEquationDialog = useCallback(
     (entryId?: string | null) => {
@@ -105,9 +119,9 @@ export function SymbolEntriesEditor({ entries = [], nodeId, enableEquationShortc
 
     const existing = entries.find((entry) => entry.id === targetId)
     if (existing) {
-      onChange(updateEntry(entries, targetId, { latex }))
+      commitEntries(updateEntry(entries, targetId, { latex }))
     } else {
-      onChange([...entries, createSymbolEntry(latex, "", targetId)])
+      commitEntries([...entries, createSymbolEntry(latex, "", targetId)])
     }
     window.setTimeout(() => {
       document.querySelector<HTMLInputElement>(`.symbols-meaning-input[data-symbol-id="${targetId}"]`)?.focus()
@@ -117,7 +131,7 @@ export function SymbolEntriesEditor({ entries = [], nodeId, enableEquationShortc
   return (
     <div className="symbols-editor">
       {entries.length === 0 ? <div className="symbols-empty-state">No symbols yet.</div> : null}
-      {entries.map((entry) => (
+      {sortedEntries.map((entry) => (
         <div key={entry.id} className="symbols-editor-row" data-symbol-row-id={entry.id}>
           <label className="symbols-editor-field">
             <span>LaTeX</span>
@@ -137,7 +151,7 @@ export function SymbolEntriesEditor({ entries = [], nodeId, enableEquationShortc
                     event.currentTarget.blur()
                   }
                 }}
-                onChange={(event) => onChange(updateEntry(entries, entry.id, { latex: event.target.value }))}
+                onChange={(event) => commitEntries(updateEntry(entries, entry.id, { latex: event.target.value }))}
               />
             ) : (
               <button
@@ -169,7 +183,7 @@ export function SymbolEntriesEditor({ entries = [], nodeId, enableEquationShortc
               onFocus={() => {
                 lastFocusedEntryIdRef.current = entry.id
               }}
-              onChange={(event) => onChange(updateEntry(entries, entry.id, { meaning: event.target.value }))}
+              onChange={(event) => commitEntries(updateEntry(entries, entry.id, { meaning: event.target.value }))}
             />
           </label>
           <button
@@ -177,7 +191,7 @@ export function SymbolEntriesEditor({ entries = [], nodeId, enableEquationShortc
             className="symbols-delete-button"
             aria-label="Delete symbol"
             title="Delete symbol"
-            onClick={() => onChange(entries.filter((item) => item.id !== entry.id))}
+            onClick={() => commitEntries(entries.filter((item) => item.id !== entry.id))}
           >
             <Trash2 size={14} />
           </button>
