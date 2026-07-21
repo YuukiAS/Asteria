@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `0.8.6`.
+Current app version: `0.8.7`.
 
 ## Run
 
@@ -25,6 +25,7 @@ This starts Asteria with same-origin `/api/asteria/*` persistence on `http://127
 
 ```bash
 npm run build
+npm run test:search
 ```
 
 ## Data

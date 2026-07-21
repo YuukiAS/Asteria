@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.7 - Search Click Safety
+
+- Hardened search result clicks so unsafe or stale result targets cannot drive React Flow navigation with invalid positions or hidden blocks.
+- Stopped persisting React Flow selection changes into map nodes so repeated search clicks cannot trigger a StoreUpdater selection feedback loop.
+- Added local error boundaries around the canvas and inspector so a single bad selected block cannot blank the whole app.
+- Added `npm run test:search` to validate shared-map search result navigation, including the `alpha` -> `Prior for alpha` path.
+
 ## 0.8.6 - Toolbar Fit Breakpoint
 
 - Kept toolbar action labels hidden until the viewport is at least `1600px` wide so common 15.6-inch laptop layouts do not squeeze or overlap text beside every icon.

@@ -1659,7 +1659,9 @@ export const useMapStore = create<MapState>((set, get) => ({
   },
 
   onNodesChange: (changes) => {
-    set((state) => ({ nodes: applyNodeChanges(changes, state.nodes) as MapNode[] }))
+    const structuralChanges = changes.filter((change) => change.type !== "select")
+    if (!structuralChanges.length) return
+    set((state) => ({ nodes: applyNodeChanges(structuralChanges, state.nodes) as MapNode[] }))
     get().markUnsaved()
   },
 

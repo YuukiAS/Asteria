@@ -5,7 +5,7 @@ import { blockSizePresets, type BlockSizePreset } from "../constants/layout"
 import { displayModeOptions, maxModelVersions } from "../constants/versioning"
 import { createExportFilename, exportMapFile, normalizeExportedMap, normalizeMapTitle, readJsonFile } from "../lib/exportImport"
 import { requestBlockEquationInsert, requestInlineBlockEdit, requestInlineEditorFocus } from "../lib/inlineEditEvents"
-import { searchRenderedBlocks, type SearchResult } from "../lib/mapSearch"
+import { getSearchResultNavigationTarget, searchRenderedBlocks, type SearchResult } from "../lib/mapSearch"
 import { buildStoryMarkdown, createStoryMarkdownFilename, exportMarkdownFile } from "../lib/storyMarkdownExport"
 import { useMapStore } from "../store/useMapStore"
 import type { InteractionMode } from "../types/interaction"
@@ -158,34 +158,18 @@ export function Toolbar({
     window.setTimeout(() => searchInputRef.current?.focus(), 0)
   }, [isSearchPanelOpen])
 
-  const absoluteNodePosition = (nodeId: string) => {
-    const node = nodes.find((item) => item.id === nodeId)
-    if (!node) return undefined
-    let x = node.position.x
-    let y = node.position.y
-    let parentId = node.parentId
-    while (parentId) {
-      const parent = nodes.find((item) => item.id === parentId)
-      if (!parent) break
-      x += parent.position.x
-      y += parent.position.y
-      parentId = parent.parentId
-    }
-    return { x, y }
-  }
-
   const openSearchResult = (result?: SearchResult) => {
     if (!result) return
-    const node = nodes.find((item) => item.id === result.blockId && item.type === "block")
-    const position = absoluteNodePosition(result.blockId)
-    if (!node || !position || node.type !== "block") return
+    const target = getSearchResultNavigationTarget(result, nodes, activeVersionId, modelVersions)
+    if (!target) {
+      console.warn(`Skipped unsafe search result navigation for block ${result.blockId}.`)
+      return
+    }
     setSelectedNode(result.blockId)
     onSearchPanelOpenChange(false)
     const viewport = reactFlow.getViewport()
     const zoom = Math.max(0.75, Math.min(viewport.zoom || 1, 1.25))
-    const width = Number.isFinite(node.data.width) ? node.data.width : 340
-    const height = Number.isFinite(node.data.height) ? node.data.height : 220
-    void reactFlow.setCenter(position.x + width / 2, position.y + height / 2, { zoom, duration: 420 })
+    void reactFlow.setCenter(target.center.x, target.center.y, { zoom, duration: 420 })
     window.setTimeout(() => {
       window.dispatchEvent(new CustomEvent("asteria-highlight-block", { detail: { nodeId: result.blockId } }))
     }, 120)

@@ -144,17 +144,16 @@ export function Canvas({ onFitViewReady, interactionMode, onInteractionModeChang
   }, [interactionMode])
 
   const presentedNodes = useMemo(() => {
-    const selectedIds = new Set(selectedNodeIds)
     const visibleNodes =
       activeVersionId === allVersionsId
         ? nodes
         : nodes.filter((node) => node.type !== "block" || !resolveBlockVersionState(node.data, activeVersionId, modelVersions).isHidden)
     return visibleNodes.map((node) => {
-      const selected = selectedIds.has(node.id)
-      if (node.type === "group" && node.data.locked) return { ...node, draggable: false, selected }
-      return node.selected === selected ? node : { ...node, selected }
+      const baseNode = node.selected === undefined ? node : { ...node, selected: undefined }
+      if (baseNode.type === "group" && baseNode.data.locked) return { ...baseNode, draggable: false }
+      return baseNode
     })
-  }, [activeVersionId, modelVersions, nodes, selectedNodeIds])
+  }, [activeVersionId, modelVersions, nodes])
 
   const visibleNodeIds = useMemo(() => new Set(presentedNodes.map((node) => node.id)), [presentedNodes])
   const zoomedNode = useMemo(() => presentedNodes.find((node): node is BlockNodeType => node.id === zoomedNodeId && node.type === "block"), [presentedNodes, zoomedNodeId])

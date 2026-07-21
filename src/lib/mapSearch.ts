@@ -23,6 +23,13 @@ export type SearchResult = SearchableContent & {
   snippet: string
 }
 
+export type SearchNavigationTarget = {
+  blockId: string
+  center: { x: number; y: number }
+  width: number
+  height: number
+}
+
 function stripHtml(value: unknown) {
   return String(value ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
 }
@@ -145,4 +152,53 @@ export function searchRenderedBlocks(nodes: MapNode[], activeVersionId: string, 
       snippet: makeSnippet(item.text, query.text),
     }))
     .sort((a, b) => a.rank - b.rank || a.blockTitle.localeCompare(b.blockTitle) || a.source.localeCompare(b.source))
+}
+
+function finiteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value)
+}
+
+function finiteDimension(value: unknown, fallback: number): number {
+  return finiteNumber(value) && value > 0 ? value : fallback
+}
+
+function absoluteNodePosition(node: MapNode, nodes: MapNode[]) {
+  let x = finiteNumber(node.position?.x) ? node.position.x : 0
+  let y = finiteNumber(node.position?.y) ? node.position.y : 0
+  let parentId = node.parentId
+  const visited = new Set([node.id])
+
+  while (parentId) {
+    if (visited.has(parentId)) return undefined
+    visited.add(parentId)
+    const parent = nodes.find((item) => item.id === parentId)
+    if (!parent) return undefined
+    x += finiteNumber(parent.position?.x) ? parent.position.x : 0
+    y += finiteNumber(parent.position?.y) ? parent.position.y : 0
+    parentId = parent.parentId
+  }
+
+  return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : undefined
+}
+
+export function getSearchResultNavigationTarget(
+  result: Pick<SearchResult, "blockId"> | undefined,
+  nodes: MapNode[],
+  activeVersionId: string,
+  modelVersions: ModelVersion[],
+): SearchNavigationTarget | undefined {
+  if (!result?.blockId) return undefined
+  const node = nodes.find((item): item is BlockNode => item.id === result.blockId && item.type === "block")
+  if (!node) return undefined
+  if (activeVersionId !== allVersionsId && resolveBlockVersionState(node.data, activeVersionId, modelVersions).isHidden) return undefined
+  const position = absoluteNodePosition(node, nodes)
+  if (!position) return undefined
+  const width = finiteDimension(node.data.width, 340)
+  const height = finiteDimension(node.data.height, 220)
+  return {
+    blockId: node.id,
+    center: { x: position.x + width / 2, y: position.y + height / 2 },
+    width,
+    height,
+  }
 }

@@ -5,6 +5,7 @@ import { Archive, ChevronLeft, ChevronRight, CloudUpload, FilePlus2, FileText, P
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { PointerEvent as ReactPointerEvent } from "react"
 import { Canvas } from "../components/Canvas"
+import { AppErrorBoundary } from "../components/AppErrorBoundary"
 import { InspectorPanel } from "../components/InspectorPanel"
 import { StoryOutlinePanel } from "../components/StoryOutlinePanel"
 import { Toolbar } from "../components/Toolbar"
@@ -328,13 +329,15 @@ export function App() {
           onSearchPanelOpenChange={setIsSearchPanelOpen}
         />
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          <Canvas
-            onFitViewReady={setFitView}
-            interactionMode={interactionMode}
-            onInteractionModeChange={setAppInteractionMode}
-            inlineEditTarget={inlineEditTarget}
-            onInlineEditTargetChange={setInlineEditTarget}
-          />
+          <AppErrorBoundary label="canvas" resetKey={`${interactionMode}:${selectedNodeId || ""}:${nodes.length}`}>
+            <Canvas
+              onFitViewReady={setFitView}
+              interactionMode={interactionMode}
+              onInteractionModeChange={setAppInteractionMode}
+              inlineEditTarget={inlineEditTarget}
+              onInlineEditTargetChange={setInlineEditTarget}
+            />
+          </AppErrorBoundary>
           <aside
             className={`inspector-shell ${isSidebarCollapsed ? "inspector-shell-collapsed" : "inspector-shell-expanded"}`}
             style={{ width: isSidebarCollapsed ? collapsedSidebarWidth : sidebarWidth }}
@@ -392,7 +395,9 @@ export function App() {
                   </button>
                 </div>
               )}
-              {sidebarTab === "story" ? <StoryOutlinePanel /> : <InspectorPanel />}
+              <AppErrorBoundary label={sidebarTab} resetKey={`${sidebarTab}:${selectedNodeId || ""}:${selectedNodeIds.join(",")}`}>
+                {sidebarTab === "story" ? <StoryOutlinePanel /> : <InspectorPanel />}
+              </AppErrorBoundary>
             </div>
             {!isSidebarCollapsed && (
               <div className="inspector-width-readout" aria-hidden="true">
