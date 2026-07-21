@@ -478,14 +478,6 @@ function nextBlockPositionFrom(source: BlockNode, nodes: MapNode[]): XYPosition 
   return { x: position.x + source.data.width + 120, y: position.y }
 }
 
-function applyNodeSelection(nodes: MapNode[], selectedNodeIds: string[]) {
-  const selectedIds = new Set(selectedNodeIds)
-  return nodes.map((node) => {
-    const selected = selectedIds.has(node.id)
-    return node.selected === selected ? node : { ...node, selected }
-  })
-}
-
 function blockStyleFromData(data: BlockData): BlockStyleClipboard {
   return {
     backgroundColor: data.backgroundColor,
@@ -1462,7 +1454,7 @@ export const useMapStore = create<MapState>((set, get) => ({
     const state = get()
     if (state.selectedNodeId === id && state.selectedEdgeId === undefined) return
     const selectedNodeIds = id ? [id] : []
-    set({ selectedNodeId: id, selectedNodeIds, selectedEdgeId: undefined, nodes: applyNodeSelection(state.nodes, selectedNodeIds) })
+    set({ selectedNodeId: id, selectedNodeIds, selectedEdgeId: undefined })
   },
   setSelectedNodes: (ids) => {
     const state = get()
@@ -1474,12 +1466,12 @@ export const useMapStore = create<MapState>((set, get) => ({
       return
     }
     const selectedNodeId = ids[0]
-    set({ selectedNodeId, selectedNodeIds: ids, selectedEdgeId: undefined, nodes: applyNodeSelection(state.nodes, ids) })
+    set({ selectedNodeId, selectedNodeIds: ids, selectedEdgeId: undefined })
   },
   setSelectedEdge: (id) => {
     const state = get()
     if (state.selectedEdgeId === id && state.selectedNodeId === undefined) return
-    set({ selectedEdgeId: id, selectedNodeId: undefined, selectedNodeIds: [], nodes: applyNodeSelection(state.nodes, []) })
+    set({ selectedEdgeId: id, selectedNodeId: undefined, selectedNodeIds: [] })
   },
 
   setViewport: (viewport) => {

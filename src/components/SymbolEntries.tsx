@@ -1,4 +1,6 @@
 import { Plus, Trash2 } from "lucide-react"
+import { useCallback, useEffect } from "react"
+import { insertSymbolEntryEvent } from "../lib/inlineEditEvents"
 import { renderSymbolLatexHtml, sortedSymbolEntries } from "../lib/symbolEntries"
 import { createId } from "../lib/ids"
 import { nowIso } from "../lib/time"
@@ -10,6 +12,7 @@ type SymbolEntriesPreviewProps = {
 
 type SymbolEntriesEditorProps = {
   entries?: SymbolEntry[]
+  nodeId: string
   onChange: (entries: SymbolEntry[]) => void
 }
 
@@ -39,20 +42,34 @@ export function SymbolEntriesPreview({ entries = [] }: SymbolEntriesPreviewProps
   )
 }
 
-export function SymbolEntriesEditor({ entries = [], onChange }: SymbolEntriesEditorProps) {
-  const addEntry = () => {
+export function SymbolEntriesEditor({ entries = [], nodeId, onChange }: SymbolEntriesEditorProps) {
+  const addEntry = useCallback(() => {
     const at = nowIso()
+    const entryId = createId("symbol")
     onChange([
       ...entries,
       {
-        id: createId("symbol"),
+        id: entryId,
         latex: "",
         meaning: "",
         createdAt: at,
         updatedAt: at,
       },
     ])
-  }
+    window.setTimeout(() => {
+      document.querySelector<HTMLInputElement>(`.symbols-latex-input[data-symbol-id="${entryId}"]`)?.focus()
+    }, 0)
+  }, [entries, onChange])
+
+  useEffect(() => {
+    const insertEntry = (event: Event) => {
+      const detail = (event as CustomEvent<{ nodeId: string }>).detail
+      if (detail?.nodeId !== nodeId) return
+      addEntry()
+    }
+    window.addEventListener(insertSymbolEntryEvent, insertEntry)
+    return () => window.removeEventListener(insertSymbolEntryEvent, insertEntry)
+  }, [addEntry, nodeId])
 
   return (
     <div className="symbols-editor">
@@ -63,6 +80,7 @@ export function SymbolEntriesEditor({ entries = [], onChange }: SymbolEntriesEdi
             <span>LaTeX</span>
             <input
               className="field-input symbols-latex-input"
+              data-symbol-id={entry.id}
               value={entry.latex}
               spellCheck={false}
               onChange={(event) => onChange(updateEntry(entries, entry.id, { latex: event.target.value }))}
@@ -95,4 +113,3 @@ export function SymbolEntriesEditor({ entries = [], onChange }: SymbolEntriesEdi
     </div>
   )
 }
-

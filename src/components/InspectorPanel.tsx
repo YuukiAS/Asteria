@@ -540,8 +540,8 @@ export function InspectorPanel() {
               id: "content",
               title: "Content",
               children: (
-                node.data.nodeType === "symbols" ? (
-                  <SymbolEntriesEditor entries={activeSymbolEntries} onChange={(symbolEntries) => updateBlockVariant(node.id, activeVariantKey, { symbolEntries })} />
+                node.data.nodeType === "symbol" ? (
+                  <SymbolEntriesEditor nodeId={node.id} entries={activeSymbolEntries} onChange={(symbolEntries) => updateBlockVariant(node.id, activeVariantKey, { symbolEntries })} />
                 ) : (
                   <RichTextEditor
                     content={activeContentJson}

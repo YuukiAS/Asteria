@@ -41,7 +41,7 @@ export const blockTypeColors = {
   generic: { background: "#ffffff", border: "#d1d5db" },
   definition: { background: "#fff7ed", border: "#fed7aa" },
   notation: { background: "#fef9c3", border: "#fde68a" },
-  symbols: { background: "#fffbeb", border: "#fbbf24" },
+  symbol: { background: "#fffbeb", border: "#fbbf24" },
   model: { background: "#fffaf0", border: "#fdba74" },
   prior: { background: "#eef2ff", border: "#a5b4fc" },
   assumption: { background: "#f5f3ff", border: "#ddd6fe" },

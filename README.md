@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `0.8.0`.
+Current app version: `0.8.1`.
 
 ## Run
 
@@ -33,7 +33,7 @@ When Asteria is opened through the shared Slurm/Cloudflare server, the server st
 
 When the shared API is unavailable, including ordinary `npm run dev` sessions, maps are stored locally in IndexedDB under the `asteria-map` database. The app shows `Local` in the top toolbar in this fallback mode.
 
-The top toolbar provides Save, JSON import, and export. Save opens a confirmation dialog: `Save shared version` publishes the current canvas as the single shared version, while `Save fixed version` creates a local fixed checkpoint. Exported maps include nodes, edges, block styling, rich-text JSON, Symbols entries, model versions, variant content, viewport state, Story outline items, and Story deck settings.
+The top toolbar provides Save, JSON import, and export. Save opens a confirmation dialog: `Save shared version` publishes the current canvas as the single shared version, while `Save fixed version` creates a local fixed checkpoint. Exported maps include nodes, edges, block styling, rich-text JSON, Symbol entries, model versions, variant content, viewport state, Story outline items, and Story deck settings.
 
 Asteria keeps restore points locally in IndexedDB. Restore shows the current shared version when available, up to three recent local versions checked every five minutes, and up to three fixed local versions created with Save. Loading a restore point first creates a local safety backup, then restores the saved layout while keeping newer block variant content from the current workspace. Publish it with Save if the restored workspace should become the shared version.
 
@@ -41,7 +41,7 @@ Shared saves use a revision check only when Save publishes to the shared version
 
 ## Core Workflow
 
-- Use the canvas to place model, prior, theorem, result, dataset, notation, symbols, and related research blocks.
+- Use the canvas to place model, prior, theorem, result, dataset, notation, symbol, and related research blocks.
 - Use Move mode for dragging and layout, Edit mode for direct block editing, and Zoom mode for near-fullscreen block reading.
 - Switch modes with `Alt+1`, `Alt+2`, and `Alt+3`, or use the top toolbar mode control.
 - Click Add block to create a Medium `340 x 220 (default)` block, or hover/focus the Add block control to choose Small, Medium, or Large.
@@ -50,7 +50,7 @@ Shared saves use a revision check only when Save publishes to the shared version
 - Click an empty canvas background while editing to return to Move mode.
 - Inside nested lists, use `Enter` on an empty nested item to continue writing in the parent list item. Use `Shift+Tab` on an empty list item, or on the final top-level list item after typing text, to exit into an unindented paragraph without moving or renumbering the previous list content; nested non-empty list items keep the editor's normal indent and outdent behavior.
 - Drag undo is supported with `Ctrl+Z` / `Cmd+Z` when focus is not inside a text editor.
-- Open global search from the toolbar or with `Ctrl+F` / `Cmd+F` when focus is not inside a text editor. Search covers the current rendered model version, including block titles, rich text, inline equations, block equations, and Symbols entries.
+- Open global search from the toolbar or with `Ctrl+F` / `Cmd+F` when focus is not inside a text editor. Search covers the current rendered model version, including block titles, rich text, inline equations, block equations, and Symbol entries.
 
 ## Story Outline
 
@@ -99,7 +99,7 @@ Current block types:
 - Generic
 - Definition
 - Notation
-- Symbols
+- Symbol
 - Model
 - Prior
 - Assumption
@@ -115,7 +115,7 @@ Current block types:
 
 Changing a block type updates the block background and border only when the block still uses the previous type defaults. If the user manually changed the background or border, the manual color wins. The inspector also includes `Apply type style` to restore the selected type's background and border preset.
 
-Symbols blocks store a compact `Symbol` + `Meaning` list for short mathematical notation indexes. Symbols are rendered with KaTeX, automatically sorted by mathematical reading order, and exported in Story Markdown as a small table. Notation blocks remain the place for longer explanations, examples, data semantics, and usage boundaries.
+Symbol blocks store a compact `Symbol` + `Meaning` list for short mathematical notation indexes. Symbols are rendered with KaTeX, automatically sorted by mathematical reading order, and exported in Story Markdown as a small table. Notation blocks remain the place for longer explanations, examples, data semantics, and usage boundaries.
 
 New block bodies start empty so type-specific placeholders can appear during editing. Result and TODO templates are placeholders, not inserted content.
 

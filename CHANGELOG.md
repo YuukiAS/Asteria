@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.1 - Symbol Selection Stability
+
+- Renamed the block type value and label from `symbols` / `Symbols` to `symbol` / `Symbol`, with import compatibility for older `symbols` maps.
+- Fixed a React Flow selection loop introduced in 0.8.0 that could blank the app after adding or selecting a Symbol block.
+- Kept programmatic search-result selection visually synced by deriving node `selected` state in the canvas instead of mutating persisted map nodes during selection changes.
+- Made `Ctrl`/`Cmd+Shift+E` work on Symbol blocks by entering the Symbol editor and adding a focused LaTeX row.
+
 ## 0.8.0 - Symbols Blocks And Math Search
 
 - Added a Symbols block type for compact mathematical symbol and meaning indexes, with yellow type defaults and editable background, border, and text colors.

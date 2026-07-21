@@ -83,7 +83,7 @@ function renderBlockContent(block: BlockNode, versionId: string, modelVersions: 
   const contentJson = resolveBlockContentJson(block.data, renderedVariantKey)
   const title = resolveBlockTitle(block.data, renderedVariantKey)
   const bodyMarkdown = contentJsonToMarkdown(contentJson)
-  const symbolMarkdown = block.data.nodeType === "symbols" ? symbolsToMarkdown(block, renderedVariantKey) : ""
+  const symbolMarkdown = block.data.nodeType === "symbol" ? symbolsToMarkdown(block, renderedVariantKey) : ""
   const markdown = [symbolMarkdown, bodyMarkdown].filter(Boolean).join("\n\n")
   return {
     title,

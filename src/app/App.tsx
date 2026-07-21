@@ -8,7 +8,7 @@ import { Canvas } from "../components/Canvas"
 import { InspectorPanel } from "../components/InspectorPanel"
 import { StoryOutlinePanel } from "../components/StoryOutlinePanel"
 import { Toolbar } from "../components/Toolbar"
-import { requestInlineBlockEdit, requestInlineEditorFocus, startInlineEditEvent, type InlineEditTarget } from "../lib/inlineEditEvents"
+import { requestInlineBlockEdit, requestInlineEditorFocus, requestSymbolEntryInsert, startInlineEditEvent, type InlineEditTarget } from "../lib/inlineEditEvents"
 import { useMapStore } from "../store/useMapStore"
 import type { InteractionMode } from "../types/interaction"
 
@@ -79,9 +79,14 @@ export function App() {
     setSelectedEdge,
     createBackupNow,
     undoLastCanvasChange,
+    nodes,
     selectedNodeId,
     selectedNodeIds,
   } = useMapStore()
+  const selectedBlock = useMemo(() => {
+    const node = nodes.find((item) => item.id === selectedNodeId)
+    return node?.type === "block" ? node : undefined
+  }, [nodes, selectedNodeId])
 
   useEffect(() => {
     void hydrate()
@@ -165,9 +170,16 @@ export function App() {
         setIsSaveDialogOpen(true)
         return
       }
-      if (isMod && event.shiftKey && event.key.toLowerCase() === "e" && selectedNodeId && !isEditableTarget(event.target)) {
+      if (isMod && event.shiftKey && event.key.toLowerCase() === "e" && selectedNodeId) {
+        const isSymbolBlock = selectedBlock?.data.nodeType === "symbol"
+        const isSymbolEditorTarget = event.target instanceof HTMLElement && Boolean(event.target.closest(".symbols-editor"))
+        if (isEditableTarget(event.target) && !(isSymbolBlock && isSymbolEditorTarget)) return
         event.preventDefault()
         requestInlineBlockEdit(selectedNodeId, "content")
+        if (isSymbolBlock) {
+          requestSymbolEntryInsert(selectedNodeId)
+          return
+        }
         window.setTimeout(() => {
           requestInlineEditorFocus(selectedNodeId)
           window.dispatchEvent(new CustomEvent("asteria-open-inline-equation", { detail: { nodeId: selectedNodeId } }))
@@ -226,6 +238,7 @@ export function App() {
     inlineEditTarget,
     isSearchPanelOpen,
     pasteBlock,
+    selectedBlock,
     selectedNodeId,
     setAppInteractionMode,
     setSelectedEdge,

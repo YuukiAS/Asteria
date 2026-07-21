@@ -845,7 +845,7 @@ body {
   color: #854d0e;
 }
 
-.type-badge-symbols {
+.type-badge-symbol {
   border-color: #fbbf24;
   background: #fffbeb;
   color: #92400e;
@@ -943,7 +943,7 @@ body {
 
 [data-theme="dark"] .type-badge-definition,
 [data-theme="dark"] .type-badge-notation,
-[data-theme="dark"] .type-badge-symbols,
+[data-theme="dark"] .type-badge-symbol,
 [data-theme="dark"] .type-badge-model,
 [data-theme="dark"] .type-badge-prior,
 [data-theme="dark"] .type-badge-assumption,
@@ -983,7 +983,7 @@ body {
   color: #fde68a;
 }
 
-[data-theme="dark"] .type-badge-symbols {
+[data-theme="dark"] .type-badge-symbol {
   border-color: rgba(251, 191, 36, 0.74);
   background: rgba(120, 53, 15, 0.94);
   color: #fef3c7;

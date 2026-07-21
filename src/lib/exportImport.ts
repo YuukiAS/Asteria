@@ -239,6 +239,7 @@ export function createEdge(connection: Connection): Edge<MapEdgeData> {
 function normalizeNodeType(value: unknown): BlockNodeType {
   if (value === "statement") return "theorem"
   if (value === "citation") return "reference"
+  if (value === "symbols") return "symbol"
   if (validBlockNodeTypes.includes(value as BlockNodeType)) return value as BlockNodeType
   if (value !== undefined) console.warn(`Unknown block nodeType "${String(value)}"; falling back to generic.`)
   return "generic"

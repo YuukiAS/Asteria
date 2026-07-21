@@ -324,8 +324,8 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
         className={`asteria-block-preview asteria-block-preview-${displayMode} h-[calc(100%-36px)] overflow-auto px-3 py-2 text-[13px] leading-[1.45] ${previewInteractionClass}`}
         data-has-overflow={hasPreviewOverflow ? "true" : "false"}
       >
-        {isEditingContent && data.nodeType === "symbols" ? (
-          <SymbolEntriesEditor entries={symbolEntries} onChange={(entries) => updateBlockVariant(id, editingVariantKey, { symbolEntries: entries })} />
+        {isEditingContent && data.nodeType === "symbol" ? (
+          <SymbolEntriesEditor nodeId={id} entries={symbolEntries} onChange={(entries) => updateBlockVariant(id, editingVariantKey, { symbolEntries: entries })} />
         ) : isEditingContent ? (
           <RichTextEditor
             content={contentJson}
@@ -338,7 +338,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
             placeholder={blockTypePlaceholder}
             focusTargetId={id}
           />
-        ) : displayMode === "title_only" ? null : data.nodeType === "symbols" ? (
+        ) : displayMode === "title_only" ? null : data.nodeType === "symbol" ? (
           <SymbolEntriesPreview entries={symbolEntries} />
         ) : (
           <RichTextPreview html={contentHtml} color={data.textColor} accentColor={data.textColor} />

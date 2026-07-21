@@ -5,7 +5,7 @@ export type BlockNodeType =
   | "generic"
   | "definition"
   | "notation"
-  | "symbols"
+  | "symbol"
   | "model"
   | "prior"
   | "assumption"

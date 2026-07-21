@@ -4,7 +4,7 @@ export const blockTypeOptions = [
   { value: "generic", label: "Generic", badgeClass: "type-badge-generic", description: "General-purpose note or connector block without a specific semantic role." },
   { value: "definition", label: "Definition", badgeClass: "type-badge-definition", description: "Introduces a term, object, parameter, or formal concept used elsewhere." },
   { value: "notation", label: "Notation", badgeClass: "type-badge-notation", description: "Defines symbols, indexing conventions, dimensions, or shorthand notation." },
-  { value: "symbols", label: "Symbols", badgeClass: "type-badge-symbols", description: "Provides an automatically sorted index of mathematical symbols and their short meanings." },
+  { value: "symbol", label: "Symbol", badgeClass: "type-badge-symbol", description: "Provides an automatically sorted index of mathematical symbols and their short meanings." },
   { value: "model", label: "Model", badgeClass: "type-badge-model", description: "Specifies the statistical model, likelihood, latent variables, or structural equations." },
   { value: "prior", label: "Prior", badgeClass: "type-badge-prior", description: "Records prior distributions, hyperparameters, and prior assumptions." },
   { value: "assumption", label: "Assumption", badgeClass: "type-badge-assumption", description: "States modeling, data, identifiability, or workflow assumptions." },
