@@ -35,8 +35,16 @@ function renderMarks(html: string, marks: JSONContent["marks"] = []) {
         return `<s>${current}</s>`
       case "code":
         return `<code>${current}</code>`
-      case "link":
-        return `<a href="${escapeHtml(String(mark.attrs?.href || "#"))}" target="_blank" rel="noreferrer">${current}</a>`
+      case "link": {
+        const attrs = {
+          href: mark.attrs?.href || "#",
+          target: "_blank",
+          rel: "noreferrer",
+          "data-asteria-image-link": mark.attrs?.asteriaImageLink === "true" ? "true" : undefined,
+          "data-asteria-image-size": mark.attrs?.asteriaImageLink === "true" ? mark.attrs?.asteriaImageSize || "medium" : undefined,
+        }
+        return `<a${renderAttrs(attrs)}>${current}</a>`
+      }
       case "highlight": {
         const color = String(mark.attrs?.color || "#fef3c7")
         return `<mark style="background-color: ${escapeHtml(color)}">${current}</mark>`

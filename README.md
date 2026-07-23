@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `0.8.10`.
+Current app version: `0.9.0`.
 
 ## Run
 
@@ -28,6 +28,7 @@ npm run build
 npm run test:search
 npm run test:edges
 npm run test:rich-text
+npm run test:image-links
 ```
 
 ## Data
@@ -53,6 +54,7 @@ Shared saves use a revision check only when Save publishes to the shared version
 - Double-click the canvas to create a new block at that position.
 - Double-click a block to enter inline editing.
 - Click an empty canvas background while editing to return to Move mode.
+- Use the rich-text `Link` control for ordinary web, paper, or source hyperlinks. Use the `Image link` control for image URLs: it opens a dialog with the link field on top and a live preview below, then stores the image as link text with preview metadata. Normal block previews show the image on hover/focus, while Zoom mode shows the image directly without embedding the image file in the map.
 - Inside nested lists, use `Enter` on an empty nested item to continue writing in the parent list item. Use `Shift+Tab` on an empty list item, or on the final top-level list item after typing text, to exit into an unindented paragraph without moving or renumbering the previous list content; nested non-empty list items keep the editor's normal indent and outdent behavior.
 - Drag undo is supported with `Ctrl+Z` / `Cmd+Z` when focus is not inside a text editor.
 - Open global search from the toolbar or with `Ctrl+F` / `Cmd+F` when focus is not inside a text editor. Search covers the current rendered model version, including block titles, rich text, inline equations, block equations, and Symbol entries.
@@ -78,7 +80,7 @@ Story version modes:
 - `Default content`: use each block's default/base content.
 - `Selected version`: use the fixed version selected inside the Story panel.
 
-The export includes one `## Slide N - <title>` section per outline item, optional source metadata, main message content, key formulas, optional speaker notes, and an optional final PPT-generation prompt. Inline and block equations are preserved as Markdown/LaTeX.
+The export includes one `## Slide N - <title>` section per outline item, optional source metadata, main message content, image references, key formulas, optional speaker notes, and an optional final PPT-generation prompt. Inline and block equations are preserved as Markdown/LaTeX. Image Links remain ordinary Markdown links in the main message and are also listed as linked Markdown image references in a per-slide `### Images` section; Asteria does not download remote images or bundle assets during Markdown export.
 
 ## Model Versions
 

@@ -1,5 +1,5 @@
 import type { Editor } from "@tiptap/react"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import {
   AlignCenter,
   AlignLeft,
@@ -8,6 +8,7 @@ import {
   Code,
   Eraser,
   Highlighter,
+  Image as ImageIcon,
   Italic,
   Link as LinkIcon,
   List,
@@ -23,12 +24,20 @@ import {
 import { backgroundPalette, textPalette } from "../constants/palette"
 import { applyBlockMathStyle } from "../editor/blockMathStyling"
 import { recordRichColor } from "../editor/richColorMemory"
+import { defaultImageLinkSize, imageLinkLabelFromUrl } from "../lib/imageLinks"
 import { ColorPickerRow } from "./ColorPickerRow"
 import { EquationDialog } from "./EquationDialog"
 import { FontSizeSelect } from "./FontSizeSelect"
+import { ImageLinkDialog } from "./ImageLinkDialog"
 
 type RichTextToolbarProps = {
   editor: Editor
+}
+
+type AsteriaLinkAttrs = {
+  href: string
+  asteriaImageLink?: "true" | null
+  asteriaImageSize?: string | null
 }
 
 function ToolButton({
@@ -60,6 +69,8 @@ function ToolButton({
 
 export function RichTextToolbar({ editor }: RichTextToolbarProps) {
   const [equationDialogMode, setEquationDialogMode] = useState<"inline" | "block" | null>(null)
+  const [isImageLinkDialogOpen, setIsImageLinkDialogOpen] = useState(false)
+  const imageLinkSelectionRef = useRef<{ from: number; to: number }>()
   const textColor = (editor.getAttributes("textStyle").color as string) || "#111827"
   const highlight = (editor.getAttributes("highlight").color as string) || "#fef3c7"
   const currentSelectionRange = () => {
@@ -75,7 +86,36 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
       editor.chain().focus().unsetLink().run()
       return
     }
-    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run()
+    const attrs: AsteriaLinkAttrs = { href: url, asteriaImageLink: null, asteriaImageSize: null }
+    editor.chain().focus().extendMarkRange("link").setLink(attrs).run()
+  }
+
+  const openImageLinkDialog = () => {
+    const { from, to } = editor.state.selection
+    imageLinkSelectionRef.current = { from, to }
+    setIsImageLinkDialogOpen(true)
+  }
+
+  const confirmImageLink = (url: string) => {
+    const attrs: AsteriaLinkAttrs = { href: url, asteriaImageLink: "true", asteriaImageSize: defaultImageLinkSize }
+    const range = imageLinkSelectionRef.current
+    setIsImageLinkDialogOpen(false)
+    imageLinkSelectionRef.current = undefined
+    if (range) editor.commands.setTextSelection(range)
+    const selection = editor.state.selection
+    if (!selection.empty || editor.isActive("link")) {
+      editor.chain().focus().extendMarkRange("link").setLink(attrs).run()
+      return
+    }
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: "text",
+        text: imageLinkLabelFromUrl(url),
+        marks: [{ type: "link", attrs }],
+      })
+      .run()
   }
 
   const insertInlineMath = () => {
@@ -145,6 +185,9 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
         <ToolButton label="Link" active={editor.isActive("link")} onClick={setLink}>
           <LinkIcon size={15} />
         </ToolButton>
+        <ToolButton label="Image link" active={editor.getAttributes("link").asteriaImageLink === "true"} onClick={openImageLinkDialog}>
+          <ImageIcon size={15} />
+        </ToolButton>
         <ToolButton label="Remove link" onClick={() => editor.chain().focus().unsetLink().run()}>
           <Unlink size={15} />
         </ToolButton>
@@ -189,6 +232,12 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
         submitOnEnter={equationDialogMode === "inline"}
         onCancel={() => setEquationDialogMode(null)}
         onConfirm={confirmEquation}
+      />
+      <ImageLinkDialog
+        open={isImageLinkDialogOpen}
+        initialHref={(editor.getAttributes("link").href as string | undefined) || ""}
+        onCancel={() => setIsImageLinkDialogOpen(false)}
+        onConfirm={confirmImageLink}
       />
     </div>
   )

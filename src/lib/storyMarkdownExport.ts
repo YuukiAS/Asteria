@@ -1,6 +1,7 @@
 import { defaultVariantKey } from "../constants/versioning"
 import { resolveBlockVersionState } from "./blockVersionState"
 import { resolveBlockContentJson, resolveBlockSymbolEntries, resolveBlockTitle, slugifyTitle } from "./exportImport"
+import { extractImageLinksFromContent, markdownImageAlt, type ImageLinkReference } from "./imageLinks"
 import { sortedSymbolEntries } from "./symbolEntries"
 import { formatJsonTimestamp } from "./time"
 import { contentJsonToMarkdown, extractBlockMath, plainTextFromContent } from "./tiptapToMarkdown"
@@ -62,6 +63,13 @@ function escapeTableCell(value: string) {
   return value.replace(/\|/g, "\\|").replace(/\n+/g, " ").trim()
 }
 
+function imagesToMarkdown(images: ImageLinkReference[]) {
+  return images.map((image) => {
+    const alt = markdownImageAlt(image.label)
+    return `[![${alt}](${image.href})](${image.href})`
+  })
+}
+
 function symbolsToMarkdown(block: BlockNode, renderedVariantKey: string) {
   const entries = sortedSymbolEntries(resolveBlockSymbolEntries(block.data, renderedVariantKey))
   if (!entries.length) return ""
@@ -97,6 +105,7 @@ function renderBlockContent(block: BlockNode, versionId: string, modelVersions: 
             : "Hidden",
     markdown: truncateMarkdown(markdown, density),
     formulas: extractBlockMath(contentJson),
+    images: density === "title_only" ? [] : extractImageLinksFromContent(contentJson),
     plain: plainTextFromContent(contentJson),
   }
 }
@@ -113,6 +122,15 @@ function renderGroupContent(group: GroupNode, nodes: MapNode[], versionId: strin
   return {
     markdown: truncateMarkdown(markdown, density),
     formulas: renderedChildren.flatMap(({ content }) => content.formulas),
+    images:
+      density === "title_only"
+        ? []
+        : renderedChildren.flatMap(({ content }) =>
+            content.images.map((image) => ({
+              ...image,
+              label: `${content.title}: ${image.label}`,
+            })),
+          ),
     childCount: children.length,
   }
 }
@@ -128,7 +146,7 @@ function renderPrompt(deckTitle: string) {
     "## PPT Generation Prompt",
     "",
     "Turn this Markdown story deck into a low-density research presentation.",
-    "Use one slide per `## Slide N` section, preserve equations as LaTeX, keep speaker notes separate from slide body, and avoid adding claims not present in the source outline.",
+    "Use one slide per `## Slide N` section, preserve equations as LaTeX, keep Markdown image references as visual evidence, keep speaker notes separate from slide body, preserve the original link if an image URL is unreachable, and avoid adding claims not present in the source outline.",
     `Deck title: ${deckTitle}`,
   ].join("\n")
 }
@@ -168,6 +186,9 @@ export function buildStoryMarkdown(input: StoryMarkdownInput) {
       }
       lines.push("### Main Message")
       lines.push(content.markdown || content.plain || "_Title-only outline item. Expand from the source block title._", "")
+      if (content.images.length) {
+        lines.push("### Images", ...imagesToMarkdown(content.images), "")
+      }
       if (content.formulas.length) {
         lines.push("### Key Formulas", ...content.formulas.map((latex) => `$$\n${latex}\n$$`), "")
       }
@@ -178,6 +199,9 @@ export function buildStoryMarkdown(input: StoryMarkdownInput) {
       }
       lines.push("### Main Message")
       lines.push(content.markdown || "_Group has no child block content._", "")
+      if (content.images.length) {
+        lines.push("### Images", ...imagesToMarkdown(content.images), "")
+      }
       if (content.formulas.length) {
         lines.push("### Key Formulas", ...content.formulas.map((latex) => `$$\n${latex}\n$$`), "")
       }

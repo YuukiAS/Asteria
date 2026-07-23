@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.0 - Image Link Preview And Story Export
+
+- Added explicit Image Link rich-text links that keep content stored as URL-backed link text with Asteria metadata instead of embedding image files or base64 data.
+- Replaced the Image Link browser prompt with an Asteria-styled dialog that accepts the image URL and shows a live preview before insertion.
+- Added Image Link previews: normal block previews show a hover/focus thumbnail, while Zoom mode renders image previews directly below the rich text.
+- Exported Story Markdown image links as linked Markdown image references in a per-slide `### Images` section without downloading or packaging remote assets.
+- Added `npm run test:image-links` to validate image-link metadata, Markdown body behavior, block/group Story export, and density handling.
+
 ## 0.8.10 - Block Equation Cursor Insert
 
 - Fixed toolbar display-equation insertion so block equations use the current editor cursor or most recent collapsed selection instead of jumping to the bottom of the block.

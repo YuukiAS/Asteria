@@ -1,6 +1,5 @@
 import Color from "@tiptap/extension-color"
 import Highlight from "@tiptap/extension-highlight"
-import Link from "@tiptap/extension-link"
 import Placeholder from "@tiptap/extension-placeholder"
 import TextAlign from "@tiptap/extension-text-align"
 import TextStyle from "@tiptap/extension-text-style"
@@ -8,6 +7,7 @@ import Underline from "@tiptap/extension-underline"
 import StarterKit from "@tiptap/starter-kit"
 import { DividerRule } from "./dividerExtension"
 import { FontSizeExtension } from "./FontSizeExtension"
+import { ImageLink } from "./imageLinkExtension"
 import { ListContinuationExtension } from "./listContinuationExtension"
 import { BlockMath, InlineMath } from "./mathExtensions"
 import { NotionQuoteExtension } from "./notionQuoteExtension"
@@ -24,7 +24,7 @@ export function createEditorExtensions(placeholder = "Write a model note, prior,
     Color,
     Highlight.configure({ multicolor: true }),
     Underline,
-    Link.configure({ openOnClick: false, autolink: true, linkOnPaste: true }),
+    ImageLink.configure({ openOnClick: false, autolink: true, linkOnPaste: true }),
     TextAlign.configure({ types: ["heading", "paragraph"] }),
     Placeholder.configure({ placeholder }),
     FontSizeExtension,

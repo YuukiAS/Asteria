@@ -22,6 +22,7 @@ import { titleToHtml } from "../lib/titleMath"
 import { useMapStore } from "../store/useMapStore"
 import type { InteractionMode } from "../types/interaction"
 import type { BlockNode as BlockNodeType, GroupNode as GroupNodeType, MapEdge, MapNode, ModelVersion } from "../types/map"
+import { RichTextPreview } from "./RichTextPreview"
 
 type CanvasProps = {
   onFitViewReady: (fitView: () => void) => void
@@ -108,7 +109,9 @@ function ZoomBlockOverlay({
             {versionState.isFixed ? versionState.requestedShortLabel || versionState.requestedLabel : versionState.modeLabel}
           </span>
         </header>
-        <div className="zoom-block-body rich-preview" dangerouslySetInnerHTML={{ __html: contentHtml }} />
+        <div className="zoom-block-body">
+          <RichTextPreview html={contentHtml} color={node.data.textColor} accentColor={node.data.textColor} imagePreviewMode="inline" />
+        </div>
       </article>
     </div>
   )
