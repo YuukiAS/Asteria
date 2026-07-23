@@ -8,7 +8,6 @@ import {
   preprocessPastedMath,
   serializeMathClipboardText,
   shouldUsePlainTextMathPaste,
-  writeRichClipboardData,
 } from "../editor/mathPasteHandler"
 import { applyRecentRichColor } from "../editor/richColorMemory"
 import { insertBlockEquationEvent } from "../lib/inlineEditEvents"
@@ -61,16 +60,6 @@ export function RichTextEditor({
       attributes: editorAttributes,
       clipboardTextSerializer: serializeMathClipboardText,
       transformPastedHTML: normalizeAsteriaMathClipboardHtml,
-      handleDOMEvents: {
-        copy(view, event) {
-          return writeRichClipboardData(view, event)
-        },
-        cut(view, event) {
-          if (!writeRichClipboardData(view, event)) return false
-          view.dispatch(view.state.tr.deleteSelection().scrollIntoView())
-          return true
-        },
-      },
       handlePaste(view, event) {
         if (!shouldUsePlainTextMathPaste(event.clipboardData)) return false
         const text = event.clipboardData?.getData("text/plain")

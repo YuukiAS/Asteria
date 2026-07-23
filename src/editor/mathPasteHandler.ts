@@ -1,7 +1,5 @@
 import type { JSONContent } from "@tiptap/react"
 import type { Node as ProseMirrorNode, Slice } from "prosemirror-model"
-import type { EditorView } from "@tiptap/pm/view"
-import { contentJsonToHtml } from "./editorUtils"
 
 type TextNode = { type: "text"; text: string }
 type InlineMathNode = { type: "inlineMath"; attrs: { latex: string } }
@@ -71,34 +69,17 @@ export function shouldUsePlainTextMathPaste(clipboardData?: DataTransfer | null)
   return Boolean(text?.includes("$"))
 }
 
-export function serializeRichClipboardHtml(slice: Slice) {
-  const content = slice.content.toJSON()
-  if (!Array.isArray(content) || content.length === 0) return ""
-  return contentJsonToHtml({ type: "doc", content })
-}
-
 export function normalizeAsteriaMathClipboardHtml(html: string) {
   if (!html.includes("data-math-inline") && !html.includes("data-math-block")) return html
-  if (typeof window === "undefined" || typeof window.DOMParser === "undefined") return html
+  if (typeof window === "undefined" || typeof window.DOMParser === "undefined") {
+    return html.replace(/(<(?:span|div)\b[^>]*(?:data-math-inline|data-math-block)[^>]*>)[\s\S]*?(<\/(?:span|div)>)/gi, "$1$2")
+  }
 
   const document = new window.DOMParser().parseFromString(html, "text/html")
   document.querySelectorAll("[data-math-inline], [data-math-block]").forEach((element) => {
     element.textContent = ""
   })
   return document.body.innerHTML
-}
-
-export function writeRichClipboardData(view: EditorView, event: ClipboardEvent) {
-  if (view.state.selection.empty || !event.clipboardData) return false
-  const slice = view.state.selection.content()
-  const html = serializeRichClipboardHtml(slice)
-  const text = serializeMathClipboardText(slice)
-  if (!html && !text) return false
-
-  event.clipboardData.setData("text/html", html)
-  event.clipboardData.setData("text/plain", text)
-  event.preventDefault()
-  return true
 }
 
 export function normalizeInlineDollarMath(content: JSONContent): { content: JSONContent; changed: boolean } {

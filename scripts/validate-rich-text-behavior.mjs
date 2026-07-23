@@ -32,7 +32,7 @@ const vite = await createServer({
 })
 
 try {
-  const [{ shouldUsePlainTextMathPaste, preprocessPastedMath, serializeMathClipboardText, serializeRichClipboardHtml }, { contentJsonToHtml }, { createEditorExtensions }] =
+  const [{ shouldUsePlainTextMathPaste, preprocessPastedMath, serializeMathClipboardText, normalizeAsteriaMathClipboardHtml }, { contentJsonToHtml }, { createEditorExtensions }] =
     await Promise.all([
     vite.ssrLoadModule("/src/editor/mathPasteHandler.ts"),
     vite.ssrLoadModule("/src/editor/editorUtils.ts"),
@@ -134,15 +134,13 @@ try {
   const mixedDoc = schema.nodeFromJSON(mixedDocJson)
   const mixedSlice = new Slice(mixedDoc.content, 0, 0)
   const mixedText = serializeMathClipboardText(mixedSlice)
-  const mixedClipboardHtml = serializeRichClipboardHtml(mixedSlice)
   assert(mixedText.includes("plain blue + $\\alpha$"), "Expected copied plain text to keep mixed text and inline formula.")
   assert(mixedText.includes("next"), "Expected copied plain text to keep hard-break text.")
   assert(mixedText.includes("$$\n\\beta^2\n$$"), "Expected copied plain text to keep block formula text.")
-  assert(mixedClipboardHtml.includes("katex"), "Expected copied HTML to include visible KaTeX formula markup.")
-  assert(mixedClipboardHtml.includes('data-math-inline=""'), "Expected copied HTML to keep inline math identity.")
-  assert(mixedClipboardHtml.includes('data-latex="\\alpha"'), "Expected copied HTML to keep inline math LaTeX for paste-back.")
-  assert(mixedClipboardHtml.includes('data-math-block=""'), "Expected copied HTML to keep block math identity.")
-  assert(mixedClipboardHtml.includes('data-latex="\\beta^2"'), "Expected copied HTML to keep block math LaTeX for paste-back.")
+  const normalizedPasteHtml = normalizeAsteriaMathClipboardHtml('<p>x <span data-math-inline="" data-latex="\\alpha"><span class="katex">visible</span></span></p>')
+  assert(normalizedPasteHtml.includes('data-math-inline=""'), "Expected paste normalization to keep inline math identity.")
+  assert(normalizedPasteHtml.includes('data-latex="\\alpha"'), "Expected paste normalization to keep inline math LaTeX.")
+  assert(!normalizedPasteHtml.includes("visible"), "Expected paste normalization to remove rendered KaTeX children before ProseMirror parses HTML.")
 
   const inlineSpec = schema.nodes.inlineMath.spec.toDOM?.(
     schema.nodes.inlineMath.create({ latex: "\\alpha", textColor: "#dc2626", highlightColor: "#fef3c7" }),
