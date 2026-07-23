@@ -4,6 +4,7 @@
 
 - Preserved styled rich-text copy, cut, and paste by letting HTML clipboard data use TipTap's rich-text parser and limiting Asteria's math paste preprocessing to plain-text clipboard data.
 - Kept mixed rich-text copies stable when styled text and styled inline or display equations are selected together, including `data-latex`, text color, highlight color, and plain-text formula fallbacks.
+- Kept pasted Asteria equations as math nodes instead of raw LaTeX text by making clipboard HTML math wrappers leaf nodes while retaining `data-latex`.
 - Added Notion-style quote input: type `"` then Space at the start of a line to create a quote, use `Shift+Enter` for another line inside the quote, and use Enter to continue below it.
 - Added `npm run test:rich-text` to validate rich clipboard behavior and quote document structures, including quotes nested inside list items.
 

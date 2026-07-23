@@ -81,7 +81,6 @@ export const InlineMath = Node.create({
           highlightColor: HTMLAttributes["data-highlight-color"],
         }),
       }),
-      HTMLAttributes["data-latex"] || "",
     ]
   },
 
@@ -161,7 +160,6 @@ export const BlockMath = Node.create({
           highlightColor: HTMLAttributes["data-highlight-color"],
         }),
       }),
-      HTMLAttributes["data-latex"] || "",
     ]
   },
 

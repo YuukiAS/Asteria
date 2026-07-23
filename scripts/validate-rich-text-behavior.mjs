@@ -145,7 +145,7 @@ try {
   assert(inlineAttrs["data-text-color"] === "#dc2626", "Expected clipboard HTML spec to preserve inline math text color.")
   assert(inlineAttrs["data-highlight-color"] === "#fef3c7", "Expected clipboard HTML spec to preserve inline math highlight color.")
   assert(inlineAttrs.style.includes("color: #dc2626"), "Expected clipboard HTML spec to render inline math text color style.")
-  assert(inlineSpec?.[2] === "\\alpha", "Expected clipboard HTML spec to include inline formula text fallback.")
+  assert(inlineSpec?.length === 2, "Expected clipboard HTML spec to keep inline math as a leaf node so pasted HTML does not create raw LaTeX text.")
 
   const blockSpec = schema.nodes.blockMath.spec.toDOM?.(schema.nodes.blockMath.create({ latex: "\\beta^2", textColor: "#059669", highlightColor: "#ecfdf5" }))
   const blockAttrs = domSpecAttrs(blockSpec)
@@ -153,7 +153,7 @@ try {
   assert(blockAttrs["data-latex"] === "\\beta^2", "Expected clipboard HTML spec to preserve block math LaTeX.")
   assert(blockAttrs["data-text-color"] === "#059669", "Expected clipboard HTML spec to preserve block math text color.")
   assert(blockAttrs["data-highlight-color"] === "#ecfdf5", "Expected clipboard HTML spec to preserve block math highlight color.")
-  assert(blockSpec?.[2] === "\\beta^2", "Expected clipboard HTML spec to include block formula text fallback.")
+  assert(blockSpec?.length === 2, "Expected clipboard HTML spec to keep block math as a leaf node so pasted HTML does not create raw LaTeX text.")
 
   schema.nodeFromJSON(quoteDoc)
   schema.nodeFromJSON({
