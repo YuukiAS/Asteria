@@ -2,7 +2,14 @@ import { EditorContent, type JSONContent, useEditor } from "@tiptap/react"
 import { Fragment, Slice } from "prosemirror-model"
 import { useEffect, useRef, useState } from "react"
 import { createEditorExtensions } from "../editor/createEditorExtensions"
-import { normalizeInlineDollarMath, preprocessPastedMath, serializeMathClipboardText, shouldUsePlainTextMathPaste } from "../editor/mathPasteHandler"
+import {
+  normalizeAsteriaMathClipboardHtml,
+  normalizeInlineDollarMath,
+  preprocessPastedMath,
+  serializeMathClipboardText,
+  shouldUsePlainTextMathPaste,
+  writeRichClipboardData,
+} from "../editor/mathPasteHandler"
 import { applyRecentRichColor } from "../editor/richColorMemory"
 import { insertBlockEquationEvent } from "../lib/inlineEditEvents"
 import { EquationDialog } from "./EquationDialog"
@@ -53,6 +60,17 @@ export function RichTextEditor({
     editorProps: {
       attributes: editorAttributes,
       clipboardTextSerializer: serializeMathClipboardText,
+      transformPastedHTML: normalizeAsteriaMathClipboardHtml,
+      handleDOMEvents: {
+        copy(view, event) {
+          return writeRichClipboardData(view, event)
+        },
+        cut(view, event) {
+          if (!writeRichClipboardData(view, event)) return false
+          view.dispatch(view.state.tr.deleteSelection().scrollIntoView())
+          return true
+        },
+      },
       handlePaste(view, event) {
         if (!shouldUsePlainTextMathPaste(event.clipboardData)) return false
         const text = event.clipboardData?.getData("text/plain")
