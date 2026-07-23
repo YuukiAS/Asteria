@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.9 - Rich Clipboard And Quote Input
+
+- Preserved styled rich-text copy, cut, and paste by letting HTML clipboard data use TipTap's rich-text parser and limiting Asteria's math paste preprocessing to plain-text clipboard data.
+- Added Notion-style quote input: type `"` then Space at the start of a line to create a quote, use `Shift+Enter` for another line inside the quote, and use Enter to continue below it.
+- Added `npm run test:rich-text` to validate rich clipboard behavior and quote document structures, including quotes nested inside list items.
+
 ## 0.8.8 - Fixed-Version Edge Anchors
 
 - Registered block connection handles as both source and target anchors so fixed-version edges attach to the visible block boundary instead of a fallback blank point.

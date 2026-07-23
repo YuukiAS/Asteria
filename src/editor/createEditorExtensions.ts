@@ -10,6 +10,7 @@ import { DividerRule } from "./dividerExtension"
 import { FontSizeExtension } from "./FontSizeExtension"
 import { ListContinuationExtension } from "./listContinuationExtension"
 import { BlockMath, InlineMath } from "./mathExtensions"
+import { NotionQuoteExtension } from "./notionQuoteExtension"
 import { TaskItem, TaskList } from "./taskListExtensions"
 
 export function createEditorExtensions(placeholder = "Write a model note, prior, theorem, or paper observation...") {
@@ -29,6 +30,7 @@ export function createEditorExtensions(placeholder = "Write a model note, prior,
     FontSizeExtension,
     InlineMath,
     BlockMath,
+    NotionQuoteExtension,
     ListContinuationExtension,
     TaskList,
     TaskItem,

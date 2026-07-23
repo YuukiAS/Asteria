@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `0.8.8`.
+Current app version: `0.8.9`.
 
 ## Run
 
@@ -27,6 +27,7 @@ This starts Asteria with same-origin `/api/asteria/*` persistence on `http://127
 npm run build
 npm run test:search
 npm run test:edges
+npm run test:rich-text
 ```
 
 ## Data
@@ -132,9 +133,12 @@ Blocks use TipTap rich text with:
 - Inline math and display equations rendered with KaTeX
 - Lightweight LaTeX search for inline and display equations, including raw `inlineMath.attrs.latex` and `blockMath.attrs.latex`
 - Notion-style divider insertion by typing `---` on an empty line
+- Notion-style quote insertion by typing `"` then Space at the start of a line
 - A floating selection menu for common inline formatting
 
 Equation editing uses a canvas-side dialog with live preview. Invalid or incomplete LaTeX displays an invalid-equation state until the expression parses. Inline equation dialogs submit with Enter and do not allow newline entry; block equation dialogs allow multiline LaTeX and submit with `Ctrl+Enter` / `Cmd+Enter`.
+
+Inside a quote, `Shift+Enter` adds another line to the same quote and Enter exits to a normal paragraph below it. Rich-text copy, cut, and paste preserve supported inline styles such as text color, highlight color, and font size when the clipboard includes HTML content. Plain-text math paste still converts `$...$` and `$$...$$` into equation nodes.
 
 ## Inspector
 
@@ -158,7 +162,7 @@ Each variant row has actions for copying the currently resolved content into tha
 
 ## Clipboard And Import
 
-Asteria supports internal block copy/paste, style copy/paste, block duplication, edge style editing, and JSON import/export. Imported legacy maps are normalized so older default/common content remains recoverable as base content.
+Asteria supports internal block copy/paste, rich-text copy/cut/paste, style copy/paste, block duplication, edge style editing, and JSON import/export. Imported legacy maps are normalized so older default/common content remains recoverable as base content.
 
 ## Project Files
 

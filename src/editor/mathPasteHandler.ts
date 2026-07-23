@@ -62,6 +62,13 @@ export function preprocessPastedMath(text: string): JSONContent[] | null {
   return nodes.length ? nodes : null
 }
 
+export function shouldUsePlainTextMathPaste(clipboardData?: DataTransfer | null) {
+  const html = clipboardData?.getData("text/html")?.trim()
+  if (html) return false
+  const text = clipboardData?.getData("text/plain")
+  return Boolean(text?.includes("$"))
+}
+
 export function normalizeInlineDollarMath(content: JSONContent): { content: JSONContent; changed: boolean } {
   let changed = false
 

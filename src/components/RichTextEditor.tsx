@@ -2,7 +2,7 @@ import { EditorContent, type JSONContent, useEditor } from "@tiptap/react"
 import { Fragment, Slice } from "prosemirror-model"
 import { useEffect, useRef, useState } from "react"
 import { createEditorExtensions } from "../editor/createEditorExtensions"
-import { normalizeInlineDollarMath, preprocessPastedMath, serializeMathClipboardText } from "../editor/mathPasteHandler"
+import { normalizeInlineDollarMath, preprocessPastedMath, serializeMathClipboardText, shouldUsePlainTextMathPaste } from "../editor/mathPasteHandler"
 import { applyRecentRichColor } from "../editor/richColorMemory"
 import { insertBlockEquationEvent } from "../lib/inlineEditEvents"
 import { EquationDialog } from "./EquationDialog"
@@ -54,6 +54,7 @@ export function RichTextEditor({
       attributes: editorAttributes,
       clipboardTextSerializer: serializeMathClipboardText,
       handlePaste(view, event) {
+        if (!shouldUsePlainTextMathPaste(event.clipboardData)) return false
         const text = event.clipboardData?.getData("text/plain")
         if (!text) return false
         const nodes = preprocessPastedMath(text)

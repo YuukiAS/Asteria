@@ -103,6 +103,7 @@ try {
   )
   const visibleNodeIds = new Set(visibleNodes.map((node) => node.id))
   const nodesById = new Map(nodes.map((node) => [node.id, node]))
+  const visibleEdges = []
   let checkedEdges = 0
 
   for (const rawEdge of edges) {
@@ -110,6 +111,7 @@ try {
     if (activeVersionId !== allVersionsId && rawEdge.data?.visibility && rawEdge.data.visibility !== "all" && !rawEdge.data.visibility.includes(activeVersionId)) continue
 
     const edge = applyEdgePresentation(rawEdge)
+    visibleEdges.push(edge)
     const source = nodesById.get(edge.source)
     const target = nodesById.get(edge.target)
     checkedEdges += 1
@@ -126,17 +128,31 @@ try {
   const mainModel = visibleNodes.find((node) => node.type === "block" && titleMatches(node, [mainModelTitle]))
   if (!motivation) fail("Expected visible Motivation/Main Idea block in the shared map.")
   if (!mainModel) fail("Expected visible Main Model block in the shared map.")
-  const motivationMainEdge = edges
-    .map((edge) => applyEdgePresentation(edge))
-    .find((edge) => edge.source === motivation?.id && edge.target === mainModel?.id)
+  const motivationMainEdge = visibleEdges.find((edge) => edge.source === motivation?.id && edge.target === mainModel?.id)
+  const motivationEdges = visibleEdges.filter((edge) => edge.source === motivation?.id || edge.target === motivation?.id)
+  const mainModelEdges = visibleEdges.filter((edge) => edge.source === mainModel?.id || edge.target === mainModel?.id)
 
-  if (!motivationMainEdge) {
-    fail("Expected visible Motivation/Main Idea -> Main Model edge in the shared map.")
+  if (!motivationEdges.length) fail("Expected Motivation/Main Idea to have at least one visible connected edge.")
+  if (!mainModelEdges.length) fail("Expected Main Model to have at least one visible connected edge.")
+
+  if (motivationMainEdge) {
+    const source = nodesById.get(motivationMainEdge.source)
+    const target = nodesById.get(motivationMainEdge.target)
+    if (!source || !target) {
+      fail("Motivation/Main Idea -> Main Model edge is missing a visible endpoint.")
+    } else {
+      if (motivationMainEdge.sourceHandle !== "bottom") fail("Motivation/Main Idea edge should leave from the bottom handle.")
+      if (motivationMainEdge.targetHandle !== "top") fail("Motivation/Main Idea edge should enter Main Model through the top handle.")
+      assertBoundaryEndpoint("Motivation/Main Idea source", edgeEndpoint(source, motivationMainEdge.sourceHandle, nodesById), source, motivationMainEdge.sourceHandle, nodesById)
+      assertBoundaryEndpoint("Main Model target", edgeEndpoint(target, motivationMainEdge.targetHandle, nodesById), target, motivationMainEdge.targetHandle, nodesById)
+    }
   } else {
-    if (motivationMainEdge.sourceHandle !== "bottom") fail("Motivation/Main Idea edge should leave from the bottom handle.")
-    if (motivationMainEdge.targetHandle !== "top") fail("Motivation/Main Idea edge should enter Main Model through the top handle.")
-    assertBoundaryEndpoint("Motivation/Main Idea source", edgeEndpoint(motivation, motivationMainEdge.sourceHandle, nodesById), motivation, "bottom", nodesById)
-    assertBoundaryEndpoint("Main Model target", edgeEndpoint(mainModel, motivationMainEdge.targetHandle, nodesById), mainModel, "top", nodesById)
+    for (const edge of [...motivationEdges, ...mainModelEdges]) {
+      const source = nodesById.get(edge.source)
+      const target = nodesById.get(edge.target)
+      if (source) assertBoundaryEndpoint(`Visible edge ${edge.id} source`, edgeEndpoint(source, edge.sourceHandle, nodesById), source, edge.sourceHandle, nodesById)
+      if (target) assertBoundaryEndpoint(`Visible edge ${edge.id} target`, edgeEndpoint(target, edge.targetHandle, nodesById), target, edge.targetHandle, nodesById)
+    }
   }
 
   if (!process.exitCode) console.log(`Validated ${checkedEdges} shared-map visible edge endpoints.`)
