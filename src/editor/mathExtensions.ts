@@ -24,6 +24,21 @@ function applyBlockMathStyle(dom: HTMLElement, attrs: Record<string, string | nu
   dom.style.backgroundColor = attrs.highlightColor || ""
 }
 
+function mathStyleAttributes(attrs: Record<string, string | null | undefined>) {
+  const textColor = attrs.textColor || undefined
+  const highlightColor = attrs.highlightColor || undefined
+  return {
+    ...(textColor ? { "data-text-color": textColor } : {}),
+    ...(highlightColor ? { "data-highlight-color": highlightColor } : {}),
+    style: [
+      textColor ? `color: ${textColor}` : "",
+      highlightColor ? `background-color: ${highlightColor}` : "",
+    ]
+      .filter(Boolean)
+      .join("; "),
+  }
+}
+
 export const InlineMath = Node.create({
   name: "inlineMath",
   group: "inline",
@@ -38,8 +53,16 @@ export const InlineMath = Node.create({
         parseHTML: (element) => element.getAttribute("data-latex") || element.textContent?.replace(/^\${1,2}|\${1,2}$/g, "") || "",
         renderHTML: (attributes) => ({ "data-latex": attributes.latex }),
       },
-      textColor: { default: null },
-      highlightColor: { default: null },
+      textColor: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-text-color") || element.style.color || null,
+        renderHTML: (attributes) => (attributes.textColor ? { "data-text-color": attributes.textColor } : {}),
+      },
+      highlightColor: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-highlight-color") || element.style.backgroundColor || null,
+        renderHTML: (attributes) => (attributes.highlightColor ? { "data-highlight-color": attributes.highlightColor } : {}),
+      },
     }
   },
 
@@ -53,14 +76,12 @@ export const InlineMath = Node.create({
       mergeAttributes(HTMLAttributes, {
         "data-math-inline": "",
         class: "math-inline",
-        style: [
-          HTMLAttributes.textColor ? `color: ${HTMLAttributes.textColor}` : "",
-          HTMLAttributes.highlightColor ? `background-color: ${HTMLAttributes.highlightColor}` : "",
-        ]
-          .filter(Boolean)
-          .join("; "),
+        ...mathStyleAttributes({
+          textColor: HTMLAttributes["data-text-color"],
+          highlightColor: HTMLAttributes["data-highlight-color"],
+        }),
       }),
-      HTMLAttributes.latex || "",
+      HTMLAttributes["data-latex"] || "",
     ]
   },
 
@@ -112,8 +133,16 @@ export const BlockMath = Node.create({
         parseHTML: (element) => element.getAttribute("data-latex") || element.textContent?.replace(/^\${2,3}|\${2,3}$/g, "") || "",
         renderHTML: (attributes) => ({ "data-latex": attributes.latex }),
       },
-      textColor: { default: null },
-      highlightColor: { default: null },
+      textColor: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-text-color") || element.style.color || null,
+        renderHTML: (attributes) => (attributes.textColor ? { "data-text-color": attributes.textColor } : {}),
+      },
+      highlightColor: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-highlight-color") || element.style.backgroundColor || null,
+        renderHTML: (attributes) => (attributes.highlightColor ? { "data-highlight-color": attributes.highlightColor } : {}),
+      },
     }
   },
 
@@ -127,14 +156,12 @@ export const BlockMath = Node.create({
       mergeAttributes(HTMLAttributes, {
         "data-math-block": "",
         class: "math-block",
-        style: [
-          HTMLAttributes.textColor ? `color: ${HTMLAttributes.textColor}` : "",
-          HTMLAttributes.highlightColor ? `background-color: ${HTMLAttributes.highlightColor}` : "",
-        ]
-          .filter(Boolean)
-          .join("; "),
+        ...mathStyleAttributes({
+          textColor: HTMLAttributes["data-text-color"],
+          highlightColor: HTMLAttributes["data-highlight-color"],
+        }),
       }),
-      HTMLAttributes.latex || "",
+      HTMLAttributes["data-latex"] || "",
     ]
   },
 

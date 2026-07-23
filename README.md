@@ -138,7 +138,7 @@ Blocks use TipTap rich text with:
 
 Equation editing uses a canvas-side dialog with live preview. Invalid or incomplete LaTeX displays an invalid-equation state until the expression parses. Inline equation dialogs submit with Enter and do not allow newline entry; block equation dialogs allow multiline LaTeX and submit with `Ctrl+Enter` / `Cmd+Enter`.
 
-Inside a quote, `Shift+Enter` adds another line to the same quote and Enter exits to a normal paragraph below it. Rich-text copy, cut, and paste preserve supported inline styles such as text color, highlight color, and font size when the clipboard includes HTML content. Plain-text math paste still converts `$...$` and `$$...$$` into equation nodes.
+Inside a quote, `Shift+Enter` adds another line to the same quote and Enter exits to a normal paragraph below it. Rich-text copy, cut, and paste preserve supported inline styles such as text color, highlight color, and font size when the clipboard includes HTML content. Mixed selections of styled text and equations keep the equation LaTeX plus supported equation colors. Plain-text math paste still converts `$...$` and `$$...$$` into equation nodes.
 
 ## Inspector
 

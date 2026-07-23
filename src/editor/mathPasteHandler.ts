@@ -118,6 +118,7 @@ function serializeNodeText(node: ProseMirrorNode): string {
   if (node.type.name === "text") return node.text || ""
   if (node.type.name === "inlineMath") return mathText(node.attrs.latex, false)
   if (node.type.name === "blockMath") return mathText(node.attrs.latex, true)
+  if (node.type.name === "hardBreak") return "\n"
 
   const children: string[] = []
   node.forEach((child) => children.push(serializeNodeText(child)))

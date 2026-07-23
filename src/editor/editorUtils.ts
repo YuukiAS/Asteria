@@ -17,7 +17,7 @@ function renderMath(latex = "", displayMode: boolean) {
 
 function renderAttrs(attrs?: Record<string, unknown>) {
   if (!attrs) return ""
-  const entries = Object.entries(attrs).filter(([, value]) => value !== undefined && value !== null && value !== "")
+  const entries = Object.entries(attrs).filter(([, value]) => value !== undefined && value !== null)
   if (!entries.length) return ""
   return ` ${entries.map(([key, value]) => `${key}="${escapeHtml(String(value))}"`).join(" ")}`
 }
@@ -75,6 +75,14 @@ function blockMathStyle(node: JSONContent) {
   return styles.length ? styles.join("; ") : undefined
 }
 
+function mathDataAttrs(node: JSONContent) {
+  return {
+    "data-latex": node.attrs?.latex,
+    "data-text-color": node.attrs?.textColor,
+    "data-highlight-color": node.attrs?.highlightColor,
+  }
+}
+
 function renderNode(node: JSONContent): string {
   switch (node.type) {
     case "doc":
@@ -111,11 +119,11 @@ function renderNode(node: JSONContent): string {
       return "<hr />"
     case "inlineMath":
       return renderMarks(
-        `<span${renderAttrs({ "data-math-inline": "", class: "math-inline", style: blockMathStyle(node) })}>${renderMath(String(node.attrs?.latex || ""), false)}</span>`,
+        `<span${renderAttrs({ "data-math-inline": "", class: "math-inline", ...mathDataAttrs(node), style: blockMathStyle(node) })}>${renderMath(String(node.attrs?.latex || ""), false)}</span>`,
         node.marks,
       )
     case "blockMath":
-      return `<div${renderAttrs({ "data-math-block": "", class: "math-block", style: blockMathStyle(node) })}>${renderMath(String(node.attrs?.latex || ""), true)}</div>`
+      return `<div${renderAttrs({ "data-math-block": "", class: "math-block", ...mathDataAttrs(node), style: blockMathStyle(node) })}>${renderMath(String(node.attrs?.latex || ""), true)}</div>`
     default:
       return renderChildren(node)
   }
