@@ -1,4 +1,5 @@
 import { mergeAttributes, Node } from "@tiptap/core"
+import type { DOMOutputSpec } from "@tiptap/pm/model"
 import katex from "katex"
 import { Plugin } from "prosemirror-state"
 
@@ -39,6 +40,20 @@ function mathStyleAttributes(attrs: Record<string, string | null | undefined>) {
   }
 }
 
+function applyAttributes(dom: HTMLElement, attrs: Record<string, string | undefined>) {
+  Object.entries(attrs).forEach(([key, value]) => {
+    if (value !== undefined) dom.setAttribute(key, value)
+  })
+}
+
+function mathClipboardDom(tagName: "span" | "div", attrs: Record<string, string | undefined>, latex: string, displayMode: boolean): DOMOutputSpec {
+  if (typeof document === "undefined") return [tagName, attrs, latex]
+  const dom = document.createElement(tagName)
+  applyAttributes(dom, attrs)
+  dom.innerHTML = renderMath(latex, displayMode)
+  return dom
+}
+
 export const InlineMath = Node.create({
   name: "inlineMath",
   group: "inline",
@@ -71,17 +86,16 @@ export const InlineMath = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return [
-      "span",
-      mergeAttributes(HTMLAttributes, {
+    const latex = String(HTMLAttributes["data-latex"] || "")
+    const attrs = mergeAttributes(HTMLAttributes, {
         "data-math-inline": "",
         class: "math-inline",
         ...mathStyleAttributes({
           textColor: HTMLAttributes["data-text-color"],
           highlightColor: HTMLAttributes["data-highlight-color"],
         }),
-      }),
-    ]
+      })
+    return mathClipboardDom("span", attrs, latex, false)
   },
 
   addNodeView() {
@@ -150,17 +164,16 @@ export const BlockMath = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return [
-      "div",
-      mergeAttributes(HTMLAttributes, {
+    const latex = String(HTMLAttributes["data-latex"] || "")
+    const attrs = mergeAttributes(HTMLAttributes, {
         "data-math-block": "",
         class: "math-block",
         ...mathStyleAttributes({
           textColor: HTMLAttributes["data-text-color"],
           highlightColor: HTMLAttributes["data-highlight-color"],
         }),
-      }),
-    ]
+      })
+    return mathClipboardDom("div", attrs, latex, true)
   },
 
   addNodeView() {
