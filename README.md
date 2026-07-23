@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `0.9.0`.
+Current app version: `0.9.1`.
 
 ## Run
 
@@ -54,8 +54,8 @@ Shared saves use a revision check only when Save publishes to the shared version
 - Double-click the canvas to create a new block at that position.
 - Double-click a block to enter inline editing.
 - Click an empty canvas background while editing to return to Move mode.
-- Use the rich-text `Link` control for ordinary web, paper, or source hyperlinks. Use the `Image link` control for image URLs: it opens a dialog with the link field on top and a live preview below, then stores the image as link text with preview metadata. Normal block previews show the image on hover/focus, while Zoom mode shows the image directly without embedding the image file in the map.
-- Inside nested lists, use `Enter` on an empty nested item to continue writing in the parent list item. Use `Shift+Tab` on an empty list item, or on the final top-level list item after typing text, to exit into an unindented paragraph without moving or renumbering the previous list content; nested non-empty list items keep the editor's normal indent and outdent behavior.
+- Use the rich-text `Link` control for ordinary web, paper, or source hyperlinks. Use the `Image link` control for image URLs: it opens a dialog with the link field on top and a live preview below, accepts Enter to insert, and uses the editor's current selection so selected text is marked in place. With no selected text it stores the image as visible `Image: ...` link text with preview metadata. Editor and normal block previews show the image on hover/focus, while Zoom mode shows the image directly without embedding the image file in the map.
+- Inside nested lists, use `Enter` on an empty nested item to continue writing in the parent list item. Use `Shift+Tab` on an empty nested item, or on a non-empty nested bullet inside a numbered parent item, to move the current line into the parent list item without turning it into a new numbered item. For top-level numbered lists, `Shift+Tab` exits only from a truly empty list item, and unhandled list `Shift+Tab` events are swallowed so non-empty numbered items keep their markers.
 - Drag undo is supported with `Ctrl+Z` / `Cmd+Z` when focus is not inside a text editor.
 - Open global search from the toolbar or with `Ctrl+F` / `Cmd+F` when focus is not inside a text editor. Search covers the current rendered model version, including block titles, rich text, inline equations, block equations, and Symbol entries.
 
@@ -138,7 +138,11 @@ Blocks use TipTap rich text with:
 - Notion-style quote insertion by typing `"` then Space at the start of a line
 - A floating selection menu for common inline formatting
 
+Display equations are centered in edit, view, and Zoom modes.
+
 Equation editing uses a canvas-side dialog with live preview. Invalid or incomplete LaTeX displays an invalid-equation state until the expression parses. Inline equation dialogs submit with Enter and do not allow newline entry; block equation dialogs allow multiline LaTeX, submit with `Ctrl+Enter` / `Cmd+Enter`, and insert display equations at the current editor cursor when launched from the toolbar.
+
+Empty heading rows created before typing heading text remain visible in view, edit, and Zoom modes, so rich-text layout does not collapse differently when switching modes.
 
 Inside a quote, `Shift+Enter` adds another line to the same quote and Enter exits to a normal paragraph below it. Rich-text copy, cut, and paste preserve supported inline styles such as text color, highlight color, and font size when the clipboard includes HTML content. Mixed selections of styled text and equations keep the equation LaTeX plus supported equation colors. Plain-text math paste still converts `$...$` and `$$...$$` into equation nodes.
 

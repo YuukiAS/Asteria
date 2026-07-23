@@ -1,5 +1,5 @@
 import { Extension } from "@tiptap/core"
-import type { Node as ProseMirrorNode, NodeType } from "prosemirror-model"
+import { Fragment, type Node as ProseMirrorNode, type NodeType } from "prosemirror-model"
 import { TextSelection } from "prosemirror-state"
 import type { EditorState, Transaction } from "prosemirror-state"
 
@@ -61,7 +61,7 @@ function continueParentListItem(state: EditorState, dispatch?: (tr: Transaction)
   return true
 }
 
-function exitEmptyListItemToParagraph(state: EditorState, dispatch?: (tr: Transaction) => void) {
+export function exitEmptyListItemToParagraph(state: EditorState, dispatch?: (tr: Transaction) => void) {
   const { selection, schema } = state
   if (!selection.empty) return false
   const paragraphType = schema.nodes.paragraph
@@ -87,13 +87,9 @@ function exitEmptyListItemToParagraph(state: EditorState, dispatch?: (tr: Transa
   if (!currentItem) return false
 
   const itemIsEmpty = isEmptyListItem(currentItem)
-  const itemIndex = $from.index(parentListDepth)
-  const isTopLevelList = parentListDepth === 1
-  const isLastListItem = itemIndex === parentList.childCount - 1
-  const shouldExitNonEmptyTopLevelItem = !itemIsEmpty && isTopLevelList && isLastListItem
-  if (!itemIsEmpty && !shouldExitNonEmptyTopLevelItem) return false
+  if (!itemIsEmpty) return false
 
-  const paragraph = itemIsEmpty ? paragraphType.create() : paragraphFromListItem(currentItem, paragraphType)
+  const paragraph = paragraphType.create()
   if (!paragraph) return false
 
   if (!dispatch) return true
@@ -117,6 +113,73 @@ function exitEmptyListItemToParagraph(state: EditorState, dispatch?: (tr: Transa
   return true
 }
 
+export function selectionIsInsideListItem(state: EditorState) {
+  const { selection } = state
+  const $from = selection.$from
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    if (listItemTypes.has($from.node(depth).type.name)) return true
+  }
+  return false
+}
+
+export function exitNestedListItemToParentParagraph(state: EditorState, dispatch?: (tr: Transaction) => void) {
+  const { selection, schema } = state
+  if (!selection.empty) return false
+  const paragraphType = schema.nodes.paragraph
+  if (!paragraphType) return false
+
+  const $from = selection.$from
+  let listItemDepth = -1
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    if (listItemTypes.has($from.node(depth).type.name)) {
+      listItemDepth = depth
+      break
+    }
+  }
+  if (listItemDepth < 3) return false
+
+  const parentListDepth = listItemDepth - 1
+  const parentList = $from.node(parentListDepth)
+  if (!listTypes.has(parentList.type.name)) return false
+
+  let ancestorListItemDepth = -1
+  for (let depth = parentListDepth - 1; depth > 0; depth -= 1) {
+    if (listItemTypes.has($from.node(depth).type.name)) {
+      ancestorListItemDepth = depth
+      break
+    }
+  }
+  if (ancestorListItemDepth < 1) return false
+
+  const itemIndex = $from.index(parentListDepth)
+  const currentItemStart = $from.before(listItemDepth)
+  const currentItem = state.doc.nodeAt(currentItemStart)
+  if (!currentItem || isEmptyListItem(currentItem)) return false
+
+  const paragraph = paragraphFromListItem(currentItem, paragraphType)
+  if (!paragraph) return false
+  if (!dispatch) return true
+
+  const replacement: ProseMirrorNode[] = []
+  const beforeItems: ProseMirrorNode[] = []
+  const afterItems: ProseMirrorNode[] = []
+  parentList.forEach((child, _offset, index) => {
+    if (index < itemIndex) beforeItems.push(child)
+    if (index > itemIndex) afterItems.push(child)
+  })
+  if (beforeItems.length) replacement.push(parentList.type.create(parentList.attrs, Fragment.fromArray(beforeItems)))
+  replacement.push(paragraph)
+  if (afterItems.length) replacement.push(parentList.type.create(parentList.attrs, Fragment.fromArray(afterItems)))
+
+  const parentListStart = $from.before(parentListDepth)
+  const parentListEnd = $from.after(parentListDepth)
+  const paragraphStart = parentListStart + (beforeItems.length ? replacement[0].nodeSize : 0)
+  let tr = state.tr.replaceWith(parentListStart, parentListEnd, Fragment.fromArray(replacement))
+  tr = tr.setSelection(TextSelection.create(tr.doc, paragraphStart + 1))
+  dispatch(tr.scrollIntoView())
+  return true
+}
+
 export const ListContinuationExtension = Extension.create({
   name: "listContinuation",
   priority: 1000,
@@ -124,7 +187,10 @@ export const ListContinuationExtension = Extension.create({
   addKeyboardShortcuts() {
     return {
       Enter: () => continueParentListItem(this.editor.state, this.editor.view.dispatch),
-      "Shift-Tab": () => exitEmptyListItemToParagraph(this.editor.state, this.editor.view.dispatch),
+      "Shift-Tab": () =>
+        exitNestedListItemToParentParagraph(this.editor.state, this.editor.view.dispatch) ||
+        exitEmptyListItemToParagraph(this.editor.state, this.editor.view.dispatch) ||
+        selectionIsInsideListItem(this.editor.state),
     }
   },
 })

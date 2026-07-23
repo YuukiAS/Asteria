@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.1 - Rich Text View/Edit Parity
+
+- Preserved visible empty heading rows in block preview, Zoom preview, and fit-to-content measurement so headings created with `## ` before typing text no longer disappear outside edit mode.
+- Normalized legacy saved rich-text HTML with empty heading or paragraph tags before preview rendering, keeping view/edit/zoom spacing closer for existing maps.
+- Fixed `Shift+Tab` on a non-empty nested bullet inside a numbered list so the current line exits to the parent item as a paragraph instead of becoming a new numbered item.
+- Centered display/block equations consistently in edit, view, and Zoom rich-text rendering.
+- Made Image Link insertion visible in edit mode by inserting clear `Image: ...` link text for empty selections, avoiding accidental active-link rewrites, and showing hover/focus previews inside the editor.
+- Stopped `Shift+Tab` from removing the marker on a non-empty final numbered item; only truly empty list items exit the list.
+- Added a real-browser regression script for canvas inline `Shift+Tab` on `start=9` ordered lists and swallowed unhandled list `Shift+Tab` events before StarterKit's default list lifting can mutate the previous item.
+- Fixed Image Link dialog submission with Enter and restored insertion against the editor's saved selection so dialog focus does not move links to the start or end; added a real-browser Image Link regression script.
+
 ## 0.9.0 - Image Link Preview And Story Export
 
 - Added explicit Image Link rich-text links that keep content stored as URL-backed link text with Asteria metadata instead of embedding image files or base64 data.

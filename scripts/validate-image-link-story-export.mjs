@@ -116,10 +116,11 @@ const vite = await createServer({
 })
 
 try {
-  const [{ buildStoryMarkdown }, { contentJsonToHtml }, { contentJsonToMarkdown }, { createEditorExtensions }] = await Promise.all([
+  const [{ buildStoryMarkdown }, { contentJsonToHtml }, { contentJsonToMarkdown }, { imageLinkInsertionTextFromUrl }, { createEditorExtensions }] = await Promise.all([
     vite.ssrLoadModule("/src/lib/storyMarkdownExport.ts"),
     vite.ssrLoadModule("/src/editor/editorUtils.ts"),
     vite.ssrLoadModule("/src/lib/tiptapToMarkdown.ts"),
+    vite.ssrLoadModule("/src/lib/imageLinks.ts"),
     vite.ssrLoadModule("/src/editor/createEditorExtensions.ts"),
   ])
 
@@ -129,6 +130,7 @@ try {
   const imageHtml = contentJsonToHtml(imageLinkDoc)
   assert(imageHtml.includes('data-asteria-image-link="true"'), "Expected rendered HTML to preserve image-link metadata.")
   assert(imageHtml.includes('data-asteria-image-size="medium"'), "Expected rendered HTML to preserve image-link size metadata.")
+  assert(imageLinkInsertionTextFromUrl(imageUrl) === "Image: model.png", "Expected empty-selection Image Link insertion to use visible image-link text.")
 
   const markdownBody = contentJsonToMarkdown(imageLinkDoc)
   assert(markdownBody.includes(`[model figure](${imageUrl})`), "Expected body Markdown to keep image link as a normal Markdown link.")

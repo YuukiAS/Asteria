@@ -15,7 +15,7 @@ import { formatLocalDateTime } from "../lib/time"
 import { requestInlineBlockEdit } from "../lib/inlineEditEvents"
 import { resolveBlockVersionRows, resolveBlockVersionState, versionShortLabel } from "../lib/blockVersionState"
 import { resolveBlockContentHtml, resolveBlockContentJson, resolveBlockSymbolEntries, resolveBlockTitle } from "../lib/exportImport"
-import { stripScriptTags } from "../lib/sanitize"
+import { preserveEmptyRichTextBlocks, stripScriptTags } from "../lib/sanitize"
 import { useMapStore } from "../store/useMapStore"
 import type { BlockData } from "../types/map"
 
@@ -37,7 +37,7 @@ function measureBlockContentHeight(html: string | undefined, width: number) {
   measure.style.width = `${Math.max(blockSizeLimits.minWidth - blockPreviewHorizontalPadding, width - blockPreviewHorizontalPadding)}px`
   measure.style.fontSize = "13px"
   measure.style.lineHeight = "1.45"
-  measure.innerHTML = stripScriptTags(html || "<p>Empty block</p>")
+  measure.innerHTML = preserveEmptyRichTextBlocks(stripScriptTags(html || "<p>Empty block</p>"))
   document.body.appendChild(measure)
   const measured = measure.scrollHeight
   measure.remove()

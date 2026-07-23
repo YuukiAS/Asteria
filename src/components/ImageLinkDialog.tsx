@@ -66,6 +66,10 @@ export function ImageLinkDialog({ open, initialHref = "", onCancel, onConfirm }:
               value={href}
               onChange={(event) => setHref(event.target.value)}
               onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+                  event.preventDefault()
+                  submit()
+                }
                 if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
                   event.preventDefault()
                   submit()

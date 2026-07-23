@@ -24,7 +24,7 @@ import {
 import { backgroundPalette, textPalette } from "../constants/palette"
 import { applyBlockMathStyle } from "../editor/blockMathStyling"
 import { recordRichColor } from "../editor/richColorMemory"
-import { defaultImageLinkSize, imageLinkLabelFromUrl } from "../lib/imageLinks"
+import { defaultImageLinkSize, imageLinkInsertionTextFromUrl } from "../lib/imageLinks"
 import { ColorPickerRow } from "./ColorPickerRow"
 import { EquationDialog } from "./EquationDialog"
 import { FontSizeSelect } from "./FontSizeSelect"
@@ -40,15 +40,50 @@ type AsteriaLinkAttrs = {
   asteriaImageSize?: string | null
 }
 
+type SavedSelection = { from: number; to: number }
+
+function usableSelection(editor: Editor): SavedSelection {
+  const domSelection = selectionFromDom(editor)
+  if (domSelection) return domSelection
+  const savedSelection = editor.storage.asteriaSelection as SavedSelection | undefined
+  if (
+    savedSelection &&
+    savedSelection.from >= 0 &&
+    savedSelection.to >= savedSelection.from &&
+    savedSelection.to <= editor.state.doc.content.size
+  ) {
+    return savedSelection
+  }
+  const { from, to } = editor.state.selection
+  return { from, to }
+}
+
+function selectionFromDom(editor: Editor): SavedSelection | undefined {
+  if (typeof window === "undefined") return undefined
+  const selection = window.getSelection()
+  if (!selection || !selection.anchorNode || !selection.focusNode) return undefined
+  const editorDom = editor.view.dom
+  if (!editorDom.contains(selection.anchorNode) || !editorDom.contains(selection.focusNode)) return undefined
+  try {
+    const anchor = editor.view.posAtDOM(selection.anchorNode, selection.anchorOffset)
+    const focus = editor.view.posAtDOM(selection.focusNode, selection.focusOffset)
+    return { from: Math.min(anchor, focus), to: Math.max(anchor, focus) }
+  } catch {
+    return undefined
+  }
+}
+
 function ToolButton({
   label,
   active,
   onClick,
+  activateOnMouseDown = false,
   children,
 }: {
   label: string
   active?: boolean
   onClick: () => void
+  activateOnMouseDown?: boolean
   children: React.ReactNode
 }) {
   return (
@@ -59,8 +94,13 @@ function ToolButton({
       }`}
       title={label}
       aria-label={label}
-      onMouseDown={(event) => event.preventDefault()}
-      onClick={onClick}
+      onMouseDown={(event) => {
+        event.preventDefault()
+        if (activateOnMouseDown) onClick()
+      }}
+      onClick={() => {
+        if (!activateOnMouseDown) onClick()
+      }}
     >
       {children}
     </button>
@@ -91,30 +131,31 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
   }
 
   const openImageLinkDialog = () => {
-    const { from, to } = editor.state.selection
-    imageLinkSelectionRef.current = { from, to }
+    imageLinkSelectionRef.current = usableSelection(editor)
     setIsImageLinkDialogOpen(true)
   }
 
   const confirmImageLink = (url: string) => {
     const attrs: AsteriaLinkAttrs = { href: url, asteriaImageLink: "true", asteriaImageSize: defaultImageLinkSize }
-    const range = imageLinkSelectionRef.current
+    const range = imageLinkSelectionRef.current || { from: editor.state.selection.from, to: editor.state.selection.to }
     setIsImageLinkDialogOpen(false)
     imageLinkSelectionRef.current = undefined
-    if (range) editor.commands.setTextSelection(range)
-    const selection = editor.state.selection
-    if (!selection.empty || editor.isActive("link")) {
-      editor.chain().focus().extendMarkRange("link").setLink(attrs).run()
+    if (range.from !== range.to) {
+      editor.chain().focus().setTextSelection(range).setLink(attrs).run()
       return
     }
     editor
       .chain()
       .focus()
-      .insertContent({
-        type: "text",
-        text: imageLinkLabelFromUrl(url),
-        marks: [{ type: "link", attrs }],
-      })
+      .setTextSelection(range)
+      .insertContent([
+        {
+          type: "text",
+          text: imageLinkInsertionTextFromUrl(url),
+          marks: [{ type: "link", attrs }],
+        },
+        { type: "text", text: " " },
+      ])
       .run()
   }
 
@@ -185,7 +226,7 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
         <ToolButton label="Link" active={editor.isActive("link")} onClick={setLink}>
           <LinkIcon size={15} />
         </ToolButton>
-        <ToolButton label="Image link" active={editor.getAttributes("link").asteriaImageLink === "true"} onClick={openImageLinkDialog}>
+        <ToolButton label="Image link" active={editor.getAttributes("link").asteriaImageLink === "true"} onClick={openImageLinkDialog} activateOnMouseDown>
           <ImageIcon size={15} />
         </ToolButton>
         <ToolButton label="Remove link" onClick={() => editor.chain().focus().unsetLink().run()}>

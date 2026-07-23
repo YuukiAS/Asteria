@@ -38,6 +38,11 @@ export function imageLinkLabelFromUrl(href: string) {
   }
 }
 
+export function imageLinkInsertionTextFromUrl(href: string) {
+  const label = imageLinkLabelFromUrl(href)
+  return label === "Image" ? label : `Image: ${label}`
+}
+
 export function markdownImageAlt(value: string) {
   return (value || "Image").replace(/[\[\]\n\r]/g, " ").replace(/\s+/g, " ").trim() || "Image"
 }

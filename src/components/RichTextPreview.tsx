@@ -1,7 +1,7 @@
 import { useMemo, useState, type CSSProperties, type FocusEvent, type PointerEvent } from "react"
 import { writeStyledMathClipboardFromSelection } from "../editor/mathPasteHandler"
 import { imageLinkLabelFromUrl, normalizeImageLinkSize, normalizeImageLinkUrl, type ImageLinkReference } from "../lib/imageLinks"
-import { stripScriptTags } from "../lib/sanitize"
+import { preserveEmptyRichTextBlocks, stripScriptTags } from "../lib/sanitize"
 
 type RichTextPreviewProps = {
   html?: string
@@ -59,7 +59,7 @@ function hoverStateForAnchor(anchor: HTMLAnchorElement, link: ImageLinkReference
 
 export function RichTextPreview({ html, color, accentColor, imagePreviewMode = "hover" }: RichTextPreviewProps) {
   const [hoverPreview, setHoverPreview] = useState<HoverPreviewState>()
-  const safeHtml = useMemo(() => stripScriptTags(html || "<p>Empty block</p>"), [html])
+  const safeHtml = useMemo(() => preserveEmptyRichTextBlocks(stripScriptTags(html || "<p>Empty block</p>")), [html])
   const inlineImageLinks = useMemo(() => (imagePreviewMode === "inline" ? collectImageLinksFromHtml(safeHtml) : []), [imagePreviewMode, safeHtml])
 
   const showHoverPreview = (target: EventTarget | null) => {

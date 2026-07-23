@@ -1,6 +1,6 @@
 import katex from "katex"
 import type { JSONContent } from "@tiptap/react"
-import { stripScriptTags } from "../lib/sanitize"
+import { preserveEmptyRichTextBlocks, stripScriptTags } from "../lib/sanitize"
 
 function escapeHtml(value = "") {
   return value
@@ -71,6 +71,11 @@ function renderParagraphChildren(node: JSONContent) {
   return children || '<br data-asteria-empty-paragraph="true" />'
 }
 
+function renderHeadingChildren(node: JSONContent) {
+  const children = renderChildren(node)
+  return children || '<br data-asteria-empty-heading="true" />'
+}
+
 function textAlignStyle(node: JSONContent) {
   return node.attrs?.textAlign ? ` style="text-align: ${escapeHtml(String(node.attrs.textAlign))}"` : ""
 }
@@ -101,7 +106,7 @@ function renderNode(node: JSONContent): string {
       return `<p${textAlignStyle(node)}>${renderParagraphChildren(node)}</p>`
     case "heading": {
       const level = node.attrs?.level === 1 ? 1 : 2
-      return `<h${level}${textAlignStyle(node)}>${renderChildren(node)}</h${level}>`
+      return `<h${level}${textAlignStyle(node)}>${renderHeadingChildren(node)}</h${level}>`
     }
     case "bulletList":
       return `<ul>${renderChildren(node)}</ul>`
@@ -138,5 +143,5 @@ function renderNode(node: JSONContent): string {
 }
 
 export function contentJsonToHtml(contentJson: JSONContent) {
-  return stripScriptTags(renderNode(contentJson))
+  return preserveEmptyRichTextBlocks(stripScriptTags(renderNode(contentJson)))
 }

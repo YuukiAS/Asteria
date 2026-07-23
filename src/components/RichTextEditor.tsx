@@ -1,8 +1,9 @@
 import { EditorContent, type JSONContent, useEditor } from "@tiptap/react"
 import type { Editor } from "@tiptap/core"
 import { Fragment, Slice, type ResolvedPos } from "prosemirror-model"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type FocusEvent, type PointerEvent } from "react"
 import { createEditorExtensions } from "../editor/createEditorExtensions"
+import { exitEmptyListItemToParagraph, exitNestedListItemToParentParagraph, selectionIsInsideListItem } from "../editor/listContinuationExtension"
 import {
   normalizeAsteriaMathClipboardHtml,
   normalizeInlineDollarMath,
@@ -13,6 +14,7 @@ import {
   writeStyledMathClipboardFromSelection,
 } from "../editor/mathPasteHandler"
 import { applyRecentRichColor } from "../editor/richColorMemory"
+import { imageLinkLabelFromUrl, normalizeImageLinkSize, normalizeImageLinkUrl, type ImageLinkReference } from "../lib/imageLinks"
 import { insertBlockEquationEvent } from "../lib/inlineEditEvents"
 import { EquationDialog } from "./EquationDialog"
 import { RichTextBubbleMenu } from "./RichTextBubbleMenu"
@@ -46,6 +48,11 @@ function isEmptyListItem($from: ResolvedPos, depth: number) {
 
 type SavedSelection = { from: number; to: number }
 
+type HoverPreviewState = ImageLinkReference & {
+  left: number
+  top: number
+}
+
 function usableSavedSelection(editor: Editor): SavedSelection | undefined {
   const savedSelection = editor.storage.asteriaSelection as SavedSelection | undefined
   if (!savedSelection) return undefined
@@ -58,6 +65,40 @@ function usableSavedSelection(editor: Editor): SavedSelection | undefined {
   } catch {
     return undefined
   }
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(value, max))
+}
+
+function imageLinkFromAnchor(anchor: HTMLAnchorElement): ImageLinkReference | undefined {
+  if (anchor.dataset.asteriaImageLink !== "true") return undefined
+  const href = normalizeImageLinkUrl(anchor.href || anchor.getAttribute("href") || "")
+  if (!href) return undefined
+  return {
+    href,
+    label: anchor.textContent?.trim() || imageLinkLabelFromUrl(href),
+    size: normalizeImageLinkSize(anchor.dataset.asteriaImageSize),
+  }
+}
+
+function hoverStateForAnchor(anchor: HTMLAnchorElement, link: ImageLinkReference): HoverPreviewState {
+  const rect = anchor.getBoundingClientRect()
+  const previewWidth = Math.min(320, window.innerWidth - 24)
+  const previewHeight = 250
+  const belowTop = rect.bottom + 8
+  const aboveTop = rect.top - previewHeight - 8
+  return {
+    ...link,
+    left: clamp(rect.left, 12, window.innerWidth - previewWidth - 12),
+    top: belowTop + previewHeight <= window.innerHeight - 12 ? belowTop : clamp(aboveTop, 12, window.innerHeight - previewHeight - 12),
+  }
+}
+
+function EditorImageLinkPreview({ link }: { link: ImageLinkReference }) {
+  const [failed, setFailed] = useState(false)
+  if (failed) return <span className="rich-image-link-error">Image unavailable</span>
+  return <img src={link.href} alt={link.label} loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
 }
 
 export function RichTextEditor({
@@ -75,6 +116,7 @@ export function RichTextEditor({
   const isEditingEquationDialogOpenRef = useRef(false)
   const [editingEquation, setEditingEquation] = useState<{ pos: number; latex: string; displayMode: boolean } | null>(null)
   const [isInlineEquationDialogOpen, setIsInlineEquationDialogOpen] = useState(false)
+  const [hoverPreview, setHoverPreview] = useState<HoverPreviewState>()
   const editorStyle = [
     "white-space: normal",
     editorTextColor ? `color: ${editorTextColor}` : "",
@@ -153,6 +195,16 @@ export function RichTextEditor({
         return true
       },
       handleKeyDown(_view, event) {
+        if (event.shiftKey && event.key === "Tab") {
+          const handled =
+            exitNestedListItemToParentParagraph(_view.state, _view.dispatch) ||
+            exitEmptyListItemToParagraph(_view.state, _view.dispatch) ||
+            selectionIsInsideListItem(_view.state)
+          if (handled) {
+            event.preventDefault()
+            return true
+          }
+        }
         if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "h") {
           if (!editor) return false
           event.preventDefault()
@@ -306,11 +358,39 @@ export function RichTextEditor({
       .run()
   }
 
+  const showHoverPreview = (target: EventTarget | null) => {
+    if (!(target instanceof Element)) return
+    const anchor = target.closest<HTMLAnchorElement>('a[data-asteria-image-link="true"]')
+    if (!anchor) return
+    const link = imageLinkFromAnchor(anchor)
+    if (!link) return
+    setHoverPreview(hoverStateForAnchor(anchor, link))
+  }
+
+  const handlePointerOver = (event: PointerEvent<HTMLDivElement>) => showHoverPreview(event.target)
+  const handlePointerLeave = () => setHoverPreview(undefined)
+  const handleFocus = (event: FocusEvent<HTMLDivElement>) => showHoverPreview(event.target)
+  const handleBlur = (event: FocusEvent<HTMLDivElement>) => {
+    if (!event.currentTarget.contains(event.relatedTarget)) setHoverPreview(undefined)
+  }
+
   const contentElement = (
-    <>
+    <div
+      onPointerOverCapture={handlePointerOver}
+      onPointerLeave={handlePointerLeave}
+      onFocusCapture={handleFocus}
+      onBlur={handleBlur}
+      onClickCapture={(event) => showHoverPreview(event.target)}
+    >
       <RichTextBubbleMenu editor={editor} onInlineMathRequest={() => setIsInlineEquationDialogOpen(true)} />
       <EditorContent editor={editor} />
-    </>
+      {hoverPreview ? (
+        <div className="rich-image-link-popover" style={{ left: hoverPreview.left, top: hoverPreview.top }} role="tooltip">
+          <EditorImageLinkPreview link={hoverPreview} />
+          <div className="rich-image-link-caption">{hoverPreview.label}</div>
+        </div>
+      ) : null}
+    </div>
   )
 
   return (
