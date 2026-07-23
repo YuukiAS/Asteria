@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `0.8.9`.
+Current app version: `0.8.10`.
 
 ## Run
 
@@ -136,7 +136,7 @@ Blocks use TipTap rich text with:
 - Notion-style quote insertion by typing `"` then Space at the start of a line
 - A floating selection menu for common inline formatting
 
-Equation editing uses a canvas-side dialog with live preview. Invalid or incomplete LaTeX displays an invalid-equation state until the expression parses. Inline equation dialogs submit with Enter and do not allow newline entry; block equation dialogs allow multiline LaTeX and submit with `Ctrl+Enter` / `Cmd+Enter`.
+Equation editing uses a canvas-side dialog with live preview. Invalid or incomplete LaTeX displays an invalid-equation state until the expression parses. Inline equation dialogs submit with Enter and do not allow newline entry; block equation dialogs allow multiline LaTeX, submit with `Ctrl+Enter` / `Cmd+Enter`, and insert display equations at the current editor cursor when launched from the toolbar.
 
 Inside a quote, `Shift+Enter` adds another line to the same quote and Enter exits to a normal paragraph below it. Rich-text copy, cut, and paste preserve supported inline styles such as text color, highlight color, and font size when the clipboard includes HTML content. Mixed selections of styled text and equations keep the equation LaTeX plus supported equation colors. Plain-text math paste still converts `$...$` and `$$...$$` into equation nodes.
 

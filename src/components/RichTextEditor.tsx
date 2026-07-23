@@ -1,4 +1,5 @@
 import { EditorContent, type JSONContent, useEditor } from "@tiptap/react"
+import type { Editor } from "@tiptap/core"
 import { Fragment, Slice, type ResolvedPos } from "prosemirror-model"
 import { useEffect, useRef, useState } from "react"
 import { createEditorExtensions } from "../editor/createEditorExtensions"
@@ -41,6 +42,22 @@ function isEmptyListItem($from: ResolvedPos, depth: number) {
   if (listItem.childCount !== 1) return false
   const paragraph = listItem.child(0)
   return paragraph.type.name === "paragraph" && paragraph.content.size === 0
+}
+
+type SavedSelection = { from: number; to: number }
+
+function usableSavedSelection(editor: Editor): SavedSelection | undefined {
+  const savedSelection = editor.storage.asteriaSelection as SavedSelection | undefined
+  if (!savedSelection) return undefined
+  if (savedSelection.from < 0 || savedSelection.to < savedSelection.from || savedSelection.to > editor.state.doc.content.size) return undefined
+  try {
+    const $from = editor.state.doc.resolve(savedSelection.from)
+    const $to = editor.state.doc.resolve(savedSelection.to)
+    if (!$from.parent.inlineContent || !$to.parent.inlineContent) return undefined
+    return savedSelection
+  } catch {
+    return undefined
+  }
 }
 
 export function RichTextEditor({
@@ -187,7 +204,7 @@ export function RichTextEditor({
     },
     onSelectionUpdate: ({ editor: activeEditor }) => {
       const { from, to } = activeEditor.state.selection
-      if (from !== to) {
+      if (activeEditor.state.selection.$from.parent.inlineContent && activeEditor.state.selection.$to.parent.inlineContent) {
         activeEditor.storage.asteriaSelection = { from, to }
       }
     },
@@ -220,7 +237,12 @@ export function RichTextEditor({
       const requestedTarget = (event as CustomEvent<{ nodeId?: string }>).detail?.nodeId
       if (requestedTarget && !focusTargetId) return
       if (focusTargetId && requestedTarget !== focusTargetId) return
-      editor?.commands.focus("end")
+      const savedSelection = editor ? usableSavedSelection(editor) : undefined
+      if (savedSelection) {
+        editor?.chain().focus().setTextSelection(savedSelection).run()
+      } else {
+        editor?.commands.focus("end")
+      }
     }
     window.addEventListener("asteria-focus-editor", focusEditor)
     return () => window.removeEventListener("asteria-focus-editor", focusEditor)
@@ -248,7 +270,7 @@ export function RichTextEditor({
       if (!detail?.latex) return
       if (detail.nodeId && !focusTargetId) return
       if (focusTargetId && detail.nodeId !== focusTargetId) return
-      editor?.chain().focus("end").insertBlockMath(detail.latex).run()
+      selectionChain().insertBlockMath(detail.latex).run()
     }
     window.addEventListener(insertBlockEquationEvent, insertBlockEquation)
     return () => window.removeEventListener(insertBlockEquationEvent, insertBlockEquation)
@@ -257,7 +279,7 @@ export function RichTextEditor({
   if (!editor) return <div className="rounded-lg border border-border p-4 text-sm text-secondary">Loading editor...</div>
 
   const selectionChain = () => {
-    const savedSelection = editor.storage.asteriaSelection as { from: number; to: number } | undefined
+    const savedSelection = usableSavedSelection(editor)
     const chain = editor.chain().focus()
     return savedSelection ? chain.setTextSelection(savedSelection) : chain
   }

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.10 - Block Equation Cursor Insert
+
+- Fixed toolbar display-equation insertion so block equations use the current editor cursor or most recent collapsed selection instead of jumping to the bottom of the block.
+- Kept first-time content-editor focus behavior at the end of the block while preserving subsequent cursor positions for toolbar actions.
+
 ## 0.8.9 - Rich Clipboard And Quote Input
 
 - Fixed same-app rich paste from real browser clipboard HTML so mixed text plus inline equations keeps visible KaTeX formula nodes and inherited equation color styles instead of dropping or restyling inline formulas after paste normalization.
