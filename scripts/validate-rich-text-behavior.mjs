@@ -21,6 +21,13 @@ function clipboardData({ html = "", text = "" }) {
   }
 }
 
+function collectNodesByType(nodes, type) {
+  return (nodes || []).flatMap((node) => [
+    ...(node.type === type ? [node] : []),
+    ...collectNodesByType(node.content, type),
+  ])
+}
+
 function domSpecAttrs(spec) {
   return spec?.[1] && typeof spec[1] === "object" && !Array.isArray(spec[1]) ? spec[1] : {}
 }
@@ -32,7 +39,7 @@ const vite = await createServer({
 })
 
 try {
-  const [{ shouldUsePlainTextMathPaste, preprocessPastedMath, serializeMathClipboardText, normalizeAsteriaMathClipboardHtml }, { contentJsonToHtml }, { createEditorExtensions }] =
+  const [{ shouldUsePlainTextMathPaste, preprocessPastedMath, preprocessPastedAsteriaMathHtml, serializeMathClipboardText, normalizeAsteriaMathClipboardHtml }, { contentJsonToHtml }, { createEditorExtensions }] =
     await Promise.all([
     vite.ssrLoadModule("/src/editor/mathPasteHandler.ts"),
     vite.ssrLoadModule("/src/editor/editorUtils.ts"),
@@ -141,6 +148,19 @@ try {
   assert(normalizedPasteHtml.includes('data-math-inline=""'), "Expected paste normalization to keep inline math identity.")
   assert(normalizedPasteHtml.includes('data-latex="\\alpha"'), "Expected paste normalization to keep inline math LaTeX.")
   assert(!normalizedPasteHtml.includes("visible"), "Expected paste normalization to remove rendered KaTeX children before ProseMirror parses HTML.")
+  assert(normalizedPasteHtml.includes("$\\alpha$"), "Expected paste normalization to keep an inline LaTeX fallback so browser parsing preserves the math node.")
+
+  if (typeof window !== "undefined" && typeof window.DOMParser !== "undefined") {
+    const parsedStyledMathHtml = preprocessPastedAsteriaMathHtml(
+      '<li>The observation model is <span data-math-inline="" data-latex="y_{ij}=1(z_{ij}&gt;0)" data-text-color="rgb(249, 115, 22)" style="color: rgb(249, 115, 22);"><span class="katex">visible</span></span>.</li><li>The latent probit model is <span data-math-inline="" data-latex="z_{ij}=\\\\alpha_j+x_i^T\\\\beta_j+\\\\epsilon_{ij}" data-text-color="rgb(249, 115, 22)" style="color: rgb(249, 115, 22);"><span class="katex">visible</span></span>.</li>',
+    )
+    const parsedStyledMath = collectNodesByType(parsedStyledMathHtml, "inlineMath")
+    assert(parsedStyledMath.length === 2, "Expected Asteria math HTML paste preprocessing to keep copied list formulas.")
+    assert(
+      parsedStyledMath.every((node) => node.attrs?.textColor === "rgb(249, 115, 22)"),
+      "Expected Asteria math HTML paste preprocessing to keep copied formula text color.",
+    )
+  }
 
   const inlineSpec = schema.nodes.inlineMath.spec.toDOM?.(
     schema.nodes.inlineMath.create({ latex: "\\alpha", textColor: "#dc2626", highlightColor: "#fef3c7" }),

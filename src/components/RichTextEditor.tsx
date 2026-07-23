@@ -1,13 +1,15 @@
 import { EditorContent, type JSONContent, useEditor } from "@tiptap/react"
-import { Fragment, Slice } from "prosemirror-model"
+import { Fragment, Slice, type ResolvedPos } from "prosemirror-model"
 import { useEffect, useRef, useState } from "react"
 import { createEditorExtensions } from "../editor/createEditorExtensions"
 import {
   normalizeAsteriaMathClipboardHtml,
   normalizeInlineDollarMath,
+  preprocessPastedAsteriaMathHtml,
   preprocessPastedMath,
   serializeMathClipboardText,
   shouldUsePlainTextMathPaste,
+  writeStyledMathClipboardFromSelection,
 } from "../editor/mathPasteHandler"
 import { applyRecentRichColor } from "../editor/richColorMemory"
 import { insertBlockEquationEvent } from "../lib/inlineEditEvents"
@@ -25,6 +27,20 @@ type RichTextEditorProps = {
   editorTextColor?: string
   editorAccentColor?: string
   placeholder?: string
+}
+
+function listItemDepthInsideListType($from: ResolvedPos, listType: string) {
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    if ($from.node(depth).type.name === "listItem" && $from.node(depth - 1).type.name === listType) return depth
+  }
+  return null
+}
+
+function isEmptyListItem($from: ResolvedPos, depth: number) {
+  const listItem = $from.node(depth)
+  if (listItem.childCount !== 1) return false
+  const paragraph = listItem.child(0)
+  return paragraph.type.name === "paragraph" && paragraph.content.size === 0
 }
 
 export function RichTextEditor({
@@ -60,7 +76,42 @@ export function RichTextEditor({
       attributes: editorAttributes,
       clipboardTextSerializer: serializeMathClipboardText,
       transformPastedHTML: normalizeAsteriaMathClipboardHtml,
+      handleDOMEvents: {
+        copy(view, event) {
+          return writeStyledMathClipboardFromSelection(event, serializeMathClipboardText(view.state.selection.content()))
+        },
+        cut(view, event) {
+          return writeStyledMathClipboardFromSelection(event, serializeMathClipboardText(view.state.selection.content()))
+        },
+      },
       handlePaste(view, event) {
+        const html = event.clipboardData?.getData("text/html")
+        const htmlNodes = html ? preprocessPastedAsteriaMathHtml(html) : null
+        if (htmlNodes) {
+          event.preventDefault()
+          const parsedNodes = htmlNodes.map((node) => view.state.schema.nodeFromJSON(node))
+          const [singleNode] = htmlNodes
+          if (
+            view.state.selection.empty &&
+            htmlNodes.length === 1 &&
+            (singleNode.type === "orderedList" || singleNode.type === "bulletList")
+          ) {
+            const listItemDepth = listItemDepthInsideListType(view.state.selection.$from, singleNode.type)
+            if (listItemDepth !== null) {
+              const insertFrom = isEmptyListItem(view.state.selection.$from, listItemDepth)
+                ? view.state.selection.$from.before(listItemDepth)
+                : view.state.selection.$from.after(listItemDepth)
+              const insertTo = isEmptyListItem(view.state.selection.$from, listItemDepth)
+                ? view.state.selection.$from.after(listItemDepth)
+                : insertFrom
+              view.dispatch(view.state.tr.replaceWith(insertFrom, insertTo, parsedNodes[0].content))
+              return true
+            }
+          }
+          const sliceDepth = 0
+          view.dispatch(view.state.tr.replaceSelection(new Slice(Fragment.fromArray(parsedNodes), sliceDepth, sliceDepth)))
+          return true
+        }
         if (!shouldUsePlainTextMathPaste(event.clipboardData)) return false
         const text = event.clipboardData?.getData("text/plain")
         if (!text) return false

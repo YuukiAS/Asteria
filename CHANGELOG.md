@@ -2,6 +2,10 @@
 
 ## 0.8.9 - Rich Clipboard And Quote Input
 
+- Fixed same-app rich paste from real browser clipboard HTML so mixed text plus inline equations keeps visible KaTeX formula nodes and inherited equation color styles instead of dropping or restyling inline formulas after paste normalization.
+- Preserved formula styling when copying Asteria-rendered list items back into Asteria, including the real-browser case where selected math HTML is serialized without a surrounding ordered-list element.
+- Preserved ordinary styled text marks inside Asteria math clipboard HTML, so partial-color list text such as `dependence is` keeps its color when copied together with equations.
+- Kept copied list items pasted into an empty current list line instead of being inserted one line too low, while still appending after non-empty list items.
 - Preserved styled rich-text copy, cut, and paste by letting HTML clipboard data use TipTap's rich-text parser and limiting Asteria's math paste preprocessing to plain-text clipboard data.
 - Kept mixed rich-text copies stable when styled text and styled inline or display equations are selected together, including `data-latex`, text color, highlight color, and plain-text formula fallbacks.
 - Kept pasted Asteria equations visible and editable by rendering clipboard HTML math wrappers with KaTeX while retaining `data-latex`, then stripping rendered KaTeX children before paste parsing.

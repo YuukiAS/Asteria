@@ -46,6 +46,35 @@ function applyAttributes(dom: HTMLElement, attrs: Record<string, string | undefi
   })
 }
 
+function parsedStyleValue(value: string | null | undefined) {
+  const normalized = value?.trim()
+  if (!normalized || normalized === "inherit" || normalized === "initial" || normalized === "unset" || normalized === "transparent") return undefined
+  if (/^rgba?\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\)$/i.test(normalized)) return undefined
+  return normalized
+}
+
+function nearestParsedStyle(element: Element, dataAttribute: string, styleName: "color" | "backgroundColor") {
+  let current: Element | null = element
+  while (current) {
+    const dataValue = parsedStyleValue(current.getAttribute(dataAttribute))
+    if (dataValue) return dataValue
+    if (current instanceof HTMLElement) {
+      const styleValue = parsedStyleValue(current.style[styleName])
+      if (styleValue) return styleValue
+    }
+    current = current.parentElement
+  }
+  return null
+}
+
+function parseMathElementAttrs(element: Element, displayMode: boolean) {
+  return {
+    latex: element.getAttribute("data-latex") || element.textContent?.replace(displayMode ? /^\${2,3}|\${2,3}$/g : /^\${1,2}|\${1,2}$/g, "") || "",
+    textColor: nearestParsedStyle(element, "data-text-color", "color"),
+    highlightColor: nearestParsedStyle(element, "data-highlight-color", "backgroundColor"),
+  }
+}
+
 function mathClipboardDom(tagName: "span" | "div", attrs: Record<string, string | undefined>, latex: string, displayMode: boolean): DOMOutputSpec {
   if (typeof document === "undefined") return [tagName, attrs, latex]
   const dom = document.createElement(tagName)
@@ -82,7 +111,7 @@ export const InlineMath = Node.create({
   },
 
   parseHTML() {
-    return [{ tag: "span[data-math-inline]" }]
+    return [{ tag: "span[data-math-inline]", getAttrs: (element) => parseMathElementAttrs(element as Element, false) }]
   },
 
   renderHTML({ HTMLAttributes }) {
@@ -105,12 +134,24 @@ export const InlineMath = Node.create({
       dom.dataset.mathInline = ""
       dom.dataset.latex = node.attrs.latex || ""
       dom.className = "math-inline"
+      if (node.attrs.textColor) dom.dataset.textColor = node.attrs.textColor
+      if (node.attrs.highlightColor) dom.dataset.highlightColor = node.attrs.highlightColor
       applyBlockMathStyle(dom, node.attrs)
       dom.innerHTML = renderMath(node.attrs.latex, false)
       return {
         dom,
         update(nextNode) {
           if (nextNode.type.name !== "inlineMath") return false
+          if (nextNode.attrs.textColor) {
+            dom.dataset.textColor = nextNode.attrs.textColor
+          } else {
+            delete dom.dataset.textColor
+          }
+          if (nextNode.attrs.highlightColor) {
+            dom.dataset.highlightColor = nextNode.attrs.highlightColor
+          } else {
+            delete dom.dataset.highlightColor
+          }
           applyBlockMathStyle(dom, nextNode.attrs)
           if (nextNode.attrs.latex !== currentNode.attrs.latex) {
             dom.dataset.latex = nextNode.attrs.latex || ""
@@ -160,7 +201,7 @@ export const BlockMath = Node.create({
   },
 
   parseHTML() {
-    return [{ tag: "div[data-math-block]" }]
+    return [{ tag: "div[data-math-block]", getAttrs: (element) => parseMathElementAttrs(element as Element, true) }]
   },
 
   renderHTML({ HTMLAttributes }) {
@@ -183,12 +224,24 @@ export const BlockMath = Node.create({
       dom.dataset.mathBlock = ""
       dom.dataset.latex = node.attrs.latex || ""
       dom.className = "math-block"
+      if (node.attrs.textColor) dom.dataset.textColor = node.attrs.textColor
+      if (node.attrs.highlightColor) dom.dataset.highlightColor = node.attrs.highlightColor
       applyBlockMathStyle(dom, node.attrs)
       dom.innerHTML = renderMath(node.attrs.latex, true)
       return {
         dom,
         update(nextNode) {
           if (nextNode.type.name !== "blockMath") return false
+          if (nextNode.attrs.textColor) {
+            dom.dataset.textColor = nextNode.attrs.textColor
+          } else {
+            delete dom.dataset.textColor
+          }
+          if (nextNode.attrs.highlightColor) {
+            dom.dataset.highlightColor = nextNode.attrs.highlightColor
+          } else {
+            delete dom.dataset.highlightColor
+          }
           applyBlockMathStyle(dom, nextNode.attrs)
           if (nextNode.attrs.latex !== currentNode.attrs.latex) {
             dom.dataset.latex = nextNode.attrs.latex || ""
