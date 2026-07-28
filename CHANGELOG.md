@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.2 - Restore Safety
+
+- Preserved local-only nodes, valid local-only edges, Story items, and model versions when loading the shared workspace or restoring recent/fixed local backups.
+- Hardened block variant restore merging so substantially fuller local content is not overwritten by a shorter restored snapshot only because the restored timestamp is later.
+- Created a recent safety backup before JSON import replaces the current canvas, and kept local IndexedDB persistence after failed shared publishes such as server quota errors.
+- Added `npm run test:restore-safety` to validate restore merging against local-only object and fuller-content regressions.
+
 ## 0.9.1 - Rich Text View/Edit Parity
 
 - Preserved visible empty heading rows in block preview, Zoom preview, and fit-to-content measurement so headings created with `## ` before typing text no longer disappear outside edit mode.

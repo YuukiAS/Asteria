@@ -88,6 +88,7 @@ export function Toolbar({
     straightenNearAxisEdges,
     restoreBackup,
     chooseSharedWorkspace,
+    createBackupNow,
     clearMap,
     loadMap,
     setSelectedNode,
@@ -285,6 +286,11 @@ export function Toolbar({
     if (!window.confirm(confirmMessage)) return
     try {
       const raw = await readJsonFile(file)
+      const backedUp = await createBackupNow()
+      if (!backedUp) {
+        window.alert("Import stopped because Asteria could not create a local safety backup.")
+        return
+      }
       loadMap(normalizeExportedMap(raw))
     } catch (error) {
       console.error("Failed to import JSON", error)

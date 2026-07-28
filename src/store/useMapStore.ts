@@ -37,6 +37,7 @@ import {
 } from "../lib/persistence"
 import { contentJsonToHtml } from "../editor/editorUtils"
 import { resolveBlockVersionState } from "../lib/blockVersionState"
+import { preserveLocalMapInformation } from "../lib/restoreSafety"
 import { createId } from "../lib/ids"
 import { nowIso } from "../lib/time"
 import type {
@@ -222,7 +223,7 @@ type MapState = {
   saveNow: () => Promise<void>
   publishSharedVersion: (force?: boolean) => Promise<boolean>
   saveFixedVersion: () => Promise<void>
-  createBackupNow: () => Promise<void>
+  createBackupNow: () => Promise<boolean>
   restoreBackup: (id: string) => Promise<void>
   refreshBackups: () => Promise<void>
   hydrate: () => Promise<void>
@@ -289,43 +290,6 @@ function stateFromRemoteRecord(record: RemoteRecord) {
 }
 
 type RestoredMapState = ReturnType<typeof stateFromPersistedMap>
-
-function preserveNewerCurrentBlockContent(restored: RestoredMapState, current: Pick<MapState, "nodes" | "modelVersions">): RestoredMapState {
-  const currentBlocks = new Map(current.nodes.filter(isBlockNode).map((node) => [node.id, node]))
-  const modelVersions = restored.modelVersions || current.modelVersions || []
-  return {
-    ...restored,
-    nodes: restored.nodes.map((node) => {
-      if (!isBlockNode(node)) return node
-      const currentNode = currentBlocks.get(node.id)
-      if (!currentNode) return node
-      const variants = { ...(node.data.variants || {}) }
-      Object.entries(currentNode.data.variants || {}).forEach(([key, currentVariant]) => {
-        if (!currentVariant) return
-        const restoredVariant = variants[key]
-        if (!restoredVariant || timestampMs(currentVariant.updatedAt) > timestampMs(restoredVariant.updatedAt)) {
-          variants[key] = cloneJson(currentVariant)
-        }
-      })
-      const nextData = { ...node.data, variants }
-      const activeVariantKey = nextData.activeVariantKey || defaultVariantKey
-      const resolvedVariant = resolveVariantForMirror(nextData, activeVariantKey, modelVersions)
-      return {
-        ...node,
-        data: {
-          ...nextData,
-          title: resolvedVariant.title,
-          contentJson: resolvedVariant.contentJson,
-          contentHtml: resolvedVariant.contentHtml || contentJsonToHtml(resolvedVariant.contentJson),
-          updatedAt:
-            timestampMs(currentNode.data.updatedAt) > timestampMs(node.data.updatedAt)
-              ? currentNode.data.updatedAt
-              : node.data.updatedAt,
-        },
-      }
-    }),
-  }
-}
 
 function normalizeDisplayModeOverride(mode?: DisplayModeOverride): DisplayModeOverride {
   return mode && mode !== "block" ? mode : "full"
@@ -673,6 +637,7 @@ export const useMapStore = create<MapState>((set, get) => ({
       return true
     } catch (error) {
       console.error("Failed to publish shared map", error)
+      await get().saveNow()
       if (error instanceof RemoteRevisionConflictError) {
         const remote = await loadRemoteMap().catch(() => undefined)
         set({
@@ -705,11 +670,13 @@ export const useMapStore = create<MapState>((set, get) => ({
       const state = get()
       const map = mapFromState(state)
       const latestBackup = state.backups.find((backup) => (backup.kind || "recent") === "recent")
-      if (latestBackup && mapContentSignature(latestBackup.map) === mapContentSignature(map)) return
+      if (latestBackup && mapContentSignature(latestBackup.map) === mapContentSignature(map)) return true
       const backups = await createPersistedMapBackup(map, state.seededDemo, "recent")
       set({ backups })
+      return true
     } catch (error) {
       console.error("Failed to create map backup", error)
+      return false
     }
   },
 
@@ -719,7 +686,7 @@ export const useMapStore = create<MapState>((set, get) => ({
     if (!backup) return
     const safetyMap = mapFromState(state)
     await createPersistedMapBackup(safetyMap, state.seededDemo, "recent")
-    const restored = preserveNewerCurrentBlockContent(stateFromPersistedMap(backup), state)
+    const restored = preserveLocalMapInformation(stateFromPersistedMap(backup), state)
     set({
       ...restored,
       canvasHistory: [],
@@ -747,7 +714,7 @@ export const useMapStore = create<MapState>((set, get) => ({
     if (!record) return
     const safetyMap = mapFromState(state)
     const backups = await createPersistedMapBackup(safetyMap, state.seededDemo, "recent")
-    const restored = preserveNewerCurrentBlockContent(stateFromRemoteRecord(record), state)
+    const restored = preserveLocalMapInformation(stateFromRemoteRecord(record), state)
     set({
       ...restored,
       backups,
