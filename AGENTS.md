@@ -47,6 +47,18 @@ This project uses the `prompts/` handoff protocol for file-based handoff between
 - Non-version maintenance commits use short task prefixes such as `docs: ...`, `chore: ...`, or `fix: ...`. If there is a handoff task id, include the task id in the message.
 - Before committing, run at least `git status --short`, stage only files related to the current task, and do not mix in unrelated changes from other threads or the user.
 
+## Fixed External Link
+
+- The fixed public Asteria entry point is `https://asteria.httpwwwcardiacnexus-ukb.com/`. Do not replace it with a random `trycloudflare.com` URL, quick tunnel, alternate hostname, alternate hosting project, or GitHub Pages/static export unless the user explicitly asks for a new external link.
+- The Cloudflare Tunnel for the fixed link is `asteria-local` with tunnel id `ac0c0293-15b3-4971-b6f5-35c9e984111a`. The DNS route for `asteria.httpwwwcardiacnexus-ukb.com` must point to this tunnel.
+- The local shared Asteria origin for the fixed link is `http://localhost:5174`, backed by `/home/yuukias/.local/state/asteria/runtime/shared-map.json`. Start it from `/home/yuukias/code/Asteria` with `HOST=0.0.0.0 PORT=5174 ASTERIA_RUNTIME_DIR=/home/yuukias/.local/state/asteria/runtime node scripts/asteria-server.mjs`.
+- The long-running shared server should record state under `/home/yuukias/.local/state/asteria/`, including `server.pid` and `server.log`. Verify it with `curl -sS --max-time 10 http://127.0.0.1:5174/api/asteria/status` before blaming Cloudflare.
+- Run the fixed tunnel with `/home/yuukias/MONAILabel/cloudflared-linux-amd64 tunnel --no-autoupdate --protocol http2 run --token-file /home/yuukias/.cloudflared/asteria-local.token --url http://localhost:5174`. In this environment, prefer `--protocol http2`; QUIC may fail even when login and DNS are correct.
+- For a persistent background connector, use the same fixed tunnel command with `setsid`, write logs to `/home/yuukias/.local/state/asteria/asteria-local-cloudflared-bg.log`, and write the pid to `/home/yuukias/.local/state/asteria/asteria-local-cloudflared-bg.pid`.
+- Never print, commit, or copy Cloudflare tunnel tokens into tracked files. Store the token at `/home/yuukias/.cloudflared/asteria-local.token` with mode `600`. If the token or `/home/yuukias/.cloudflared/cert.pem` is missing, use `cloudflared tunnel login`, have the user authorize the `httpwwwcardiacnexus-ukb.com` zone, then regenerate the local token with `cloudflared tunnel token asteria-local`.
+- If the fixed public URL returns Cloudflare 1033, first check `cloudflared tunnel info asteria-local` for an active connector. If there is no active connector, restart the fixed `asteria-local` connector above; do not create a quick tunnel as a workaround.
+- After fixing or updating the external link, verify both `curl -sS --max-time 20 -D - https://asteria.httpwwwcardiacnexus-ukb.com/` and `curl -sS --max-time 20 https://asteria.httpwwwcardiacnexus-ukb.com/api/asteria/status`, and record the result in the final response or task result.
+
 ## Verification And Regression Coverage
 
 - Every code fix must include or update relevant automated validation or regression coverage before it is considered complete. Run the matching checks before committing. If automated coverage is not feasible for a fix, document the reason and any manual verification performed in the result file.
