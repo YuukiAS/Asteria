@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `0.9.2`.
+Current app version: `0.9.3`.
 
 ## Run
 
@@ -27,6 +27,7 @@ This starts Asteria with same-origin `/api/asteria/*` persistence on `http://127
 npm run build
 npm run test:search
 npm run test:edges
+npm run test:block-usability
 npm run test:rich-text
 npm run test:image-links
 ```
@@ -50,12 +51,12 @@ Shared saves use a revision check only when Save publishes to the shared version
 - Use the canvas to place model, prior, theorem, result, dataset, notation, symbol, and related research blocks.
 - Use Move mode for dragging and layout, Edit mode for direct block editing, and Zoom mode for near-fullscreen block reading.
 - Switch modes with `Alt+1`, `Alt+2`, and `Alt+3`, or use the top toolbar mode control.
-- Click Add block to create a Medium `340 x 220 (default)` block, or hover/focus the Add block control to choose Small, Medium, or Large.
+- Click Add block to create a Medium `640 x 360 (default)` block, or hover/focus the Add block control to choose Small `480 x 280`, Medium, or Large `820 x 500`.
 - Double-click the canvas to create a new block at that position.
 - Double-click a block to enter inline editing.
 - Click an empty canvas background while editing to return to Move mode.
-- Use the rich-text `Link` control for ordinary web, paper, or source hyperlinks. Use the `Image link` control for image URLs: it opens a dialog with the link field on top and a live preview below, accepts Enter to insert, and uses the editor's current selection so selected text is marked in place. With no selected text it stores the image as visible `Image: ...` link text with preview metadata. Editor and normal block previews show the image on hover/focus, while Zoom mode shows the image directly without embedding the image file in the map.
-- Inside nested lists, use `Enter` on an empty nested item to continue writing in the parent list item. Use `Shift+Tab` on an empty nested item, or on a non-empty nested bullet inside a numbered parent item, to move the current line into the parent list item without turning it into a new numbered item. For top-level numbered lists, `Shift+Tab` exits only from a truly empty list item, and unhandled list `Shift+Tab` events are swallowed so non-empty numbered items keep their markers.
+- Use the rich-text `Link` control for ordinary web, paper, or source hyperlinks. Use the `Image link` control for image URLs: it opens a dialog with the link field on top and a live preview below, accepts Enter to insert, and uses the editor's current selection so selected text is marked in place. With no selected text it stores the image as visible `Image: ...` link text with preview metadata. Editor and normal block previews show explicit Image Link images on hover/focus, while Zoom mode shows explicit Image Links and ordinary HTTP(S) image-extension links directly without embedding the image file in the map.
+- Inside lists, use `Tab` to indent the current list item when possible. Use `Shift+Tab` on an empty nested item, or on a non-empty nested bullet inside a numbered parent item, to move the current line into the parent list item without turning it into a new numbered item. For top-level numbered lists, `Shift+Tab` exits only from a truly empty list item, and unhandled list `Shift+Tab` events are swallowed so non-empty numbered items keep their markers.
 - Drag undo is supported with `Ctrl+Z` / `Cmd+Z` when focus is not inside a text editor.
 - Open global search from the toolbar or with `Ctrl+F` / `Cmd+F` when focus is not inside a text editor. Search covers the current rendered model version, including block titles, rich text, inline equations, block equations, and Symbol entries.
 

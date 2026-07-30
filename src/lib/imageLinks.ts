@@ -12,6 +12,8 @@ export type ImageLinkReference = {
   size: ImageLinkSize
 }
 
+const previewableImagePathPattern = /\.(png|jpe?g|gif|webp|svg)$/i
+
 export function normalizeImageLinkUrl(value: string) {
   const trimmed = value.trim()
   if (!trimmed) return undefined
@@ -26,6 +28,44 @@ export function normalizeImageLinkUrl(value: string) {
 
 export function normalizeImageLinkSize(value: unknown): ImageLinkSize {
   return value === "medium" ? "medium" : defaultImageLinkSize
+}
+
+export function isPreviewableImageUrl(value: string) {
+  const href = normalizeImageLinkUrl(value)
+  if (!href) return false
+  try {
+    const url = new URL(href)
+    return previewableImagePathPattern.test(decodeURIComponent(url.pathname))
+  } catch {
+    return false
+  }
+}
+
+export function imageLinkReferenceFromUrl(href: string, label?: string, size: unknown = defaultImageLinkSize): ImageLinkReference | undefined {
+  const normalizedHref = normalizeImageLinkUrl(href)
+  if (!normalizedHref) return undefined
+  return {
+    href: normalizedHref,
+    label: label?.trim() || imageLinkLabelFromUrl(normalizedHref),
+    size: normalizeImageLinkSize(size),
+  }
+}
+
+export function imageLinkReferenceFromAnchorParts({
+  href,
+  label,
+  asteriaImageLink,
+  asteriaImageSize,
+  includePreviewableImageUrls = false,
+}: {
+  href: string
+  label?: string
+  asteriaImageLink?: unknown
+  asteriaImageSize?: unknown
+  includePreviewableImageUrls?: boolean
+}) {
+  if (asteriaImageLink !== "true" && (!includePreviewableImageUrls || !isPreviewableImageUrl(href))) return undefined
+  return imageLinkReferenceFromUrl(href, label, asteriaImageSize)
 }
 
 export function imageLinkLabelFromUrl(href: string) {

@@ -6,7 +6,7 @@ import { blockConnectionHandleIds } from "../constants/handles"
 import { blockSizeLimits } from "../constants/layout"
 import { defaultVariantKey } from "../constants/versioning"
 import { resolveBlockVersionRows, resolveBlockVersionState, versionShortLabel } from "../lib/blockVersionState"
-import { resolveBlockContentHtml, resolveBlockContentJson, resolveBlockSymbolEntries, resolveBlockTitle } from "../lib/exportImport"
+import { resolveBlockContentHtml, resolveBlockContentJson, resolveBlockEditingTitle, resolveBlockSymbolEntries, resolveBlockTitle } from "../lib/exportImport"
 import { requestInlineBlockEdit, requestInlineEditorFocus, type InlineEditTarget } from "../lib/inlineEditEvents"
 import { titleToHtml } from "../lib/titleMath"
 import type { InteractionMode } from "../types/interaction"
@@ -51,6 +51,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
   const [isEditingEmoji, setIsEditingEmoji] = useState(false)
   const [isSearchHighlighted, setIsSearchHighlighted] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
+  const wasEditingTitleRef = useRef(false)
   const emojiInputRef = useRef<HTMLInputElement>(null)
   const [resizePreview, setResizePreview] = useState<{ width: number; height: number } | null>(null)
   const [hasPreviewOverflow, setHasPreviewOverflow] = useState(false)
@@ -67,6 +68,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
   const effectiveVariantKey = versionState.renderedVariantKey || defaultVariantKey
   const editingVariantKey = versionState.requestedVariantKey
   const title = resolveBlockTitle(data, effectiveVariantKey)
+  const editingTitle = resolveBlockEditingTitle(data, editingVariantKey, effectiveVariantKey)
   const contentJson = resolveBlockContentJson(data, effectiveVariantKey)
   const contentHtml = resolveBlockContentHtml(data, effectiveVariantKey)
   const symbolEntries = resolveBlockSymbolEntries(data, effectiveVariantKey)
@@ -94,9 +96,11 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
   }, [isEditableSelection])
 
   useEffect(() => {
-    if (!isEditingTitle) return
-    titleInputRef.current?.focus()
-    titleInputRef.current?.select()
+    if (isEditingTitle && !wasEditingTitleRef.current) {
+      titleInputRef.current?.focus()
+      titleInputRef.current?.select()
+    }
+    wasEditingTitleRef.current = isEditingTitle
   }, [isEditingTitle])
 
   useEffect(() => {
@@ -254,7 +258,7 @@ export function BlockNode({ id, data, selected, interactionMode, inlineEditTarge
           <input
             ref={titleInputRef}
             className="block-title-input nodrag nopan"
-            value={title}
+            value={editingTitle}
             onChange={(event) => updateBlockVariant(id, editingVariantKey, { title: event.target.value })}
             onBlur={() => onInlineEditTargetChange(undefined)}
             onKeyDown={(event) => {

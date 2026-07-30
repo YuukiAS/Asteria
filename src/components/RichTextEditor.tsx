@@ -3,7 +3,7 @@ import type { Editor } from "@tiptap/core"
 import { Fragment, Slice, type ResolvedPos } from "prosemirror-model"
 import { useEffect, useRef, useState, type FocusEvent, type PointerEvent } from "react"
 import { createEditorExtensions } from "../editor/createEditorExtensions"
-import { exitEmptyListItemToParagraph, exitNestedListItemToParentParagraph, selectionIsInsideListItem } from "../editor/listContinuationExtension"
+import { exitEmptyListItemToParagraph, exitNestedListItemToParentParagraph, indentListItem, selectionIsInsideListItem } from "../editor/listContinuationExtension"
 import {
   normalizeAsteriaMathClipboardHtml,
   normalizeInlineDollarMath,
@@ -195,11 +195,18 @@ export function RichTextEditor({
         return true
       },
       handleKeyDown(_view, event) {
-        if (event.shiftKey && event.key === "Tab") {
+        if (event.key === "Tab" && event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
           const handled =
             exitNestedListItemToParentParagraph(_view.state, _view.dispatch) ||
             exitEmptyListItemToParagraph(_view.state, _view.dispatch) ||
             selectionIsInsideListItem(_view.state)
+          if (handled) {
+            event.preventDefault()
+            return true
+          }
+        }
+        if (event.key === "Tab" && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
+          const handled = indentListItem(_view.state, _view.dispatch) || selectionIsInsideListItem(_view.state)
           if (handled) {
             event.preventDefault()
             return true

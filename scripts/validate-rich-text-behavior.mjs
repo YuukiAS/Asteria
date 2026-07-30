@@ -45,7 +45,7 @@ try {
     { contentJsonToHtml },
     { preserveEmptyRichTextBlocks },
     { createEditorExtensions },
-    { exitEmptyListItemToParagraph, exitNestedListItemToParentParagraph, selectionIsInsideListItem },
+    { exitEmptyListItemToParagraph, exitNestedListItemToParentParagraph, indentListItem, selectionIsInsideListItem },
   ] =
     await Promise.all([
     vite.ssrLoadModule("/src/editor/mathPasteHandler.ts"),
@@ -207,6 +207,43 @@ try {
   assert(
     shiftedParentItem.content[2].type === "paragraph" && shiftedParentItem.content[2].content[0].text === "The matrix",
     "Expected the current nested bullet text to become a parent-list paragraph.",
+  )
+
+  const tabIndentDoc = schema.nodeFromJSON({
+    type: "doc",
+    content: [
+      {
+        type: "orderedList",
+        attrs: { start: 1 },
+        content: [
+          { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Parent" }] }] },
+          { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Child" }] }] },
+        ],
+      },
+    ],
+  })
+  let tabIndentCursor = 0
+  tabIndentDoc.descendants((node, pos) => {
+    if (node.type.name === "paragraph" && node.textContent === "Child") tabIndentCursor = pos + 1 + node.textContent.length
+  })
+  const tabIndentState = EditorState.create({
+    doc: tabIndentDoc,
+    selection: TextSelection.create(tabIndentDoc, tabIndentCursor),
+  })
+  let tabIndentTransaction
+  assert(
+    indentListItem(tabIndentState, (tr) => {
+      tabIndentTransaction = tr
+    }),
+    "Expected Tab on a list item with a previous sibling to indent the current item.",
+  )
+  const tabIndentedJson = tabIndentTransaction.doc.toJSON()
+  const tabIndentedParent = tabIndentedJson.content[0].content[0]
+  assert(tabIndentedJson.content[0].content.length === 1, "Expected Tab indent to keep one top-level ordered-list item.")
+  assert(tabIndentedParent.content[1].type === "orderedList", "Expected Tab indent to create a nested ordered list under the previous item.")
+  assert(
+    tabIndentedParent.content[1].content[0].content[0].content[0].text === "Child",
+    "Expected Tab indent to move the current list item text into the nested list.",
   )
 
   const trailingOrderedDoc = schema.nodeFromJSON({

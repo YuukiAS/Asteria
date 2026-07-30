@@ -1,7 +1,7 @@
 {
   "name": "asteria",
   "private": true,
-  "version": "0.9.2",
+  "version": "0.9.3",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -11,6 +11,7 @@
     "test:restore-safety": "node scripts/validate-restore-safety.mjs",
     "test:search": "node scripts/validate-search-clicks.mjs",
     "test:edges": "node scripts/validate-edge-handles.mjs",
+    "test:block-usability": "node scripts/validate-block-usability.mjs",
     "test:rich-text": "node scripts/validate-rich-text-behavior.mjs",
     "test:image-links": "node scripts/validate-image-link-story-export.mjs"
   },

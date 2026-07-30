@@ -108,6 +108,10 @@ export function resolveBlockTitle(data: BlockData, activeVersionId?: ActiveVersi
   return resolveBlockVariant(data, activeVersionId).title
 }
 
+export function resolveBlockEditingTitle(data: BlockData, editingVariantKey: BlockVariantKey, renderedVariantKey: BlockVariantKey = defaultVariantKey) {
+  return data.variants?.[editingVariantKey]?.title ?? resolveBlockTitle(data, renderedVariantKey)
+}
+
 export function resolveBlockContentJson(data: BlockData, activeVersionId?: ActiveVersionId) {
   return resolveBlockVariant(data, activeVersionId).contentJson
 }
@@ -494,8 +498,8 @@ function normalizeBlockData(input: Partial<BlockData> & { content?: string }): B
     backgroundColor: normalizeColor(input.backgroundColor, defaults.backgroundColor),
     textColor: normalizeColor(input.textColor, defaults.textColor),
     borderColor: normalizeColor(input.borderColor, defaults.borderColor),
-    width: Number.isFinite(width) ? Math.min(Math.max(width, 220), 860) : 340,
-    height: Number.isFinite(height) ? Math.min(Math.max(height, 160), 720) : 220,
+    width: Number.isFinite(width) ? Math.min(Math.max(width, 220), 860) : blockSizePresets.medium.width,
+    height: Number.isFinite(height) ? Math.min(Math.max(height, 160), 720) : blockSizePresets.medium.height,
     displayMode: normalizeDisplayMode(input.displayMode),
     nodeType,
     showStatus: Boolean(input.showStatus),

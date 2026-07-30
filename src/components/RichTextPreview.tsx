@@ -1,6 +1,6 @@
 import { useMemo, useState, type CSSProperties, type FocusEvent, type PointerEvent } from "react"
 import { writeStyledMathClipboardFromSelection } from "../editor/mathPasteHandler"
-import { imageLinkLabelFromUrl, normalizeImageLinkSize, normalizeImageLinkUrl, type ImageLinkReference } from "../lib/imageLinks"
+import { imageLinkReferenceFromAnchorParts, type ImageLinkReference } from "../lib/imageLinks"
 import { preserveEmptyRichTextBlocks, stripScriptTags } from "../lib/sanitize"
 
 type RichTextPreviewProps = {
@@ -25,22 +25,21 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(value, max))
 }
 
-function imageLinkFromAnchor(anchor: HTMLAnchorElement): ImageLinkReference | undefined {
-  if (anchor.dataset.asteriaImageLink !== "true") return undefined
-  const href = normalizeImageLinkUrl(anchor.href || anchor.getAttribute("href") || "")
-  if (!href) return undefined
-  return {
-    href,
-    label: anchor.textContent?.trim() || imageLinkLabelFromUrl(href),
-    size: normalizeImageLinkSize(anchor.dataset.asteriaImageSize),
-  }
+function imageLinkFromAnchor(anchor: HTMLAnchorElement, includePreviewableImageUrls = false): ImageLinkReference | undefined {
+  return imageLinkReferenceFromAnchorParts({
+    href: anchor.href || anchor.getAttribute("href") || "",
+    label: anchor.textContent || undefined,
+    asteriaImageLink: anchor.dataset.asteriaImageLink,
+    asteriaImageSize: anchor.dataset.asteriaImageSize,
+    includePreviewableImageUrls,
+  })
 }
 
 function collectImageLinksFromHtml(safeHtml: string): ImageLinkReference[] {
   if (typeof window === "undefined" || typeof window.DOMParser === "undefined") return []
   const document = new window.DOMParser().parseFromString(safeHtml, "text/html")
-  return Array.from(document.querySelectorAll<HTMLAnchorElement>('a[data-asteria-image-link="true"]'))
-    .map(imageLinkFromAnchor)
+  return Array.from(document.querySelectorAll<HTMLAnchorElement>("a[href]"))
+    .map((anchor) => imageLinkFromAnchor(anchor, true))
     .filter((link): link is ImageLinkReference => Boolean(link))
 }
 

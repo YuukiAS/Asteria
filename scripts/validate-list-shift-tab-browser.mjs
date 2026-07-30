@@ -58,6 +58,27 @@ export async function validateListShiftTabBrowser(tab, { url = "http://127.0.0.1
     throw new Error("Shift+Tab leaked the final numbered item into a top-level paragraph.")
   }
 
+  await editor.press("Control+A")
+  await editor.press("Backspace")
+  await editor.press("1")
+  await editor.press(".")
+  await editor.press("Space")
+  await editor.type("Parent")
+  await editor.press("Enter")
+  await editor.type("Child")
+  await pw.waitForTimeout(150)
+  await editor.press("Tab")
+  await pw.waitForTimeout(250)
+  const afterTabIndent = await readNestedListState(editor)
+  await editor.press("Shift+Tab")
+  await pw.waitForTimeout(250)
+  const afterShiftTabOutdent = await readNestedListState(editor)
+
+  assert(afterTabIndent.topLevelLiCount === 1, "Tab indent: expected one top-level list item after indenting Child under Parent.")
+  assert(afterTabIndent.nestedLiTexts.includes("Child"), "Tab indent: expected Child to move into a nested list.")
+  assert(afterShiftTabOutdent.topLevelLiCount === 1, "Shift+Tab outdent: expected Child to stay inside the parent item instead of becoming a new numbered item.")
+  assert(afterShiftTabOutdent.parentParagraphTexts.includes("Child"), "Shift+Tab outdent: expected Child to become a parent-list paragraph.")
+
   return {
     url: await tab.url(),
     title: await tab.title(),
@@ -66,6 +87,8 @@ export async function validateListShiftTabBrowser(tab, { url = "http://127.0.0.1
     before,
     afterFirstShiftTab,
     afterSecondShiftTab,
+    afterTabIndent,
+    afterShiftTabOutdent,
   }
 }
 
@@ -86,6 +109,22 @@ async function readListState(editor) {
       .map((child) => child.innerText.trim())
       .filter(Boolean),
   }))
+}
+
+async function readNestedListState(editor) {
+  return editor.evaluate((el) => {
+    const topList = el.querySelector("ol")
+    const topItems = topList ? Array.from(topList.children).filter((child) => child.tagName === "LI") : []
+    const firstTopItem = topItems[0]
+    return {
+      html: el.innerHTML,
+      topLevelLiCount: topItems.length,
+      nestedLiTexts: Array.from(firstTopItem?.querySelectorAll(":scope > ol > li, :scope > ul > li") || []).map((li) => li.innerText.trim()),
+      parentParagraphTexts: Array.from(firstTopItem?.querySelectorAll(":scope > p") || [])
+        .map((paragraph) => paragraph.innerText.trim())
+        .filter(Boolean),
+    }
+  })
 }
 
 function assertListState(state, { phase, expectedLiTexts, expectedTrailingParagraph }) {

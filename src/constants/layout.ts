@@ -6,9 +6,9 @@ export const blockSizeLimits = {
 } as const
 
 export const blockSizePresets = {
-  small: { label: "Small", width: 260, height: 180 },
-  medium: { label: "Medium", width: 340, height: 220 },
-  large: { label: "Large", width: 480, height: 320 },
+  small: { label: "Small", width: 480, height: 280 },
+  medium: { label: "Medium", width: 640, height: 360 },
+  large: { label: "Large", width: 820, height: 500 },
 } as const
 
 export type BlockSizePreset = keyof typeof blockSizePresets

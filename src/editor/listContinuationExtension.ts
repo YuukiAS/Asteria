@@ -2,6 +2,7 @@ import { Extension } from "@tiptap/core"
 import { Fragment, type Node as ProseMirrorNode, type NodeType } from "prosemirror-model"
 import { TextSelection } from "prosemirror-state"
 import type { EditorState, Transaction } from "prosemirror-state"
+import { sinkListItem } from "prosemirror-schema-list"
 
 const listTypes = new Set(["bulletList", "orderedList", "taskList"])
 const listItemTypes = new Set(["listItem", "taskItem"])
@@ -122,6 +123,14 @@ export function selectionIsInsideListItem(state: EditorState) {
   return false
 }
 
+export function indentListItem(state: EditorState, dispatch?: (tr: Transaction) => void) {
+  const listItemType = state.schema.nodes.listItem
+  if (listItemType && sinkListItem(listItemType)(state, dispatch)) return true
+  const taskItemType = state.schema.nodes.taskItem
+  if (taskItemType && sinkListItem(taskItemType)(state, dispatch)) return true
+  return false
+}
+
 export function exitNestedListItemToParentParagraph(state: EditorState, dispatch?: (tr: Transaction) => void) {
   const { selection, schema } = state
   if (!selection.empty) return false
@@ -191,6 +200,7 @@ export const ListContinuationExtension = Extension.create({
         exitNestedListItemToParentParagraph(this.editor.state, this.editor.view.dispatch) ||
         exitEmptyListItemToParagraph(this.editor.state, this.editor.view.dispatch) ||
         selectionIsInsideListItem(this.editor.state),
+      Tab: () => indentListItem(this.editor.state, this.editor.view.dispatch) || selectionIsInsideListItem(this.editor.state),
     }
   },
 })

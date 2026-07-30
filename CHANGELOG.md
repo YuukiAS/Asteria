@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.3 - Block Usability Fixes
+
+- Resized Add Block presets around the local shared-map block distribution: Small `480 x 280`, Medium/default `640 x 360`, and Large `820 x 500`.
+- Let Zoom mode render ordinary HTTP(S) image-extension links directly, while preserving explicit Image Link behavior and non-embedding storage.
+- Fixed block title editing so inherited/base titles read from the same edit target that receives changes, and entering title edit mode no longer reselects the title after every update.
+- Added rich-text `Tab` list indentation while preserving the existing `Shift+Tab` outdent and numbered-list marker protections.
+- Added `npm run test:block-usability` and expanded `npm run test:rich-text` so these fixes have regression coverage.
+
 ## 0.9.2 - Restore Safety
 
 - Preserved local-only nodes, valid local-only edges, Story items, and model versions when loading the shared workspace or restoring recent/fixed local backups.

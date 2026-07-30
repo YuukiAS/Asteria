@@ -45,6 +45,10 @@ This project uses the `prompts/` handoff protocol for file-based handoff between
 - Non-version maintenance commits use short task prefixes such as `docs: ...`, `chore: ...`, or `fix: ...`. If there is a handoff task id, include the task id in the message.
 - Before committing, run at least `git status --short`, stage only files related to the current task, and do not mix in unrelated changes from other threads or the user.
 
+## Verification And Regression Coverage
+
+- Every code fix must include or update relevant automated validation or regression coverage before it is considered complete. Run the matching checks before committing. If automated coverage is not feasible for a fix, document the reason and any manual verification performed in the result file.
+
 ## Dev Server
 
 - The default dev server command is `npm run dev`; the project script pins Vite to `vite --host 127.0.0.1`.

@@ -12,6 +12,19 @@ export async function validateImageLinkBrowser(tab, { url = "http://127.0.0.1:51
   await pw.getByRole("button", { name: "New medium block", exact: true }).click()
   await pw.waitForTimeout(700)
 
+  const titleInput = pw.locator(".asteria-block-selected .block-title-input").first()
+  await titleInput.fill("ABCDE")
+  await titleInput.evaluate((input) => input.setSelectionRange(3, 3))
+  await titleInput.press("Backspace")
+  const titleCursorState = await titleInput.evaluate((input) => ({
+    value: input.value,
+    selectionStart: input.selectionStart,
+    selectionEnd: input.selectionEnd,
+  }))
+  assertEqual(titleCursorState.value, "ABDE", "Expected block title Backspace to delete the middle character.")
+  assertEqual(titleCursorState.selectionStart, 2, "Expected block title cursor to remain at the deletion point.")
+  assertEqual(titleCursorState.selectionEnd, 2, "Expected block title selection not to jump back to the whole title.")
+
   const editor = pw.locator(".inspector .ProseMirror").first()
   await editor.click()
   await editor.type("alpha omega")
@@ -58,6 +71,17 @@ export async function validateImageLinkBrowser(tab, { url = "http://127.0.0.1:51
   })
   assert(editModePreview.some((link) => link.parent === "preview"), "Expected Image Link to be visible in edit-mode block preview.")
 
+  await pw.getByRole("button", { name: "Zoom mode", exact: true }).click()
+  await pw.locator(".react-flow__node-block").nth(imageBlockIndex).click()
+  await pw.waitForTimeout(500)
+  const zoomImagePreview = await pw.evaluate(() => ({
+    cardCount: document.querySelectorAll(".zoom-block-card .rich-image-link-inline-card").length,
+    imageCount: document.querySelectorAll(".zoom-block-card .rich-image-link-inline-card img").length,
+    captions: Array.from(document.querySelectorAll(".zoom-block-card .rich-image-link-caption")).map((caption) => caption.textContent || ""),
+  }))
+  assert(zoomImagePreview.cardCount >= 1, "Expected Zoom mode to render Image Link inline preview cards.")
+  assert(zoomImagePreview.imageCount >= 1, "Expected Zoom mode inline preview cards to include image elements.")
+
   const logsAfter = await tab.dev.logs({ levels: ["error", "warn"], limit: 50 })
   return {
     url: await tab.url(),
@@ -69,6 +93,8 @@ export async function validateImageLinkBrowser(tab, { url = "http://127.0.0.1:51
     beforeRefresh,
     afterRefresh,
     editModePreview,
+    titleCursorState,
+    zoomImagePreview,
   }
 }
 
