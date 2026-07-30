@@ -62,6 +62,8 @@ This project uses the `prompts/` handoff protocol for file-based handoff between
 ## Verification And Regression Coverage
 
 - Every code fix must include or update relevant automated validation or regression coverage before it is considered complete. Run the matching checks before committing. If automated coverage is not feasible for a fix, document the reason and any manual verification performed in the result file.
+- For every bug fix, prepare a corresponding regression script by adding or updating an `npm run test:*` command and a focused script under `scripts/` whenever feasible. The script must directly exercise the reported failure mode and assert that the bug does not recur; generic smoke checks are not enough. Do not treat code edits alone, manual clicking alone, or a passing build alone as sufficient regression coverage.
+- Keep a cumulative regression entry point such as `npm run test:regression` current. Before every future version commit, run the new/changed fix-specific script and the cumulative regression script so older fixed issues are rechecked. If a scripted check is genuinely infeasible, document the exception, reason, and manual verification evidence in the matching `results/*_result.md` file before committing.
 
 ## Dev Server
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.4 - Shared Save Feedback And Zoom Image URLs
+
+- Added explicit Save dialog progress feedback while shared or fixed saves are running, with disabled duplicate actions and a spinner status so shared publishes no longer look frozen.
+- Let successful shared publishes close the dialog after the remote save completes, while mirroring the saved shared record into local IndexedDB in the background instead of blocking on the local cache write.
+- Expanded Zoom mode image URL detection to include query-based image formats and Google encrypted thumbnail endpoints such as `encrypted-tbn*.gstatic.com/images?...`, matching image links commonly pasted from search results.
+- Added `npm run test:shared-save`, expanded `npm run test:block-usability`, and introduced cumulative `npm run test:regression` coverage for the shared-save feedback path and extensionless Zoom image URLs.
+- Strengthened `AGENTS.md` so future bug fixes must include scripts that directly test the reported failure mode and future version commits rerun cumulative regressions.
+
 ## 0.9.3 - Block Usability Fixes
 
 - Resized Add Block presets around the local shared-map block distribution: Small `480 x 280`, Medium/default `640 x 360`, and Large `820 x 500`.

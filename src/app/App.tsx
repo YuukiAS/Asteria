@@ -1,7 +1,7 @@
 import "@xyflow/react/dist/style.css"
 import "katex/dist/katex.min.css"
 import { ReactFlowProvider } from "@xyflow/react"
-import { Archive, ChevronLeft, ChevronRight, CloudUpload, FilePlus2, FileText, PanelRightClose, PanelRightOpen, Save, SlidersHorizontal } from "lucide-react"
+import { Archive, ChevronLeft, ChevronRight, CloudUpload, FilePlus2, FileText, LoaderCircle, PanelRightClose, PanelRightOpen, Save, SlidersHorizontal } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { PointerEvent as ReactPointerEvent } from "react"
 import { Canvas } from "../components/Canvas"
@@ -53,6 +53,7 @@ export function App() {
   const [sidebarTab, setSidebarTab] = useState<"inspector" | "story">("inspector")
   const [inlineEditTarget, setInlineEditTarget] = useState<InlineEditTarget | undefined>()
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false)
+  const [saveDialogBusy, setSaveDialogBusy] = useState<"shared" | "fixed" | "load-shared">()
   const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false)
   const [showSaveConflict, setShowSaveConflict] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -253,21 +254,45 @@ export function App() {
 
   const saveToShared = useCallback(
     async (force = false) => {
-      const ok = await publishSharedVersion(force)
-      if (ok) {
-        setShowSaveConflict(false)
-        setIsSaveDialogOpen(false)
-      } else {
-        setShowSaveConflict(true)
+      if (saveDialogBusy) return
+      setSaveDialogBusy("shared")
+      try {
+        const ok = await publishSharedVersion(force)
+        if (ok) {
+          setShowSaveConflict(false)
+          setIsSaveDialogOpen(false)
+        } else {
+          setShowSaveConflict(true)
+        }
+      } finally {
+        setSaveDialogBusy(undefined)
       }
     },
-    [publishSharedVersion],
+    [publishSharedVersion, saveDialogBusy],
   )
 
   const saveToFixed = useCallback(async () => {
-    await saveFixedVersion()
-    setIsSaveDialogOpen(false)
-  }, [saveFixedVersion])
+    if (saveDialogBusy) return
+    setSaveDialogBusy("fixed")
+    try {
+      await saveFixedVersion()
+      setIsSaveDialogOpen(false)
+    } finally {
+      setSaveDialogBusy(undefined)
+    }
+  }, [saveFixedVersion, saveDialogBusy])
+
+  const loadSharedFromConflict = useCallback(async () => {
+    if (saveDialogBusy) return
+    setSaveDialogBusy("load-shared")
+    try {
+      await chooseSharedWorkspace()
+      setShowSaveConflict(false)
+      setIsSaveDialogOpen(false)
+    } finally {
+      setSaveDialogBusy(undefined)
+    }
+  }, [chooseSharedWorkspace, saveDialogBusy])
 
   const setSidebarCollapsed = useCallback((collapsed: boolean) => {
     setIsSidebarCollapsed(collapsed)
@@ -438,6 +463,17 @@ export function App() {
                 ? "Another computer saved the shared version after this workspace loaded. Choose how to continue."
                 : "Choose where to save the current canvas."
             }
+            busyMessage={
+              saveDialogBusy === "shared"
+                ? showSaveConflict
+                  ? "Overwriting shared version..."
+                  : "Publishing shared version..."
+                : saveDialogBusy === "fixed"
+                  ? "Saving fixed version..."
+                  : saveDialogBusy === "load-shared"
+                    ? "Loading shared version..."
+                    : undefined
+            }
             primary={{
               icon: showSaveConflict ? <Save size={18} /> : <CloudUpload size={18} />,
               tone: showSaveConflict ? "overwrite" : "shared",
@@ -446,6 +482,8 @@ export function App() {
               description: showSaveConflict
                 ? "Replace the current shared version with this canvas."
                 : "Publish this canvas as the single shared version for all computers.",
+              isLoading: saveDialogBusy === "shared",
+              disabled: Boolean(saveDialogBusy),
               onClick: () => void saveToShared(showSaveConflict),
             }}
             secondary={{
@@ -456,18 +494,16 @@ export function App() {
               description: showSaveConflict
                 ? "Create a local safety backup, load the shared version, and keep any newer block content from this computer."
                 : "Save a local fixed checkpoint. The latest three fixed versions are kept on this computer.",
-              onClick: showSaveConflict
-                ? () => {
-                    void chooseSharedWorkspace()
-                    setShowSaveConflict(false)
-                    setIsSaveDialogOpen(false)
-                  }
-                : () => void saveToFixed(),
+              isLoading: saveDialogBusy === (showSaveConflict ? "load-shared" : "fixed"),
+              disabled: Boolean(saveDialogBusy),
+              onClick: showSaveConflict ? () => void loadSharedFromConflict() : () => void saveToFixed(),
             }}
             onCancel={() => {
+              if (saveDialogBusy) return
               setShowSaveConflict(false)
               setIsSaveDialogOpen(false)
             }}
+            cancelDisabled={Boolean(saveDialogBusy)}
           />
         )}
       </div>
@@ -486,21 +522,27 @@ type DialogAction = {
   badge: string
   title: string
   description: string
+  disabled?: boolean
+  isLoading?: boolean
   onClick: () => void
 }
 
 function AsteriaChoiceDialog({
   title,
   description,
+  busyMessage,
   primary,
   secondary,
   onCancel,
+  cancelDisabled,
 }: {
   title: string
   description: string
+  busyMessage?: string
   primary: DialogAction
   secondary: DialogAction
   onCancel?: () => void
+  cancelDisabled?: boolean
 }) {
   return (
     <div className="choice-dialog-backdrop" role="presentation">
@@ -513,8 +555,15 @@ function AsteriaChoiceDialog({
         </div>
         <div className="choice-dialog-options">
           {[primary, secondary].map((action) => (
-            <button key={action.title} type="button" className={`choice-dialog-option choice-dialog-option-${action.tone}`} onClick={action.onClick}>
-              <span className="choice-dialog-option-icon">{action.icon}</span>
+            <button
+              key={action.title}
+              type="button"
+              className={`choice-dialog-option choice-dialog-option-${action.tone}${action.isLoading ? " choice-dialog-option-loading" : ""}`}
+              onClick={action.onClick}
+              disabled={action.disabled}
+              aria-busy={action.isLoading || undefined}
+            >
+              <span className="choice-dialog-option-icon">{action.isLoading ? <LoaderCircle size={18} className="choice-dialog-spinner" /> : action.icon}</span>
               <span>
                 <span className="choice-dialog-option-badge">{action.badge}</span>
                 <span className="choice-dialog-option-title">{action.title}</span>
@@ -523,9 +572,15 @@ function AsteriaChoiceDialog({
             </button>
           ))}
         </div>
+        {busyMessage ? (
+          <div className="choice-dialog-busy" role="status">
+            <LoaderCircle size={14} className="choice-dialog-spinner" />
+            <span>{busyMessage}</span>
+          </div>
+        ) : null}
         {onCancel && (
           <div className="choice-dialog-actions">
-            <button type="button" className="toolbar-button" onClick={onCancel}>
+            <button type="button" className="toolbar-button" onClick={onCancel} disabled={cancelDisabled}>
               Cancel
             </button>
           </div>

@@ -248,6 +248,21 @@ function mapFromState(state: Pick<MapState, "mapTitle" | "modelVersions" | "acti
   }
 }
 
+function queueSharedPublishLocalMirror(record: RemoteRecord) {
+  const map = { ...record.map, updatedAt: record.updatedAt }
+  const write = () =>
+    savePersistedMap(map, record.seededDemo).catch((error) => {
+      console.error("Failed to mirror shared publish into local cache", error)
+    })
+  if (typeof window === "undefined") {
+    void write()
+    return
+  }
+  window.setTimeout(() => {
+    void write()
+  }, 0)
+}
+
 function mapContentSignature(map: ExportedMap) {
   return JSON.stringify({
     title: normalizeMapTitle(map.title),
@@ -633,7 +648,7 @@ export const useMapStore = create<MapState>((set, get) => ({
         saveStatus: "Saved",
         lastSavedAt: result.record.updatedAt,
       })
-      await get().saveNow()
+      queueSharedPublishLocalMirror(result.record)
       return true
     } catch (error) {
       console.error("Failed to publish shared map", error)

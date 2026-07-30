@@ -13,6 +13,9 @@ export type ImageLinkReference = {
 }
 
 const previewableImagePathPattern = /\.(png|jpe?g|gif|webp|svg)$/i
+const previewableImageQueryNames = new Set(["content-type", "ext", "fm", "format", "mime", "type"])
+const previewableImageQueryValuePattern = /^(?:image\/)?(?:png|jpe?g|gif|webp|svg(?:\+xml)?)$/i
+const googleImageThumbnailHostPattern = /^encrypted-tbn\d*\.gstatic\.com$/i
 
 export function normalizeImageLinkUrl(value: string) {
   const trimmed = value.trim()
@@ -35,7 +38,12 @@ export function isPreviewableImageUrl(value: string) {
   if (!href) return false
   try {
     const url = new URL(href)
-    return previewableImagePathPattern.test(decodeURIComponent(url.pathname))
+    const pathname = decodeURIComponent(url.pathname)
+    if (previewableImagePathPattern.test(pathname)) return true
+    for (const [name, queryValue] of url.searchParams) {
+      if (previewableImageQueryNames.has(name.toLowerCase()) && previewableImageQueryValuePattern.test(queryValue.trim())) return true
+    }
+    return googleImageThumbnailHostPattern.test(url.hostname) && /^\/images?$/i.test(pathname) && url.searchParams.has("q")
   } catch {
     return false
   }

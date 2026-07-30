@@ -1,7 +1,7 @@
 {
   "name": "asteria",
   "private": true,
-  "version": "0.9.3",
+  "version": "0.9.4",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -14,7 +14,9 @@
     "test:block-usability": "node scripts/validate-block-usability.mjs",
     "test:rich-text": "node scripts/validate-rich-text-behavior.mjs",
     "test:image-links": "node scripts/validate-image-link-story-export.mjs",
-    "test:shared-server": "node scripts/validate-shared-server-config.mjs"
+    "test:shared-server": "node scripts/validate-shared-server-config.mjs",
+    "test:shared-save": "node scripts/validate-shared-save-feedback.mjs",
+    "test:regression": "npm run test:block-usability && npm run test:rich-text && npm run test:image-links && npm run test:shared-server && npm run test:shared-save"
   },
   "dependencies": {
     "@tiptap/core": "^2.26.4",

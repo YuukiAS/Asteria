@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `0.9.3`.
+Current app version: `0.9.4`.
 
 ## Run
 
@@ -32,6 +32,8 @@ npm run test:block-usability
 npm run test:rich-text
 npm run test:image-links
 npm run test:shared-server
+npm run test:shared-save
+npm run test:regression
 ```
 
 ## Data
@@ -40,7 +42,7 @@ When Asteria is opened through the shared Slurm/Cloudflare server, the server st
 
 When the shared API is unavailable, including ordinary `npm run dev` sessions, maps are stored locally in IndexedDB under the `asteria-map` database. The app shows `Local` in the top toolbar in this fallback mode.
 
-The top toolbar provides Save, JSON import, and export. Save opens a confirmation dialog: `Save shared version` publishes the current canvas as the single shared version, while `Save fixed version` creates a local fixed checkpoint. Exported maps include nodes, edges, block styling, rich-text JSON, Symbol entries, model versions, variant content, viewport state, Story outline items, and Story deck settings.
+The top toolbar provides Save, JSON import, and export. Save opens a confirmation dialog: `Save shared version` publishes the current canvas as the single shared version, while `Save fixed version` creates a local fixed checkpoint. Shared and fixed saves show an in-dialog spinner while running. After a shared publish succeeds, Asteria closes the dialog and mirrors the saved shared record into the local cache in the background. Exported maps include nodes, edges, block styling, rich-text JSON, Symbol entries, model versions, variant content, viewport state, Story outline items, and Story deck settings.
 
 The full toolbar with text labels is intended for browser viewports at least `1600px` wide. Below that width, including a typical 15.6-inch 1920x1080 laptop at 125% OS scaling where the browser viewport is about `1536px`, toolbar actions stay icon-only to prevent label overlap.
 
@@ -57,7 +59,7 @@ Shared saves use a revision check only when Save publishes to the shared version
 - Double-click the canvas to create a new block at that position.
 - Double-click a block to enter inline editing.
 - Click an empty canvas background while editing to return to Move mode.
-- Use the rich-text `Link` control for ordinary web, paper, or source hyperlinks. Use the `Image link` control for image URLs: it opens a dialog with the link field on top and a live preview below, accepts Enter to insert, and uses the editor's current selection so selected text is marked in place. With no selected text it stores the image as visible `Image: ...` link text with preview metadata. Editor and normal block previews show explicit Image Link images on hover/focus, while Zoom mode shows explicit Image Links and ordinary HTTP(S) image-extension links directly without embedding the image file in the map.
+- Use the rich-text `Link` control for ordinary web, paper, or source hyperlinks. Use the `Image link` control for image URLs: it opens a dialog with the link field on top and a live preview below, accepts Enter to insert, and uses the editor's current selection so selected text is marked in place. With no selected text it stores the image as visible `Image: ...` link text with preview metadata. Editor and normal block previews show explicit Image Link images on hover/focus, while Zoom mode shows explicit Image Links, ordinary HTTP(S) image-extension links, query-format image links, and Google encrypted thumbnail links directly without embedding the image file in the map.
 - Inside lists, use `Tab` to indent the current list item when possible. Use `Shift+Tab` on an empty nested item, or on a non-empty nested bullet inside a numbered parent item, to move the current line into the parent list item without turning it into a new numbered item. For top-level numbered lists, `Shift+Tab` exits only from a truly empty list item, and unhandled list `Shift+Tab` events are swallowed so non-empty numbered items keep their markers.
 - Drag undo is supported with `Ctrl+Z` / `Cmd+Z` when focus is not inside a text editor.
 - Open global search from the toolbar or with `Ctrl+F` / `Cmd+F` when focus is not inside a text editor. Search covers the current rendered model version, including block titles, rich text, inline equations, block equations, and Symbol entries.

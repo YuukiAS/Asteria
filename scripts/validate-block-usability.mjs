@@ -14,6 +14,8 @@ function assertEqual(actual, expected, message) {
 }
 
 const at = "2026-07-30T00:00:00.000Z"
+const googleThumbnailUrl =
+  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQwyM3z4t4RA5WIhCq-Ytlb1NTSV_yMcnSLTrbJu0bnUYxGIgNvfT_gf8L4Igg5RaI-FRGIhPBkIsB9p_lIjZwMiNTig8CMJgcDnGqSAF_rLg&s=10"
 
 const vite = await createServer({
   server: { middlewareMode: true, hmr: false },
@@ -68,7 +70,10 @@ try {
   assertEqual(normalizedBlock.data.height, blockSizePresets.medium.height, "Expected import fallback height to use the Medium preset.")
 
   assert(isPreviewableImageUrl("https://example.com/figure.PNG?download=1#view"), "Expected image path URLs with query/hash to be previewable in Zoom.")
+  assert(isPreviewableImageUrl("https://assets.example.com/render?format=webp&id=12"), "Expected image format query URLs to be previewable in Zoom.")
+  assert(isPreviewableImageUrl(googleThumbnailUrl), "Expected Google encrypted thumbnail image endpoints to be previewable in Zoom.")
   assert(!isPreviewableImageUrl("https://example.com/paper"), "Expected ordinary non-image links not to be previewable by URL alone.")
+  assert(!isPreviewableImageUrl("https://example.com/images?q=paper"), "Expected ordinary image-named web routes without image signals not to be previewable by URL alone.")
   assert(
     imageLinkReferenceFromAnchorParts({
       href: "https://example.com/paper",
@@ -85,6 +90,14 @@ try {
       includePreviewableImageUrls: true,
     })?.label === "chart",
     "Expected Zoom inline mode to extract ordinary image URL anchors.",
+  )
+  assert(
+    imageLinkReferenceFromAnchorParts({
+      href: googleThumbnailUrl,
+      label: "Ascomycota",
+      includePreviewableImageUrls: true,
+    })?.href === googleThumbnailUrl,
+    "Expected Zoom inline mode to extract Google encrypted thumbnail anchors pasted as ordinary links.",
   )
   assert(
     !imageLinkReferenceFromAnchorParts({
