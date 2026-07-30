@@ -20,6 +20,7 @@ npm run serve:shared
 ```
 
 This starts Asteria with same-origin `/api/asteria/*` persistence on `http://127.0.0.1:5174/` by default.
+The shared server is configured to accept external tunnel hostnames such as Cloudflare quick tunnel URLs, so the public link can load the app shell as well as the shared API.
 
 ## Build
 
@@ -30,6 +31,7 @@ npm run test:edges
 npm run test:block-usability
 npm run test:rich-text
 npm run test:image-links
+npm run test:shared-server
 ```
 
 ## Data

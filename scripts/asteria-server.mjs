@@ -136,7 +136,7 @@ await ensureStorage()
 
 const vite = await createViteServer({
   root,
-  server: { middlewareMode: true, host, hmr: false, ws: false },
+  server: { middlewareMode: true, host, allowedHosts: true, hmr: false, ws: false },
   appType: "spa",
 })
 

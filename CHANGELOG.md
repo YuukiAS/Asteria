@@ -7,6 +7,7 @@
 - Fixed block title editing so inherited/base titles read from the same edit target that receives changes, and entering title edit mode no longer reselects the title after every update.
 - Added rich-text `Tab` list indentation while preserving the existing `Shift+Tab` outdent and numbered-list marker protections.
 - Added `npm run test:block-usability` and expanded `npm run test:rich-text` so these fixes have regression coverage.
+- Allowed the shared Slurm/Cloudflare server's Vite middleware to serve external tunnel hosts, with `npm run test:shared-server` covering the host-check configuration.
 
 ## 0.9.2 - Restore Safety
 

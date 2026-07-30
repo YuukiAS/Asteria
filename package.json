@@ -13,7 +13,8 @@
     "test:edges": "node scripts/validate-edge-handles.mjs",
     "test:block-usability": "node scripts/validate-block-usability.mjs",
     "test:rich-text": "node scripts/validate-rich-text-behavior.mjs",
-    "test:image-links": "node scripts/validate-image-link-story-export.mjs"
+    "test:image-links": "node scripts/validate-image-link-story-export.mjs",
+    "test:shared-server": "node scripts/validate-shared-server-config.mjs"
   },
   "dependencies": {
     "@tiptap/core": "^2.26.4",
