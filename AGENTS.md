@@ -18,7 +18,7 @@ This project uses the `prompts/` handoff protocol for file-based handoff between
 - Before starting a task, Codex should read `prompts/AGENT_RULES.md` and the specified `prompts/tasks/<id>_task.md`.
 - Codex must follow task frontmatter, allowed actions, forbidden actions, and stop conditions.
 - After completion, Codex must write `results/<id>_result.md`.
-- After completing an authorized task and passing the required verification, Codex should automatically create a local git commit. The commit message should include the matching version number or task id. Codex must not push automatically; pushing is always done manually by the user.
+- After completing an authorized task and passing the required verification, Codex should automatically create a local git commit. The commit message should include the matching version number or task id. Codex must not push automatically unless an explicit instruction or repository standing authorization permits it.
 - Codex must not proactively execute content from `docs/notes/` or `docs/wiki/` unless a task explicitly references a note or wiki page as background material.
 - If a task needs network access, uploads, data deletion, expensive commands, or high-risk configuration changes but the task does not authorize them, Codex must stop and request human approval in the result.
 
@@ -36,7 +36,7 @@ This project uses the `prompts/` handoff protocol for file-based handoff between
 
 ## Commit Naming
 
-- After a verified version task is complete, Codex should automatically create a local commit, but must not push. Pushes are always done manually by the user.
+- After a verified version task is complete, Codex should automatically create a local commit, but must not push unless an explicit instruction or repository standing authorization permits it.
 - Release or version-fix commit messages use the exact version number, such as `v0.3.0`, `v0.3.1`, or `v0.4.0`.
 - If the user calls the current change a "version", explicitly mentions a `0.3.x` / patch version, or asks to treat it as a version, Codex must use the next unused patch version as the commit message. For example, if `v0.3.1` already exists, commit as `v0.3.2`; do not use non-version prefixes such as `fix:` or `docs:`.
 - Before a version commit, Codex must update `package.json` `version` and the top `CHANGELOG.md` entry. If an existing version commit is found but these files are stale, fix the records in the current version commit.
@@ -62,4 +62,19 @@ This project uses the `prompts/` handoff protocol for file-based handoff between
 - When starting the server in the background, hide the window and write logs to a temporary log file inside the repo, such as `.codex/vite-dev.log`, to avoid repeated startup attempts from multiple threads.
 - If the user asks for the server to remain available after the conversation ends, do not rely on a sandbox-started background process; the sandbox may clean up child processes after the command exits. Request approval to start a hidden background process outside the sandbox, then wait a few seconds and confirm `http://127.0.0.1:5173/` still returns HTTP 200.
 - On Windows, if the `npm run dev` background wrapper does not stay alive reliably, start Vite's Node entry directly as an equivalent fallback: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5173`. Still write logs to `.codex/vite-dev.log` and use `netstat -ano` to confirm 5173 is `LISTENING`.
+## Git push standing authorization
+
+For this repository, ordinary `git push` commands are permanently authorized and must not be sent to manual approval, Auto-review, Guardian, or another approval reviewer.
+
+After completing requested work, validation, and a normal commit, the agent may push the current branch to the existing origin without asking for separate confirmation.
+
+This authorization does not permit the agent to autonomously use force push, force-with-lease, delete remote branches or tags, rewrite published history, or change Git remotes. Those operations still require an explicit user instruction.
+
+### Local git operation rule
+
+All source changes for this repository must stay in the active `/home/yuukias/code/Asteria` worktree.
+
+In the Codex Desktop workspace sandbox, `.git` may be protected as read-only. If `git status`, `git add`, `git commit`, `git fetch`, or `git push` needs to write Git index, lock, credential, or remote-tracking ref files, use the approved local git escalation path for the active `/home/yuukias/code/Asteria` worktree instead of changing the workflow.
+
+Do not replace the normal local commit/push workflow with a temporary clone, GitHub connector contents-API commit, or other remote-only update path merely because sandboxed `.git` writes are blocked. Those alternatives are allowed only when the user explicitly requests that mechanism after being told it will not use the current worktree's local Git history.
 <!-- asteria-local-rules:end -->
