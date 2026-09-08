@@ -1,449 +1,582 @@
-# TODO — Presentation Outline 与 Markdown Story Deck 导出
+# TODO — Model Architecture First
 
-本 TODO 记录 Asteria 下一步要做的功能方向。请 Codex 先进入 plan mode，先读规则、理解当前实现，再给出简洁实施计划。计划清楚后再实现。不要直接进入大规模改代码。
+更新日期：2026-09-08  
+状态：长期产品方向与后续设计任务。本文档不授权直接大规模改代码；实现前仍需拆成独立 task、完成 schema 评审与兼容性计划。
 
-## 1. 背景与判断
+Asteria 当前已经具备可编辑 canvas、typed blocks、Symbol entries、model versions、Story Outline 与 Markdown export。下一阶段不应继续把更多研究内容无差别塞进同一张无限画布，也不应把 Asteria 做成 PPT 编辑器。最重要的产品转向是：
 
-老师反馈：当前思维导图式展示会“跳来跳去”，信息密度太高，不利于组会汇报。Asteria 现在适合研究阶段组织想法，但不适合作为最终汇报形式。
+> **Asteria should become a general statistical architecture atlas: a system that makes every object, symbol, layer, dependency, assumption, estimand and inference step traceable.**
 
-因此下一步不要做浏览器内的 online presentation，也不要做“点一下跳到下一个 block”的 canvas 演示模式。那种模式本质上仍然是在高密度画布中移动视角，只解决“怎么跳转”，没有解决“怎么降低密度、形成线性叙事”。
+中文定位：
 
-更合理的方向是：Asteria 负责把网状研究画布整理成线性讲稿骨架；正式展示交给后续 PPT/PDF 工作流。
+> **Asteria 是面向统计研究的“模型架构地图”，首先回答一个方法到底由哪些层组成、每个量是什么、从哪里来、如何得到、影响什么；然后再连接方法谱系与研究证据。**
 
-核心目标：实现一个可以选择 block / group，指定顺序，并导出为 Markdown story deck 的功能。后续用户可以把导出的 Markdown 交给 GPT、Codex 或专门的 slides skill，制作低密度、美观、适合科研汇报的 PPT/PDF。
+这个定位不局限于 Bayesian models。Bayesian prior 只是某一种 stochastic specification；frequentist estimating equations、optimization objectives、causal estimands、identification assumptions、machine-learning losses 和 algorithmic transforms 都应当是同等一等对象。
 
-## 2. 产品原则
+---
 
-Asteria 不要变成 PPT 编辑器。Asteria 的角色是研究画布与线性讲稿之间的桥。
+## 1. 为什么以 Model Architecture 为第一优先级
 
-网状画布用于思考，Markdown story deck 用于转化为正式汇报。导出内容应当强调线性叙事、低密度、清晰主线，而不是把所有 block 内容无差别堆出来。
+现在的 block system 能记录 Model、Prior、Theorem、Dataset、Result、Notation、Symbol 等内容，但“能记录很多东西”不等于“能帮助理解模型”。当前主要问题是：
 
-默认导出的内容应适合进一步生成科研 slides：一页一个主信息、公式可保留、speaker notes 可保留，但正文不要过密。
+1. 一个 symbol、一整篇 paper、一个 dataset 和一个 simulation 容易成为同一级 block；
+2. 普通箭头不能说明“生成”“参数化”“估计”“识别”“近似”之间的区别；
+3. 用户能看到公式，却不能快速回答某个符号在第几层、维度是什么、上游从哪里来、下游进入哪个量；
+4. Bayesian-specific block types 容易让 frequentist、causal inference、semiparametric 或 machine-learning workflow 无法自然表达；
+5. 单一大 canvas 同时承担模型内部结构、方法谱系、论文证据和汇报叙事，导致尺度混乱。
 
-## 3. 本任务目标
+因此下一阶段首先做清楚 **Model Architecture / Anatomy**，而不是继续新增更多松散 block type 或视觉装饰。
 
-实现 `Presentation Outline` 或 `Story Export` 功能：
+---
 
-1. 用户可以从画布中选择 block 或 group/frame，加入一个可排序的 outline。
-2. outline 定义导出顺序，不用于网页端播放。
-3. 用户可以给每个 outline 条目设置 slide title、导出密度、notes。
-4. 用户可以按照当前全局版本或指定版本解析 block 内容。
-5. 用户可以导出一个结构良好的 Markdown 文件，用于后续制作 PPT/PDF。
-6. 导出的 Markdown 应包含一段可直接交给 GPT/Codex/slides skill 的生成提示词。
+## 2. 长期信息架构：One Knowledge Graph, Multiple Views
 
-## 4. 明确不做
-
-本任务不做：
-
-1. 不做浏览器内 presentation / slideshow 模式。
-2. 不做按空格跳转 block 的 canvas 演示。
-3. 不做 `.pptx` 直接导出。
-4. 不做 PDF 直接导出。
-5. 不做复杂 PPT 排版引擎。
-6. 不做 AI 自动总结或自动生成 slide 文案，除非用户后续单独要求。
-7. 不做云同步、多用户协作。
-8. 不做对画布视觉系统的大改。
-9. 不做新的 block type 系统。
-10. 不做 presentation-specific per-version layout。
-
-## 5. 交互设计
-
-建议新增一个右侧或可折叠面板，名称可以是：
+Asteria 长期采用一个 Project 下共享 entity/relation 的多视图结构：
 
 ```text
+Project: CAT-TRACE / Causal Study / Bioinformatics Pipeline / ...
+
+[ Architecture ] [ Lineage ] [ Evidence ]
+
 Story Outline
+Search
+Object Inspector
 ```
 
-或
+### 2.1 Architecture View
 
-```text
-Export Outline
-```
+回答：
 
-面板应支持：
+- 模型或方法有哪些层？
+- 每个符号、数据对象、参数、潜变量、变换、估计量和目标是什么？
+- 它从哪里来、由什么决定、服从什么分布或满足什么方程？
+- 哪些假设保证它可识别或可估计？
+- 它最终影响什么预测、estimand 或决策？
 
-1. `Add selected to outline`：把当前选中的 block 或 group 加入 outline。
-2. 拖拽排序 outline 条目。
-3. 删除 outline 条目。
-4. 重命名条目的 slide title。
-5. 设置每个条目的导出密度。
-6. 给每个条目添加 speaker notes。
-7. 点击 outline 条目时，可以在画布上选中或定位到对应 block/group，方便检查来源。
-8. 支持 `Export Markdown`。
+这是 Asteria 的核心视图和第一优先级。
 
-不要求做复杂动画、播放、全屏。
+### 2.2 Lineage View
 
-## 6. Outline 条目类型
+回答：某个方法继承、推广、替换或放松了哪些既有方法。节点粒度以 model、method、paper、algorithm 和 prior family 为主，不放普通微观符号。
 
-第一版至少支持 block。若 group/frame 已经稳定，支持 group/frame 更好。
+### 2.3 Evidence View
 
-建议数据结构类似：
+以 Claim 为核心，将 theorem、simulation、dataset、result、ablation、reference、limitation 和 implementation 连接起来，检查研究论证是否闭环。
+
+### 2.4 Story Outline
+
+Story Outline 已经实现并继续保留，但它是从 graph 抽取线性叙事的输出层，不是第四种同构 canvas，也不应反过来决定底层知识结构。
+
+---
+
+## 3. 通用 Statistical Object Schema
+
+下一阶段不要继续用“每种方法加一个专属 block type”的方式扩展。应建立少量稳定的顶层 object kinds，再允许 domain-specific subtype。
+
+建议第一版 schema：
 
 ```ts
-type StoryOutlineItemType = "block" | "group"
+type StatisticalObjectKind =
+  | "observed_data"
+  | "measurement"
+  | "derived_data"
+  | "latent_variable"
+  | "parameter"
+  | "nuisance_parameter"
+  | "hyperparameter"
+  | "deterministic_transform"
+  | "stochastic_mechanism"
+  | "objective"
+  | "constraint"
+  | "assumption"
+  | "identification_condition"
+  | "estimand"
+  | "estimator"
+  | "prediction_target"
+  | "decision_rule"
+  | "algorithm"
+  | "diagnostic"
+  | "uncertainty_object"
+  | "result"
+  | "claim"
+  | "reference"
+```
 
-type StoryExportDensity = "title_only" | "summary" | "full"
+这些 kind 不等于 UI 一定显示二十种颜色。UI 可以继续使用少量视觉家族，但底层必须知道对象语义。
 
-type StoryOutlineItem = {
+### 3.1 Bayesian 只是 schema 的一种实例
+
+Bayesian model 可使用：
+
+- observed_data；
+- latent_variable；
+- parameter / hyperparameter；
+- stochastic_mechanism；
+- prior relation；
+- posterior / uncertainty_object；
+- prediction_target。
+
+### 3.2 Frequentist / optimization 方法
+
+应能自然表示：
+
+- likelihood、loss 或 estimating equation 作为 objective；
+- parameter 与 nuisance parameter；
+- regularizer 与 constraint；
+- estimator 由 argmin / root-finding 得到；
+- standard error、confidence interval、bootstrap distribution 作为 uncertainty_object。
+
+### 3.3 Causal inference
+
+应能自然表示：
+
+- treatment \(A\)、outcome \(Y\)、covariates \(X\)；
+- potential outcomes \(Y(1),Y(0)\)；
+- estimand，例如
+  \[
+  \operatorname{ATE}=E\{Y(1)-Y(0)\};
+  \]
+- consistency、exchangeability、positivity 作为 identification conditions；
+- propensity score \(e(X)\) 或 outcome regression；
+- IPW、AIPW、matching 等 estimator；
+- sensitivity analysis 与 overlap diagnostics。
+
+这类项目不应被迫伪装成“prior/model/theorem”三类 Bayesian blocks。
+
+### 3.4 Bioinformatics / pipeline 方法
+
+应能表示 raw reads → QC → alignment → feature table → normalization → model → inference 的 deterministic 与 stochastic 混合流程，并记录软件/版本/参数 provenance。
+
+---
+
+## 4. Symbol 应成为一等 Entity
+
+当前 Symbol block 是列表；长期应升级为可被公式、对象和关系引用的 canonical entity。每个 symbol 至少应有：
+
+```ts
+type StatisticalSymbol = {
   id: string
-  sourceId: string
-  sourceType: StoryOutlineItemType
-  slideTitle?: string
-  density: StoryExportDensity
-  speakerNotes?: string
-  createdAt: string
-  updatedAt: string
+  latex: string
+  canonicalName: string
+  objectKind: StatisticalObjectKind
+  subtype?: string
+
+  scopeLevel?: string
+  indices?: SymbolIndexSpec[]
+  dimension?: string
+  domain?: string
+  unit?: string
+
+  observedStatus: "observed" | "latent" | "fixed" | "estimated" | "derived"
+  definitionMode:
+    | "stochastic"
+    | "deterministic"
+    | "optimization"
+    | "estimating_equation"
+    | "causal"
+    | "algorithmic"
+
+  definition?: RichTextOrEquation
+  stochasticLaw?: RichTextOrEquation
+  objectiveOrEquation?: RichTextOrEquation
+  constraints?: EntityRef[]
+  assumptions?: EntityRef[]
+
+  parentRefs?: EntityRef[]
+  childRefs?: EntityRef[]
+  definedIn?: EntityRef
+  usedIn?: EntityRef[]
+
+  provenance?: ProvenanceRecord[]
+  codeBindings?: CodeBinding[]
+  citations?: ReferenceRef[]
+  variantState?: VariantMetadata
 }
 ```
 
-如果当前 store 不方便扩展，可以先保存在 local state / persisted map state 中，但要保证刷新后不丢失。更理想的是把 outline 存进导出的 map JSON。
+### 4.1 点击 symbol 后必须能回答的问题
 
-## 7. 导出密度
+以 CAT-TRACE 的 \(\beta^{\mathcal U}_{gh}\) 为例：
 
-每个 outline item 应支持三个导出密度：
+- 类型：parameter；
+- 层级：open-tail feature within biological group；
+- 维度：\(\mathbb R^q\)；
+- indices：group \(g\)、within-group feature \(h\)；
+- 定义：\(\nu+a_g+v^{\mathcal U}_{gh}\)；
+- 上游：\(\nu,a_g,v^{\mathcal U}_{gh}\)；
+- 下游：\(x_i^\top\beta^{\mathcal U}_{gh}\)、occurrence probability、richness theorem；
+- stochastic law：若为 Bayesian specification，显示相应 prior；
+- constraints：group effects sum-to-zero；
+- code binding：R/C++ 参数名与文件位置；
+- variant diff：旧版本使用 \(\nu_g\)，当前版本使用 \(\nu+a_g\)。
 
-```text
-Title only
-Summary
-Full content
-```
-
-默认使用 `Summary`，因为老师已经反馈不喜欢密度太高。
-
-### Title only
-
-只导出标题、block type、版本来源、极短注释。适合后续让 GPT/Codex 自行扩展为 slide。
-
-### Summary
-
-导出标题、block type、当前解析后的核心内容摘要、关键公式、speaker notes。若目前没有自动摘要功能，就不要调用 AI，可以先导出 block 正文的前若干段或前若干字符，并标注为 `Draft content`。不要在本任务中实现 AI summarization。
-
-### Full content
-
-导出完整 rich text 内容转换成 Markdown，适合需要保留全部笔记时使用。
-
-## 8. 版本解析
-
-导出 Markdown 时必须明确版本。
-
-导出设置中至少支持：
-
-```text
-Use current global version
-Use All / base view
-Use a selected version
-```
-
-如果当前实现已有版本继承逻辑，则导出时应使用 resolver 得到当前版本实际显示的内容，并在 metadata 中标记来源：
-
-```text
-Version: V3
-Source: inherits V2
-```
-
-如果版本继承逻辑尚未完成，则先使用当前已有的 version resolver，并在 TODO/result 中说明限制。
-
-导出正文只放当前解析后的内容，不要把所有版本内容都堆进一个 slide。其他版本信息可以放在 metadata 或 notes 中。
-
-## 9. Markdown 导出格式
-
-导出的 Markdown 应该是线性 story deck，不是原始 block dump。
-
-建议格式：
-
-```markdown
-# <Deck Title>
-
-Generated from Asteria.
-Version view: <current version / selected version>
-Export density: <mixed / summary / full>
-
-## Slide 1 — <Slide Title>
-
-Source: <BlockType> / <Original block title>
-Version: <V3 · Marked TRACE>
-Variant source: <Own / Inherits V2 / Base legacy>
-
-Main message:
-<低密度正文或摘要>
-
-Key formulas:
-<公式，如有>
-
-Speaker notes:
-<speaker notes，如有>
-
-Related blocks:
-<可选，列出用户手动填或自动从连接边推断的相关 block，第一版可省略>
+这类 traceability 才是 Asteria 相比普通 Markdown/Notion 的核心价值。
 
 ---
 
-## Slide 2 — <Slide Title>
-...
-```
+## 5. General Architecture Layers
 
-如果 rich text 到 Markdown 的转换已有工具，就复用现有工具；如果没有，先实现一个保守转换，至少保留：
+Layer 不应硬编码成 Bayesian 专属。建议通用层级为：
 
-1. 标题文本。
-2. 普通段落。
-3. bullet / ordered list。
-4. bold / italic 尽量保留。
-5. inline math 和 block math。
-6. code text。
-7. links 尽量保留。
+1. **Scientific target / estimand**  
+   研究真正想回答的问题、预测或决策目标。
 
-如果某些 Tiptap 节点暂时无法可靠转换，允许降级为纯文本，但要避免丢内容。
+2. **Observed inputs**  
+   raw data、sample metadata、external structured data、units、index sets。
 
-## 10. Key formulas 提取
+3. **Measurement / preprocessing**  
+   detection、aggregation、normalization、matching、feature construction、missingness handling。
 
-第一版不需要复杂公式解析。可以采用简单规则：
+4. **Structural / latent representation**  
+   latent variables、potential outcomes、state equations、graphical mechanisms、low-rank structure。
 
-1. 如果内容里有 block math 节点，放入 `Key formulas`。
-2. 如果没有 block math，但有 inline math，可以保留在正文中。
-3. 不要为了公式提取而破坏原始内容。
+5. **Parameterization**  
+   coefficients、group effects、variance/correlation、basis expansion、link functions。
 
-如果公式提取太复杂，先把所有内容放进 `Main message`，并在 result 中说明下一步可以优化。
+6. **Assumptions / identification**  
+   independence、exchangeability、positivity、rank condition、model restrictions、constraints。
 
-## 11. Speaker notes
+7. **Inference / estimation**  
+   prior + likelihood、estimating equations、optimization、MCMC、variational approximation、bootstrap。
 
-每个 outline item 应允许用户手动写 speaker notes。Notes 不应该显示在 canvas block 本体里，应该属于 story outline。
+8. **Prediction / decision**  
+   posterior predictive、counterfactual estimand、classification decision、policy rule。
 
-导出时 speaker notes 单独放在对应 slide section 下。后续制作 PPT 时可以把它们转成演讲备注，而不是 slide 主体。
+9. **Diagnostics / validation**  
+   convergence、calibration、sensitivity、cross-validation、simulation checks。
 
-## 12. Deck-level 信息
+用户可以过滤 layer，或只显示某个 symbol 的 upstream/downstream 子图。Layer 是认知视图，不要求所有方法严格线性流动。
 
-导出前可以有一个简单设置区：
-
-1. Deck title。
-2. Export version view。
-3. Default density。
-4. Include speaker notes: yes/no。
-5. Include source metadata: yes/no。
-6. Include PPT generation prompt: yes/no。
-
-第一版 UI 要简单，不要做复杂 modal。可以使用现有右侧 panel 或 toolbar button 打开一个轻量导出面板。
-
-## 13. PPT generation prompt
-
-Markdown 文件末尾建议自动附加一段提示词，方便后续交给 GPT/Codex/slides skill。
-
-建议内容：
-
-```markdown
 ---
 
-# Prompt for generating research slides
+## 6. Typed Relations
 
-Please convert the story deck above into a low-density academic presentation.
+长期不能继续把所有 edge 当作普通箭头。建议 relation schema 至少支持：
 
-Requirements:
-- One slide should communicate one main idea.
-- Keep slide text sparse and readable.
-- Preserve mathematical notation in LaTeX.
-- Move detailed explanations to speaker notes.
-- Use diagrams where helpful, especially for model decomposition and workflow.
-- Use a clean academic style suitable for a statistics/ecology research group meeting.
-- Do not copy all Markdown text onto slides.
-- Prefer concise slide titles that state the message.
-```
+### 6.1 Data 与结构
 
-可以是英文，因为后续生成科研 PPT 通常更适合英文。其余 UI 与 TODO 仍以中文为主。
+- `measured_as`
+- `preprocessed_into`
+- `aggregated_into`
+- `matched_to`
+- `derived_from`
+- `indexed_by`
 
-## 14. 与版本继承功能的关系
+### 6.2 数学定义
 
-如果 sequential variant inheritance 已经实现，本任务应复用它：
+- `generates`
+- `depends_on`
+- `parameterized_by`
+- `transforms_to`
+- `constrained_by`
+- `conditions_on`
+- `marginalizes_to`
+- `factorizes_as`
 
-1. 导出当前版本实际显示内容。
-2. 标记 `Own / Inherits V1 / Inherits V2 / Hidden / Base legacy`。
-3. Hidden block 不应进入某个 concrete version 的导出，除非用户在 All mode 或明确选择 include hidden。
+### 6.3 推断
 
-如果 sequential variant inheritance 尚未实现，本任务不要强行重构版本系统。应在 plan 中说明：
+- `estimated_by`
+- `optimizes`
+- `solves`
+- `approximated_by`
+- `regularized_by`
+- `identified_by`
+- `uncertainty_quantified_by`
 
-1. 当前导出使用现有 resolver。
-2. 版本继承完成后，Markdown export 应切换到新的 central resolver。
-3. 不要复制一套新的版本解析逻辑。
+### 6.4 目标与证据
 
-## 15. 与 group/frame 的关系
+- `targets`
+- `predicts`
+- `intervenes_on`
+- `supports`
+- `tests`
+- `validated_on`
+- `limited_by`
+- `contradicts`
 
-如果 group/frame 已经稳定，outline item 可以支持 group/frame。Group 导出时可以：
+Canvas 可保持简洁线条，但 inspector、search、filter 和 export 必须保留真实 relation type。
 
-1. 使用 group title 作为 slide title。
-2. 收集 group 内 blocks 的标题作为 `Contained blocks`。
-3. 默认只导出 group-level summary 或 block titles，不要把 group 内全部内容堆到一页。
+---
 
-如果 group/frame 还不稳定，第一版只支持 block，并在 result 中说明。
+## 7. Architecture View 的核心交互
 
-## 16. UI 细节建议
+### 7.1 Symbol Trace
 
-Story Outline 面板应尽量紧凑：
+点击对象或 symbol 后提供：
 
-```text
-Story Outline
-[Add selected]
-[Export Markdown]
+- `Trace upstream`：只显示直接/递归依赖；
+- `Trace downstream`：显示进入哪些公式、目标、算法和 claim；
+- `Where defined`；
+- `Where used`；
+- `Which assumptions apply`；
+- `Which variants change it`。
 
-1. Motivation                 Summary
-2. TRACE baseline             Summary
-3. Catalogue decomposition    Summary
-4. Open-tail marked TRACE     Full
-5. Theorem targets            Summary
-```
+### 7.2 Focus by Layer
 
-每行可显示：
+用户可以只显示 Observation、Latent、Inference 或 Prediction 等层，避免在完整模型上不断手动缩放。
 
-1. 序号。
-2. slide title。
-3. source type 小 badge。
-4. density 小 badge。
-5. 删除按钮。
-6. 拖拽 handle。
+### 7.3 Formula-aware references
 
-点击条目展开编辑：
+公式中的 canonical symbols 应能链接到 symbol entity。第一版不要求完整 computer algebra parser，但至少允许用户显式绑定公式 token 与 symbol ID。
 
-1. Slide title。
-2. Density。
-3. Speaker notes。
-4. Source block title。
-5. Source version state。
+### 7.4 Architecture Outline
 
-## 17. 文件下载
-
-`Export Markdown` 应生成 `.md` 文件下载。
-
-文件名建议：
+除自由 canvas 外，应有自动生成的层级大纲：
 
 ```text
-<deck-title>-asteria-story-<timestamp>.md
+Observed data
+  Y_raw
+  X
+Measurement
+  hard matching c(f)
+  group mark g(f)
+Latent model
+  z_K
+  z_U
+Parameters
+  alpha_K
+  alpha_U
+  beta_K
+  beta_U
+Inference
+  priors
+  marginal approximation
+Targets
+  richness
+  future discovery
 ```
 
-需要对文件名做 slugify，避免非法字符。
+这比“从 canvas 猜阅读顺序”更稳定。
 
-## 18. 持久化与导入导出
+---
 
-Story outline 应尽量随 map 一起保存和导出。建议给 `ExportedMap` 增加可选字段：
+## 8. Model Variants 与 Semantic Diff
+
+当前 sequential inheritance 保留，不应立即重写。但长期 variant 的价值不是保存三张近似相同的图，而是明确：
+
+- Added entity；
+- Removed entity；
+- Modified definition；
+- Modified relation；
+- Changed assumption；
+- Changed estimand / theorem applicability；
+- Unchanged inherited entity。
+
+以 CAT-TRACE 为例：
+
+```text
+TRACE
+  alpha_j ~ TRACE calibration
+  beta_j ~ N(nu, Psi)
+
+Grouped CAT-TRACE
+  Added: g, pi_g, a_g
+  Changed: beta_gh = nu + a_g + v_gh
+  Preserved: marginal probit and richness calibration
+
+Catalogue variant
+  Added: K, c(f), Y_K, finite catalogue intercept
+  Added target: Delta_K
+```
+
+Semantic diff 应直接读取 entity/relation 变化，而不是只比较 rich-text 字符串。
+
+---
+
+## 9. Architecture Validation
+
+Asteria 长期应提供“模型架构审计”，但不能假装自动证明数学正确。第一版可检查结构一致性：
+
+1. symbol 被使用但未定义；
+2. 同一 scope 下 canonical symbol 重名；
+3. index 或 dimension 明显不一致；
+4. parameter 没有进入任何 equation / target；
+5. estimator 没有对应 estimand；
+6. prior 没有对应 parameter，或 likelihood 没有 observed data；
+7. causal estimand 缺少 identification condition；
+8. claim 没有 theorem/simulation/result evidence；
+9. variant 修改了 definition，但依赖 theorem 仍被标为 unchanged；
+10. code binding 指向不存在的文件或 stale symbol name。
+
+输出应是 warning / audit report，不自动篡改用户模型。
+
+---
+
+## 10. General Templates
+
+Asteria 不应只有 Bayesian model template。至少需要：
+
+### 10.1 Probabilistic / Bayesian model
+
+Observed → latent → likelihood → parameter hierarchy → prior → posterior algorithm → prediction。
+
+### 10.2 Frequentist regression / M-estimation
+
+Data → objective / estimating equation → parameter → estimator → asymptotic variance / bootstrap → target。
+
+### 10.3 Causal inference
+
+Observed variables + DAG / potential outcomes → estimand → identification assumptions → identifying functional → estimator → diagnostics / sensitivity。
+
+### 10.4 Machine learning
+
+Input / label → representation → model → loss / regularization → optimizer → prediction → evaluation / calibration。
+
+### 10.5 Bioinformatics pipeline
+
+Raw assay → QC → preprocessing → features → model → inference → biological interpretation，且每步记录软件、版本、参数与 artifact provenance。
+
+这些 template 应共享底层 schema，而不是各自重新开发一套 block system。
+
+---
+
+## 11. Machine-readable Export
+
+Asteria 的长期输出不应只有截图和 Story Markdown。需要一个稳定的 architecture export：
 
 ```ts
-storyOutline?: StoryOutlineItem[]
-storyDeckTitle?: string
+type StatisticalArchitectureExport = {
+  schemaVersion: string
+  project: ProjectMetadata
+  entities: StatisticalEntity[]
+  symbols: StatisticalSymbol[]
+  relations: TypedRelation[]
+  views: ViewProjection[]
+  variants: ModelVariant[]
+  validation: ArchitectureWarning[]
+}
 ```
 
-兼容性要求：
+用途包括：
 
-1. 旧 map 可以正常加载。
-2. 没有 storyOutline 时默认为空。
-3. 导入旧 JSON 不报错。
-4. 导出新 JSON 时保留 storyOutline。
-5. Markdown 导出不改变 map 内容，除非用户编辑了 outline。
+- 生成 model section / notation table；
+- 给 Codex/AI skill 提供无歧义模型上下文；
+- 对照代码检查 symbol bindings；
+- 生成 theorem dependency list；
+- 从 Architecture View 导出可阅读 Markdown；
+- 在不同项目之间复用方法模块。
 
-## 19. 可能涉及的文件
+JSON 是 canonical exchange format；Markdown/LaTeX 是可读投影，不反过来成为唯一源数据。
 
-请 Codex plan mode 先检查实际文件结构，再决定修改位置。可能涉及：
+---
 
-- `src/types/map.ts`
-- `src/store/useMapStore.ts`
-- `src/lib/exportImport.ts`
-- `src/components/InspectorPanel.tsx`
-- `src/components/Toolbar.tsx` 或当前 toolbar 文件
-- 新增 `src/components/StoryOutlinePanel.tsx`
-- 新增 `src/lib/storyMarkdownExport.ts`
-- 新增 `src/lib/tiptapToMarkdown.ts` 或复用现有转换逻辑
-- `CHANGELOG.md`
-- `package.json`
+## 12. 与现有 Asteria 的迁移原则
 
-如果已有类似 markdown/export helper，请优先复用，不要重复造轮子。
+1. 不破坏旧 map；
+2. 现有 block 在迁移时可自动成为 generic entity，并保留 rich text；
+3. 现有 Symbol entries 可逐步提升为 canonical symbols，不要求一次迁完；
+4. position、size、collapsed state 与 local visibility 属于 view projection；
+5. title、definition、symbol metadata、citations 属于 entity；
+6. 现有 version resolver 先保留，后续再映射成 semantic variants；
+7. Story Outline 继续引用 source entity，不复制冻结内容；
+8. 不把 Architecture、Lineage、Evidence 三个视图做成同一张 canvas 的三个大框。
 
-## 20. 推荐任务编号与版本
+---
 
-当前 `package.json` 版本如果仍为 `0.5.10`，建议本任务使用：
+## 13. 实施优先级
+
+### P0 — Schema 与设计审计
+
+先写独立 design specification，不改 UI：
+
+- entity / symbol / relation / layer / view schema；
+- 旧 map migration strategy；
+- CAT-TRACE 与 causal inference 两个完整 worked examples；
+- 哪些字段 required、optional、computed；
+- JSON compatibility/versioning；
+- architecture validator 的第一批规则。
+
+只有 schema 通过人工评审后才能进入实现。
+
+### P1 — Symbol Entity + Typed Metadata
+
+在不引入多视图大改的前提下：
+
+- 让 Symbol 可拥有 dimension、indices、scope、definition mode、parents/children、constraints；
+- 允许 block / formula 显式引用 symbol ID；
+- Inspector 显示 Where defined / Where used；
+- 支持 Symbol Trace 的最小版本。
+
+这是最先能产生实际价值的一步。
+
+### P2 — Layers + Typed Edges
+
+- entity layer；
+- typed relations；
+- layer filter；
+- upstream/downstream focus；
+- architecture outline；
+- basic validation warnings。
+
+### P3 — Project + Multiple Views
+
+实现 Architecture / Lineage / Evidence 的 projection 与独立布局。底层 entity 共享，不能复制三份内容。
+
+### P4 — Semantic Diff
+
+让 model variants 能报告真实的 added/removed/modified entities and relations，并检查 theorem/claim applicability。
+
+### P5 — Evidence Closure 与 Code Binding
+
+- claim-centered evidence audit；
+- symbol / algorithm 到代码文件的 bindings；
+- stale binding 检查；
+- architecture Markdown/LaTeX/JSON export。
+
+---
+
+## 14. 当前明确不做
+
+下一阶段不做：
+
+1. 不直接重写整个 app；
+2. 不先做 AI 自动建图；
+3. 不做完整 symbolic algebra / theorem prover；
+4. 不把 Asteria 做成 PPT/PDF 编辑器；
+5. 不为每个统计领域增加互不兼容的 block set；
+6. 不删除现有 version、Story Outline 或旧 map 兼容；
+7. 不在 schema 未评审前直接实现多 tab 大迁移；
+8. 不把 causal DAG editor 当成单独产品分叉；DAG 是 general architecture schema 的一种 projection。
+
+---
+
+## 15. 下一张正式任务应产出什么
+
+后续 Codex task 应是 **design-only**，不是 implementation。建议任务名称：
 
 ```text
-v0.5.11
+prompts/tasks/asteria_statistical_architecture_schema_plan_task.md
 ```
 
-如果本地已经有更新版本，请使用下一个 patch 版本。
+必须产出：
 
-若需要按照 handoff 协议生成正式 task 文件，建议：
+1. `docs/notes/2026-09-xx_statistical_architecture_schema.md`；
+2. entity/symbol/relation/view TypeScript draft interfaces；
+3. CAT-TRACE worked example；
+4. causal inference worked example；
+5. old-map migration table；
+6. P1 最小实现边界与 regression-test plan；
+7. 明确列出哪些当前 store/export assumptions 会阻碍新架构。
 
-```text
-prompts/tasks/asteria_0_5_11_story_outline_markdown_export_task.md
-```
+完成 design review 后，再拆出 P1 implementation task。不要让 Codex根据本 TODO 一次性开发 P0--P5。
 
-结果文件：
+---
 
-```text
-results/asteria_0_5_11_story_outline_markdown_export_result.md
-```
+## 16. 验收方向
 
-## 21. Plan mode 要求
+Asteria 转型是否成功，不以“新增多少 block”衡量，而看用户能否对任意统计项目快速回答：
 
-实现前先输出计划，计划应覆盖：
+- 这个符号是什么意思？
+- 它在哪一层？
+- 是观测、潜在、固定、估计还是派生量？
+- 维度、indices、domain 和单位是什么？
+- 它由哪些对象得到？
+- 它进入哪些公式、估计量和预测目标？
+- 若是 Bayesian，prior 与 hyperparameter 是什么？
+- 若是 frequentist，它由什么 objective / estimating equation 得到？
+- 若是 causal，它对应什么 estimand，依赖哪些 identification assumptions？
+- 哪个 variant 修改了它？
+- 哪些 theorem、simulation 和 result 支持相关 claim？
+- 代码里哪个对象实现了它？
 
-1. 当前 map/store/export 数据流。
-2. outline 数据结构放在哪里。
-3. 如何从 block/group 解析当前内容。
-4. 如何做 rich text 到 Markdown 的转换。
-5. 如何设计 UI，避免 right panel 过载。
-6. 如何处理版本信息。
-7. 如何持久化与导入导出。
-8. 如何测试。
-9. 哪些功能本轮不做。
-
-计划必须明确哪些是第一版必须实现，哪些是后续优化。
-
-## 22. 测试要求
-
-至少运行：
-
-1. TypeScript build。
-2. Production build。
-3. 浏览器手动 smoke test，如果当前环境支持。
-
-手动测试场景：
-
-1. 选择一个 block，加入 Story Outline。
-2. 加入多个 block，拖拽排序。
-3. 修改 slide title。
-4. 修改 density。
-5. 添加 speaker notes。
-6. 导出 Markdown。
-7. 检查 Markdown 是否按 outline 顺序排列。
-8. 检查公式是否尽量保留。
-9. 检查当前版本信息是否导出。
-10. 刷新页面后 outline 不丢失。
-11. 导出/import map 后 outline 不丢失。
-12. 删除 source block 后 outline 中应有合理提示或自动清理，不应崩溃。
-13. 旧 map 仍可加载。
-
-## 23. 验收标准
-
-本任务完成的标准：
-
-1. 用户可以把选中的 block 加入 Story Outline。
-2. Story Outline 可以排序、删除、编辑 slide title。
-3. 每个 outline item 可以设置导出密度。
-4. 每个 outline item 可以写 speaker notes。
-5. 可以导出 `.md` 文件。
-6. Markdown 是线性 story deck，而不是无序 block dump。
-7. Markdown 包含 deck title、版本信息、source metadata、slide sections。
-8. Markdown 能保留主要文本和公式。
-9. Markdown 末尾可包含用于后续生成科研 PPT 的 prompt。
-10. 不实现 online presentation / slideshow。
-11. 不直接导出 pptx/pdf。
-12. 旧地图兼容。
-13. story outline 能持久化。
-14. build 通过。
-15. result 文件说明完成项、跳过项、已知问题和下一步建议。
-
-## 24. 后续可能任务
-
-本任务之后，可以再考虑：
-
-1. 用 GPT/Codex/slides skill 将 Markdown story deck 生成正式 PPT。
-2. 根据导出的 Markdown 自动建议 slide grouping。
-3. 支持从 group/frame 自动生成 section。
-4. 支持导出 Marp / Quarto slides。
-5. 支持导出 speaker notes 到 PPT notes。
-6. 支持一键复制 Markdown 到剪贴板。
-7. 支持在 outline 中手动写 slide-level main message。
-
-这些都不是本轮任务。
+当这些问题可以由结构化 graph 回答时，Asteria 才真正从“什么都能记的画布”变成“统计模型与研究论证的交互式地图”。
