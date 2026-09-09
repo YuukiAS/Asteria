@@ -1,7 +1,7 @@
 ---
 id: asteria_v2_g02
-title: Build CAT-TRACE reference workspace and Symbol Trace
-created_at: 2026-09-08
+title: Build original TRACE and CAT-TRACE reference workspaces with Symbol Trace
+created_at: 2026-09-09
 allow_code_change: true
 allow_shell_command: true
 allow_network: false
@@ -9,7 +9,7 @@ allow_external_upload: false
 requires_human_approval: false
 ---
 
-# Goal G02 — CAT-TRACE Reference Workspace + Canonical Symbols + Symbol Trace
+# Goal G02 — Original TRACE + CAT-TRACE Frozen V2 + Canonical Symbols + Symbol Trace
 
 ## 1. 前置条件
 
@@ -17,78 +17,110 @@ requires_human_approval: false
 
 目标版本：`2.0.0-alpha.2`。
 
-这一步第一次把 2.0 semantic kernel 变成用户可感知的价值：**点击一个统计符号，能明确看到它是什么、如何定义、直接依赖什么、被哪里使用。**
+本 Goal 第一次把 2.0 semantic kernel 变成用户可感知的研究工具：点击一个统计符号，可以知道它是什么、如何定义、依赖什么、被哪里使用，并能在 Original TRACE 与 CAT-TRACE 两个正式 model variants 中保持正确语义。
 
 ## 2. 必须先读
 
 1. `AGENTS.md`
 2. `prompts/AGENT_RULES.md`
-3. `docs/notes/2026-09-08_asteria_v2_master_plan.md`
-4. `docs/notes/2026-09-08_cat_trace_reference_architecture_for_asteria_v2.md`
-5. `docs/notes/2026-09-08_asteria_v2_product_design_and_desktop_strategy.md`
-6. `results/asteria_v2_g01_result.md`
-7. 当前 Symbol / equation / Inspector / Canvas 实现。
+3. `ROADMAP.md`
+4. `VERSIONING.md`
+5. `docs/notes/2026-09-09_asteria_v2_web_delivery_plan.md`
+6. `docs/notes/2026-09-09_trace_and_cat_trace_reference_for_asteria_v2.md`
+7. `docs/notes/2026-09-08_asteria_v2_current_implementation_audit.md`
+8. `results/asteria_v2_g01_result.md`
+9. 当前 Symbol / equation / Inspector / Canvas 实现。
 
-CAT-TRACE canonical reference note 是本任务的模型真值入口。不要回到历史 Asteria demo 或旧 TRACE notation 自行补定义。
+若 Asteria repo 外还提供 Original TRACE paper 或 `CAT_TRACE_CANONICAL_NOTATION_AND_ARCHITECTURE_20260909.pdf`，可只读核对；不要因此覆盖 repo reference note 之外的项目文件，也不要让视觉概念图成为模型 source of truth。
 
-## 3. CAT-TRACE canonical fixture
+## 3. 两个 canonical fixtures
 
-创建一份版本化 reference fixture，不硬编码完整论文，而只覆盖 Asteria 必须理解的模型 anatomy。
+创建版本化 reference fixtures：
 
-至少包括以下 canonical symbols/objects：
+### 3.1 Original TRACE
+
+至少覆盖：
+
+- `y_ij`, `z_ij`, `alpha_j`, `beta_j`, `x_i`；
+- truncation `p`；
+- `gamma`, `mu_p(gamma)`, `tau_p`；
+- `nu`, `Psi`；
+- marginal occurrence probability；
+- richness / discovery targets；
+- 原论文真实存在且 Asteria 需要表达的 dependence/inference semantics。
+
+禁止加入 finite catalogue、`c(f)`、grouped tail、`a_g`, `pi_g` 或历史 `nu_g`。
+
+### 3.2 CAT-TRACE Frozen V2
+
+至少覆盖：
 
 - `Y_raw`, `x_i`, `c(f)`, `g(f)`；
-- `y^K_{ij}`, `y^U_{igh}`；
-- `z^K_{ij}`, `z^U_{igh}`；
-- `α^K_j`, `α^U_{gh}`；
-- `β^K_j`, `β^U_{gh}`；
-- `ν`, `a_g`, `Γ`, `t_j`, `b^phy_j`, `v^K_j`, `v^U_{gh}`, `Ψ`；
-- `γ_0`, `π_g`, `γ_g`；
-- `p_{U,g}`；
-- `Λ_W`, `Ω_W`, `Σ_W`；
+- `mathcal K`, `K=|mathcal K|`, `mathcal K_n`, `mathcal U`, `mathcal G`, `mathcal W`；
+- `y^K_ij`, `y^U_igh`；
+- `z^K_ij`, `z^U_igh`；
+- `alpha^K_j`, `alpha^U_gh`；
+- `beta^K_j`, `beta^U_gh`；
+- `nu`, `a_g`, `Gamma`, `t_j`, `b^phy_j`, `v^K_j`, `v^U_gh`, `Psi`；
+- `gamma_0`, `pi_g`, `gamma_g`；
+- `p_g`, `p_g^*`, zero-slot multiplicity `p_g-p_g^*`；
+- `Lambda_W`, `Omega_W`, `Sigma_W`；
+- factor index `d=1,...,H`；
 - richness / catalogue discovery / open-tail discovery targets。
 
-必须保持 canonical index 顺序 `y^U_{igh}`，residual factor index 用 `d`，不能复用 `h`。
+必须保持：
+
+- open-tail response index order = `i,g,h`；
+- `beta^U_gh = nu + a_g + v^U_gh`；
+- `gamma_g = gamma_0*pi_g` 为 derived；
+- `p_g` 是 fixed computational truncation，not estimand；
+- `nu` 是 environment-response vector，不是 global intercept；
+- `Sigma_W` 只在 finite working set；
+- taxonomy proxy 与 branch-length phylogeny 不混写。
 
 ## 4. Project-level canonical symbol registry
 
-实现 project-level symbol registry UI/API，而不是继续把所有符号锁在某一个 Symbol block 的私有列表中。
+实现 project-level symbol registry，而不是继续把所有符号锁在某一个 Symbol block 私有列表中。
 
-第一版 symbol 需要能存并编辑：
+第一版 symbol 至少支持：
 
 - stable ID；
+- model/variant scope；
 - LaTeX；
 - canonical name；
 - meaning；
 - object kind / role；
-- scope；
+- layer；
 - observed status；
 - definition mode；
 - indices；
-- dimension/domain（可选但 CAT fixture 应填）；
+- dimension/domain；
 - definition reference。
 
-旧 Symbol block 继续可用，并能作为 canonical registry 的一个投影/兼容展示；不能删除原 workflow。
+同样显示成 `beta` 的符号在不同 model scope 中可以是不同 entity；同一 model scope 中的同一 canonical symbol 不应因多处显示而复制定义。
+
+旧 Symbol block 继续可用，并可作为 canonical registry 的投影/兼容展示；不能删除原 workflow。
 
 ## 5. Formula-aware explicit binding
 
 第一版不要造完整 LaTeX parser。实现最小显式绑定：
 
-- formula/rich-text equation 可以保存 token/fragment → symbol ID 的绑定；
-- 用户可以从已存在 canonical symbols 选择；
-- 改 display LaTeX 不应改变 symbol internal ID；
+- formula/rich-text equation 保存 token/fragment → symbol ID binding；
+- 用户从当前 model scope 已存在 canonical symbols 选择；
+- display LaTeX 改名不改变 internal ID；
 - unresolved token 不自动猜；
 - import/export 保存 binding。
 
-若 TipTap extension 直接修改风险过高，可以先对 block/display equation 实现稳定绑定，再扩展 inline token。必须在 result 写清边界。
+如果 TipTap inline-token extension 风险过高，可先完整支持 block/display equation，再扩展 inline；结果中必须写清边界。
 
 ## 6. Symbol Inspector
 
 点击已绑定 symbol 或 semantic node 后，右侧至少显示：
 
 - Meaning；
-- Role / object kind；
-- Scope / layer；
+- Role / kind；
+- Model + variant scope；
+- Layer；
 - Indices；
 - Dimension/domain；
 - Definition；
@@ -96,79 +128,94 @@ CAT-TRACE canonical reference note 是本任务的模型真值入口。不要回
 - Direct downstream；
 - Where defined；
 - Where used；
-- relevant constraint/variant note（若存在）。
+- relevant constraint；
+- variant note。
 
-CAT reference 必须验证五个 case：
+CAT-TRACE regression cases：
 
-1. `β^U_{gh}`：definition = `ν+a_g+v^U_{gh}`；
-2. `γ_g`：derived from `γ_0 π_g`；
-3. `p_{U,g}`：fixed computational truncation, not estimand；
-4. `a_g`：group response parameter with sum-to-zero constraint；
-5. `Σ_W`：derived residual correlation with unit diagonal / finite working set scope。
+1. `beta^U_gh`：`nu+a_g+v^U_gh`；
+2. `gamma_g`：derived from `gamma_0*pi_g`，no independent prior；
+3. `p_g`：fixed computational setting, not estimand, not true unknown species count；
+4. `a_g`：group response deviation + sum-to-zero；
+5. `Sigma_W`：derived residual correlation + unit diagonal + finite working set。
+
+Original TRACE regression cases至少验证：
+
+- `beta_j` 是 species environmental-response parameter；
+- `p` 是 truncation；
+- `gamma` 进入 TRACE tail calibration；
+- original TRACE 不含 catalogue/grouped-tail entities。
 
 ## 7. Direct Symbol Trace
 
-本 Goal 只实现 **direct** upstream/downstream trace：
+本 Goal 只实现 direct upstream/downstream trace：
 
 - selected symbol 高亮；
 - direct parents/children 高亮；
 - direct relation edges 高亮；
-- unrelated nodes 可轻微降对比但保持可见；
-- clear trace 可恢复；
-- inspector 与 canvas shared selection 同步。
+- unrelated nodes 轻微降对比但仍可见；
+- clear trace；
+- Inspector 与 canvas shared selection 同步。
 
 recursive trace、layer filter、Architecture Outline 进入 G03。
 
-交互不得依赖遍历所有 rich text 字符串。使用 G01 graph index。
+交互不得依赖扫描所有 rich text；使用 G01 graph index。
 
-## 8. UI 约束
+## 8. UI 与 accepted design 的关系
 
-- 不大改 app shell；
-- 不先做视觉概念评审；
-- 在现有 Canvas/Inspector 上做最小闭环；
-- 新 semantic node 如果不需要 rich text，不应复用重量级完整 BlockNode；优先轻量 renderer；
-- 动效可有 150–250ms 的 selection/path highlight，但不做持续动画；
-- 支持 `prefers-reduced-motion`。
+G02 只建立正确交互闭环，不在这里完成最终视觉重构。
+
+若 `docs/design/accepted-concepts/` 已由 autonomous preflight 写入，可参考：
+
+- A/B：Architecture shell；
+- C：Symbol Trace state。
+
+但不能复制图片里的错误数学内容或 citation。
+
+Micro semantic node 如果不需要 rich text，不应复用重量级完整 BlockNode；优先轻量 renderer。
+
+动效仅允许短时 selection/path emphasis，并支持 `prefers-reduced-motion`。
 
 ## 9. 性能要求
 
-本任务开始修复**触及到的 hot path**中的 broad Zustand subscriptions：
-
-- 新 Symbol Inspector / trace controls 必须用 selector；
-- Canvas 如果因 trace state 新增全量 subscription，视为失败；
-- 对 CAT fixture 的 symbol click 不应触发所有 heavy rich-text editors 重建。
-
-增加可复现 render/update instrumentation 或测试，至少证明 trace 查询来自 graph index，而不是 O(N×text-length) 搜索。
+- 新 Symbol Inspector / trace controls 使用 selector；
+- 不因新增 trace state 让 Canvas broad-subscribe 整个 store；
+- symbol click 不触发全部 heavy editors 重建；
+- trace query 来自 graph index，而不是 O(N × text-length) 搜索。
 
 ## 10. 测试
 
 至少新增：
 
-- CAT-TRACE fixture schema golden test；
-- five trace case assertions；
+- Original TRACE fixture golden；
+- CAT-TRACE Frozen V2 fixture golden；
+- model-scoped symbol identity；
+- CAT five trace cases；
+- Original TRACE absence/presence assertions；
 - symbol ID survives display rename；
 - formula binding round-trip；
 - legacy Symbol block regression；
 - direct trace selection/clear；
-- unresolved formula token safe behavior；
-- canonical notation regression（尤其 `i,g,h` 与 `γ_g=γ_0π_g`）。
+- unresolved token safe behavior；
+- canonical notation regression（`p_g`, `p_g^*`, `i,g,h`, `gamma_g=gamma_0*pi_g`）。
 
 运行全量历史 regression/build。
 
 ## 11. 退出门槛
 
-1. CAT fixture 完整加载；
-2. 五个 canonical symbol case 可点击并得到正确 inspector；
-3. direct upstream/downstream trace 正确；
-4. formula binding 可保存/恢复；
-5. 旧 map/Symbol workflow 不坏；
-6. 没有明显 broad-render regression；
-7. 版本 `2.0.0-alpha.2`；
-8. commit `v2.0.0-alpha.2` 并 push。
+1. Original TRACE + CAT-TRACE 两个 fixtures 都可加载；
+2. CAT five symbol cases inspector/trace 正确；
+3. Original TRACE 未被污染成 CAT-TRACE；
+4. direct trace 正确；
+5. formula binding 可保存/恢复；
+6. 旧 map/Symbol workflow 不坏；
+7. 没有明显 broad-render regression；
+8. 版本 `2.0.0-alpha.2`；
+9. commit `v2.0.0-alpha.2` 并 push。
 
 ## 12. 停止条件
 
-若为了 Symbol Trace 必须把所有公式自动 parse 或必须把每个 symbol 实例化成重型 rich-text block，停止并重构设计，不得用明显不可扩展方案硬过 gate。
+若为了 Symbol Trace 必须把所有公式自动 parse、必须把每个 symbol 实例化成重型 rich-text block，或无法区分 Original TRACE 与 CAT-TRACE model scope，停止并修 schema，不得硬过 gate。
 
 ## 13. Result
 
@@ -178,4 +225,4 @@ recursive trace、layer filter、Architecture Outline 进入 G03。
 G03_READY = YES/NO
 ```
 
-记录 fixture、five cases、测试、render/performance 证据、commit/push。
+记录两个 fixture、trace cases、测试、render/performance evidence、commit/push。
