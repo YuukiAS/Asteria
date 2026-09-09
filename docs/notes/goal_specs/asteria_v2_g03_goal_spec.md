@@ -1,7 +1,7 @@
 ---
 id: asteria_v2_g03
 title: Add typed relations, layers, recursive trace, and architecture outline
-created_at: 2026-09-08
+created_at: 2026-09-09
 allow_code_change: true
 allow_shell_command: true
 allow_network: false
@@ -25,11 +25,14 @@ requires_human_approval: false
 
 - `AGENTS.md`
 - `prompts/AGENT_RULES.md`
-- `docs/notes/2026-09-08_asteria_v2_master_plan.md`
-- `docs/notes/2026-09-08_cat_trace_reference_architecture_for_asteria_v2.md`
-- `docs/notes/2026-09-08_asteria_v2_product_design_and_desktop_strategy.md`
+- `ROADMAP.md`
+- `VERSIONING.md`
+- `docs/notes/2026-09-09_asteria_v2_web_delivery_plan.md`
+- `docs/notes/2026-09-09_trace_and_cat_trace_reference_for_asteria_v2.md`
 - `results/asteria_v2_g02_result.md`
 - 当前 architecture domain、Canvas、EdgeInspector、Inspector、search 实现。
+
+Accepted concept A/B/C 可用于 visual/interaction reference，但数学与关系语义只服从 canonical reference。
 
 ## 4. Typed Relations
 
@@ -66,7 +69,7 @@ tests
 validated_on
 limited_by
 contradicts
-causes   # 必须显式作者声明，不自动推断
+causes
 ```
 
 可在实现中分 family，但 JSON 中必须保留稳定 canonical relation value。
@@ -100,7 +103,7 @@ Layer focus：
 - 单层聚焦；
 - 可保留与该层直接连接的 boundary nodes；
 - 不删除或修改 entity；
-- 清除 focus 恢复；
+- clear focus 恢复；
 - camera fit 可选、短动画；
 - selected/trace state 与 layer focus 不互相破坏。
 
@@ -116,7 +119,7 @@ Layer focus：
 - cycle-safe，不能无限递归；
 - causal DAG validation 与一般模型 graph traversal 分开，不因普通 cycle 就崩溃。
 
-默认不一次显示整个 closure；建议 depth 1→2 逐步扩展。
+默认不一次显示整个 closure；可采用 depth 1→2 逐步扩展。
 
 ## 7. Architecture Outline
 
@@ -128,10 +131,12 @@ Layer focus：
 - 点击 row 定位/选择 canvas entity；
 - 支持 collapse by layer/group；
 - 当前 selection/trace 同步；
-- 当 entity 没有当前 view projection 时，给出合理提示或临时 reveal，不创建重复 entity；
+- entity 没有当前 view projection 时给合理提示或临时 reveal，不创建重复 entity；
 - Story Outline 继续独立存在。
 
-CAT-TRACE outline 至少能呈现：Observed → Measurement → Latent → Parameters → Inference → Targets。
+CAT-TRACE outline 至少呈现：Observed → Measurement → Latent → Parameterization → Inference → Prediction/Targets。
+
+Original TRACE outline 不得出现 catalogue/grouped-tail 专属对象。
 
 ## 8. Interaction / motion
 
@@ -146,10 +151,8 @@ CAT-TRACE outline 至少能呈现：Observed → Measurement → Latent → Para
 
 ## 9. 性能
 
-这一步必须继续治理渲染边界：
-
 - Canvas 只消费当前 view projection；
-- layer/trace filtering 在 memoized selector / projection helper 中做，不把全部 domain graph直接塞给 React Flow；
+- layer/trace filtering 在 memoized selector / projection helper 中做，不把全部 domain graph 直接塞给 React Flow；
 - graph query 使用 adjacency index；
 - touched core components 去掉不必要的 `useMapStore()` 全量订阅；
 - 200–300 visible nodes / 500–800 visible edges fixture 下 trace/layer interaction 不应出现明显冻结。
@@ -165,9 +168,10 @@ CAT-TRACE outline 至少能呈现：Observed → Measurement → Latent → Para
 - recursive trace depth/cycle safety；
 - layer focus preserves data；
 - outline generation and click selection；
+- Original TRACE relation/outline assertions；
 - CAT-TRACE relation golden assertions；
 - Story Outline regression；
-- active model version/legacy edge visibility regression；
+- active model variant / legacy edge visibility regression；
 - stress projection query benchmark。
 
 运行 build + 全量 regression。
@@ -177,8 +181,8 @@ CAT-TRACE outline 至少能呈现：Observed → Measurement → Latent → Para
 1. relation semantics 可编辑/保存/查询；
 2. layer focus 可用；
 3. recursive trace 可用且 cycle-safe；
-4. architecture outline 可用；
-5. CAT reference 正确；
+4. Architecture Outline 可用；
+5. Original TRACE / CAT-TRACE references 都正确；
 6. legacy Story/version/edge workflow 不退化；
 7. stress fixture 无明显架构性卡顿；
 8. 版本 `2.0.0-beta.1`；
