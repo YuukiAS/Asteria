@@ -40,6 +40,19 @@ export type StatisticalEntity = {
   label: string
   layer: SemanticLayer
   description?: string
+  role?: string
+  observedStatus?: "observed" | "latent" | "fixed" | "estimated" | "derived" | "not_applicable"
+  definitionMode?: "stochastic" | "deterministic" | "formula" | "optimization" | "estimating_equation" | "causal" | "algorithmic" | "legacy"
+  indices?: string[]
+  dimension?: string
+  domain?: string
+  definition?: string
+  definitionRef?: string
+  whereDefined?: string[]
+  whereUsed?: string[]
+  constraints?: string[]
+  variantNote?: string
+  formulaBindings?: FormulaBinding[]
   legacy?: {
     nodeId: string
     nodeType: BlockNodeType | "group"
@@ -59,11 +72,30 @@ export type SymbolObjectKind = "legacy_symbol" | "unknown" | "data" | "latent" |
 export type StatisticalSymbol = {
   id: string
   latex: string
+  canonicalName?: string
   meaning: string
   objectKind: SymbolObjectKind
+  modelScopeId?: string
+  variantScopeId?: string
+  layer?: SemanticLayer
+  role?: string
+  observedStatus?: StatisticalEntity["observedStatus"]
+  definitionMode?: StatisticalEntity["definitionMode"]
+  indices?: string[]
+  dimension?: string
+  domain?: string
+  definitionRef?: string
   entityId?: string
   scopeEntityId?: string
   provenance: ProvenanceRecord[]
+}
+
+export type FormulaBinding = {
+  id: string
+  formulaId: string
+  fragment: string
+  symbolId: string
+  unresolved?: boolean
 }
 
 export type RelationType = "legacy_visual_edge" | "contains" | "annotates" | "depends_on" | "derived_from" | "parameterized_by" | "unresolved"

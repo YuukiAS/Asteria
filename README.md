@@ -2,11 +2,13 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `2.0.0-alpha.1`.
+Current app version: `2.0.0-alpha.2`.
 
 `1.0.0` freezes the Asteria 1.x local-first research canvas as the compatibility baseline for the Asteria 2.0 semantic architecture work. Existing 1.x maps, rich-text blocks, Symbol entries, model variants, Story Outline data, save/restore behavior, and JSON import/export remain supported while the 2.0 semantic graph is developed in later versions.
 
 `2.0.0-alpha.1` adds the first platform-independent semantic kernel under `src/architecture/`: normalized entities, symbols, typed relations, semantic variants, view projections, graph indexes, selectors, and deterministic V1 migration. The main Web UI remains the existing 1.x-compatible canvas while later 2.0 goals connect this kernel to visible Architecture workflows.
+
+`2.0.0-alpha.2` adds canonical Original TRACE and CAT-TRACE Frozen V2 reference fixtures plus a lightweight Architecture sidebar for project-level canonical symbols, Symbol Inspector metadata, and direct upstream/downstream trace.
 
 ## Run
 
@@ -39,6 +41,7 @@ npm run test:shared-server
 npm run test:shared-save
 npm run test:legacy-roundtrip
 npm run test:architecture-kernel
+npm run test:canonical-trace
 npm run test:regression
 npm run bench:v1-baseline
 npm run bench:architecture-kernel

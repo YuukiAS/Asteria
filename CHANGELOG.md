@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0-alpha.2 - Canonical TRACE Fixtures And Symbol Trace
+
+- Added canonical Original TRACE and CAT-TRACE Frozen V2 architecture fixtures with project-level symbol identities, model scope, explicit metadata, formula bindings, and direct trace relations.
+- Added a lightweight Architecture sidebar that lets users switch between the two canonical references, select symbols, inspect definitions/constraints, and view direct upstream/downstream trace without replacing the legacy canvas.
+- Added `npm run test:canonical-trace` to protect CAT-TRACE five-symbol trace cases, Original TRACE contamination boundaries, formula binding round-trip, unresolved-token safety, and canonical notation such as `p_g`, `p_g^*`, `i,g,h`, and `gamma_g = gamma_0*pi_g`.
+
 ## 2.0.0-alpha.1 - Semantic Kernel
 
 - Added the first platform-independent Asteria 2.0 architecture kernel with normalized entities, symbols, typed relations, semantic variants, and view projections.

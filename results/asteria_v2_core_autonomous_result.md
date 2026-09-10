@@ -73,7 +73,13 @@ git diff --check: exit 0
 
 ### G01
 
-Status: completed locally before `v2.0.0-alpha.1` commit.
+Status: completed and pushed.
+
+Commit:
+
+```text
+14f357076d6286001b4c1d76d36727e9a865dd3f v2.0.0-alpha.1
+```
 
 Result:
 
@@ -92,11 +98,33 @@ npm run bench:architecture-kernel: exit 0
 git diff --check: exit 0
 ```
 
-Version commit SHA is reported after the `v2.0.0-alpha.1` commit/push operation.
+### G02
+
+Status: completed locally before `v2.0.0-alpha.2` commit.
+
+Result:
+
+```text
+results/asteria_v2_g02_result.md
+G03_READY = YES
+```
+
+Tests:
+
+```text
+npm run build: exit 0
+npm run test:canonical-trace: exit 0
+npm run test:regression: exit 0, real 3.80s
+git diff --check: exit 0
+```
+
+Version commit SHA is reported after the `v2.0.0-alpha.2` commit/push operation.
 
 ## Model Fixture Correctness
 
-G00 did not implement canonical model variants. G01 added schema/migration infrastructure only. Canonical Original TRACE and CAT-TRACE Frozen V2 fixtures begin in G02.
+G00 did not implement canonical model variants. G01 added schema/migration infrastructure only.
+
+G02 added Original TRACE and CAT-TRACE Frozen V2 canonical fixtures. Original TRACE excludes CAT-TRACE finite-catalogue/grouped-tail notation. CAT-TRACE Frozen V2 includes deterministic catalogue/open-tail identity, `p_g`/`p_g^*` slot accounting, shared response hierarchy, `gamma_g = gamma_0*pi_g`, and finite-working-set residual dependence constraints.
 
 ## Browser QA
 
@@ -115,10 +143,10 @@ G00 baseline:
 
 ## Accepted-Concept Fidelity Summary
 
-Accepted concepts are archived and documented. G00 intentionally did not implement visual convergence.
+Accepted concepts are archived and documented. G02 begins fidelity to concept C through selected/upstream/downstream Symbol Trace highlighting in the Architecture sidebar. Full shell/diff/lineage/evidence visual convergence remains assigned to G03-G06.
 
 ## Remaining Issues
 
 - Vite large chunk warning remains as baseline evidence for G05.
 
-NEXT_GOAL = G02
+NEXT_GOAL = G03

@@ -1,11 +1,12 @@
 import "@xyflow/react/dist/style.css"
 import "katex/dist/katex.min.css"
 import { ReactFlowProvider } from "@xyflow/react"
-import { Archive, ChevronLeft, ChevronRight, CloudUpload, FilePlus2, FileText, LoaderCircle, PanelRightClose, PanelRightOpen, Save, SlidersHorizontal } from "lucide-react"
+import { Archive, ChevronLeft, ChevronRight, CloudUpload, FilePlus2, FileText, GitBranch, LoaderCircle, PanelRightClose, PanelRightOpen, Save, SlidersHorizontal } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { PointerEvent as ReactPointerEvent } from "react"
 import { Canvas } from "../components/Canvas"
 import { AppErrorBoundary } from "../components/AppErrorBoundary"
+import { ArchitectureReferencePanel } from "../components/ArchitectureReferencePanel"
 import { InspectorPanel } from "../components/InspectorPanel"
 import { StoryOutlinePanel } from "../components/StoryOutlinePanel"
 import { Toolbar } from "../components/Toolbar"
@@ -50,7 +51,7 @@ export function App() {
   const fitViewRef = useRef<() => void>(() => undefined)
   const [theme, setTheme] = useTheme()
   const [interactionMode, setInteractionMode] = useState<InteractionMode>("move")
-  const [sidebarTab, setSidebarTab] = useState<"inspector" | "story">("inspector")
+  const [sidebarTab, setSidebarTab] = useState<"inspector" | "architecture" | "story">("inspector")
   const [inlineEditTarget, setInlineEditTarget] = useState<InlineEditTarget | undefined>()
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false)
   const [saveDialogBusy, setSaveDialogBusy] = useState<"shared" | "fixed" | "load-shared">()
@@ -412,6 +413,14 @@ export function App() {
                   </button>
                   <button
                     type="button"
+                    className={`segmented-button justify-center ${sidebarTab === "architecture" ? "segmented-button-active" : ""}`}
+                    onClick={() => setSidebarTab("architecture")}
+                  >
+                    <GitBranch size={14} />
+                    Architecture
+                  </button>
+                  <button
+                    type="button"
                     className={`segmented-button justify-center ${sidebarTab === "story" ? "segmented-button-active" : ""}`}
                     onClick={() => setSidebarTab("story")}
                   >
@@ -421,7 +430,7 @@ export function App() {
                 </div>
               )}
               <AppErrorBoundary label={sidebarTab} resetKey={`${sidebarTab}:${selectedNodeId || ""}:${selectedNodeIds.join(",")}`}>
-                {sidebarTab === "story" ? <StoryOutlinePanel /> : <InspectorPanel />}
+                {sidebarTab === "story" ? <StoryOutlinePanel /> : sidebarTab === "architecture" ? <ArchitectureReferencePanel /> : <InspectorPanel />}
               </AppErrorBoundary>
             </div>
             {!isSidebarCollapsed && (
