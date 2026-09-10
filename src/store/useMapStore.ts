@@ -729,7 +729,7 @@ export const useMapStore = create<MapState>((set, get) => ({
     if (!record) return
     const safetyMap = mapFromState(state)
     const backups = await createPersistedMapBackup(safetyMap, state.seededDemo, "recent")
-    const restored = preserveLocalMapInformation(stateFromRemoteRecord(record), state)
+    const restored = preserveLocalMapInformation(stateFromRemoteRecord(record), state, { preserveCurrentOnlyMapItems: false })
     set({
       ...restored,
       backups,

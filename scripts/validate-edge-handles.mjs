@@ -80,11 +80,12 @@ const vite = await createServer({
 })
 
 try {
-  const [{ applyEdgePresentation }, { resolveBlockVersionState }, { allVersionsId }, { isBlockConnectionHandleId }] = await Promise.all([
+  const [{ applyEdgePresentation }, { resolveBlockVersionState }, { allVersionsId }, { isBlockConnectionHandleId }, { legacyV1FreezeMap }] = await Promise.all([
     vite.ssrLoadModule("/src/lib/exportImport.ts"),
     vite.ssrLoadModule("/src/lib/blockVersionState.ts"),
     vite.ssrLoadModule("/src/constants/versioning.ts"),
     vite.ssrLoadModule("/src/constants/handles.ts"),
+    vite.ssrLoadModule("/src/fixtures/legacyV1FreezeMap.ts"),
   ])
   const [blockNodeSource, stylesSource] = await Promise.all([readFile(blockNodePath, "utf8"), readFile(stylesPath, "utf8")])
   if (!blockNodeSource.includes('type="target"')) fail("Block nodes must render target handles for persisted targetHandle anchors.")
@@ -92,7 +93,13 @@ try {
     fail("Target handles must remain visible; hidden target handles make edges miss the visible orange connection points.")
   }
 
-  const record = JSON.parse(await readFile(sharedMapPath, "utf8"))
+  let record
+  try {
+    record = JSON.parse(await readFile(sharedMapPath, "utf8"))
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error
+    record = legacyV1FreezeMap
+  }
   const map = record.map || record
   const nodes = Array.isArray(map.nodes) ? map.nodes : []
   const edges = Array.isArray(map.edges) ? map.edges : []

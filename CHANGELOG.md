@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0 - Legacy Research Canvas Freeze
+
+- Froze the Asteria 1.x research-canvas generation as the compatibility baseline for the Asteria 2.0 semantic architecture work.
+- Added a deterministic legacy V1 map fixture covering rich text, inline/display math, Symbol entries, model variants, Story Outline, visual edges, viewport, and group/frame presentation.
+- Added `npm run test:legacy-roundtrip` and included it in `npm run test:regression` so V1 import/export normalization remains covered before 2.0 migration work.
+- Added `npm run bench:v1-baseline` to record repeatable normalization, visible-projection, history snapshot, and bundle-size baseline evidence for later G05 comparison.
+- Tightened shared-workspace restore behavior so loading the shared version keeps newer matching block content from the current computer without preserving local-only nodes, edges, Story items, or local-only model versions into the shared workspace.
+
 ## 0.9.4 - Shared Save Feedback And Zoom Image URLs
 
 - Added explicit Save dialog progress feedback while shared or fixed saves are running, with disabled duplicate actions and a spinner status so shared publishes no longer look frozen.

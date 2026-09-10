@@ -442,7 +442,7 @@ export function App() {
               tone: "shared",
               badge: "Shared",
               title: "Use shared version",
-              description: `Load the shared map last saved ${formatDialogDate(sharedRecord.updatedAt)}. A local safety backup is created first, and newer block content on this computer is kept.`,
+              description: `Load the shared map last saved ${formatDialogDate(sharedRecord.updatedAt)}. A local safety backup is created first, and newer content for matching blocks on this computer is kept.`,
               onClick: () => void chooseSharedWorkspace(),
             }}
             secondary={{
@@ -492,7 +492,7 @@ export function App() {
               badge: showSaveConflict ? "Keep newer local" : "This computer",
               title: showSaveConflict ? "Load shared version" : "Save fixed version",
               description: showSaveConflict
-                ? "Create a local safety backup, load the shared version, and keep any newer block content from this computer."
+                ? "Create a local safety backup, load the shared version, and keep newer content for matching blocks from this computer."
                 : "Save a local fixed checkpoint. The latest three fixed versions are kept on this computer.",
               isLoading: saveDialogBusy === (showSaveConflict ? "load-shared" : "fixed"),
               disabled: Boolean(saveDialogBusy),

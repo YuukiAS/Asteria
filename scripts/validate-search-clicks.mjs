@@ -17,14 +17,21 @@ const vite = await createServer({
 })
 
 try {
-  const [{ searchRenderedBlocks, getSearchResultNavigationTarget }, { createEditorExtensions }, { titleToHtml }, { renderSymbolMeaningHtml }] = await Promise.all([
+  const [{ searchRenderedBlocks, getSearchResultNavigationTarget }, { createEditorExtensions }, { titleToHtml }, { renderSymbolMeaningHtml }, { legacyV1FreezeMap }] = await Promise.all([
     vite.ssrLoadModule("/src/lib/mapSearch.ts"),
     vite.ssrLoadModule("/src/editor/createEditorExtensions.ts"),
     vite.ssrLoadModule("/src/lib/titleMath.ts"),
     vite.ssrLoadModule("/src/lib/symbolEntries.ts"),
+    vite.ssrLoadModule("/src/fixtures/legacyV1FreezeMap.ts"),
   ])
   const schema = getSchema(createEditorExtensions(""))
-  const record = JSON.parse(await readFile(sharedMapPath, "utf8"))
+  let record
+  try {
+    record = JSON.parse(await readFile(sharedMapPath, "utf8"))
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error
+    record = legacyV1FreezeMap
+  }
   const map = record.map || record
   const nodes = Array.isArray(map.nodes) ? map.nodes : []
   const modelVersions = Array.isArray(map.modelVersions) ? map.modelVersions : []
@@ -50,10 +57,7 @@ try {
     }
   }
 
-  const selectedSamples = nodes
-    .filter((node) => node.type === "block")
-    .slice(0, 12)
-    .map((node, index) => ({ ...node, selected: index % 2 === 0 }))
+  const selectedSamples = nodes.slice(0, 12).map((node, index) => ({ ...node, selected: index % 2 === 0 }))
   const selectedNoiseResults = searchRenderedBlocks(selectedSamples, activeVersionId, modelVersions, "alpha")
   for (const result of selectedNoiseResults) {
     const target = getSearchResultNavigationTarget(result, selectedSamples, activeVersionId, modelVersions)

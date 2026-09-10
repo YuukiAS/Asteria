@@ -371,7 +371,7 @@ export function Toolbar({
                     type="button"
                     className="toolbar-button justify-between"
                     onClick={() => {
-                      if (window.confirm("Restore the current shared version into this local workspace? A local safety backup will be created first, and newer block content on this computer will be kept.")) {
+                      if (window.confirm("Restore the current shared version into this local workspace? A local safety backup will be created first, and newer content for matching blocks on this computer will be kept.")) {
                         void chooseSharedWorkspace()
                         setIsBackupPanelOpen(false)
                       }

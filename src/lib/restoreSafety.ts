@@ -11,6 +11,10 @@ export type RestoreSafetyState = {
   edges: MapEdge[]
 }
 
+type PreserveLocalMapInformationOptions = {
+  preserveCurrentOnlyMapItems?: boolean
+}
+
 function cloneJson<T>(value: T): T {
   if (typeof structuredClone === "function") return structuredClone(value)
   return JSON.parse(JSON.stringify(value)) as T
@@ -110,8 +114,13 @@ function mergeEdges(restored: MapEdge[], current: MapEdge[], validNodeIds: Set<s
   return merged
 }
 
-export function preserveLocalMapInformation<T extends RestoreSafetyState>(restored: T, current: RestoreSafetyState): T {
-  const modelVersions = mergeModelVersions(restored.modelVersions || [], current.modelVersions || [])
+export function preserveLocalMapInformation<T extends RestoreSafetyState>(
+  restored: T,
+  current: RestoreSafetyState,
+  options: PreserveLocalMapInformationOptions = {},
+): T {
+  const preserveCurrentOnlyMapItems = options.preserveCurrentOnlyMapItems ?? true
+  const modelVersions = preserveCurrentOnlyMapItems ? mergeModelVersions(restored.modelVersions || [], current.modelVersions || []) : restored.modelVersions || []
   const currentBlocks = new Map(current.nodes.filter(isBlockNode).map((node) => [node.id, node]))
   const restoredNodeIds = new Set(restored.nodes.map((node) => node.id))
   const nodes = restored.nodes.map((node) => {
@@ -141,15 +150,21 @@ export function preserveLocalMapInformation<T extends RestoreSafetyState>(restor
       },
     }
   })
-  current.nodes.forEach((node) => {
-    if (!restoredNodeIds.has(node.id)) nodes.push(cloneJson(node))
-  })
+  if (preserveCurrentOnlyMapItems) {
+    current.nodes.forEach((node) => {
+      if (!restoredNodeIds.has(node.id)) nodes.push(cloneJson(node))
+    })
+  }
   const validNodeIds = new Set(nodes.map((node) => node.id))
   return {
     ...restored,
     modelVersions,
     nodes,
-    edges: mergeEdges(restored.edges || [], current.edges || [], validNodeIds),
-    storyOutline: mergeStoryOutline(restored.storyOutline || [], current.storyOutline || [], validNodeIds),
+    edges: preserveCurrentOnlyMapItems
+      ? mergeEdges(restored.edges || [], current.edges || [], validNodeIds)
+      : (restored.edges || []).filter((edge) => validNodeIds.has(edge.source) && validNodeIds.has(edge.target)),
+    storyOutline: preserveCurrentOnlyMapItems
+      ? mergeStoryOutline(restored.storyOutline || [], current.storyOutline || [], validNodeIds)
+      : (restored.storyOutline || []).filter((item) => validNodeIds.has(item.sourceId)),
   }
 }

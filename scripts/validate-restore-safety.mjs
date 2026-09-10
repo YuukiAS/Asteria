@@ -122,7 +122,15 @@ try {
   assert(merged.modelVersions.some((version) => version.id === "version-extra"), "Current-only model version was not preserved.")
   assert(mergedResults?.contentHtml === currentResults.contentHtml, "Substantially fuller local variant was not preserved over shorter restored content.")
 
-  if (!process.exitCode) console.log("Validated restore safety merge preserves local-only map information.")
+  const sharedRestored = preserveLocalMapInformation(restored, current, { preserveCurrentOnlyMapItems: false })
+  const sharedResults = sharedRestored.nodes.find((node) => node.id === "results")?.data?.variants?.["version-cat"]
+  assert(!sharedRestored.nodes.some((node) => node.id === "jsdm"), "Shared restore should not preserve current-only local nodes.")
+  assert(!sharedRestored.edges.some((item) => item.id === "edge-current"), "Shared restore should not preserve current-only local edges.")
+  assert(!sharedRestored.storyOutline.some((item) => item.id === "story-jsdm"), "Shared restore should not preserve current-only local story items.")
+  assert(!sharedRestored.modelVersions.some((version) => version.id === "version-extra"), "Shared restore should not preserve current-only local model versions.")
+  assert(sharedResults?.contentHtml === currentResults.contentHtml, "Shared restore should still preserve newer matching block content.")
+
+  if (!process.exitCode) console.log("Validated restore safety merge modes.")
 } finally {
   await vite.close()
 }
