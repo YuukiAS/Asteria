@@ -227,6 +227,7 @@ const catTraceRelations: RelationSeed[] = [
   { source: "zU_igh", target: "yU_igh", type: "generates", label: "thresholds into" },
   { source: "alphaK_j", target: "zK_ij", type: "parameterized_by", label: "catalogue intercept" },
   { source: "betaK_j", target: "zK_ij", type: "parameterized_by", label: "catalogue slope" },
+  { source: "x_i", target: "zK_ij", type: "conditions_on", label: "covariate input" },
   { source: "alphaU_gh", target: "zU_igh", type: "parameterized_by", label: "open-tail intercept" },
   { source: "betaU_gh", target: "zU_igh", type: "parameterized_by", label: "open-tail slope" },
   { source: "x_i", target: "zU_igh", type: "conditions_on", label: "covariate input" },

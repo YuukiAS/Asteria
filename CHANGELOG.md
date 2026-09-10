@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0-beta.2 - Export, Validation, Semantic Diff
+
+- Added readable architecture Markdown export, schema-v2 JSON export with validation warnings, and a mechanical structural validation engine.
+- Added the fixed Original TRACE to CAT-TRACE Frozen V2 semantic diff with protected added/modified/preserved semantics and forbidden false-diff assertions.
+- Added frequentist regression and causal ATE acceptance fixtures plus `npm run test:architecture-g04`.
+
 ## 2.0.0-beta.1 - Typed Relations, Layers, Recursive Trace
 
 - Added stable architecture relation values, layer definitions, cycle-safe recursive trace, layer focus projection, and Architecture Outline generation.

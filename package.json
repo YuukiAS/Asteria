@@ -1,7 +1,7 @@
 {
   "name": "asteria",
   "private": true,
-  "version": "2.0.0-beta.1",
+  "version": "2.0.0-beta.2",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -20,10 +20,11 @@
     "test:architecture-kernel": "node scripts/validate-architecture-kernel.mjs",
     "test:canonical-trace": "node scripts/validate-canonical-trace-fixtures.mjs",
     "test:architecture-g03": "node scripts/validate-architecture-g03.mjs",
+    "test:architecture-g04": "node scripts/validate-architecture-g04.mjs",
     "bench:v1-baseline": "node scripts/benchmark-v1-baseline.mjs",
     "bench:architecture-kernel": "node scripts/benchmark-architecture-kernel.mjs",
     "bench:architecture-g03": "node scripts/benchmark-architecture-g03.mjs",
-    "test:regression": "npm run test:legacy-roundtrip && npm run test:architecture-kernel && npm run test:canonical-trace && npm run test:architecture-g03 && npm run test:restore-safety && npm run test:block-usability && npm run test:rich-text && npm run test:image-links && npm run test:shared-server && npm run test:shared-save"
+    "test:regression": "npm run test:legacy-roundtrip && npm run test:architecture-kernel && npm run test:canonical-trace && npm run test:architecture-g03 && npm run test:architecture-g04 && npm run test:restore-safety && npm run test:block-usability && npm run test:rich-text && npm run test:image-links && npm run test:shared-server && npm run test:shared-save"
   },
   "dependencies": {
     "@tiptap/core": "^2.26.4",

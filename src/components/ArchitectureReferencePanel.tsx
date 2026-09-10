@@ -1,11 +1,14 @@
 import { GitBranch, LocateFixed, RotateCcw } from "lucide-react"
 import { useMemo, useState } from "react"
 import { canonicalTraceProjects, type CanonicalTraceProjectId } from "../architecture/fixtures/canonicalTraceFixtures"
+import { exportArchitectureMarkdown } from "../architecture/export"
 import { architectureLayerDefinitions, layerLabel } from "../architecture/layers"
 import { generateArchitectureOutline } from "../architecture/outline"
 import { projectLayerFocus } from "../architecture/projection"
+import { diffOriginalTraceToCatTrace } from "../architecture/semanticDiff"
 import { traceForSymbol, type TraceDirection, type TraceMode } from "../architecture/trace"
 import type { SemanticLayer, StatisticalSymbol } from "../architecture/types"
+import { validateArchitectureProject } from "../architecture/validation"
 
 const modelOptions: Array<{ id: CanonicalTraceProjectId; label: string }> = [
   { id: "original-trace", label: "Original TRACE" },
@@ -30,6 +33,9 @@ export function ArchitectureReferencePanel() {
   const trace = useMemo(() => traceForSymbol(project, selectedSymbol?.id || "", { mode: traceMode, direction: traceDirection, maxDepth: traceDepth }), [project, selectedSymbol?.id, traceDepth, traceDirection, traceMode])
   const layerProjection = useMemo(() => projectLayerFocus(project, "view:architecture", focusedLayer === "all" ? undefined : focusedLayer), [focusedLayer, project])
   const outline = useMemo(() => generateArchitectureOutline(project), [project])
+  const warnings = useMemo(() => validateArchitectureProject(project), [project])
+  const diffReport = useMemo(() => diffOriginalTraceToCatTrace(canonicalTraceProjects["original-trace"], canonicalTraceProjects["cat-trace-frozen-v2"]), [])
+  const markdownPreview = useMemo(() => exportArchitectureMarkdown(project, { variantId: modelId }).split("\n").slice(0, 8).join("\n"), [modelId, project])
   const selectedEntity = selectedSymbol?.entityId ? project.entities[selectedSymbol.entityId] : undefined
   const upstream = [...trace.upstreamEntityIds].map((id) => project.entities[id]).filter(Boolean)
   const downstream = [...trace.downstreamEntityIds].map((id) => project.entities[id]).filter(Boolean)
@@ -189,6 +195,31 @@ export function ArchitectureReferencePanel() {
               </div>
             )
           })}
+        </div>
+      </section>
+
+      <section className="panel-section">
+        <div className="section-title">Export & Validation</div>
+        <div className="architecture-export-grid">
+          <span className="badge">Warnings {warnings.length}</span>
+          <span className="badge">Markdown</span>
+          <span className="badge">Schema V2</span>
+        </div>
+        <pre className="architecture-export-preview">{markdownPreview}</pre>
+        <div className="architecture-warning-list">
+          {warnings.length ? warnings.slice(0, 4).map((warning) => <span key={warning.id}>{warning.message}</span>) : <span>No structural warnings.</span>}
+        </div>
+      </section>
+
+      <section className="panel-section">
+        <div className="section-title">Semantic Diff</div>
+        <div className="architecture-diff-list">
+          {diffReport.items.slice(0, 7).map((item) => (
+            <button key={item.id} type="button" className={`architecture-diff-row architecture-diff-${item.status}`}>
+              <span>{item.status.replace(/_/g, " ")}</span>
+              <strong>{item.label}</strong>
+            </button>
+          ))}
         </div>
       </section>
 

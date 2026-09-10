@@ -126,7 +126,13 @@ git diff --check: exit 0
 
 ### G03
 
-Status: completed locally before `v2.0.0-beta.1` commit.
+Status: completed and pushed.
+
+Commit:
+
+```text
+719a3d4f646e957334a5ada70cc62c03b88f9e5f v2.0.0-beta.1
+```
 
 Result:
 
@@ -147,7 +153,27 @@ npm run bench:architecture-g03: exit 0
 git diff --check: exit 0
 ```
 
-Version commit SHA is reported after the `v2.0.0-beta.1` commit/push operation.
+### G04
+
+Status: completed locally before `v2.0.0-beta.2` commit.
+
+Result:
+
+```text
+results/asteria_v2_g04_result.md
+G05_READY = YES
+```
+
+Tests:
+
+```text
+npm run build: exit 0
+npm run test:architecture-g04: exit 0
+npm run test:regression: exit 0, real 4.03s
+git diff --check: exit 0
+```
+
+Version commit SHA is reported after the `v2.0.0-beta.2` commit/push operation.
 
 ## Model Fixture Correctness
 
@@ -156,6 +182,8 @@ G00 did not implement canonical model variants. G01 added schema/migration infra
 G02 added Original TRACE and CAT-TRACE Frozen V2 canonical fixtures. Original TRACE excludes CAT-TRACE finite-catalogue/grouped-tail notation. CAT-TRACE Frozen V2 includes deterministic catalogue/open-tail identity, `p_g`/`p_g^*` slot accounting, shared response hierarchy, `gamma_g = gamma_0*pi_g`, and finite-working-set residual dependence constraints.
 
 G03 added stable semantic relation values, explicit-only `causes`, recursive trace, layer focus projection, and layer-grouped Architecture Outline. Legacy visual edges migrate as unresolved semantic relations with presentation preserved separately.
+
+G04 added readable Architecture Markdown export, schema-v2 JSON export with validation warnings, mechanical structural validation, four acceptance fixtures, and Original TRACE to CAT-TRACE Frozen V2 semantic diff.
 
 ## Browser QA
 
@@ -178,8 +206,10 @@ Accepted concepts are archived and documented. G02 begins fidelity to concept C 
 
 G03 extends concept C fidelity through recursive trace controls and outline-linked symbol selection. Concept A/B/D/E1/E2 convergence remains assigned to later gates.
 
+G04 begins concept D fidelity through a compact semantic diff summary in the Architecture sidebar. Single-canvas stable-position visual diff remains assigned to G05.
+
 ## Remaining Issues
 
 - Vite large chunk warning remains as baseline evidence for G05.
 
-NEXT_GOAL = G04
+NEXT_GOAL = G05

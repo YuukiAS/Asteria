@@ -302,6 +302,54 @@ body {
     @apply rounded border border-border bg-app px-1.5 py-0.5;
   }
 
+  .architecture-export-grid {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .architecture-export-preview {
+    @apply max-h-32 overflow-auto rounded-md border border-border bg-app/70 p-2 text-[11px] leading-4 text-secondary;
+    white-space: pre-wrap;
+  }
+
+  .architecture-warning-list {
+    @apply grid gap-1 text-[11px] text-secondary;
+  }
+
+  .architecture-warning-list span {
+    @apply rounded border border-border bg-app px-2 py-1;
+  }
+
+  .architecture-diff-list {
+    @apply grid gap-1;
+  }
+
+  .architecture-diff-row {
+    @apply grid gap-1 rounded-md border border-border bg-app/60 px-2 py-2 text-left text-xs transition hover:bg-panel;
+  }
+
+  .architecture-diff-row span {
+    @apply text-[10px] font-semibold uppercase tracking-wide text-muted;
+  }
+
+  .architecture-diff-row strong {
+    @apply font-medium text-secondary;
+  }
+
+  .architecture-diff-added {
+    @apply border-success/50;
+  }
+
+  .architecture-diff-modified_definition,
+  .architecture-diff-modified_constraint,
+  .architecture-diff-modified_target {
+    @apply border-warning/60;
+  }
+
+  .architecture-diff-preserved_invariant,
+  .architecture-diff-unchanged {
+    @apply border-accent/40;
+  }
+
   .architecture-binding-note {
     @apply mt-2 flex items-center gap-2 rounded-md border border-border bg-app/60 p-2 text-[11px] leading-4 text-muted;
   }
