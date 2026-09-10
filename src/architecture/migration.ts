@@ -156,7 +156,7 @@ export function migrateV1MapToArchitectureProjectV2(input: ExportedMap | unknown
     const id = relationIdForEdge(edge.id)
     relations[id] = {
       id,
-      type: "legacy_visual_edge",
+      type: "unresolved",
       sourceId,
       targetId,
       directed: true,

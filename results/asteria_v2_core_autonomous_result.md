@@ -100,7 +100,13 @@ git diff --check: exit 0
 
 ### G02
 
-Status: completed locally before `v2.0.0-alpha.2` commit.
+Status: completed and pushed.
+
+Commit:
+
+```text
+564ac54772f05205c566a1b179478a01e6087dc3 v2.0.0-alpha.2
+```
 
 Result:
 
@@ -118,13 +124,38 @@ npm run test:regression: exit 0, real 3.80s
 git diff --check: exit 0
 ```
 
-Version commit SHA is reported after the `v2.0.0-alpha.2` commit/push operation.
+### G03
+
+Status: completed locally before `v2.0.0-beta.1` commit.
+
+Result:
+
+```text
+results/asteria_v2_g03_result.md
+G04_READY = YES
+```
+
+Tests:
+
+```text
+npm run build: exit 0
+npm run test:architecture-g03: exit 0
+npm run test:architecture-kernel: exit 0
+npm run test:canonical-trace: exit 0
+npm run test:regression: exit 0, real 4.57s
+npm run bench:architecture-g03: exit 0
+git diff --check: exit 0
+```
+
+Version commit SHA is reported after the `v2.0.0-beta.1` commit/push operation.
 
 ## Model Fixture Correctness
 
 G00 did not implement canonical model variants. G01 added schema/migration infrastructure only.
 
 G02 added Original TRACE and CAT-TRACE Frozen V2 canonical fixtures. Original TRACE excludes CAT-TRACE finite-catalogue/grouped-tail notation. CAT-TRACE Frozen V2 includes deterministic catalogue/open-tail identity, `p_g`/`p_g^*` slot accounting, shared response hierarchy, `gamma_g = gamma_0*pi_g`, and finite-working-set residual dependence constraints.
+
+G03 added stable semantic relation values, explicit-only `causes`, recursive trace, layer focus projection, and layer-grouped Architecture Outline. Legacy visual edges migrate as unresolved semantic relations with presentation preserved separately.
 
 ## Browser QA
 
@@ -145,8 +176,10 @@ G00 baseline:
 
 Accepted concepts are archived and documented. G02 begins fidelity to concept C through selected/upstream/downstream Symbol Trace highlighting in the Architecture sidebar. Full shell/diff/lineage/evidence visual convergence remains assigned to G03-G06.
 
+G03 extends concept C fidelity through recursive trace controls and outline-linked symbol selection. Concept A/B/D/E1/E2 convergence remains assigned to later gates.
+
 ## Remaining Issues
 
 - Vite large chunk warning remains as baseline evidence for G05.
 
-NEXT_GOAL = G03
+NEXT_GOAL = G04

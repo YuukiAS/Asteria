@@ -5,8 +5,10 @@ import { resolveBlockVersionState } from "./blockVersionState"
 import { resolveBlockContentJson, resolveBlockContentHtml, resolveBlockSymbolEntries, resolveBlockTitle } from "./exportImport"
 import { normalizeLatexText } from "./symbolEntries"
 import type { BlockNode, MapNode, ModelVersion } from "../types/map"
+import type { MapEdge } from "../types/map"
 
 export type SearchSource = "Title" | "Text" | "Inline equation" | "Block equation" | "Symbol" | "Symbol meaning"
+export type RelationSearchSource = "Relation label" | "Relation type"
 
 export type SearchableContent = {
   blockId: string
@@ -19,6 +21,15 @@ export type SearchableContent = {
 }
 
 export type SearchResult = SearchableContent & {
+  rank: number
+  snippet: string
+}
+
+export type RelationSearchResult = {
+  edgeId: string
+  source: RelationSearchSource
+  text: string
+  normalizedText: string
   rank: number
   snippet: string
 }
@@ -152,6 +163,28 @@ export function searchRenderedBlocks(nodes: MapNode[], activeVersionId: string, 
       snippet: makeSnippet(item.text, query.text),
     }))
     .sort((a, b) => a.rank - b.rank || a.blockTitle.localeCompare(b.blockTitle) || a.source.localeCompare(b.source))
+}
+
+export function searchRenderedRelations(edges: MapEdge[], activeVersionId: string, rawQuery: string): RelationSearchResult[] {
+  const query = normalizeSearchQuery(rawQuery)
+  if (!query.text) return []
+  return edges
+    .filter((edge) => activeVersionId === allVersionsId || edge.data?.visibility === "all" || !edge.data?.visibility || edge.data.visibility.includes(activeVersionId))
+    .flatMap((edge) => [
+      { edge, source: "Relation label" as const, text: edge.data?.label || "" },
+      { edge, source: "Relation type" as const, text: edge.data?.semanticType || "unresolved" },
+    ])
+    .map((item) => ({ ...item, normalizedText: normalizeText(item.text) }))
+    .filter((item) => item.normalizedText && item.normalizedText.includes(query.text))
+    .map((item) => ({
+      edgeId: item.edge.id,
+      source: item.source,
+      text: item.text,
+      normalizedText: item.normalizedText,
+      rank: item.source === "Relation type" ? 1 : 2,
+      snippet: makeSnippet(item.text, query.text),
+    }))
+    .sort((a, b) => a.rank - b.rank || a.edgeId.localeCompare(b.edgeId))
 }
 
 function finiteNumber(value: unknown): value is number {

@@ -1,6 +1,7 @@
 import { Clipboard, Copy, Trash2 } from "lucide-react"
 import { edgeArrowOptions, edgeLineStyleOptions, edgePathTypeOptions, edgeStrokeWidthOptions } from "../constants/blockTypes"
 import { defaultBlockColors, textPalette } from "../constants/palette"
+import { relationTypeLabel, relationTypeOptions } from "../architecture/relationTypes"
 import { useMapStore } from "../store/useMapStore"
 import type { MapEdge } from "../types/map"
 import { ColorPickerRow } from "./ColorPickerRow"
@@ -49,6 +50,15 @@ export function EdgeInspector({ edge, onChange, onDelete }: EdgeInspectorProps) 
                 <Copy size={14} />
                 Copy label
               </button>
+              <label className="field-label">
+                Semantic relation
+                <FieldSelect
+                  value={edge.data?.semanticType || "unresolved"}
+                  options={relationTypeOptions.map((option) => ({ value: option, label: relationTypeLabel(option) }))}
+                  onChange={(value) => onChange({ ...edge.data, semanticType: value })}
+                  ariaLabel="Semantic relation type"
+                />
+              </label>
             </>
           ),
         },

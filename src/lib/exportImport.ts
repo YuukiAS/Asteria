@@ -44,6 +44,7 @@ import { formatJsonTimestamp, nowIso } from "./time"
 import { contentJsonToHtml } from "../editor/editorUtils"
 import type { JSONContent } from "@tiptap/react"
 import { blockSizePresets, type BlockSize } from "../constants/layout"
+import { isRelationType } from "../architecture/relationTypes"
 
 export const defaultMapTitle = "Local map"
 
@@ -184,13 +185,14 @@ export function createGroupNode(position = { x: 80, y: 80 }, size = { width: 420
 }
 
 export const defaultEdgeData = {
+  semanticType: "unresolved",
   color: defaultBlockColors.edge,
   lineStyle: "solid",
   pathType: "smoothstep",
   arrow: "forward",
   strokeWidth: 1.5,
   visibility: "all",
-} as const satisfies Pick<MapEdgeData, "color" | "lineStyle" | "pathType" | "arrow" | "strokeWidth" | "visibility">
+} as const satisfies Pick<MapEdgeData, "semanticType" | "color" | "lineStyle" | "pathType" | "arrow" | "strokeWidth" | "visibility">
 
 function strokeDasharray(lineStyle: EdgeLineStyle) {
   if (lineStyle === "dashed") return "6 5"
@@ -455,10 +457,18 @@ function normalizeStrokeWidth(value: unknown): number {
   return defaultEdgeData.strokeWidth
 }
 
+function normalizeEdgeSemanticType(value: unknown): string {
+  if (value === undefined || value === null || value === "") return defaultEdgeData.semanticType
+  if (isRelationType(value)) return value
+  console.warn(`Unknown edge semanticType "${String(value)}"; falling back to unresolved.`)
+  return defaultEdgeData.semanticType
+}
+
 export function normalizeEdgeData(input?: Partial<MapEdgeData>, modelVersions: ModelVersion[] = []): MapEdgeData {
   const at = nowIso()
   return {
     label: input?.label,
+    semanticType: normalizeEdgeSemanticType(input?.semanticType),
     color: input?.color || defaultEdgeData.color,
     lineStyle: normalizeEdgeLineStyle(input?.lineStyle),
     pathType: normalizeEdgePathType(input?.pathType),

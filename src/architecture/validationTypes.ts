@@ -12,4 +12,4 @@ export type ArchitectureValidationWarning = {
   rule: string
 }
 
-export const unresolvedLegacyRelationType: RelationType = "legacy_visual_edge"
+export const unresolvedLegacyRelationType: RelationType = "unresolved"

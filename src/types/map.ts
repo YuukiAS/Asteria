@@ -123,6 +123,7 @@ export type GroupData = {
 
 export type MapEdgeData = {
   label?: string
+  semanticType?: string
   color?: string
   lineStyle?: EdgeLineStyle
   pathType?: EdgePathType

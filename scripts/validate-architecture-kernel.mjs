@@ -59,7 +59,7 @@ try {
   const index = createArchitectureGraphIndex(projectA)
   const mainOutgoing = getOutgoingRelations(index, "entity:legacy:block-main-model")
   const mainIncoming = getIncomingRelations(index, "entity:legacy:block-main-model")
-  assert(mainOutgoing.some((relation) => relation.type === "legacy_visual_edge" && relation.unresolved), "Expected visual edge to remain unresolved typed relation.")
+  assert(mainOutgoing.some((relation) => relation.type === "unresolved" && relation.unresolved), "Expected visual edge to remain unresolved typed relation.")
   assert(mainIncoming.some((relation) => relation.type === "contains"), "Expected group containment relation in incoming index.")
   assert(traceEntityIds(index, "entity:legacy:block-motivation", "downstream", 1).has("entity:legacy:block-main-model"), "Expected downstream trace through adjacency index.")
   assert(traceEntityIds(index, "entity:legacy:block-main-model", "upstream", 1).has("entity:legacy:block-motivation"), "Expected upstream trace through adjacency index.")

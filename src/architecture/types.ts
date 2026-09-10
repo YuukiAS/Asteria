@@ -5,6 +5,7 @@ export const architectureSchemaVersion = "2.0.0-alpha.1"
 
 export type SemanticLayer =
   | "legacy"
+  | "target"
   | "observation"
   | "measurement"
   | "latent"
@@ -98,7 +99,39 @@ export type FormulaBinding = {
   unresolved?: boolean
 }
 
-export type RelationType = "legacy_visual_edge" | "contains" | "annotates" | "depends_on" | "derived_from" | "parameterized_by" | "unresolved"
+export type RelationType =
+  | "unresolved"
+  | "contains"
+  | "annotates"
+  | "measured_as"
+  | "preprocessed_into"
+  | "aggregated_into"
+  | "matched_to"
+  | "derived_from"
+  | "indexed_by"
+  | "generates"
+  | "depends_on"
+  | "parameterized_by"
+  | "transforms_to"
+  | "constrained_by"
+  | "conditions_on"
+  | "marginalizes_to"
+  | "factorizes_as"
+  | "estimated_by"
+  | "optimizes"
+  | "solves"
+  | "approximated_by"
+  | "regularized_by"
+  | "identified_by"
+  | "uncertainty_quantified_by"
+  | "targets"
+  | "predicts"
+  | "supports"
+  | "tests"
+  | "validated_on"
+  | "limited_by"
+  | "contradicts"
+  | "causes"
 
 export type TypedRelation = {
   id: string

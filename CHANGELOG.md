@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0-beta.1 - Typed Relations, Layers, Recursive Trace
+
+- Added stable architecture relation values, layer definitions, cycle-safe recursive trace, layer focus projection, and Architecture Outline generation.
+- Extended the Architecture sidebar with layer focus, direct/recursive trace controls, directional/depth controls, breadcrumbs, and layer-grouped outline selection.
+- Added relation semantic metadata to legacy canvas edges while preserving visual presentation separately, plus `npm run test:architecture-g03` and `npm run bench:architecture-g03`.
+
 ## 2.0.0-alpha.2 - Canonical TRACE Fixtures And Symbol Trace
 
 - Added canonical Original TRACE and CAT-TRACE Frozen V2 architecture fixtures with project-level symbol identities, model scope, explicit metadata, formula bindings, and direct trace relations.
