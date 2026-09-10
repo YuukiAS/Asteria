@@ -1,204 +1,199 @@
 import { GitBranch, Layers3, Network, ShieldCheck } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
-import { catTraceFrozenV2Project, originalTraceProject } from "../architecture/fixtures/canonicalTraceFixtures"
-import { catTraceMultiViewProject, multiViewIds, projectedEntities, type MultiViewId } from "../architecture/fixtures/multiViewTraceProject"
-import { diffOriginalTraceToCatTrace } from "../architecture/semanticDiff"
-import { traceForSymbol } from "../architecture/trace"
-import type { StatisticalEntity } from "../architecture/types"
-
-const stageSymbols = [
-  { id: "symbol:cat-trace-frozen-v2:Y_raw", display: "Y_raw", x: 8, y: 18 },
-  { id: "symbol:cat-trace-frozen-v2:c_f", display: "c(f)", x: 22, y: 30 },
-  { id: "symbol:cat-trace-frozen-v2:yU_igh", display: "y^U_igh", x: 34, y: 45 },
-  { id: "symbol:cat-trace-frozen-v2:zU_igh", display: "z^U_igh", x: 47, y: 38 },
-  { id: "symbol:cat-trace-frozen-v2:nu", display: "nu", x: 56, y: 21 },
-  { id: "symbol:cat-trace-frozen-v2:a_g", display: "a_g", x: 67, y: 21 },
-  { id: "symbol:cat-trace-frozen-v2:gamma_g", display: "gamma_g", x: 62, y: 37 },
-  { id: "symbol:cat-trace-frozen-v2:betaU_gh", display: "beta^U_gh", x: 62, y: 54 },
-  { id: "symbol:cat-trace-frozen-v2:p_g", display: "p_g", x: 75, y: 38 },
-  { id: "symbol:cat-trace-frozen-v2:Sigma_W", display: "Sigma_W", x: 61, y: 72 },
-  { id: "symbol:cat-trace-frozen-v2:posterior_inference", display: "I_CAT", x: 82, y: 55 },
-  { id: "symbol:cat-trace-frozen-v2:richness_targets", display: "R_g, R_0", x: 89, y: 72 },
-]
+import { useMemo, type CSSProperties } from "react"
+import { canonicalTraceProjects } from "../architecture/fixtures/canonicalTraceFixtures"
+import { multiViewIds } from "../architecture/fixtures/multiViewTraceProject"
+import { diffOriginalTraceToCatTrace, type SemanticDiffStatus } from "../architecture/semanticDiff"
+import { useArchitectureSession } from "../architecture/session"
+import type { ArchitectureProjectV2, RelationType, StatisticalEntity, StatisticalSymbol } from "../architecture/types"
+import { buildProjectionLayout, type ProjectionLayoutEdge, type ProjectionLayoutNode } from "../architecture/viewProjection"
 
 const laneLabels = ["Observation", "Measurement", "Latent", "Parameterization", "Inference", "Prediction"]
 
-const methodPositions: Record<string, { x: number; y: number }> = {
-  "entity:lineage:hmsc": { x: 22, y: 24 },
-  "entity:lineage:trace": { x: 22, y: 43 },
-  "entity:lineage:bigmvp": { x: 22, y: 64 },
-  "entity:lineage:mgp": { x: 24, y: 82 },
-  "entity:lineage:cat-trace": { x: 61, y: 48 },
+const diffEntityMap: Record<string, { status: SemanticDiffStatus; label: string }> = {
+  "entity:cat-trace-frozen-v2:mathcal_K": { status: "added", label: "Finite catalogue" },
+  "entity:cat-trace-frozen-v2:K_n": { status: "added", label: "Observed catalogue subset" },
+  "entity:cat-trace-frozen-v2:c_f": { status: "added", label: "Deterministic matching" },
+  "entity:cat-trace-frozen-v2:mathcal_G": { status: "added", label: "Biological groups" },
+  "entity:cat-trace-frozen-v2:a_g": { status: "added", label: "Group deviation" },
+  "entity:cat-trace-frozen-v2:p_g": { status: "added", label: "Grouped truncation" },
+  "entity:cat-trace-frozen-v2:p_g_star": { status: "added", label: "Observed open-tail count" },
+  "entity:cat-trace-frozen-v2:zero_slots": { status: "added", label: "Zero-slot bookkeeping" },
+  "entity:cat-trace-frozen-v2:gamma0": { status: "added", label: "Open-tail intensity" },
+  "entity:cat-trace-frozen-v2:pi_g": { status: "added", label: "Composition weight" },
+  "entity:cat-trace-frozen-v2:gamma_g": { status: "added", label: "Derived group intensity" },
+  "entity:cat-trace-frozen-v2:betaU_gh": { status: "modified_definition", label: "Species response hierarchy" },
+  "entity:cat-trace-frozen-v2:richness_targets": { status: "modified_target", label: "Discovery target split" },
+  "entity:cat-trace-frozen-v2:nu": { status: "preserved_invariant", label: "Marginal response interpretation" },
+  "entity:cat-trace-frozen-v2:alphaU_gh": { status: "preserved_invariant", label: "TRACE tail calibration" },
+  "entity:cat-trace-frozen-v2:Sigma_W": { status: "preserved_invariant", label: "Unit residual margin" },
 }
 
-const evidencePositions: Record<string, { x: number; y: number }> = {
-  "entity:evidence:proof:trace-reference": { x: 43, y: 24 },
-  "entity:evidence:claim:tail-calibration": { x: 52, y: 39 },
-  "entity:evidence:claim:open-tail-response": { x: 52, y: 55 },
-  "entity:evidence:claim:zero-slots": { x: 41, y: 73 },
-  "entity:evidence:implementation:fixtures": { x: 17, y: 80 },
-  "entity:evidence:stress:g05": { x: 68, y: 80 },
-  "entity:evidence:data:finland": { x: 80, y: 36 },
-  "entity:evidence:data:malagasy": { x: 25, y: 55 },
-  "entity:evidence:data:swa-plants": { x: 80, y: 92 },
-  "entity:evidence:limitation:real-data": { x: 80, y: 50 },
-  "entity:evidence:claim:marked-discovery": { x: 80, y: 68 },
+function relationTone(type: RelationType) {
+  if (["pending", "limited_by", "contradicts_or_challenges", "contradicts"].includes(type)) return "gap"
+  if (["theoretically_supports", "empirically_tests", "validates_implementation", "stress_tests", "supports", "tests", "validated_on"].includes(type)) return "support"
+  if (["extends", "preserves", "borrows_interpretation_from", "computationally_inspired_by", "uses_methodological_component_from"].includes(type)) return "lineage"
+  return "neutral"
+}
+
+function symbolLabel(project: ArchitectureProjectV2, entity: StatisticalEntity) {
+  const symbol = entity.symbolIds?.map((id) => project.symbols[id]).find(Boolean) as StatisticalSymbol | undefined
+  return symbol?.latex || entity.label
+}
+
+function safeDomId(id: string) {
+  return id.replace(/[^a-zA-Z0-9_-]/g, "-")
+}
+
+function selectedButtonStyle(selected: boolean): CSSProperties {
+  return {
+    backgroundColor: selected ? "rgb(var(--color-accent-soft))" : "transparent",
+    color: selected ? "rgb(var(--color-accent))" : "rgb(var(--color-secondary))",
+  }
 }
 
 export function ArchitectureWorkspace() {
-  const [activeViewId, setActiveViewId] = useState<MultiViewId>(multiViewIds.architecture)
-  const [selectedSymbolId, setSelectedSymbolId] = useState("symbol:cat-trace-frozen-v2:betaU_gh")
-  const [selectedEntityId, setSelectedEntityId] = useState("entity:lineage:cat-trace")
-  const project = catTraceFrozenV2Project
-  const trace = useMemo(() => traceForSymbol(project, selectedSymbolId, { mode: "recursive", direction: "both", maxDepth: 3 }), [project, selectedSymbolId])
-  const diff = useMemo(() => diffOriginalTraceToCatTrace(originalTraceProject, catTraceFrozenV2Project), [])
+  const session = useArchitectureSession()
+  const { activeViewId, modelId, project, selectedEntityId, selectedSymbolId, trace, traceMode, traceDirection, focusedLayer, setActiveViewId, setSelectedEntityId, setSelectedSymbolId } = session
+  const layout = useMemo(() => buildProjectionLayout(project, activeViewId), [activeViewId, project])
+  const diff = useMemo(() => diffOriginalTraceToCatTrace(canonicalTraceProjects["original-trace"], canonicalTraceProjects["cat-trace-frozen-v2"]), [])
   const isArchitecture = activeViewId === multiViewIds.architecture
   const isLineage = activeViewId === multiViewIds.lineage
-  const graphEntities = useMemo(() => projectedEntities(catTraceMultiViewProject, activeViewId), [activeViewId])
+  const title = isArchitecture ? `${project.project.title} -- Model Architecture` : isLineage ? "CAT-TRACE -- Method Lineage" : "CAT-TRACE -- Evidence Graph"
+  const subtitle = isArchitecture
+    ? modelId === "original-trace"
+      ? "Original TRACE projection driven by canonical symbols, projections, and typed relations."
+      : "CAT-TRACE Frozen V2 projection driven by canonical symbols, projections, and typed relations."
+    : isLineage
+      ? "Method-level lineage map with relation-backed influence edges."
+      : "Claim-centered evidence map with support, pending, and limitation relations."
 
-  useEffect(() => {
-    const onViewChange = (event: Event) => {
-      const viewId = (event as CustomEvent<{ viewId?: MultiViewId }>).detail?.viewId
-      if (!viewId) return
-      setActiveViewId(viewId)
-      if (viewId === multiViewIds.lineage) setSelectedEntityId("entity:lineage:cat-trace")
-      if (viewId === multiViewIds.evidence) setSelectedEntityId("entity:evidence:claim:open-tail-response")
-    }
-    window.addEventListener("asteria-v2-view-change", onViewChange)
-    return () => window.removeEventListener("asteria-v2-view-change", onViewChange)
-  }, [])
-
-  const switchWorkspaceView = (viewId: MultiViewId) => {
-    setActiveViewId(viewId)
-    if (viewId === multiViewIds.lineage) setSelectedEntityId("entity:lineage:cat-trace")
-    if (viewId === multiViewIds.evidence) setSelectedEntityId("entity:evidence:claim:open-tail-response")
-    window.dispatchEvent(new CustomEvent("asteria-v2-view-change", { detail: { viewId } }))
+  const selectNode = (node: ProjectionLayoutNode) => {
+    setSelectedEntityId(node.entityId)
+    const symbolId = node.projection.symbolIds?.find((id) => project.symbols[id]) || project.entities[node.entityId]?.symbolIds?.find((id) => project.symbols[id])
+    if (symbolId) setSelectedSymbolId(symbolId)
   }
 
   return (
     <main className="architecture-workspace" data-testid="architecture-workspace">
       <nav className="architecture-workspace-rail" aria-label="Asteria 2.0 views">
         <span className="architecture-workspace-rail-title">Views</span>
-        <button type="button" className={isArchitecture ? "architecture-workspace-rail-active" : ""} onClick={() => switchWorkspaceView(multiViewIds.architecture)} data-testid="workspace-view-architecture">
+        <button type="button" className={isArchitecture ? "architecture-workspace-rail-active" : ""} style={selectedButtonStyle(isArchitecture)} aria-selected={isArchitecture} data-asteria-selected={isArchitecture ? "true" : "false"} onClick={() => setActiveViewId(multiViewIds.architecture)} data-testid="workspace-view-architecture">
           <Network size={15} />
           Architecture
         </button>
-        <button type="button" className={isLineage ? "architecture-workspace-rail-active" : ""} onClick={() => switchWorkspaceView(multiViewIds.lineage)} data-testid="workspace-view-lineage">
+        <button type="button" className={isLineage ? "architecture-workspace-rail-active" : ""} style={selectedButtonStyle(isLineage)} aria-selected={isLineage} data-asteria-selected={isLineage ? "true" : "false"} onClick={() => setActiveViewId(multiViewIds.lineage)} data-testid="workspace-view-lineage">
           <GitBranch size={15} />
           Lineage
         </button>
-        <button type="button" className={activeViewId === multiViewIds.evidence ? "architecture-workspace-rail-active" : ""} onClick={() => switchWorkspaceView(multiViewIds.evidence)} data-testid="workspace-view-evidence">
+        <button type="button" className={activeViewId === multiViewIds.evidence ? "architecture-workspace-rail-active" : ""} style={selectedButtonStyle(activeViewId === multiViewIds.evidence)} aria-selected={activeViewId === multiViewIds.evidence} data-asteria-selected={activeViewId === multiViewIds.evidence ? "true" : "false"} onClick={() => setActiveViewId(multiViewIds.evidence)} data-testid="workspace-view-evidence">
           <ShieldCheck size={15} />
           Evidence
         </button>
       </nav>
 
-      <section className="architecture-workspace-stage" aria-label="CAT-TRACE Model Architecture" data-testid="architecture-workspace-stage">
+      <section className="architecture-workspace-stage" aria-label="Asteria semantic projection" data-testid="architecture-workspace-stage" data-active-view={activeViewId} data-active-model={modelId}>
         <header className="architecture-workspace-header">
           <div>
-            <h1>{isArchitecture ? "CAT-TRACE -- Model Architecture" : isLineage ? "CAT-TRACE -- Method Lineage" : "CAT-TRACE -- Evidence Graph"}</h1>
-            <p>
-              {isArchitecture
-                ? "Catalogue-aware open-tail model with canonical TRACE-preserving calibration."
-                : isLineage
-                  ? "Method-level lineage map showing key intellectual and methodological influences."
-                  : "Claim-centered map of theory, implementation evidence, pending data, and open gaps."}
-            </p>
+            <h1>{title}</h1>
+            <p>{subtitle}</p>
           </div>
           <div className="architecture-workspace-status">
-            <span>CAT-TRACE Frozen V2</span>
-            <span>{isArchitecture ? "Schema V2" : isLineage ? "Lineage" : "Evidence"}</span>
+            <span data-testid="central-model-status">{project.project.title}</span>
+            <span>{isArchitecture ? "ArchitectureView.projections" : isLineage ? "Lineage" : "Evidence"}</span>
           </div>
         </header>
 
         {isArchitecture ? (
-          <>
-            <div className="architecture-lane-headings" aria-hidden="true">
-              {laneLabels.map((label) => (
-                <span key={label}>{label}</span>
+          <div className="architecture-lane-headings" aria-hidden="true">
+            {laneLabels.map((label) => (
+              <span key={label}>{label}</span>
+            ))}
+          </div>
+        ) : null}
+
+        <div className={`architecture-workspace-canvas ${!isArchitecture ? "architecture-workspace-research-canvas" : ""}`} data-testid={isArchitecture ? "architecture-projection-canvas" : isLineage ? "central-lineage-canvas" : "central-evidence-canvas"} data-projected-entity-count={layout.nodes.length} data-projected-relation-count={layout.edges.length}>
+          <div
+            className="architecture-projection-layer"
+            style={{
+              "--projection-pan-x": `${layout.viewport.x * 0.04}px`,
+              "--projection-pan-y": `${layout.viewport.y * 0.04}px`,
+              "--projection-zoom": layout.viewport.zoom,
+            } as CSSProperties}
+            data-viewport-x={layout.viewport.x}
+            data-viewport-y={layout.viewport.y}
+            data-viewport-zoom={layout.viewport.zoom}
+          >
+            <svg className="architecture-map-edges" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Projected semantic relations">
+              <defs>
+                <marker id="architecture-edge-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+                  <path d="M0,0 L7,3.5 L0,7 z" />
+                </marker>
+              </defs>
+              {layout.edges.map((edge) => (
+                <ProjectedEdge key={edge.relation.id} edge={edge} activeViewId={activeViewId} selectedEntityId={selectedEntityId} isTraceEdge={isArchitecture && trace.relationIds.has(edge.relation.id)} hasTraceSelection={isArchitecture && Boolean(selectedSymbolId)} />
               ))}
-            </div>
-            <ArchitectureMap selectedSymbolId={selectedSymbolId} trace={trace} onSelect={setSelectedSymbolId} />
-          </>
-        ) : (
-          <ResearchMap entities={graphEntities} selectedEntityId={selectedEntityId} positions={isLineage ? methodPositions : evidencePositions} onSelect={setSelectedEntityId} />
-        )}
+            </svg>
+
+            {layout.nodes.map((node) => {
+              const entity = project.entities[node.entityId]
+              const isSelected = node.entityId === selectedEntityId || entity.symbolIds?.includes(selectedSymbolId)
+              const isTrace = isArchitecture && trace.entityIds.has(node.entityId)
+              const isUpstream = isArchitecture && trace.upstreamEntityIds.has(node.entityId)
+              const isDownstream = isArchitecture && trace.downstreamEntityIds.has(node.entityId)
+              const diffStatus = modelId === "cat-trace-frozen-v2" && isArchitecture ? diffEntityMap[node.entityId]?.status : undefined
+              return (
+                <button
+                  key={node.projection.id}
+                  type="button"
+                  className={`architecture-map-node architecture-map-node-${entity.kind} ${isSelected ? "architecture-map-node-selected" : ""} ${isUpstream ? "architecture-map-node-upstream" : ""} ${isDownstream ? "architecture-map-node-downstream" : ""} ${selectedSymbolId && isArchitecture && !isSelected && !isTrace ? "architecture-map-node-muted" : ""} ${diffStatus ? `architecture-map-node-diff-${diffStatus}` : ""}`}
+                  style={{ left: `${node.leftPercent}%`, top: `${node.topPercent}%`, width: node.width, minHeight: node.height }}
+                  onClick={() => selectNode(node)}
+                  data-testid={`projection-node-${safeDomId(node.entityId)}`}
+                  data-entity-id={node.entityId}
+                  data-symbol-id={entity.symbolIds?.[0] || ""}
+                  data-projection-id={node.projection.id}
+                  data-projection-x={node.projection.position.x}
+                  data-projection-y={node.projection.position.y}
+                  data-left-percent={node.leftPercent.toFixed(2)}
+                  data-top-percent={node.topPercent.toFixed(2)}
+                  data-diff-status={diffStatus || "none"}
+                >
+                  <span>{isArchitecture ? symbolLabel(project, entity) : entity.label}</span>
+                  <small>{isArchitecture ? entity.label : entity.role}</small>
+                  {diffStatus ? <em>{diffStatus.replace(/_/g, " ")}</em> : null}
+                </button>
+              )
+            })}
+          </div>
+        </div>
 
         <footer className="architecture-workspace-footer">
           <div>
             <Layers3 size={14} />
-            {isArchitecture ? "Observation / Measurement / Latent / Parameterization / Inference / Prediction" : isLineage ? "Extends / preserves / borrows / computational inspiration" : "Theory / implementation / datasets / limitation / pending"}
+            {isArchitecture ? `${traceMode} ${traceDirection} trace / ${focusedLayer === "all" ? "all layers" : focusedLayer}` : isLineage ? "Extends / preserves / borrows / computational inspiration" : "Theory / implementation / datasets / limitation / pending"}
           </div>
           <div>{diff.items.length} semantic diff facts</div>
         </footer>
       </section>
-
     </main>
   )
 }
 
-function ArchitectureMap({ selectedSymbolId, trace, onSelect }: { selectedSymbolId: string; trace: ReturnType<typeof traceForSymbol>; onSelect: (id: string) => void }) {
-  const project = catTraceFrozenV2Project
+function ProjectedEdge({ edge, activeViewId, selectedEntityId, isTraceEdge, hasTraceSelection }: { edge: ProjectionLayoutEdge; activeViewId: string; selectedEntityId: string; isTraceEdge: boolean; hasTraceSelection: boolean }) {
+  const isConnectedToSelection = edge.relation.sourceId === selectedEntityId || edge.relation.targetId === selectedEntityId
+  const isDimmed = activeViewId === multiViewIds.architecture ? hasTraceSelection && !isTraceEdge : selectedEntityId && !isConnectedToSelection
   return (
-    <div className="architecture-workspace-canvas">
-      {stageSymbols.map((item) => {
-        const symbol = project.symbols[item.id]
-        const entityId = symbol.entityId || ""
-        const isSelected = item.id === selectedSymbolId
-        const isTrace = trace.entityIds.has(entityId)
-        const isUpstream = trace.upstreamEntityIds.has(entityId)
-        const isDownstream = trace.downstreamEntityIds.has(entityId)
-        return (
-          <button
-            key={item.id}
-            type="button"
-            className={`architecture-map-node ${isSelected ? "architecture-map-node-selected" : ""} ${isUpstream ? "architecture-map-node-upstream" : ""} ${isDownstream ? "architecture-map-node-downstream" : ""} ${!isSelected && !isTrace ? "architecture-map-node-muted" : ""}`}
-            style={{ left: `${item.x}%`, top: `${item.y}%` }}
-            onClick={() => onSelect(item.id)}
-          >
-            <span>{item.display}</span>
-            <small>{symbol.canonicalName}</small>
-          </button>
-        )
-      })}
-      <svg className="architecture-map-edges" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M12 27 C20 31, 23 37, 31 45" />
-        <path d="M26 39 C33 42, 38 42, 44 41" />
-        <path d="M55 28 C57 33, 59 35, 61 40" />
-        <path d="M66 28 C65 34, 63 36, 61 40" />
-        <path d="M61 44 L61 52" />
-        <path d="M74 43 C70 49, 66 51, 61 55" />
-        <path d="M61 60 C62 64, 62 68, 60 72" />
-        <path d="M68 57 C73 56, 77 56, 81 57" />
-        <path d="M81 60 C83 65, 85 69, 87 72" />
-      </svg>
-    </div>
-  )
-}
-
-function ResearchMap({ entities, selectedEntityId, positions, onSelect }: { entities: StatisticalEntity[]; selectedEntityId: string; positions: Record<string, { x: number; y: number }>; onSelect: (id: string) => void }) {
-  return (
-    <div className="architecture-workspace-canvas architecture-workspace-research-canvas">
-      {entities.map((entity, index) => {
-        const position = positions[entity.id] || { x: 18 + (index % 4) * 20, y: 26 + Math.floor(index / 4) * 18 }
-        return (
-          <button key={entity.id} type="button" className={`architecture-map-node architecture-map-node-${entity.kind} ${entity.id === selectedEntityId ? "architecture-map-node-selected" : ""}`} style={{ left: `${position.x}%`, top: `${position.y}%` }} onClick={() => onSelect(entity.id)}>
-            <span>{entity.label}</span>
-            <small>{entity.role}</small>
-          </button>
-        )
-      })}
-      <svg className="architecture-map-edges architecture-map-edges-research" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M22 24 C34 27, 45 36, 61 48" />
-        <path d="M22 43 C36 43, 47 44, 61 48" />
-        <path d="M22 64 C38 61, 47 53, 61 48" />
-        <path d="M24 82 C39 76, 52 62, 61 48" />
-        <path d="M43 24 C50 28, 52 33, 52 39" />
-        <path d="M52 39 C52 45, 52 49, 52 55" />
-        <path d="M34 73 C41 67, 47 61, 52 55" />
-        <path d="M65 73 C61 66, 57 60, 52 55" />
-        <path d="M78 60 C70 58, 62 56, 52 55" />
-      </svg>
-    </div>
+    <g
+      className={`architecture-map-edge architecture-map-edge-${relationTone(edge.relation.type)} ${isTraceEdge ? "architecture-map-edge-trace" : ""} ${isConnectedToSelection ? "architecture-map-edge-selected" : ""} ${isDimmed ? "architecture-map-edge-muted" : ""}`}
+      data-testid={`semantic-edge-${safeDomId(edge.relation.id)}`}
+      data-relation-id={edge.relation.id}
+      data-relation-type={edge.relation.type}
+      data-source-id={edge.relation.sourceId}
+      data-target-id={edge.relation.targetId}
+      data-trace-active={isTraceEdge ? "true" : "false"}
+    >
+      <path d={edge.path} markerEnd="url(#architecture-edge-arrow)" />
+      <text x={edge.labelX} y={edge.labelY}>{edge.relation.type.replace(/_/g, " ")}</text>
+    </g>
   )
 }

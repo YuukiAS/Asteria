@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0-rc.3 - Acceptance Hardening
+
+- Replaced the central Architecture / Lineage / Evidence renderer with a projection-driven graph surface whose nodes come from `ArchitectureView.projections` and whose visible edges come from `TypedRelation`.
+- Unified Architecture workspace and inspector model/view/selection state so Original TRACE and CAT-TRACE Frozen V2 both drive the central Architecture stage, Symbol Trace, outline, export, validation, semantic diff context, and save/restore.
+- Added RC.3 regression and Playwright acceptance coverage for model-stage synchronization, relation truth, projection truth, trace-edge linkage, semantic-diff visual linkage, and committed final screenshots.
+
 ## 2.0.0-rc.2 - Multi-view Final Web RC
 
 - Completed the Web-only Asteria 2.0 RC with Architecture, Lineage, and Evidence projections for CAT-TRACE Frozen V2.

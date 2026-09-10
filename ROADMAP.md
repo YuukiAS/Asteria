@@ -1,7 +1,7 @@
 # Asteria Product Roadmap
 
 更新时间：2026-09-11
-状态：Asteria 2.0 Web 已完成 G00–G06 到 `2.0.0-rc.2`。源码验收审计发现中央 renderer 仍存在双重 source-of-truth，因此新增一次窄范围 RC.3 acceptance hardening；RC.3 通过后再进入最终人工验收。
+状态：Asteria 2.0 Web 已完成 G00–G06 与 RC.3 acceptance hardening 到 `2.0.0-rc.3`。下一步是最终人工验收；未发布 `2.0.0` stable。
 
 ## 0. 当前判断
 
@@ -13,9 +13,9 @@ Asteria 不再定位为“把一整项研究摊在无限画布上的笔记工具
 
 A/B/C/D/E1/E2 六张 accepted concepts 已覆盖 Architecture light/dark、Symbol Trace、Semantic Diff、Lineage 与 Evidence。产品方向不再继续发散。
 
-G00–G06 已经完成 schema、fixtures、trace、typed relations、layers、outline、export、validation、semantic diff、multi-view、browser QA 与 performance 基础。但 2026-09-11 RC.2 源码审计发现：中央 `ArchitectureWorkspace` 仍使用 hard-coded stage node/position/static SVG path，且 central Architecture 固定 CAT-TRACE；因此 RC.2 暂不直接发布 stable。
+G00–G06 已经完成 schema、fixtures、trace、typed relations、layers、outline、export、validation、semantic diff、multi-view、browser QA 与 performance 基础。2026-09-11 RC.2 源码审计发现的 central renderer 双重 source-of-truth 已在 `2.0.0-rc.3` 中收束：central nodes 来自 `ArchitectureView.projections`，central edges 来自 `TypedRelation`，Original TRACE / CAT-TRACE 共享同一 active model/view/selection state。
 
-当前最终开发入口：
+RC.3 执行入口：
 
 `prompts/tasks/asteria_v2_rc3_acceptance_hardening_task.md`
 
@@ -149,18 +149,16 @@ G05  Architecture Performance / Visual RC     -> 2.0.0-rc.1
 G06  Architecture + Lineage + Evidence RC     -> 2.0.0-rc.2
 ```
 
-最终验收前新增：
+最终验收前新增并已完成：
 
 ```text
-G06A / RC.3 Acceptance Hardening
+G06A / RC.3 Acceptance Hardening -> 2.0.0-rc.3
   - central model-stage synchronization
   - relation-driven canvas edges
   - view-projection-driven positions
   - trace edge linkage
   - semantic diff visual linkage
   - committed acceptance screenshots
-        ↓
-2.0.0-rc.3
         ↓
 FINAL USER ACCEPTANCE
         ↓

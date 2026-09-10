@@ -44,6 +44,68 @@ function formulaBinding(model: string, formulaId: string, key: string, fragment?
   return { id: `binding:${model}:${formulaId}:${key}`, formulaId, fragment: fragment || key, symbolId: symbolId(model, key) }
 }
 
+const architecturePositions: Record<"original-trace" | "cat-trace-frozen-v2", Record<string, { x: number; y: number; width?: number }>> = {
+  "original-trace": {
+    y_ij: { x: 80, y: 120 },
+    z_ij: { x: 260, y: 120 },
+    x_i: { x: 260, y: 300 },
+    alpha_j: { x: 470, y: 72 },
+    beta_j: { x: 470, y: 230 },
+    gamma: { x: 680, y: 40 },
+    p: { x: 680, y: 142 },
+    mu_p_gamma: { x: 875, y: 78 },
+    tau_p: { x: 875, y: 180 },
+    nu: { x: 680, y: 260 },
+    Psi: { x: 680, y: 370 },
+    posterior_inference: { x: 890, y: 315, width: 200 },
+    marginal_probability: { x: 1080, y: 180, width: 220 },
+    richness_target: { x: 1080, y: 330, width: 210 },
+  },
+  "cat-trace-frozen-v2": {
+    Y_raw: { x: 80, y: 90 },
+    c_f: { x: 245, y: 138 },
+    g_f: { x: 245, y: 278 },
+    mathcal_K: { x: 430, y: 78 },
+    K_n: { x: 430, y: 198 },
+    mathcal_U: { x: 430, y: 328 },
+    mathcal_G: { x: 430, y: 448 },
+    yK_ij: { x: 615, y: 78 },
+    zK_ij: { x: 790, y: 78 },
+    alphaK_j: { x: 985, y: 32 },
+    betaK_j: { x: 985, y: 132 },
+    t_j: { x: 1165, y: 42 },
+    Gamma: { x: 1165, y: 132 },
+    bphy_j: { x: 1165, y: 222 },
+    vK_j: { x: 1165, y: 312 },
+    x_i: { x: 790, y: 248 },
+    yU_igh: { x: 615, y: 328 },
+    zU_igh: { x: 790, y: 328 },
+    alphaU_gh: { x: 985, y: 332 },
+    betaU_gh: { x: 985, y: 442 },
+    nu: { x: 1165, y: 420 },
+    a_g: { x: 1165, y: 510 },
+    vU_gh: { x: 1165, y: 600 },
+    gamma0: { x: 790, y: 480 },
+    pi_g: { x: 790, y: 580 },
+    gamma_g: { x: 985, y: 560 },
+    p_g: { x: 985, y: 650 },
+    p_g_star: { x: 790, y: 690 },
+    zero_slots: { x: 615, y: 650 },
+    mathcal_W: { x: 615, y: 500 },
+    Lambda_W: { x: 615, y: 590 },
+    Omega_W: { x: 430, y: 612 },
+    Sigma_W: { x: 245, y: 612 },
+    factor_index: { x: 430, y: 710 },
+    posterior_inference: { x: 80, y: 612 },
+    richness_targets: { x: 80, y: 455 },
+    Psi: { x: 1165, y: 690 },
+  },
+}
+
+function projectionPosition(model: "original-trace" | "cat-trace-frozen-v2", key: string, index: number) {
+  return architecturePositions[model][key] || { x: (index % 5) * 220, y: Math.floor(index / 5) * 150 }
+}
+
 function makeProject(model: "original-trace" | "cat-trace-frozen-v2", title: string, symbolsSeed: SymbolSeed[], relationsSeed: RelationSeed[]): ArchitectureProjectV2 {
   const entities: ArchitectureProjectV2["entities"] = {}
   const symbols: ArchitectureProjectV2["symbols"] = {}
@@ -97,12 +159,13 @@ function makeProject(model: "original-trace" | "cat-trace-frozen-v2", title: str
       scopeEntityId: entity,
       provenance: [{ source: "fixture", sourceId: `${model}:${seed.key}`, note: "Project-level canonical symbol." }],
     }
+    const position = projectionPosition(model, seed.key, index)
     projections[`projection:${model}:${seed.key}`] = {
       id: `projection:${model}:${seed.key}`,
       entityId: entity,
       symbolIds: [symbol],
-      position: { x: (index % 5) * 220, y: Math.floor(index / 5) * 150 },
-      size: { width: 180, height: 78 },
+      position: { x: position.x, y: position.y },
+      size: { width: position.width || (model === "cat-trace-frozen-v2" ? 112 : 160), height: model === "cat-trace-frozen-v2" ? 58 : 70 },
     }
   })
 
@@ -135,7 +198,7 @@ function makeProject(model: "original-trace" | "cat-trace-frozen-v2", title: str
         label: "Architecture",
         projectedEntityIds,
         projections,
-        viewport: { x: 0, y: 0, zoom: 1 },
+        viewport: model === "cat-trace-frozen-v2" ? { x: -20, y: 0, zoom: 0.86 } : { x: 0, y: 0, zoom: 0.96 },
         filters: { variantId: model },
       },
     },

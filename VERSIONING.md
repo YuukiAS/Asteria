@@ -26,9 +26,9 @@ Asteria 当前进入明确的两代产品边界。
 
 RC.2 完成既定 G00–G06 gate 后，2026-09-11 源码验收审计发现中央 renderer 仍存在 hard-coded node/position/static edge 与 canonical view projection/typed relation 并存的双重 source-of-truth；同时 Original TRACE model switch 尚未完整驱动中央 Architecture stage。
 
-因此增加：
+因此增加并已完成：
 
-- `2.0.0-rc.3`：**final acceptance hardening**。只修 central model-stage synchronization、relation-driven edge rendering、view-projection-driven layout、trace-edge linkage、semantic-diff visual linkage，并保存最终 acceptance screenshots；不新增 ontology 或产品范围。
+- `2.0.0-rc.3`：**final acceptance hardening**。已修 central model-stage synchronization、relation-driven edge rendering、view-projection-driven layout、trace-edge linkage、semantic-diff visual linkage，并保存最终 acceptance screenshots；未新增 ontology 或产品范围。
 - `2.0.0`：仅在用户最终验收 `rc.3` 通过后发布 stable。
 
 详细审计：

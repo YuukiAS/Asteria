@@ -2,7 +2,7 @@
 
 AUTONOMOUS_CHAIN_STATUS = COMPLETE_THROUGH_FINAL_WEB_RC
 ASTERIA_V2_WEB_RC_READY_FOR_USER_ACCEPTANCE = YES
-CURRENT_VERSION = 2.0.0-rc.2
+CURRENT_VERSION = 2.0.0-rc.3
 
 ## Accepted Concept Archive
 
@@ -211,7 +211,7 @@ git diff --check: exit 0
 
 ### G06
 
-Status: completed pending `v2.0.0-rc.2` commit.
+Status: completed and pushed.
 
 Result:
 
@@ -231,6 +231,29 @@ npm run test:browser: exit 0
 git diff --check: exit 0
 ```
 
+### G06A / RC.3 Acceptance Hardening
+
+Status: completed pending `v2.0.0-rc.3` commit.
+
+Result:
+
+```text
+results/asteria_v2_rc3_acceptance/result.md
+ASTERIA_V2_WEB_RC_READY_FOR_USER_ACCEPTANCE = YES
+NEXT_ACTION = FINAL_USER_ACCEPTANCE
+```
+
+Tests:
+
+```text
+npm run build: exit 0
+npm run test:regression: exit 0
+npm run test:architecture-rc3: exit 0
+npm run bench:architecture-g05: exit 0
+npm run test:browser: exit 0
+git diff --check: exit 0
+```
+
 ## Model Fixture Correctness
 
 G00 did not implement canonical model variants. G01 added schema/migration infrastructure only.
@@ -245,14 +268,16 @@ G05 added repeatable Playwright Chromium browser QA, the main Architecture RC wo
 
 G06 added separate Architecture, Lineage, and Evidence projections over the canonical CAT-TRACE project graph, cross-view links, E1/E2 concept fidelity validation, evidence closure warnings, first-paper dataset pending status, and final Web RC browser assertions.
 
+G06A / RC.3 removed the final central-renderer double source-of-truth: central Architecture now follows the active Original TRACE or CAT-TRACE project, rendered nodes come from `ArchitectureView.projections`, visible edges come from `TypedRelation`, trace highlights true relation edge paths, Lineage/Evidence graphs are relation-driven, semantic diff status is visible on central CAT nodes, and workspace/inspector state is shared.
+
 ## Browser QA
 
-G05/G06 browser QA passed through Playwright fallback because the Browser tool/skill was absent in the WSL Codex session.
+G05/G06/RC.3 browser QA passed through Playwright Chromium in the WSL Codex session.
 
 ```text
 npm run test:browser
-2 passed
-screenshots: /tmp/asteria-browser-qa/
+3 passed
+screenshots: results/asteria_v2_rc3_acceptance/screenshots/
 ```
 
 ## Performance Summary
@@ -266,6 +291,12 @@ G00 baseline:
 {"distAssetBytes":2496409}
 ```
 
+RC.3 architecture benchmark:
+
+```json
+{"entityCount":2200,"relationCount":6200,"visibleProjectionCount":260,"indexAverageMs":2.635,"traceAverageMs":2.984,"layerFocusAverageMs":3.943}
+```
+
 ## Accepted-Concept Fidelity Summary
 
 Accepted concepts are archived and documented. G02 begins fidelity to concept C through selected/upstream/downstream Symbol Trace highlighting in the Architecture sidebar. Full shell/diff/lineage/evidence visual convergence remains assigned to G03-G06.
@@ -277,6 +308,8 @@ G04 begins concept D fidelity through a compact semantic diff summary in the Arc
 G05 implements concept A/B/C/D intent through the main lane-based Architecture workspace, dark shell default, selected trace state, stable diff facts, compact inspector, and browser screenshot QA.
 
 G06 implements E1/E2 intent through method lineage and evidence graph projections while preserving strict truth boundaries: first-paper datasets are pending real-data closure, the marked discovery theorem is pending, and no GSMc status is claimed.
+
+RC.3 closes the final accepted-concept fidelity gap found in the RC.2 audit: the central view is no longer a separate demo renderer. A/B/C/D/E1/E2 now map to projection-driven central Architecture, true relation-edge Symbol Trace, graph-linked semantic diff badges, relation-backed Lineage, and relation-backed Evidence screenshots committed under `results/asteria_v2_rc3_acceptance/screenshots/`.
 
 ## Remaining Issues
 

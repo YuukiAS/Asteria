@@ -12,6 +12,7 @@ import { InspectorPanel } from "../components/InspectorPanel"
 import { StoryOutlinePanel } from "../components/StoryOutlinePanel"
 import { Toolbar } from "../components/Toolbar"
 import { requestInlineBlockEdit, requestInlineEditorFocus, requestSymbolEquationInsert, startInlineEditEvent, type InlineEditTarget } from "../lib/inlineEditEvents"
+import { ArchitectureSessionProvider } from "../architecture/session"
 import { useMapStore } from "../store/useMapStore"
 import type { InteractionMode } from "../types/interaction"
 
@@ -355,6 +356,7 @@ export function App() {
           }}
           onSearchPanelOpenChange={setIsSearchPanelOpen}
         />
+        <ArchitectureSessionProvider>
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <AppErrorBoundary label="canvas" resetKey={`${sidebarTab}:${interactionMode}:${selectedNodeId || ""}:${nodes.length}`}>
             {sidebarTab === "architecture" ? (
@@ -447,6 +449,7 @@ export function App() {
             )}
           </aside>
         </div>
+        </ArchitectureSessionProvider>
         {persistenceMode === "remote" && !workspaceReady && sharedRecord && (
           <AsteriaChoiceDialog
             title="Choose a starting version"

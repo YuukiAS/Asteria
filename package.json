@@ -1,7 +1,7 @@
 {
   "name": "asteria",
   "private": true,
-  "version": "2.0.0-rc.2",
+  "version": "2.0.0-rc.3",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -23,13 +23,14 @@
     "test:architecture-g04": "node scripts/validate-architecture-g04.mjs",
     "test:architecture-g05": "node scripts/validate-architecture-g05.mjs",
     "test:architecture-g06": "node scripts/validate-architecture-g06.mjs",
+    "test:architecture-rc3": "node scripts/validate-architecture-rc3.mjs",
     "test:browser": "playwright test",
     "test:e2e": "npm run test:browser",
     "bench:v1-baseline": "node scripts/benchmark-v1-baseline.mjs",
     "bench:architecture-kernel": "node scripts/benchmark-architecture-kernel.mjs",
     "bench:architecture-g03": "node scripts/benchmark-architecture-g03.mjs",
     "bench:architecture-g05": "node scripts/benchmark-architecture-g05.mjs",
-    "test:regression": "npm run test:legacy-roundtrip && npm run test:architecture-kernel && npm run test:canonical-trace && npm run test:architecture-g03 && npm run test:architecture-g04 && npm run test:architecture-g05 && npm run test:architecture-g06 && npm run test:restore-safety && npm run test:block-usability && npm run test:rich-text && npm run test:image-links && npm run test:shared-server && npm run test:shared-save"
+    "test:regression": "npm run test:legacy-roundtrip && npm run test:architecture-kernel && npm run test:canonical-trace && npm run test:architecture-g03 && npm run test:architecture-g04 && npm run test:architecture-g05 && npm run test:architecture-g06 && npm run test:architecture-rc3 && npm run test:restore-safety && npm run test:block-usability && npm run test:rich-text && npm run test:image-links && npm run test:shared-server && npm run test:shared-save"
   },
   "dependencies": {
     "@tiptap/core": "^2.26.4",

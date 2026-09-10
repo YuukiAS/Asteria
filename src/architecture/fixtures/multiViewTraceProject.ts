@@ -74,10 +74,34 @@ function projection(id: string, entityId: string, x: number, y: number, width = 
   }
 }
 
+const viewPositions: Partial<Record<MultiViewId, Record<string, { x: number; y: number; width?: number }>>> = {
+  [multiViewIds.lineage]: {
+    "entity:lineage:hmsc": { x: 160, y: 72 },
+    "entity:lineage:trace": { x: 160, y: 220 },
+    "entity:lineage:bigmvp": { x: 160, y: 382 },
+    "entity:lineage:mgp": { x: 168, y: 520 },
+    "entity:lineage:cat-trace": { x: 620, y: 292, width: 220 },
+  },
+  [multiViewIds.evidence]: {
+    "entity:evidence:proof:trace-reference": { x: 430, y: 70 },
+    "entity:evidence:claim:tail-calibration": { x: 560, y: 214 },
+    "entity:evidence:claim:open-tail-response": { x: 560, y: 360 },
+    "entity:evidence:claim:zero-slots": { x: 440, y: 530 },
+    "entity:evidence:implementation:fixtures": { x: 150, y: 590 },
+    "entity:evidence:stress:g05": { x: 760, y: 590 },
+    "entity:evidence:data:finland": { x: 930, y: 168 },
+    "entity:evidence:data:malagasy": { x: 150, y: 360 },
+    "entity:evidence:data:swa-plants": { x: 930, y: 690 },
+    "entity:evidence:limitation:real-data": { x: 930, y: 298 },
+    "entity:evidence:claim:marked-discovery": { x: 930, y: 498 },
+  },
+}
+
 function makeView(id: MultiViewId, kind: ArchitectureViewKind, label: string, entityIds: string[], columns = 3): ArchitectureProjectV2["views"][string] {
   const projections: ArchitectureProjectV2["views"][string]["projections"] = {}
   entityIds.forEach((entityId, index) => {
-    projections[`projection:${id}:${index}`] = projection(`projection:${id}:${index}`, entityId, (index % columns) * 230, Math.floor(index / columns) * 138)
+    const position = viewPositions[id]?.[entityId] || { x: (index % columns) * 230, y: Math.floor(index / columns) * 138 }
+    projections[`projection:${id}:${index}`] = projection(`projection:${id}:${index}`, entityId, position.x, position.y, position.width)
   })
   return {
     id,

@@ -88,6 +88,37 @@ body {
     @apply bg-accentSoft text-accent shadow-sm;
   }
 
+  .segmented-button:not(.segmented-button-active):focus {
+    background: transparent;
+    color: rgb(var(--color-secondary));
+  }
+
+  .architecture-view-switch .segmented-button:not(.segmented-button-active),
+  .architecture-model-switch .segmented-button:not(.segmented-button-active) {
+    background-color: transparent !important;
+    color: rgb(var(--color-secondary)) !important;
+    transition-property: none !important;
+  }
+
+  .architecture-view-switch .segmented-button-active,
+  .architecture-model-switch .segmented-button-active {
+    background-color: rgb(var(--color-accent-soft)) !important;
+    color: rgb(var(--color-accent)) !important;
+    transition-property: none !important;
+  }
+
+  .architecture-view-switch [data-asteria-selected="true"],
+  .architecture-model-switch [data-asteria-selected="true"] {
+    background-color: rgb(var(--color-accent-soft)) !important;
+    color: rgb(var(--color-accent)) !important;
+  }
+
+  .architecture-view-switch [data-asteria-selected="false"],
+  .architecture-model-switch [data-asteria-selected="false"] {
+    background-color: transparent !important;
+    color: rgb(var(--color-secondary)) !important;
+  }
+
   .danger-button {
     @apply inline-flex h-8 shrink-0 select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-danger/20 bg-panel px-2.5 text-xs font-medium text-danger transition hover:border-danger/40 hover:bg-danger/5;
   }
@@ -488,6 +519,28 @@ body {
     @apply bg-accentSoft text-accent;
   }
 
+  .architecture-workspace-rail button:not(.architecture-workspace-rail-active) {
+    background-color: transparent !important;
+    color: rgb(var(--color-secondary)) !important;
+    transition-property: none !important;
+  }
+
+  .architecture-workspace-rail button.architecture-workspace-rail-active {
+    background-color: rgb(var(--color-accent-soft)) !important;
+    color: rgb(var(--color-accent)) !important;
+    transition-property: none !important;
+  }
+
+  .architecture-workspace-rail button[data-asteria-selected="true"] {
+    background-color: rgb(var(--color-accent-soft)) !important;
+    color: rgb(var(--color-accent)) !important;
+  }
+
+  .architecture-workspace-rail button[data-asteria-selected="false"] {
+    background-color: transparent !important;
+    color: rgb(var(--color-secondary)) !important;
+  }
+
   .architecture-workspace-stage {
     @apply relative min-w-0 overflow-hidden p-5;
     background:
@@ -542,16 +595,26 @@ body {
       radial-gradient(circle at center, rgb(var(--color-panel) / 0.28), transparent 58%);
   }
 
+  .architecture-projection-layer {
+    @apply absolute inset-0;
+    transform: translate(var(--projection-pan-x), var(--projection-pan-y)) scale(var(--projection-zoom));
+    transform-origin: center;
+  }
+
   .architecture-map-node {
     @apply absolute z-20 grid min-h-[72px] w-32 -translate-x-1/2 -translate-y-1/2 content-center gap-1 rounded-md border border-strongBorder bg-panel/90 px-2 py-2 text-center text-secondary shadow-sm transition;
   }
 
   .architecture-map-node span {
-    @apply truncate text-sm font-semibold text-foreground;
+    @apply truncate text-[13px] font-semibold text-foreground;
   }
 
   .architecture-map-node small {
-    @apply line-clamp-2 text-[11px] leading-4 text-secondary;
+    @apply line-clamp-2 text-[10px] leading-4 text-secondary;
+  }
+
+  .architecture-map-node em {
+    @apply mt-1 justify-self-center rounded border border-border bg-app/70 px-1.5 py-0.5 text-[9px] not-italic uppercase leading-none tracking-normal text-muted;
   }
 
   .architecture-map-node-selected {
@@ -568,6 +631,19 @@ body {
 
   .architecture-map-node-muted {
     @apply opacity-50;
+  }
+
+  .architecture-map-node-diff-added em {
+    @apply border-accent/40 text-accent;
+  }
+
+  .architecture-map-node-diff-modified_definition,
+  .architecture-map-node-diff-modified_target {
+    @apply ring-2 ring-warning/35;
+  }
+
+  .architecture-map-node-diff-preserved_invariant {
+    @apply ring-2 ring-success/25;
   }
 
   .architecture-workspace-research-canvas .architecture-map-node {
@@ -604,17 +680,62 @@ body {
     @apply absolute inset-0 z-10 h-full w-full;
   }
 
-  .architecture-map-edges path {
+  .architecture-map-edge path {
     fill: none;
     stroke: rgb(var(--color-accent));
-    stroke-width: 0.18;
+    stroke-width: 0.22;
     stroke-linecap: round;
-    stroke-dasharray: 0.8 0.8;
-    opacity: 0.72;
+    opacity: 0.58;
   }
 
-  .architecture-map-edges-research path {
+  .architecture-map-edge text {
+    fill: rgb(var(--color-muted));
+    font-size: 2.2px;
+    font-weight: 650;
+    letter-spacing: 0;
+    opacity: 0;
+    paint-order: stroke;
+    stroke: rgb(var(--color-canvas));
+    stroke-width: 0.38px;
+  }
+
+  .architecture-map-edge-neutral path {
+    stroke: rgb(var(--color-accent));
+  }
+
+  .architecture-map-edge-support path {
+    stroke: rgb(var(--color-success));
+  }
+
+  .architecture-map-edge-gap path {
+    stroke: rgb(var(--color-warning));
+    stroke-dasharray: 1.2 0.8;
+  }
+
+  .architecture-map-edge-lineage path {
     stroke: rgb(56 189 248);
+  }
+
+  .architecture-map-edge-trace path,
+  .architecture-map-edge-selected path {
+    stroke-width: 0.44;
+    opacity: 0.96;
+    filter: drop-shadow(0 0 4px rgb(var(--color-accent) / 0.5));
+  }
+
+  .architecture-map-edge-trace text,
+  .architecture-map-edge-selected text {
+    fill: rgb(var(--color-foreground));
+    opacity: 0;
+  }
+
+  .architecture-map-edge-muted {
+    opacity: 0.28;
+  }
+
+  .architecture-map-edges marker path {
+    fill: rgb(var(--color-accent));
+    stroke: none;
   }
 
   .architecture-workspace-footer {

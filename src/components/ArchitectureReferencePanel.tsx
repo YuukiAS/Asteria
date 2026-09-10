@@ -1,14 +1,15 @@
 import { Download, FileJson2, GitBranch, Layers3, Link2, LocateFixed, Network, RotateCcw, Search, ShieldCheck } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState, type CSSProperties } from "react"
 import { canonicalTraceProjects, type CanonicalTraceProjectId } from "../architecture/fixtures/canonicalTraceFixtures"
-import { catTraceMultiViewProject, crossViewLinks, evidenceClosureWarnings, multiViewIds, projectedEntities, searchCanonicalEntities, type MultiViewId } from "../architecture/fixtures/multiViewTraceProject"
+import { catTraceMultiViewProject, evidenceClosureWarnings, multiViewIds, projectedEntities, searchCanonicalEntities, type MultiViewId } from "../architecture/fixtures/multiViewTraceProject"
 import { exportArchitectureJsonV2, exportArchitectureMarkdown } from "../architecture/export"
 import { architectureLayerDefinitions, layerLabel } from "../architecture/layers"
 import { generateArchitectureOutline } from "../architecture/outline"
 import { projectLayerFocus } from "../architecture/projection"
 import { diffOriginalTraceToCatTrace } from "../architecture/semanticDiff"
 import { traceForSymbol, type TraceDirection, type TraceMode } from "../architecture/trace"
-import type { RelationType, SemanticLayer, StatisticalEntity, StatisticalSymbol, TypedRelation } from "../architecture/types"
+import { useArchitectureSession } from "../architecture/session"
+import type { ArchitectureProjectV2, RelationType, SemanticLayer, StatisticalEntity, StatisticalSymbol, TypedRelation } from "../architecture/types"
 import { validateArchitectureProject } from "../architecture/validation"
 import { buildStoryMarkdown } from "../lib/storyMarkdownExport"
 
@@ -29,8 +30,6 @@ const defaultViewSelection: Record<MultiViewId, string> = {
   [multiViewIds.evidence]: "entity:evidence:claim:open-tail-response",
 }
 
-const localViewStateKey = "asteria-v2-rc-view-state"
-
 function latexText(symbol?: StatisticalSymbol) {
   return symbol?.latex || ""
 }
@@ -42,34 +41,56 @@ function relationTone(type: RelationType) {
   return "neutral"
 }
 
-function relatedRelations(entityId: string) {
-  return Object.values(catTraceMultiViewProject.relations).filter((relation) => relation.sourceId === entityId || relation.targetId === entityId)
+function relatedRelations(project: ArchitectureProjectV2, entityId: string) {
+  return Object.values(project.relations).filter((relation) => relation.sourceId === entityId || relation.targetId === entityId)
 }
 
-function relationPeer(relation: TypedRelation, entityId: string) {
+function relationPeer(project: ArchitectureProjectV2, relation: TypedRelation, entityId: string) {
   const peerId = relation.sourceId === entityId ? relation.targetId : relation.sourceId
-  return catTraceMultiViewProject.entities[peerId]
+  return project.entities[peerId]
+}
+
+function selectedButtonStyle(selected: boolean): CSSProperties {
+  return {
+    backgroundColor: selected ? "rgb(var(--color-accent-soft))" : "transparent",
+    color: selected ? "rgb(var(--color-accent))" : "rgb(var(--color-secondary))",
+  }
 }
 
 export function ArchitectureReferencePanel() {
-  const [activeViewId, setActiveViewId] = useState<MultiViewId>(multiViewIds.architecture)
-  const [modelId, setModelId] = useState<CanonicalTraceProjectId>("cat-trace-frozen-v2")
-  const [traceMode, setTraceMode] = useState<TraceMode>("direct")
-  const [traceDirection, setTraceDirection] = useState<TraceDirection>("both")
-  const [traceDepth, setTraceDepth] = useState(2)
-  const [focusedLayer, setFocusedLayer] = useState<SemanticLayer | "all">("all")
+  const {
+    activeViewId,
+    modelId,
+    project,
+    selectedSymbolId,
+    selectedEntityId,
+    traceMode,
+    traceDirection,
+    traceDepth,
+    focusedLayer,
+    exportMode,
+    actionStatus,
+    trace,
+    setActiveViewId,
+    setModelId,
+    setSelectedSymbolId,
+    setSelectedEntityId,
+    setTraceMode,
+    setTraceDirection,
+    setTraceDepth,
+    setFocusedLayer,
+    setExportMode,
+    setActionStatus,
+    openLinkedView,
+    saveViewState,
+    restoreViewState,
+  } = useArchitectureSession()
   const [collapsedOutlineLayers, setCollapsedOutlineLayers] = useState<string[]>([])
-  const [exportMode, setExportMode] = useState<"markdown" | "json">("markdown")
-  const [actionStatus, setActionStatus] = useState("Ready")
-  const [selectedViewEntityId, setSelectedViewEntityId] = useState(defaultViewSelection[multiViewIds.lineage])
   const [searchQuery, setSearchQuery] = useState("")
   const [searchScope, setSearchScope] = useState<"current" | "all">("current")
-  const project = canonicalTraceProjects[modelId]
   const symbolList = useMemo(() => Object.values(project.symbols), [project])
-  const [selectedSymbolId, setSelectedSymbolId] = useState(() => symbolList[0]?.id || "")
   const selectedSymbol = project.symbols[selectedSymbolId] || symbolList[0]
   const selectedArchitectureEntityId = selectedSymbol?.entityId || defaultViewSelection[multiViewIds.architecture]
-  const trace = useMemo(() => traceForSymbol(project, selectedSymbol?.id || "", { mode: traceMode, direction: traceDirection, maxDepth: traceDepth }), [project, selectedSymbol?.id, traceDepth, traceDirection, traceMode])
   const layerProjection = useMemo(() => projectLayerFocus(project, "view:architecture", focusedLayer === "all" ? undefined : focusedLayer), [focusedLayer, project])
   const outline = useMemo(() => generateArchitectureOutline(project), [project])
   const warnings = useMemo(() => validateArchitectureProject(project), [project])
@@ -86,82 +107,21 @@ export function ArchitectureReferencePanel() {
   const upstream = [...trace.upstreamEntityIds].map((id) => project.entities[id]).filter(Boolean)
   const downstream = [...trace.downstreamEntityIds].map((id) => project.entities[id]).filter(Boolean)
   const visibleSymbols = symbolList.filter((symbol) => !symbol.entityId || layerProjection.entityIds.has(symbol.entityId))
-  const viewEntities = useMemo(() => projectedEntities(catTraceMultiViewProject, activeViewId), [activeViewId])
-  const currentViewSelection = catTraceMultiViewProject.entities[selectedViewEntityId] || viewEntities[0]
-  const currentRelations = currentViewSelection ? relatedRelations(currentViewSelection.id) : []
+  const viewEntities = useMemo(() => projectedEntities(project, activeViewId), [activeViewId, project])
+  const currentViewSelection = project.entities[selectedEntityId] || viewEntities[0]
+  const currentRelations = currentViewSelection ? relatedRelations(project, currentViewSelection.id) : []
   const closureWarnings = useMemo(() => evidenceClosureWarnings(catTraceMultiViewProject), [])
   const searchResults = useMemo(
-    () => searchCanonicalEntities(catTraceMultiViewProject, searchQuery, searchScope === "current" ? activeViewId : undefined).slice(0, 8),
-    [activeViewId, searchQuery, searchScope],
+    () => searchCanonicalEntities(project, searchQuery, searchScope === "current" ? activeViewId : undefined).slice(0, 8),
+    [activeViewId, project, searchQuery, searchScope],
   )
-
-  useEffect(() => {
-    const onViewChange = (event: Event) => {
-      const viewId = (event as CustomEvent<{ viewId?: MultiViewId }>).detail?.viewId
-      if (!viewId || !Object.values(multiViewIds).includes(viewId)) return
-      setActiveViewId(viewId)
-      setSelectedViewEntityId((current) => (current && catTraceMultiViewProject.views[viewId]?.projectedEntityIds.includes(current) ? current : defaultViewSelection[viewId]))
-    }
-
-    window.addEventListener("asteria-v2-view-change", onViewChange)
-    return () => window.removeEventListener("asteria-v2-view-change", onViewChange)
-  }, [])
 
   const switchModel = (next: CanonicalTraceProjectId) => {
     setModelId(next)
-    const nextProject = canonicalTraceProjects[next]
-    setSelectedSymbolId(Object.values(nextProject.symbols)[0]?.id || "")
   }
 
   const switchResearchView = (viewId: MultiViewId, entityId?: string) => {
-    setActiveViewId(viewId)
-    setSelectedViewEntityId(entityId || defaultViewSelection[viewId])
-    window.dispatchEvent(new CustomEvent("asteria-v2-view-change", { detail: { viewId } }))
-  }
-
-  const openLinkedView = (view: "architecture" | "lineage" | "evidence", entityId: string) => {
-    const linkedId = crossViewLinks[entityId]?.[view] || (view === "architecture" ? defaultViewSelection[multiViewIds.architecture] : undefined)
-    if (view === "architecture") {
-      switchResearchView(multiViewIds.architecture)
-      setModelId("cat-trace-frozen-v2")
-      const symbolId = linkedId ? catTraceMultiViewProject.entities[linkedId]?.symbolIds?.[0] : undefined
-      setSelectedSymbolId(symbolId || "symbol:cat-trace-frozen-v2:betaU_gh")
-      setActionStatus("Opened linked Architecture entity")
-      return
-    }
-    if (view === "lineage") switchResearchView(multiViewIds.lineage, linkedId || defaultViewSelection[multiViewIds.lineage])
-    if (view === "evidence") switchResearchView(multiViewIds.evidence, linkedId || defaultViewSelection[multiViewIds.evidence])
-    setActionStatus(`Opened linked ${view}`)
-  }
-
-  const saveViewState = () => {
-    localStorage.setItem(localViewStateKey, JSON.stringify({ activeViewId, modelId, selectedSymbolId, selectedViewEntityId, traceMode, traceDirection, focusedLayer }))
-    setActionStatus("Local view state saved")
-  }
-
-  const restoreViewState = () => {
-    const stored = localStorage.getItem(localViewStateKey)
-    if (!stored) {
-      setActionStatus("No saved local view state")
-      return
-    }
-    const parsed = JSON.parse(stored) as Partial<{
-      activeViewId: MultiViewId
-      modelId: CanonicalTraceProjectId
-      selectedSymbolId: string
-      selectedViewEntityId: string
-      traceMode: TraceMode
-      traceDirection: TraceDirection
-      focusedLayer: SemanticLayer | "all"
-    }>
-    if (parsed.activeViewId) setActiveViewId(parsed.activeViewId)
-    if (parsed.modelId) setModelId(parsed.modelId)
-    if (parsed.selectedSymbolId) setSelectedSymbolId(parsed.selectedSymbolId)
-    if (parsed.selectedViewEntityId) setSelectedViewEntityId(parsed.selectedViewEntityId)
-    if (parsed.traceMode) setTraceMode(parsed.traceMode)
-    if (parsed.traceDirection) setTraceDirection(parsed.traceDirection)
-    if (parsed.focusedLayer) setFocusedLayer(parsed.focusedLayer)
-    setActionStatus("Local view state restored")
+    setActiveViewId(viewId, entityId || defaultViewSelection[viewId])
   }
 
   const runLegacyCompatibilityCheck = async () => {
@@ -195,7 +155,7 @@ export function ArchitectureReferencePanel() {
         {researchViewOptions.map((option) => {
           const Icon = option.icon
           return (
-            <button key={option.id} type="button" className={`segmented-button justify-center ${activeViewId === option.id ? "segmented-button-active" : ""}`} onClick={() => switchResearchView(option.id)} data-testid={`view-${option.id.replace("view:", "")}`}>
+            <button key={option.id} type="button" className={`segmented-button justify-center ${activeViewId === option.id ? "segmented-button-active" : ""}`} style={selectedButtonStyle(activeViewId === option.id)} aria-selected={activeViewId === option.id} data-asteria-selected={activeViewId === option.id ? "true" : "false"} onClick={() => switchResearchView(option.id)} data-testid={`view-${option.id.replace("view:", "")}`}>
               <Icon size={14} />
               {option.label}
             </button>
@@ -214,7 +174,7 @@ export function ArchitectureReferencePanel() {
       {searchResults.length ? (
         <div className="architecture-search-results" data-testid="architecture-search-results">
           {searchResults.map((entity) => (
-            <button key={entity.id} type="button" onClick={() => setSelectedViewEntityId(entity.id)}>
+            <button key={entity.id} type="button" onClick={() => setSelectedEntityId(entity.id)}>
               {entity.label}
             </button>
           ))}
@@ -225,7 +185,7 @@ export function ArchitectureReferencePanel() {
         <>
           <div className="architecture-model-switch" role="tablist" aria-label="Canonical model">
             {modelOptions.map((option) => (
-              <button key={option.id} type="button" className={`segmented-button justify-center ${modelId === option.id ? "segmented-button-active" : ""}`} onClick={() => switchModel(option.id)} data-testid={`model-${option.id}`}>
+              <button key={option.id} type="button" className={`segmented-button justify-center ${modelId === option.id ? "segmented-button-active" : ""}`} style={selectedButtonStyle(modelId === option.id)} aria-selected={modelId === option.id} data-asteria-selected={modelId === option.id ? "true" : "false"} onClick={() => switchModel(option.id)} data-testid={`model-${option.id}`}>
                 {option.label}
               </button>
             ))}
@@ -438,7 +398,7 @@ export function ArchitectureReferencePanel() {
           selectedEntity={currentViewSelection}
           relations={currentRelations}
           closureWarnings={closureWarnings}
-          onSelectEntity={setSelectedViewEntityId}
+          onSelectEntity={setSelectedEntityId}
           onOpenArchitecture={(entityId) => openLinkedView("architecture", entityId)}
           onOpenLineage={(entityId) => openLinkedView("lineage", entityId)}
           onOpenEvidence={(entityId) => openLinkedView("evidence", entityId)}
@@ -529,7 +489,7 @@ function MultiViewPanel({
             </dl>
             <div className="architecture-relation-list" data-testid="context-relations">
               {relations.map((relation) => {
-                const peer = relationPeer(relation, selectedEntity.id)
+                const peer = relationPeer(catTraceMultiViewProject, relation, selectedEntity.id)
                 return (
                   <button key={relation.id} type="button" className={`architecture-relation-row architecture-relation-${relationTone(relation.type)}`} onClick={() => peer && onSelectEntity(peer.id)}>
                     <span>{relation.type.replace(/_/g, " ")}</span>
