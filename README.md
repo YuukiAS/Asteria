@@ -2,7 +2,7 @@
 
 Asteria is a local-first visual canvas for building and reviewing statistical model notes. It combines React Flow blocks, rich text, LaTeX equations, typed research blocks, and model-version variants in one editable map.
 
-Current app version: `2.0.0-rc.1`.
+Current app version: `2.0.0-rc.2`.
 
 `1.0.0` freezes the Asteria 1.x local-first research canvas as the compatibility baseline for the Asteria 2.0 semantic architecture work. Existing 1.x maps, rich-text blocks, Symbol entries, model variants, Story Outline data, save/restore behavior, and JSON import/export remain supported while the 2.0 semantic graph is developed in later versions.
 
@@ -15,6 +15,8 @@ Current app version: `2.0.0-rc.1`.
 `2.0.0-beta.2` adds readable Architecture Markdown export, schema-v2 JSON export with validation warnings, structural validation, cross-paradigm fixtures, and the Original TRACE to CAT-TRACE Frozen V2 semantic diff.
 
 `2.0.0-rc.1` adds the Architecture RC surface: a main semantic Architecture workspace, Quiet Celestial Dark default shell, Playwright Chromium browser QA, stress/performance coverage, recursive trace polish, layer focus, semantic diff, schema-v2 export preview, legacy V1 import/Story checks, and local view save/restore.
+
+`2.0.0-rc.2` completes the Web RC by adding validated Architecture / Lineage / Evidence projections, cross-view links, evidence closure warnings, all-graph search, active view synchronization, and desktop/laptop Playwright screenshots for final user acceptance.
 
 ## Run
 

@@ -1,6 +1,8 @@
 # Result asteria_v2_core_autonomous
 
-AUTONOMOUS_CHAIN_STATUS = RUNNING
+AUTONOMOUS_CHAIN_STATUS = COMPLETE_THROUGH_FINAL_WEB_RC
+ASTERIA_V2_WEB_RC_READY_FOR_USER_ACCEPTANCE = YES
+CURRENT_VERSION = 2.0.0-rc.2
 
 ## Accepted Concept Archive
 
@@ -181,7 +183,13 @@ git diff --check: exit 0
 
 ### G05
 
-Status: completed pending `v2.0.0-rc.1` commit.
+Status: completed and pushed.
+
+Commit:
+
+```text
+e6a1f6d3091f048c7417db758d636459adfcb48d v2.0.0-rc.1
+```
 
 Result:
 
@@ -198,6 +206,29 @@ npm run test:regression: exit 0
 npm run test:architecture-g05: exit 0
 npm run bench:architecture-g05: exit 0
 npm run test:browser: exit 0
+git diff --check: exit 0
+```
+
+### G06
+
+Status: completed pending `v2.0.0-rc.2` commit.
+
+Result:
+
+```text
+results/asteria_v2_g06_result.md
+ASTERIA_V2_WEB_RC_READY_FOR_USER_ACCEPTANCE = YES
+```
+
+Tests:
+
+```text
+npm run build: exit 0
+npm run test:regression: exit 0
+npm run test:architecture-g06: exit 0
+npm run bench:architecture-g05: exit 0
+npm run test:browser: exit 0
+git diff --check: exit 0
 ```
 
 ## Model Fixture Correctness
@@ -212,9 +243,11 @@ G04 added readable Architecture Markdown export, schema-v2 JSON export with vali
 
 G05 added repeatable Playwright Chromium browser QA, the main Architecture RC workspace, recursive trace/browser export coverage, legacy V1 import + Story checks, local view save/restore, stress benchmarks, and Vite manual chunking.
 
+G06 added separate Architecture, Lineage, and Evidence projections over the canonical CAT-TRACE project graph, cross-view links, E1/E2 concept fidelity validation, evidence closure warnings, first-paper dataset pending status, and final Web RC browser assertions.
+
 ## Browser QA
 
-G05 browser QA passed through Playwright fallback because the Browser tool/skill was absent in the WSL Codex session.
+G05/G06 browser QA passed through Playwright fallback because the Browser tool/skill was absent in the WSL Codex session.
 
 ```text
 npm run test:browser
@@ -243,8 +276,12 @@ G04 begins concept D fidelity through a compact semantic diff summary in the Arc
 
 G05 implements concept A/B/C/D intent through the main lane-based Architecture workspace, dark shell default, selected trace state, stable diff facts, compact inspector, and browser screenshot QA.
 
+G06 implements E1/E2 intent through method lineage and evidence graph projections while preserving strict truth boundaries: first-paper datasets are pending real-data closure, the marked discovery theorem is pending, and no GSMc status is claimed.
+
 ## Remaining Issues
 
-- G06 final Web RC remains pending.
+- Final user acceptance is pending.
+- Real-data closure remains intentionally pending for first-paper datasets.
+- `2.0.0` stable release, desktop packaging, fixed public URL, and production infrastructure changes were not entered.
 
-NEXT_GOAL = G06
+NEXT_ACTION = FINAL_USER_ACCEPTANCE

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0-rc.2 - Multi-view Final Web RC
+
+- Completed the Web-only Asteria 2.0 RC with Architecture, Lineage, and Evidence projections for CAT-TRACE Frozen V2.
+- Added explicit E1/E2 lineage and evidence closure validation around TRACE, HMSC, bigMVP, sparse Bayesian factor/MGP influences, first-paper datasets, implementation evidence, and pending real-data gaps.
+- Locked browser QA around cross-view links, all-graph search, active view synchronization, dark/light theme switching, and desktop/laptop screenshots.
+
 ## 2.0.0-rc.1 - Architecture Performance And Visual Convergence
 
 - Added repeatable Playwright Chromium browser QA for the Asteria 2.0 Architecture flow, including canonical TRACE/CAT-TRACE selection, recursive trace, layer focus, semantic diff, Markdown/schema-v2 export, legacy V1 migration, Story, and local view save/restore.
