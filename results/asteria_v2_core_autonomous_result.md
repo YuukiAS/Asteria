@@ -38,7 +38,13 @@ All six PNG files were readable and reported as `1586 x 992`, 8-bit RGB, non-int
 
 ### G00
 
-Status: completed locally before `v1.0.0` commit.
+Status: completed and pushed.
+
+Commit:
+
+```text
+cacb957f13b83c7fdebc6f3c2c1c7d4dc065e967 v1.0.0
+```
 
 Result:
 
@@ -65,11 +71,32 @@ npm run bench:v1-baseline: exit 0
 git diff --check: exit 0
 ```
 
-Version commit SHA is reported after the `v1.0.0` commit/push operation.
+### G01
+
+Status: completed locally before `v2.0.0-alpha.1` commit.
+
+Result:
+
+```text
+results/asteria_v2_g01_result.md
+G02_READY = YES
+```
+
+Tests:
+
+```text
+npm run build: exit 0
+npm run test:architecture-kernel: exit 0
+npm run test:regression: exit 0, real 3.25s
+npm run bench:architecture-kernel: exit 0
+git diff --check: exit 0
+```
+
+Version commit SHA is reported after the `v2.0.0-alpha.1` commit/push operation.
 
 ## Model Fixture Correctness
 
-G00 did not implement canonical model variants. It only froze the 1.x legacy map baseline and compatibility fixture.
+G00 did not implement canonical model variants. G01 added schema/migration infrastructure only. Canonical Original TRACE and CAT-TRACE Frozen V2 fixtures begin in G02.
 
 ## Browser QA
 
@@ -94,4 +121,4 @@ Accepted concepts are archived and documented. G00 intentionally did not impleme
 
 - Vite large chunk warning remains as baseline evidence for G05.
 
-NEXT_GOAL = G01
+NEXT_GOAL = G02

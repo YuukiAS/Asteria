@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0-alpha.1 - Semantic Kernel
+
+- Added the first platform-independent Asteria 2.0 architecture kernel with normalized entities, symbols, typed relations, semantic variants, and view projections.
+- Added deterministic `ExportedMap` v1 to `ArchitectureProjectV2` migration that preserves legacy payload, Story data, variants, presentation, and unresolved visual edges without guessing statistical semantics.
+- Added graph-index and selector helpers for reusable upstream/downstream relation queries and view/entity/symbol lookup outside React.
+- Added `npm run test:architecture-kernel` and `npm run bench:architecture-kernel`, and included the kernel regression in `npm run test:regression`.
+
 ## 1.0.0 - Legacy Research Canvas Freeze
 
 - Froze the Asteria 1.x research-canvas generation as the compatibility baseline for the Asteria 2.0 semantic architecture work.

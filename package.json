@@ -1,7 +1,7 @@
 {
   "name": "asteria",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0-alpha.1",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -17,8 +17,10 @@
     "test:shared-server": "node scripts/validate-shared-server-config.mjs",
     "test:shared-save": "node scripts/validate-shared-save-feedback.mjs",
     "test:legacy-roundtrip": "node scripts/validate-legacy-v1-roundtrip.mjs",
+    "test:architecture-kernel": "node scripts/validate-architecture-kernel.mjs",
     "bench:v1-baseline": "node scripts/benchmark-v1-baseline.mjs",
-    "test:regression": "npm run test:legacy-roundtrip && npm run test:restore-safety && npm run test:block-usability && npm run test:rich-text && npm run test:image-links && npm run test:shared-server && npm run test:shared-save"
+    "bench:architecture-kernel": "node scripts/benchmark-architecture-kernel.mjs",
+    "test:regression": "npm run test:legacy-roundtrip && npm run test:architecture-kernel && npm run test:restore-safety && npm run test:block-usability && npm run test:rich-text && npm run test:image-links && npm run test:shared-server && npm run test:shared-save"
   },
   "dependencies": {
     "@tiptap/core": "^2.26.4",
