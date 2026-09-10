@@ -155,7 +155,13 @@ git diff --check: exit 0
 
 ### G04
 
-Status: completed locally before `v2.0.0-beta.2` commit.
+Status: completed and pushed.
+
+Commit:
+
+```text
+8c70bfb4b638ae4d80b261db386a27659313e84e v2.0.0-beta.2
+```
 
 Result:
 
@@ -173,7 +179,26 @@ npm run test:regression: exit 0, real 4.03s
 git diff --check: exit 0
 ```
 
-Version commit SHA is reported after the `v2.0.0-beta.2` commit/push operation.
+### G05
+
+Status: completed pending `v2.0.0-rc.1` commit.
+
+Result:
+
+```text
+results/asteria_v2_g05_result.md
+G06_READY = YES
+```
+
+Tests:
+
+```text
+npm run build: exit 0
+npm run test:regression: exit 0
+npm run test:architecture-g05: exit 0
+npm run bench:architecture-g05: exit 0
+npm run test:browser: exit 0
+```
 
 ## Model Fixture Correctness
 
@@ -185,9 +210,17 @@ G03 added stable semantic relation values, explicit-only `causes`, recursive tra
 
 G04 added readable Architecture Markdown export, schema-v2 JSON export with validation warnings, mechanical structural validation, four acceptance fixtures, and Original TRACE to CAT-TRACE Frozen V2 semantic diff.
 
+G05 added repeatable Playwright Chromium browser QA, the main Architecture RC workspace, recursive trace/browser export coverage, legacy V1 import + Story checks, local view save/restore, stress benchmarks, and Vite manual chunking.
+
 ## Browser QA
 
-Not required for G00. Browser QA begins in later goals, especially G05/G06.
+G05 browser QA passed through Playwright fallback because the Browser tool/skill was absent in the WSL Codex session.
+
+```text
+npm run test:browser
+2 passed
+screenshots: /tmp/asteria-browser-qa/
+```
 
 ## Performance Summary
 
@@ -206,10 +239,12 @@ Accepted concepts are archived and documented. G02 begins fidelity to concept C 
 
 G03 extends concept C fidelity through recursive trace controls and outline-linked symbol selection. Concept A/B/D/E1/E2 convergence remains assigned to later gates.
 
-G04 begins concept D fidelity through a compact semantic diff summary in the Architecture sidebar. Single-canvas stable-position visual diff remains assigned to G05.
+G04 begins concept D fidelity through a compact semantic diff summary in the Architecture sidebar.
+
+G05 implements concept A/B/C/D intent through the main lane-based Architecture workspace, dark shell default, selected trace state, stable diff facts, compact inspector, and browser screenshot QA.
 
 ## Remaining Issues
 
-- Vite large chunk warning remains as baseline evidence for G05.
+- G06 final Web RC remains pending.
 
-NEXT_GOAL = G05
+NEXT_GOAL = G06

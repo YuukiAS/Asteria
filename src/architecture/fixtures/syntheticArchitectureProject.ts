@@ -1,6 +1,6 @@
 import { architectureSchemaVersion, type ArchitectureProjectV2 } from "../types"
 
-export function createSyntheticArchitectureProject(entityCount = 2000, relationCount = 5000): ArchitectureProjectV2 {
+export function createSyntheticArchitectureProject(entityCount = 2000, relationCount = 5000, visibleEntityCount = 260): ArchitectureProjectV2 {
   const at = "2026-09-10T00:00:00.000Z"
   const entities: ArchitectureProjectV2["entities"] = {}
   const symbols: ArchitectureProjectV2["symbols"] = {}
@@ -10,7 +10,7 @@ export function createSyntheticArchitectureProject(entityCount = 2000, relationC
   for (let index = 0; index < entityCount; index += 1) {
     const entityId = `entity:synthetic:${index}`
     const symbolId = `symbol:synthetic:${index}`
-    projectedEntityIds.push(entityId)
+    if (index < visibleEntityCount) projectedEntityIds.push(entityId)
     entities[entityId] = {
       id: entityId,
       kind: index % 5 === 0 ? "model" : "generic",
@@ -28,11 +28,13 @@ export function createSyntheticArchitectureProject(entityCount = 2000, relationC
       scopeEntityId: entityId,
       provenance: [{ source: "fixture", sourceId: symbolId }],
     }
-    projections[`projection:synthetic:${index}`] = {
-      id: `projection:synthetic:${index}`,
-      entityId,
-      position: { x: (index % 80) * 160, y: Math.floor(index / 80) * 110 },
-      size: { width: 140, height: 72 },
+    if (index < visibleEntityCount) {
+      projections[`projection:synthetic:${index}`] = {
+        id: `projection:synthetic:${index}`,
+        entityId,
+        position: { x: (index % 20) * 160, y: Math.floor(index / 20) * 110 },
+        size: { width: 140, height: 72 },
+      }
     }
   }
   for (let index = 0; index < relationCount; index += 1) {

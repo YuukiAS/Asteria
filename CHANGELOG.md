@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0-rc.1 - Architecture Performance And Visual Convergence
+
+- Added repeatable Playwright Chromium browser QA for the Asteria 2.0 Architecture flow, including canonical TRACE/CAT-TRACE selection, recursive trace, layer focus, semantic diff, Markdown/schema-v2 export, legacy V1 migration, Story, and local view save/restore.
+- Added a main Architecture workspace canvas with Quiet Celestial Dark default direction, left view rail, layer lanes, selected trace state, and a right-side RC inspector path aligned to accepted concepts A/B/C/D.
+- Added G05 stress validation and benchmark coverage for a 2,200-entity / 6,200-relation semantic graph with a 260-node Architecture projection, plus Vite manual chunks that remove the previous large main chunk warning.
+
 ## 2.0.0-beta.2 - Export, Validation, Semantic Diff
 
 - Added readable architecture Markdown export, schema-v2 JSON export with validation warnings, and a mechanical structural validation engine.

@@ -7,6 +7,7 @@ import type { PointerEvent as ReactPointerEvent } from "react"
 import { Canvas } from "../components/Canvas"
 import { AppErrorBoundary } from "../components/AppErrorBoundary"
 import { ArchitectureReferencePanel } from "../components/ArchitectureReferencePanel"
+import { ArchitectureWorkspace } from "../components/ArchitectureWorkspace"
 import { InspectorPanel } from "../components/InspectorPanel"
 import { StoryOutlinePanel } from "../components/StoryOutlinePanel"
 import { Toolbar } from "../components/Toolbar"
@@ -27,7 +28,7 @@ function isTextEditingTarget(target: EventTarget | null) {
 function useTheme() {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     const stored = localStorage.getItem("asteria-theme")
-    return stored === "dark" ? "dark" : "light"
+    return stored === "light" ? "light" : "dark"
   })
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -355,14 +356,18 @@ export function App() {
           onSearchPanelOpenChange={setIsSearchPanelOpen}
         />
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          <AppErrorBoundary label="canvas" resetKey={`${interactionMode}:${selectedNodeId || ""}:${nodes.length}`}>
-            <Canvas
-              onFitViewReady={setFitView}
-              interactionMode={interactionMode}
-              onInteractionModeChange={setAppInteractionMode}
-              inlineEditTarget={inlineEditTarget}
-              onInlineEditTargetChange={setInlineEditTarget}
-            />
+          <AppErrorBoundary label="canvas" resetKey={`${sidebarTab}:${interactionMode}:${selectedNodeId || ""}:${nodes.length}`}>
+            {sidebarTab === "architecture" ? (
+              <ArchitectureWorkspace />
+            ) : (
+              <Canvas
+                onFitViewReady={setFitView}
+                interactionMode={interactionMode}
+                onInteractionModeChange={setAppInteractionMode}
+                inlineEditTarget={inlineEditTarget}
+                onInlineEditTargetChange={setInlineEditTarget}
+              />
+            )}
           </AppErrorBoundary>
           <aside
             className={`inspector-shell ${isSidebarCollapsed ? "inspector-shell-collapsed" : "inspector-shell-expanded"}`}

@@ -58,7 +58,21 @@ export function validateArchitectureProject(project: ArchitectureProjectV2, opti
     if (entity.role?.includes("causal estimand") && !relationTouches(relations, entity.id, ["identified_by"])) {
       warnings.push(warning("causal-identification-missing", `${entity.label} is causal but lacks an identification condition link.`, { entityIds: [entity.id], layer: entity.layer }))
     }
-    if (entity.role?.includes("claim") && !relationTouches(relations, entity.id, ["supports", "tests", "validated_on"])) {
+    if (
+      entity.role?.includes("claim") &&
+      !relationTouches(relations, entity.id, [
+        "supports",
+        "tests",
+        "validated_on",
+        "theoretically_supports",
+        "empirically_tests",
+        "validates_implementation",
+        "stress_tests",
+        "pending",
+        "limited_by",
+        "contradicts_or_challenges",
+      ])
+    ) {
       warnings.push(warning("claim-without-evidence", `${entity.label} has no supporting/test/validation evidence relation.`, { entityIds: [entity.id], layer: entity.layer }))
     }
     if ((entity as { diffStatus?: string }).diffStatus === "modified" && entity.constraints?.includes("unchanged")) {
