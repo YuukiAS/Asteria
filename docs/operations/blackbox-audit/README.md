@@ -2,6 +2,7 @@
 
 日期：2026-09-12  
 当前固定验收入口：`https://asteria.httpwwwcardiacnexus-ukb.com/`
+当前目标版本：`2.0.0-rc.5`
 
 ## 目的
 
@@ -58,44 +59,68 @@ Codex implementation / repair
   -> stable release
 ```
 
-**在 GPT Work gate 通过前，不再要求用户人工打开页面验收。** 这样先让独立 Work 找出明显问题，避免用户重复浪费时间。
+**在 GPT Work gate 通过前，不再要求用户人工打开页面验收。** 先让独立 Work 找出明显问题，避免用户重复浪费时间。
 
 “All reviewer PASS” 是硬 gate。PASS 可以带少量 P2/P3，但 consolidated triage 必须把每个 P2 明确归类为 `must-fix` 或 `accepted/deferred`；只要还有 unresolved must-fix P2，就不能进入人工验收。
 
 若 repair 广泛影响 math/layout/theme/state/search/inspector/accessibility 等多个 surface，应重跑完整 W01–W06 campaign。只有窄修复才允许只重跑受影响 reviewer + W06。
 
-## 当前 RC.4 黑箱结论
+## RC.4 -> RC.5 状态
 
-六轮 RC.4 报告已汇总到：
+RC.4 六轮报告已汇总到：
 
 ```text
 docs/operations/blackbox-audit/reports/RC4_CONSOLIDATED_REPORT_2026-09-12.md
 ```
 
-当前结论：RC.4 不满足人工验收 gate。下一张 repair task：
+RC.5 repair task：
 
 ```text
 prompts/tasks/asteria_v2_rc5_blackbox_repair_task.md
 ```
 
-RC.5 修复范围覆盖 math rendering、1366 responsive、Clear state truth、light contrast、trace readability、search cross-view、right header sync、inspector hierarchy、stable-facing wording、first-time comprehension 与 keyboard navigation。
+RC.5 repair review：
 
-RC.5 public refresh 后，应重跑完整 W01–W06，重新建立黑箱基线。
+```text
+prompts/tasks/asteria_v2_rc5_blackbox_repair_review.md
+```
+
+当前 review 状态：`GO -> GPT_WORK_BLACKBOX_REAUDIT`。
+
+RC.5 已完成并刷新固定公网 URL。现在必须重新跑完整 W01–W06，重新建立黑箱基线。具体计划：
+
+```text
+docs/operations/blackbox-audit/RC5_GPT_WORK_REAUDIT_PLAN_2026-09-12.md
+```
+
+## 当前 Ready-to-Paste Work prompts
+
+以下六份 prompt 已全部更新到 `2.0.0-rc.5`，并 inline 当前 Browser contract：
+
+```text
+docs/operations/blackbox-audit/prompts/W01_VISUAL_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/W02_SEMANTICS_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/W03_STATE_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/W04_FIRST_TIME_UX_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/W05_RESPONSIVE_ACCESSIBILITY_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/W06_RELEASE_REDTEAM_WORK_PROMPT.md
+```
+
+每个 reviewer 必须 fresh start，不读取 RC.4 报告，也不能因为“应该修过”而放宽标准。
 
 ## 使用方式
 
 1. 每个 GPT Work 新开独立任务。
-2. ChatGPT 先读取当前 `UI_BLACKBOX_BROWSER_CONTRACT.md` 与 `AUDIT_RESULT_CONTRACT.md`。
-3. 生成对应 persona prompt，并把 Browser contract 全文逐字 inline 到每一份最终 prompt。
-4. 不需要把 repo source 提供给 Work；Work 不应读取 Asteria repo。
-5. Work 最终必须按 `AUDIT_RESULT_CONTRACT.md` 返回 `BROWSER_MODE`、`BLACK_BOX_CONTEXT_CONTAMINATED`、`BROWSER_BLOCKER`、P0–P3 与 release recommendation。
-6. 报告完成后交回 ChatGPT 做 consolidated triage；不要让某一个 Work 自行修改 Asteria。
+2. 直接复制对应 ready-to-paste prompt 全文。
+3. 不需要把 repo source 提供给 Work；Work 不应读取 Asteria repo。
+4. Work 最终必须按 `AUDIT_RESULT_CONTRACT.md` 返回 `BROWSER_MODE`、`BLACK_BOX_CONTEXT_CONTAMINATED`、`BROWSER_BLOCKER`、P0–P3 与 release recommendation。
+5. 六份报告完成后一起交回 ChatGPT 做 consolidated triage；不要让某一个 Work 自行修改 Asteria。
 
 ## Reference 边界
 
 视觉 reviewer 可以把 `docs/design/accepted-concepts/` 下 A/B/C/D/E1/E2 作为设计 reference，但 concept image 不是数学、citation 或 result-status 真值。
 
-科学 reviewer 的 expected invariants 应直接 inline 到对应 prompt；不要让 Work 为获取 expected behavior 去读取 repo。
+科学 reviewer 的 expected invariants 已直接 inline 到 W02 prompt；不要让 Work 为获取 expected behavior 去读取 repo。
 
 ## Severity
 
@@ -103,3 +128,5 @@ RC.5 public refresh 后，应重跑完整 W01–W06，重新建立黑箱基线�
 - `P1`：核心 Architecture/Lineage/Evidence 流程不可完成、科学含义明显错误、模型切换或状态真值错误、严重可读性问题使核心模型无法理解。
 - `P2`：重要但有 workaround 的交互、视觉、术语、布局、状态反馈问题。
 - `P3`：不阻塞使用的 polish / consistency / minor accessibility 问题。
+
+当前 gate：**RC.5 必须先通过 W01–W06 re-audit，才能进入用户人工最终验收。**
