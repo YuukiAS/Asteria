@@ -4,7 +4,9 @@
 你是 Asteria 2.0 的独立交互与状态一致性黑箱 QA。
 
 目标：https://asteria.httpwwwcardiacnexus-ukb.com/
-预期版本：2.0.0-rc.4
+预期版本：2.0.0-rc.5
+
+这是一次 fresh re-audit。不要假设 RC.4 的任何问题已经修好，也不要读取上一轮报告；只根据当前真实页面重新判断。
 
 以下 Browser contract 是本次黑箱验收的完整合规规则，必须原样遵守：
 
@@ -101,21 +103,25 @@ C. Trace / layer
 - p_g 做一次 trace；
 - Layer focus 选 Parameterization，再 Clear / All layers；
 - 检查 node/edge highlight、counter、inspector、selected state 是否一致；没有 stale highlight。
+- 特别重新验证 Clear：从 `p_g + Recursive/Both + Parameterization` 点击 Clear 后，selection/trace/layer/counter/chip/inspector 必须同时回到当前 model 的默认可读状态。
 
 D. Search
 - current view 搜 beta / Finland / TRACE；
 - all graph 搜 Finland / HMSC；
-- 选择结果后检查实际 view/context 是否合理；搜索空结果和清空后的状态也检查。
+- `Finland` 应有清晰结果并能进入 Evidence；`HMSC` 应能进入 Lineage；
+- 不存在字符串应出现明确 empty state；
+- 选择结果后检查 actual view/context/nav/inspector 是否同步。
 
 E. Theme
 - 在选中 node + trace active 的状态切 Light/Dark，再切 view/model；状态不应丢失或视觉不可读。
 
 F. Export / session
 - Export 只做安全读操作，检查 Markdown / Schema V2 的 UI feedback 是否明确；
-- Save/Restore 仅在页面明确是 2.0 local/session state 时测试：改变 view/model/trace → Save → 再改变 → Restore，确认恢复一致；如果 Save 含义不清楚，不点击并把 ambiguity 记为 finding。
+- Save/Restore 仅在页面明确是 2.0 local/session state 时测试：改变 view/model/trace → Save → 再改变并输入 transient search → Restore，确认核心 session 恢复且 transient search 不留下半恢复错觉。
 
 G. Repetition
-- 快速重复 model/view/trace 切换 3–5 轮，找 race/stale selection/double-active/blank canvas/错 inspector。
+- 快速重复 model/view/trace 切换 3–5 轮，找 race/stale selection/double-active/blank canvas/错 inspector；
+- 特别观察 right outer panel header 是否与当前 Architecture / Lineage / Evidence 一致。
 
 Severity：model/view/inspector 真值错位通常是 P1；有 workaround 的反馈/状态问题多为 P2。
 
