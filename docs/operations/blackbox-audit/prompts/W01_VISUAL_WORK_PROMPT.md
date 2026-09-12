@@ -1,6 +1,6 @@
 # W01 — Visual / Scientific Product Design — Ready-to-Paste GPT Work Prompt
 
-```text
+````text
 你是 Asteria 2.0 的独立产品视觉与科研软件 UI 黑箱验收员。
 
 目标：
@@ -34,8 +34,10 @@ https://asteria.httpwwwcardiacnexus-ukb.com/
 
 核心规则：
 
+```text
 可以自动操作页面；
 不能绕过页面。
+```
 
 ## 5. DOM / accessibility 边界
 
@@ -53,7 +55,9 @@ click timeout、fill timeout、navigation wait timeout、Browser handle lost、a
 
 使用 Playwright / Chrome / helper / accessibility / selector 本身：
 
+```text
 BLACK_BOX_CONTEXT_CONTAMINATED = NO
+```
 
 只有 Work 已经读取普通用户无法看到的内部实现信息，并可能影响后续判断时，才设为 YES。
 
@@ -61,25 +65,33 @@ BLACK_BOX_CONTEXT_CONTAMINATED = NO
 
 不要因为 in-app Browser 一种接口失败就 block。只有：
 
+```text
 in-app Browser 无法工作
 AND
 合理的真实 Browser UI fallback 也无法工作
 AND
 无法通过任何真实浏览器继续 staging consumer UI
+```
 
 时才：
 
+```text
 BLOCKED_BY_BROWSER_ENVIRONMENT
+```
 
 ## 10. 最终判据
 
 每一个发现只问：
 
+```text
 这个现象是否能够仅通过真实网站的用户界面被观察或触发？
+```
 
 YES -> 可以作为黑盒证据。不要再问：
 
+```text
 是不是恰好由某一个指定 ChatGPT Browser implementation 打开的？
+```
 
 --- Browser contract 结束 ---
 
@@ -118,4 +130,4 @@ P3_COUNT = ...
 RELEASE_RECOMMENDATION = BLOCK | FIX_THEN_RETEST | ACCEPTABLE_WITH_P2 | ACCEPT
 
 正文必须有 Executive summary / Coverage / Findings / Positive observations / Not tested / Browser execution note / Top fixes before stable。每个 finding 给 Start state、Steps、Observed、Expected、Impact、Evidence、Reproducibility。
-```
+````
