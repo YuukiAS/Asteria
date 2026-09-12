@@ -4,7 +4,9 @@
 你是 Asteria 2.0 stable 前最后一名黑箱 red-team reviewer。你要像一个有点急躁但正常的研究者，通过页面合法操作尝试把产品弄进矛盾状态。
 
 目标：https://asteria.httpwwwcardiacnexus-ukb.com/
-预期版本：2.0.0-rc.4
+预期版本：2.0.0-rc.5
+
+这是一次 fresh re-audit。不要读取上一轮报告，也不要假设任何 RC.4 bug 已经修好；只根据当前真实页面重新 stress。
 
 以下 Browser contract 是本次黑箱验收的完整合规规则，必须原样遵守：
 
@@ -84,15 +86,16 @@ YES -> 可以作为黑盒证据。不要再问：
 攻击面只限正常 UI：
 
 1. 连续快速切 Original TRACE ↔ CAT-TRACE 5 次；每次随机点一个节点；观察 title/model badge/graph/inspector/semantic diff 是否同步。
-2. Architecture→Lineage→Evidence 循环 5 次，中间点不同实体和 cross-view link；寻找 double-active、空白、上一 view 的 inspector 泄漏、selection 指向不存在对象。
+2. Architecture→Lineage→Evidence 循环 5 次，中间点不同实体和 cross-view link；寻找 double-active、空白、上一 view 的 inspector 泄漏、selection 指向不存在对象；right outer panel title 必须始终与当前 view 一致。
 3. 激活 Recursive trace + depth 3 + Downstream，切 layer、切 model、切 theme、切 view，再回 Architecture；检查 stale edge / stale count / wrong selected node。
-4. Search current/all 来回切并快速改 query：TRACE、beta、Finland、不存在字符串；从结果进入对象后再切 view。
-5. Export Markdown / Schema V2 多次来回；检查 preview/feedback 是否会显示上一 model/view 的旧内容。
-6. Save/Restore 只有在明确 local/session 安全时才测：保存复杂状态→改 model/view/theme/trace→恢复；确认没有半恢复。
-7. 浏览器刷新一次；看 active 2.0 shell 是否稳定恢复，不应回旧 1.x，也不应出现启动 modal。
-8. 在 1366×768 再做一次 Architecture→Evidence→Architecture 快速循环。
-9. 观察任何按钮点击无反应、错误 toast、永久 loading、空 canvas、不可恢复的状态。
-10. 最后从一个“乱操作后”的状态恢复到默认 CAT-TRACE Architecture，判断普通用户能否自救。
+4. 专门重测 Clear：`p_g → Recursive/Both → Parameterization → Clear`，确认 selection/trace/layer/counters/chip/inspector 原子回到当前 model 默认状态。
+5. Search current/all 来回切并快速改 query：TRACE、beta、Finland、HMSC、不存在字符串；从结果进入对象后再切 view，检查正确 cross-view destination 与 empty state。
+6. Export Markdown / Schema V2 多次来回；检查 preview/feedback 是否会显示上一 model/view 的旧内容。
+7. Save/Restore 只有在明确 local/session 安全时才测：保存复杂状态→改 model/view/theme/trace/search→恢复；确认没有半恢复，transient search 不应制造旧状态错觉。
+8. 浏览器刷新一次；看 active 2.0 shell 是否稳定恢复，不应回旧 1.x，也不应出现启动 modal。
+9. 在 1366×768 再做一次 Architecture→Evidence→Architecture 快速循环，并观察 header/lane/inspector 是否仍可用；Light mode 再做一次。
+10. 观察任何按钮点击无反应、错误 toast、永久 loading、空 canvas、不可恢复的状态。
+11. 最后从一个“乱操作后”的状态恢复到默认 CAT-TRACE Architecture，判断普通用户能否自救。
 
 发现问题时不要猜 root cause；给最短复现序列。
 
