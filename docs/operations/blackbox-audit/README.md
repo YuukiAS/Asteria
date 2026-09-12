@@ -2,7 +2,7 @@
 
 日期：2026-09-12  
 当前固定验收入口：`https://asteria.httpwwwcardiacnexus-ukb.com/`
-当前目标版本：`2.0.0-rc.5`
+当前目标版本：`2.0.0-rc.6`
 
 ## 目的
 
@@ -65,48 +65,44 @@ Codex implementation / repair
 
 若 repair 广泛影响 math/layout/theme/state/search/inspector/accessibility 等多个 surface，应重跑完整 W01–W06 campaign。只有窄修复才允许只重跑受影响 reviewer + W06。
 
-## RC.4 -> RC.5 状态
+## 当前状态：RC.5 re-audit 未通过，进入 RC.6
 
-RC.4 六轮报告已汇总到：
+RC.4 初轮黑箱汇总：
 
 ```text
 docs/operations/blackbox-audit/reports/RC4_CONSOLIDATED_REPORT_2026-09-12.md
 ```
 
-RC.5 repair task：
+RC.5 re-audit 汇总：
 
 ```text
-prompts/tasks/asteria_v2_rc5_blackbox_repair_task.md
+docs/operations/blackbox-audit/reports/RC5_REAUDIT_CONSOLIDATED_REPORT_2026-09-12.md
 ```
 
-RC.5 repair review：
+RC.5 六个 reviewer 均未通过硬 gate。主要剩余问题已去重为：
+
+- CAT-TRACE Architecture 默认 projection 仍过密，核心图在 1536/1366 下不能可靠阅读；
+- recursive trace 的 root-relative upstream/downstream 语义错误；
+- Clear/reset 因 default selection 自动产生 direct trace，视觉上仍是假清空；
+- `𝒰` orphan、indexed metadata、Evidence pending status 等 semantic presentation consistency；
+- inspector object type / trace context / formula presentation；
+- Advanced JSON/validation 侵入主理解路径；
+- Semantic Diff / Evidence / Project-View-Model 仍需 researcher-facing language；
+- Light mode dense graph contrast 仍需加强。
+
+下一张唯一 repair task：
 
 ```text
-prompts/tasks/asteria_v2_rc5_blackbox_repair_review.md
+prompts/tasks/asteria_v2_rc6_blackbox_repair_task.md
 ```
 
-当前 review 状态：`GO -> GPT_WORK_BLACKBOX_REAUDIT`。
-
-RC.5 已完成并刷新固定公网 URL。现在必须重新跑完整 W01–W06，重新建立黑箱基线。具体计划：
-
-```text
-docs/operations/blackbox-audit/RC5_GPT_WORK_REAUDIT_PLAN_2026-09-12.md
-```
+目标版本：`2.0.0-rc.6`。RC.6 完成、刷新固定公网入口后，再完整重跑 W01–W06。GPT Work gate 通过前不进入人工验收。
 
 ## 当前 Ready-to-Paste Work prompts
 
-以下六份 prompt 已全部更新到 `2.0.0-rc.5`，并 inline 当前 Browser contract：
+当前 `docs/operations/blackbox-audit/prompts/` 下 W01–W06 仍是 **RC.5 re-audit prompts**，用于已完成的这一轮历史基线。
 
-```text
-docs/operations/blackbox-audit/prompts/W01_VISUAL_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/W02_SEMANTICS_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/W03_STATE_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/W04_FIRST_TIME_UX_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/W05_RESPONSIVE_ACCESSIBILITY_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/W06_RELEASE_REDTEAM_WORK_PROMPT.md
-```
-
-每个 reviewer 必须 fresh start，不读取 RC.4 报告，也不能因为“应该修过”而放宽标准。
+RC.6 产品修复完成后，ChatGPT 必须把六份 prompt 的 expected version 与必要测试点更新到 `2.0.0-rc.6`，并重新 inline 当前 Browser contract，再交给 fresh GPT Work。不要提前拿 RC.5 prompt 验收 RC.6。
 
 ## 使用方式
 
@@ -120,7 +116,7 @@ docs/operations/blackbox-audit/prompts/W06_RELEASE_REDTEAM_WORK_PROMPT.md
 
 视觉 reviewer 可以把 `docs/design/accepted-concepts/` 下 A/B/C/D/E1/E2 作为设计 reference，但 concept image 不是数学、citation 或 result-status 真值。
 
-科学 reviewer 的 expected invariants 已直接 inline 到 W02 prompt；不要让 Work 为获取 expected behavior 去读取 repo。
+科学 reviewer 的 expected invariants 必须直接 inline 到 W02 prompt；不要让 Work 为获取 expected behavior 去读取 repo。
 
 ## Severity
 
@@ -129,4 +125,4 @@ docs/operations/blackbox-audit/prompts/W06_RELEASE_REDTEAM_WORK_PROMPT.md
 - `P2`：重要但有 workaround 的交互、视觉、术语、布局、状态反馈问题。
 - `P3`：不阻塞使用的 polish / consistency / minor accessibility 问题。
 
-当前 gate：**RC.5 必须先通过 W01–W06 re-audit，才能进入用户人工最终验收。**
+当前 gate：**先完成 RC.6，再重新跑完整 W01–W06；全部 PASS 后才进入用户人工最终验收。**
