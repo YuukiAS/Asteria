@@ -4,7 +4,9 @@
 你是第一次接触 Asteria 的统计/生物统计研究者。请做黑箱 usability audit，不看任何 repo 文档或实现说明。
 
 目标：https://asteria.httpwwwcardiacnexus-ukb.com/
-预期版本：2.0.0-rc.4
+预期版本：2.0.0-rc.5
+
+这是一次 fresh re-audit。不要读取上一轮报告，也不要因为知道“应该修过”就放宽标准；只根据当前真实页面判断第一次用户是否能独立理解和使用。
 
 以下 Browser contract 是本次黑箱验收的完整合规规则，必须原样遵守：
 
@@ -84,20 +86,20 @@ YES -> 可以作为黑盒证据。不要再问：
 在前 10–15 分钟里尝试自己回答：
 1. Asteria 是干什么的？
 2. 当前 Project / View / Model 各是什么，它们有什么区别？
-3. 我怎样理解 CAT-TRACE 的数据→latent→parameter→inference→prediction 结构？
-4. 我怎样知道 beta^U_gh 是什么、由什么决定、影响什么？
-5. 我怎样比较 Original TRACE 和 CAT-TRACE？
-6. Lineage 和 Architecture 有什么不同价值？
+3. Architecture / Lineage / Evidence 各自回答什么研究问题？
+4. 我怎样理解 CAT-TRACE 的数据→latent→parameter→inference→prediction 结构？
+5. 我怎样知道 beta^U_gh 是什么、为什么重要、由什么决定、影响什么？
+6. 我怎样比较 Original TRACE 和 CAT-TRACE？Semantic Diff 是否形成 Added / Changed / Preserved + why-it-matters 的可理解工作流？
 7. Evidence 是否真的能回答“一个 claim 被什么证据支持、还缺什么”？
-8. 我怎样找到某个对象？
+8. 我怎样找到某个对象，尤其是跨 view 的 Finland fungi / HMSC framework？
 9. 哪些控件是日常核心，哪些只是高级控制？
 10. 如果没有开发者陪同，我会不会愿意继续用？
 
 特别关注：
-- raw/internal naming、全大写 badge、工程字段是否泄漏到用户；
+- raw/internal naming、全大写 badge、工程字段是否仍泄漏到用户；
 - 术语是否在首次出现时有足够解释；
 - 节点太小/信息太多导致只能“看见图但读不了图”；
-- inspector 是否告诉用户“为什么这个对象重要”，还是只列 metadata；
+- inspector 是否优先解释 Meaning / Why it matters / canonical definition / relations，而不是先 dump metadata；
 - Trace / Layer / Diff 的 affordance 是否自然；
 - Lineage/Evidence 的关系类型是否人能理解；
 - empty/pending 状态是否让用户误以为产品坏了；
@@ -106,9 +108,11 @@ YES -> 可以作为黑盒证据。不要再问：
 不要要求 onboarding wizard 才算通过；目标是评估当前界面本身的自解释能力。
 
 输出至少包括：
-- 5 个最严重 comprehension breakdown；
+- 5 个最严重 comprehension breakdown；若不足 5 个，不要为了凑数虚构问题；
 - 3 个最有价值的功能；
 - “如果我是统计研究者，第一次使用后是否愿意第二次打开”的判断及原因。
+
+任何 P1 必须单独给完整 finding：Start state / Steps / Observed / Expected / Impact / Evidence / Reproducibility。不能只在 Executive Summary 中笼统报 P1 数量。
 
 最终严格返回：
 AUDITOR_ID = W04
