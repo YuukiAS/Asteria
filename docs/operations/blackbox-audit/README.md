@@ -10,6 +10,29 @@
 
 本 campaign 不修改产品，不读实现源码，不读数据库，不调用内部 API，不使用 DevTools/console/network panel，不根据代码猜 bug。所有结论都必须来自普通用户在页面上实际看到、点击、切换、输入和导出的结果。
 
+## Canonical Browser Contract
+
+唯一 Browser 合规来源：
+
+```text
+docs/operations/blackbox-audit/UI_BLACKBOX_BROWSER_CONTRACT.md
+```
+
+最终发给任何 GPT Work 的 prompt 必须**逐字 inline 该文件当前全文**。Work 不需要、也不得访问 repo 来读取 Browser contract。只给出文件路径、摘要或“请遵守该文件”不合规。
+
+Browser 执行原则：
+
+```text
+可以自动操作页面；
+不能绕过页面。
+```
+
+首选 ChatGPT Work built-in / in-app Browser；如果 in-app Browser 没有稳定接口、无法附着或反复控制失败，允许 Playwright / playwright-core / Puppeteer / Chrome / Edge / Chromium / Browser helper / 临时 browser profile 等真实浏览器 UI automation fallback。fallback 本身不算 contamination。
+
+只有 in-app Browser 与合理真实-browser fallback 都无法继续真实 consumer UI 时，才允许 `BLOCKED_BY_BROWSER_ENVIRONMENT`。
+
+任何历史 campaign/prompt 若仍写死“只能 GPT Work Cloud Browser”、禁止 Playwright/selector，或未 inline 当前 Browser contract，都必须先按当前 contract 重生，不能继续作为 ready-to-paste prompt。
+
 ## 并行 reviewer
 
 - `W01` Visual / scientific-product design：版式、数学可读性、graph visual grammar、accepted concept fidelity。
@@ -24,16 +47,17 @@
 ## 使用方式
 
 1. 每个 GPT Work 新开独立任务。
-2. 粘贴 `ASTERIA_RC4_GPT_WORK_CAMPAIGN.md` 中对应 W01–W06 prompt。
-3. 不需要把 repo source 提供给 Work。
-4. Work 必须遵守 `UI_BLACKBOX_BROWSER_CONTRACT.md` 和 `AUDIT_RESULT_CONTRACT.md`；campaign prompt 已内联关键规则，因此用户不需要额外解释。
-5. 六份报告完成后，交回 ChatGPT 做 consolidated triage；不要让某一个 Work 自行修改 Asteria。
+2. ChatGPT 先读取当前 `UI_BLACKBOX_BROWSER_CONTRACT.md` 与 `AUDIT_RESULT_CONTRACT.md`。
+3. 生成对应 W01–W06 persona prompt，并把 Browser contract 全文逐字 inline 到每一份最终 prompt。
+4. 不需要把 repo source 提供给 Work；Work 不应读取 Asteria repo。
+5. Work 最终必须按 `AUDIT_RESULT_CONTRACT.md` 返回 `BROWSER_MODE`、`BLACK_BOX_CONTEXT_CONTAMINATED`、`BROWSER_BLOCKER`、P0–P3 和 release recommendation。
+6. 六份报告完成后，交回 ChatGPT 做 consolidated triage；不要让某一个 Work 自行修改 Asteria。
 
 ## Reference 边界
 
-视觉 reviewer 可以把 `docs/design/accepted-concepts/` 下 A/B/C/D/E1/E2 作为设计 reference，但不能打开 `src/`、tests、results 或实现文档来解释页面为什么这样工作。
+视觉 reviewer 可以把 `docs/design/accepted-concepts/` 下 A/B/C/D/E1/E2 作为设计 reference，但 concept image 不是数学、citation 或 result-status 真值。
 
-科学 reviewer 的 expected invariants 已直接写进 W02 prompt；不要从 concept image 抄公式、citation、result status。
+科学 reviewer 的 expected invariants 应直接 inline 到对应 prompt；不要让 Work 为获取 expected behavior 去读取 repo。
 
 ## Severity
 
