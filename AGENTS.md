@@ -75,6 +75,28 @@ This project uses the `prompts/` handoff protocol for file-based handoff between
 - 任何没有 inline 完整 canonical Browser contract 的所谓 `ready-to-paste GPT Work prompt` 都不算 ready-to-paste。
 - GPT Work 结果必须按 `docs/operations/blackbox-audit/AUDIT_RESULT_CONTRACT.md` 返回 `BROWSER_MODE = IN_APP | UI_AUTOMATION_FALLBACK | MIXED_UI`、`BLACK_BOX_CONTEXT_CONTAMINATED = YES | NO` 和 `BROWSER_BLOCKER = NONE | BLOCKED_BY_BROWSER_ENVIRONMENT`。
 
+## Acceptance Gate: GPT Work Before Human Review
+
+Asteria 的 release / RC 验收顺序固定为：
+
+```text
+Codex implementation / repair
+  -> automated regression + browser QA
+  -> refresh fixed public URL
+  -> GPT Work black-box campaign
+  -> ChatGPT consolidated triage
+  -> 如有 reviewer FAIL/BLOCKED 或 unresolved must-fix P2，继续 repair
+  -> 所有 designated GPT Work reviewers PASS
+  -> P0 = 0, P1 = 0, unresolved must-fix P2 = 0
+  -> user final human acceptance
+  -> stable release
+```
+
+- 在 GPT Work gate 通过前，不要要求用户打开页面做人工验收。先让独立 GPT Work 找出明显问题，避免浪费用户时间。
+- “所有 reviewer PASS” 是硬 gate：当前 campaign 的每个指定 reviewer 都必须返回 `AUDIT_RESULT = PASS`。PASS 可以包含少量 P2/P3，但 ChatGPT consolidated triage 必须把每个 P2 明确归类为 `must-fix` 或 `accepted/deferred`；只要还有 unresolved must-fix P2，就不能进入人工验收。
+- 一次 repair 如果广泛影响 math/layout/theme/state/search/inspector/accessibility 等多个 surface，应重跑完整 campaign。只有窄修复才可以由 consolidated triage 明确指定只重跑受影响 reviewer + release red-team。
+- 用户人工验收是 GPT Work 全部通过后的最终产品判断，不是替代黑箱 QA 的步骤。
+
 ## Verification And Regression Coverage
 
 - Every code fix must include or update relevant automated validation or regression coverage before it is considered complete. Run the matching checks before committing. If automated coverage is not feasible for a fix, document the reason and any manual verification performed in the result file.
