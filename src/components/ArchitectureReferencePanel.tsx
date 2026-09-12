@@ -1,4 +1,4 @@
-import { Download, FileJson2, GitBranch, Layers3, Link2, LocateFixed, Network, RotateCcw, Search, ShieldCheck } from "lucide-react"
+import { Download, FileJson2, GitBranch, Link2, LocateFixed, Network, RotateCcw, Search, ShieldCheck } from "lucide-react"
 import { useMemo, useState, type CSSProperties } from "react"
 import { canonicalTraceProjects, type CanonicalTraceProjectId } from "../architecture/fixtures/canonicalTraceFixtures"
 import { catTraceMultiViewProject, evidenceClosureWarnings, multiViewIds, projectedEntities, searchCanonicalEntities, type MultiViewId } from "../architecture/fixtures/multiViewTraceProject"
@@ -11,7 +11,6 @@ import { traceForSymbol, type TraceDirection, type TraceMode } from "../architec
 import { useArchitectureSession } from "../architecture/session"
 import type { ArchitectureProjectV2, RelationType, SemanticLayer, StatisticalEntity, StatisticalSymbol, TypedRelation } from "../architecture/types"
 import { validateArchitectureProject } from "../architecture/validation"
-import { buildStoryMarkdown } from "../lib/storyMarkdownExport"
 
 const modelOptions: Array<{ id: CanonicalTraceProjectId; label: string }> = [
   { id: "original-trace", label: "Original TRACE" },
@@ -122,23 +121,6 @@ export function ArchitectureReferencePanel() {
 
   const switchResearchView = (viewId: MultiViewId, entityId?: string) => {
     setActiveViewId(viewId, entityId || defaultViewSelection[viewId])
-  }
-
-  const runLegacyCompatibilityCheck = async () => {
-    const [{ legacyV1FreezeMap }, { migrateV1MapToArchitectureProjectV2 }] = await Promise.all([
-      import("../fixtures/legacyV1FreezeMap"),
-      import("../architecture/migration"),
-    ])
-    const migrated = migrateV1MapToArchitectureProjectV2(legacyV1FreezeMap)
-    const storyMarkdown = buildStoryMarkdown({
-      mapTitle: legacyV1FreezeMap.title,
-      nodes: legacyV1FreezeMap.nodes,
-      modelVersions: legacyV1FreezeMap.modelVersions,
-      activeVersionId: legacyV1FreezeMap.activeVersionId,
-      storyOutline: legacyV1FreezeMap.storyOutline,
-      storyDeckSettings: legacyV1FreezeMap.storyDeckSettings,
-    })
-    setActionStatus(migrated.legacy?.storyOutline?.length === legacyV1FreezeMap.storyOutline.length && storyMarkdown.includes("Asteria 1.x Freeze Deck") ? "Legacy V1 import + Story PASS" : "Legacy V1 import + Story FAIL")
   }
 
   return (
@@ -406,7 +388,7 @@ export function ArchitectureReferencePanel() {
       )}
 
       <section className="panel-section">
-        <div className="section-title">Compatibility</div>
+        <div className="section-title">Session</div>
         <div className="architecture-action-grid">
           <button type="button" className="toolbar-button" onClick={saveViewState} data-testid="save-view-state">
             <Download size={14} />
@@ -415,10 +397,6 @@ export function ArchitectureReferencePanel() {
           <button type="button" className="toolbar-button" onClick={restoreViewState} data-testid="restore-view-state">
             <RotateCcw size={14} />
             Restore
-          </button>
-          <button type="button" className="toolbar-button" onClick={() => void runLegacyCompatibilityCheck()} data-testid="legacy-import-check">
-            <Layers3 size={14} />
-            Legacy V1
           </button>
         </div>
         <div className="architecture-binding-note" role="status" data-testid="architecture-action-status">

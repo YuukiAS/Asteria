@@ -1,30 +1,19 @@
-import "@xyflow/react/dist/style.css"
 import "katex/dist/katex.min.css"
-import { ReactFlowProvider } from "@xyflow/react"
-import { Archive, ChevronLeft, ChevronRight, CloudUpload, FilePlus2, FileText, GitBranch, LoaderCircle, PanelRightClose, PanelRightOpen, Save, SlidersHorizontal } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { Download, GitBranch, Moon, Network, PanelRightClose, PanelRightOpen, RotateCcw, Save, Search, ShieldCheck, Sun } from "lucide-react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import type { PointerEvent as ReactPointerEvent } from "react"
-import { Canvas } from "../components/Canvas"
+import { ArchitectureSessionProvider, useArchitectureSession } from "../architecture/session"
+import { multiViewIds } from "../architecture/fixtures/multiViewTraceProject"
 import { AppErrorBoundary } from "../components/AppErrorBoundary"
 import { ArchitectureReferencePanel } from "../components/ArchitectureReferencePanel"
 import { ArchitectureWorkspace } from "../components/ArchitectureWorkspace"
-import { InspectorPanel } from "../components/InspectorPanel"
-import { StoryOutlinePanel } from "../components/StoryOutlinePanel"
-import { Toolbar } from "../components/Toolbar"
-import { requestInlineBlockEdit, requestInlineEditorFocus, requestSymbolEquationInsert, startInlineEditEvent, type InlineEditTarget } from "../lib/inlineEditEvents"
-import { ArchitectureSessionProvider } from "../architecture/session"
-import { useMapStore } from "../store/useMapStore"
-import type { InteractionMode } from "../types/interaction"
 
-function isEditableTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false
-  return Boolean(target.closest("input, textarea, select, button, [contenteditable='true'], .ProseMirror"))
-}
-
-function isTextEditingTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false
-  return Boolean(target.closest("input, textarea, select, [contenteditable='true'], .ProseMirror"))
-}
+const appVersion = "2.0.0-rc.4"
+const sidebarWidthKey = "asteria-v2-sidebar-width"
+const sidebarCollapsedKey = "asteria-v2-sidebar-collapsed"
+const minSidebarWidth = 320
+const maxSidebarWidth = 520
+const collapsedSidebarWidth = 44
 
 function useTheme() {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -39,266 +28,95 @@ function useTheme() {
   return [theme, setTheme] as const
 }
 
-const sidebarWidthKey = "asteria-sidebar-width"
-const sidebarCollapsedKey = "asteria-sidebar-collapsed"
-const minSidebarWidth = 320
-const maxSidebarWidth = 520
-const collapsedSidebarWidth = 44
-
 function clampSidebarWidth(width: number) {
   return Math.min(Math.max(width, minSidebarWidth), maxSidebarWidth)
 }
 
-export function App() {
-  const fitViewRef = useRef<() => void>(() => undefined)
+function viewLabel(viewId: string) {
+  if (viewId === multiViewIds.lineage) return "Lineage"
+  if (viewId === multiViewIds.evidence) return "Evidence"
+  return "Architecture"
+}
+
+function viewIcon(viewId: string) {
+  if (viewId === multiViewIds.lineage) return GitBranch
+  if (viewId === multiViewIds.evidence) return ShieldCheck
+  return Network
+}
+
+function focusArchitectureSearch() {
+  document.querySelector<HTMLElement>('[data-testid="architecture-search-input"]')?.focus()
+}
+
+function focusArchitectureExport() {
+  document.querySelector<HTMLElement>('[data-testid="export-markdown"]')?.click()
+  document.querySelector<HTMLElement>('[data-testid="architecture-export-preview"]')?.scrollIntoView({ block: "center" })
+}
+
+function AsteriaV2TopBar({ theme, onToggleTheme, onToggleInspector, inspectorCollapsed }: { theme: "light" | "dark"; onToggleTheme: () => void; onToggleInspector: () => void; inspectorCollapsed: boolean }) {
+  const { activeViewId, modelId, saveViewState, restoreViewState } = useArchitectureSession()
+  const Icon = viewIcon(activeViewId)
+  const modelLabel = modelId === "original-trace" ? "Original TRACE" : "CAT-TRACE Frozen V2"
+
+  return (
+    <header className="asteria-v2-topbar" data-testid="asteria-v2-topbar">
+      <div className="asteria-v2-brand">
+        <img src="/app-icon.png" alt="" aria-hidden="true" />
+        <div>
+          <strong>Asteria 2.0</strong>
+          <span>{appVersion}</span>
+        </div>
+      </div>
+
+      <div className="asteria-v2-context" aria-label="Current Asteria 2.0 context">
+        <span data-testid="current-project">Project: CAT-TRACE</span>
+        <span data-testid="current-view">
+          <Icon size={14} />
+          {viewLabel(activeViewId)}
+        </span>
+        {activeViewId === multiViewIds.architecture ? <span data-testid="current-model">Model: {modelLabel}</span> : null}
+      </div>
+
+      <div className="asteria-v2-actions">
+        <button type="button" className="toolbar-button" onClick={focusArchitectureSearch} data-testid="topbar-search">
+          <Search size={15} />
+          <span className="toolbar-label">Search</span>
+        </button>
+        <button type="button" className="toolbar-button" onClick={focusArchitectureExport} data-testid="topbar-export">
+          <Download size={15} />
+          <span className="toolbar-label">Export</span>
+        </button>
+        <button type="button" className="toolbar-button" onClick={saveViewState} data-testid="topbar-save-view">
+          <Save size={15} />
+          <span className="toolbar-label">Save</span>
+        </button>
+        <button type="button" className="toolbar-button" onClick={restoreViewState} data-testid="topbar-restore-view">
+          <RotateCcw size={15} />
+          <span className="toolbar-label">Restore</span>
+        </button>
+        <button type="button" className="toolbar-button" onClick={onToggleInspector} aria-label={inspectorCollapsed ? "Open inspector" : "Close inspector"} data-testid="topbar-toggle-inspector">
+          {inspectorCollapsed ? <PanelRightOpen size={15} /> : <PanelRightClose size={15} />}
+        </button>
+        <button type="button" className="toolbar-button" onClick={onToggleTheme} aria-label={theme === "dark" ? "Light theme" : "Dark theme"} data-testid="topbar-toggle-theme">
+          {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+        </button>
+      </div>
+    </header>
+  )
+}
+
+function AsteriaV2Shell() {
   const [theme, setTheme] = useTheme()
-  const [interactionMode, setInteractionMode] = useState<InteractionMode>("move")
-  const [sidebarTab, setSidebarTab] = useState<"inspector" | "architecture" | "story">("inspector")
-  const [inlineEditTarget, setInlineEditTarget] = useState<InlineEditTarget | undefined>()
-  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false)
-  const [saveDialogBusy, setSaveDialogBusy] = useState<"shared" | "fixed" | "load-shared">()
-  const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false)
-  const [showSaveConflict, setShowSaveConflict] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const stored = Number(localStorage.getItem(sidebarWidthKey))
     return Number.isFinite(stored) && stored > 0 ? clampSidebarWidth(stored) : 360
   })
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => localStorage.getItem(sidebarCollapsedKey) === "true")
-  const {
-    hydrate,
-    isHydrated,
-    workspaceReady,
-    persistenceMode,
-    sharedRecord,
-    chooseSharedWorkspace,
-    chooseNewWorkspace,
-    publishSharedVersion,
-    saveFixedVersion,
-    deleteSelected,
-    duplicateSelectedBlock,
-    copySelectedBlock,
-    pasteBlock,
-    addBlockNextToSelected,
-    addLinkedBlockFromSelected,
-    setSelectedNode,
-    setSelectedEdge,
-    createBackupNow,
-    undoLastCanvasChange,
-    nodes,
-    selectedNodeId,
-    selectedNodeIds,
-  } = useMapStore()
-  const selectedBlock = useMemo(() => {
-    const node = nodes.find((item) => item.id === selectedNodeId)
-    return node?.type === "block" ? node : undefined
-  }, [nodes, selectedNodeId])
-
-  useEffect(() => {
-    void hydrate()
-  }, [hydrate])
-
-  useEffect(() => {
-    if (!isHydrated || !workspaceReady) return
-    const backupTimer = window.setInterval(() => {
-      void createBackupNow()
-    }, 5 * 60 * 1000)
-    return () => window.clearInterval(backupTimer)
-  }, [createBackupNow, isHydrated, workspaceReady])
-
-  const setFitView = useCallback((fitView: () => void) => {
-    fitViewRef.current = fitView
-  }, [])
-
-  const setAppInteractionMode = useCallback((mode: InteractionMode) => {
-    setInteractionMode(mode)
-    if (mode !== "edit") setInlineEditTarget(undefined)
-  }, [])
-
-  useEffect(() => {
-    const startInlineEdit = (event: Event) => {
-      const target = (event as CustomEvent<InlineEditTarget>).detail
-      if (!target?.nodeId) return
-      setInteractionMode("edit")
-      setInlineEditTarget(target)
-    }
-    window.addEventListener(startInlineEditEvent, startInlineEdit)
-    return () => window.removeEventListener(startInlineEditEvent, startInlineEdit)
-  }, [])
-
-  useEffect(() => {
-    if (!inlineEditTarget) return
-    if (interactionMode !== "edit" || !selectedNodeIds.includes(inlineEditTarget.nodeId)) {
-      setInlineEditTarget(undefined)
-    }
-  }, [inlineEditTarget, interactionMode, selectedNodeIds])
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (!workspaceReady) return
-      const isMod = event.ctrlKey || event.metaKey
-      if (isMod && event.key.toLowerCase() === "f" && !isTextEditingTarget(event.target)) {
-        event.preventDefault()
-        setIsSearchPanelOpen(true)
-        return
-      }
-      if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && !isTextEditingTarget(event.target)) {
-        if (event.key === "1") {
-          event.preventDefault()
-          setAppInteractionMode("move")
-          return
-        }
-        if (event.key === "2") {
-          event.preventDefault()
-          setAppInteractionMode("edit")
-          return
-        }
-        if (event.key === "3") {
-          event.preventDefault()
-          setAppInteractionMode("zoom")
-          return
-        }
-      }
-      if (isMod && event.key === "Enter" && !isEditableTarget(event.target)) {
-        event.preventDefault()
-        const nodeId = event.shiftKey ? addLinkedBlockFromSelected() : addBlockNextToSelected()
-        requestInlineBlockEdit(nodeId, "title")
-        return
-      }
-      if (isMod && event.key.toLowerCase() === "z" && !event.shiftKey && !isEditableTarget(event.target)) {
-        event.preventDefault()
-        undoLastCanvasChange()
-        return
-      }
-      if (isMod && event.key.toLowerCase() === "s") {
-        event.preventDefault()
-        setShowSaveConflict(false)
-        setIsSaveDialogOpen(true)
-        return
-      }
-      if (isMod && event.shiftKey && event.key.toLowerCase() === "e" && selectedNodeId) {
-        const isSymbolBlock = selectedBlock?.data.nodeType === "symbol"
-        const isSymbolEditorTarget = event.target instanceof HTMLElement && Boolean(event.target.closest(".symbols-editor"))
-        if (isEditableTarget(event.target) && !(isSymbolBlock && isSymbolEditorTarget)) return
-        event.preventDefault()
-        requestInlineBlockEdit(selectedNodeId, "content")
-        if (isSymbolBlock) {
-          requestSymbolEquationInsert(selectedNodeId)
-          return
-        }
-        window.setTimeout(() => {
-          requestInlineEditorFocus(selectedNodeId)
-          window.dispatchEvent(new CustomEvent("asteria-open-inline-equation", { detail: { nodeId: selectedNodeId } }))
-        }, 0)
-        return
-      }
-      if (isMod && event.key.toLowerCase() === "d" && !isEditableTarget(event.target)) {
-        event.preventDefault()
-        duplicateSelectedBlock()
-        return
-      }
-      if (isMod && event.key.toLowerCase() === "c" && !isEditableTarget(event.target)) {
-        event.preventDefault()
-        copySelectedBlock()
-        return
-      }
-      if (isMod && event.key.toLowerCase() === "v" && !isEditableTarget(event.target)) {
-        event.preventDefault()
-        pasteBlock()
-        return
-      }
-      if (event.key === "Enter" && selectedNodeId && !isEditableTarget(event.target)) {
-        event.preventDefault()
-        requestInlineBlockEdit(selectedNodeId, "content")
-        return
-      }
-      if (event.key === "Escape") {
-        if (isSearchPanelOpen) {
-          event.preventDefault()
-          setIsSearchPanelOpen(false)
-          return
-        }
-        if (inlineEditTarget) {
-          event.preventDefault()
-          setInlineEditTarget(undefined)
-          if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
-          return
-        }
-        setSelectedNode(undefined)
-        setSelectedEdge(undefined)
-        return
-      }
-      if (event.key === "Delete" && !isEditableTarget(event.target)) {
-        event.preventDefault()
-        deleteSelected()
-      }
-    }
-    window.addEventListener("keydown", onKeyDown)
-    return () => window.removeEventListener("keydown", onKeyDown)
-  }, [
-    addBlockNextToSelected,
-    addLinkedBlockFromSelected,
-    copySelectedBlock,
-    deleteSelected,
-    duplicateSelectedBlock,
-    inlineEditTarget,
-    isSearchPanelOpen,
-    pasteBlock,
-    selectedBlock,
-    selectedNodeId,
-    setAppInteractionMode,
-    setSelectedEdge,
-    setSelectedNode,
-    undoLastCanvasChange,
-    workspaceReady,
-  ])
+  const [isSidebarCollapsed, setIsSidebarCollapsedState] = useState(() => localStorage.getItem(sidebarCollapsedKey) === "true")
+  const { activeViewId, modelId, selectedEntityId } = useArchitectureSession()
 
   const toggleTheme = useCallback(() => setTheme((current) => (current === "dark" ? "light" : "dark")), [setTheme])
-  const fitView = useMemo(() => () => fitViewRef.current(), [])
-
-  const saveToShared = useCallback(
-    async (force = false) => {
-      if (saveDialogBusy) return
-      setSaveDialogBusy("shared")
-      try {
-        const ok = await publishSharedVersion(force)
-        if (ok) {
-          setShowSaveConflict(false)
-          setIsSaveDialogOpen(false)
-        } else {
-          setShowSaveConflict(true)
-        }
-      } finally {
-        setSaveDialogBusy(undefined)
-      }
-    },
-    [publishSharedVersion, saveDialogBusy],
-  )
-
-  const saveToFixed = useCallback(async () => {
-    if (saveDialogBusy) return
-    setSaveDialogBusy("fixed")
-    try {
-      await saveFixedVersion()
-      setIsSaveDialogOpen(false)
-    } finally {
-      setSaveDialogBusy(undefined)
-    }
-  }, [saveFixedVersion, saveDialogBusy])
-
-  const loadSharedFromConflict = useCallback(async () => {
-    if (saveDialogBusy) return
-    setSaveDialogBusy("load-shared")
-    try {
-      await chooseSharedWorkspace()
-      setShowSaveConflict(false)
-      setIsSaveDialogOpen(false)
-    } finally {
-      setSaveDialogBusy(undefined)
-    }
-  }, [chooseSharedWorkspace, saveDialogBusy])
-
   const setSidebarCollapsed = useCallback((collapsed: boolean) => {
-    setIsSidebarCollapsed(collapsed)
+    setIsSidebarCollapsedState(collapsed)
     localStorage.setItem(sidebarCollapsedKey, String(collapsed))
   }, [])
 
@@ -308,11 +126,9 @@ export function App() {
       const startX = event.clientX
       const startWidth = sidebarWidth
       const onPointerMove = (moveEvent: PointerEvent) => {
-        const nextWidth = clampSidebarWidth(startWidth - (moveEvent.clientX - startX))
-        setSidebarWidth(nextWidth)
+        setSidebarWidth(clampSidebarWidth(startWidth - (moveEvent.clientX - startX)))
       }
       const onPointerUp = () => {
-        localStorage.setItem(sidebarWidthKey, String(sidebarWidth))
         window.removeEventListener("pointermove", onPointerMove)
         window.removeEventListener("pointerup", onPointerUp)
         document.body.classList.remove("is-resizing-sidebar")
@@ -336,273 +152,51 @@ export function App() {
     }
   }, [isSidebarCollapsed, sidebarWidth])
 
-  if (!isHydrated) {
-    return <div className="grid h-screen place-items-center bg-app text-sm text-secondary">Loading Asteria...</div>
-  }
+  const workspaceResetKey = useMemo(() => `${activeViewId}:${modelId}:${selectedEntityId}`, [activeViewId, modelId, selectedEntityId])
 
   return (
-    <ReactFlowProvider>
-      <div className="flex h-screen min-h-0 flex-col bg-app text-foreground">
-        <Toolbar
-          theme={theme}
-          interactionMode={interactionMode}
-          isSearchPanelOpen={isSearchPanelOpen}
-          onInteractionModeChange={setAppInteractionMode}
-          onToggleTheme={toggleTheme}
-          onFitView={fitView}
-          onOpenSaveDialog={() => {
-            setShowSaveConflict(false)
-            setIsSaveDialogOpen(true)
-          }}
-          onSearchPanelOpenChange={setIsSearchPanelOpen}
-        />
-        <ArchitectureSessionProvider>
-        <div className="flex min-h-0 flex-1 overflow-hidden">
-          <AppErrorBoundary label="canvas" resetKey={`${sidebarTab}:${interactionMode}:${selectedNodeId || ""}:${nodes.length}`}>
-            {sidebarTab === "architecture" ? (
-              <ArchitectureWorkspace />
-            ) : (
-              <Canvas
-                onFitViewReady={setFitView}
-                interactionMode={interactionMode}
-                onInteractionModeChange={setAppInteractionMode}
-                inlineEditTarget={inlineEditTarget}
-                onInlineEditTargetChange={setInlineEditTarget}
-              />
-            )}
-          </AppErrorBoundary>
-          <aside
-            className={`inspector-shell ${isSidebarCollapsed ? "inspector-shell-collapsed" : "inspector-shell-expanded"}`}
-            style={{ width: isSidebarCollapsed ? collapsedSidebarWidth : sidebarWidth }}
-            aria-label="Inspector panel"
-          >
-            {!isSidebarCollapsed && (
-              <div
-                className="inspector-resize-handle"
-                role="separator"
-                aria-label="Resize inspector"
-                aria-orientation="vertical"
-                onPointerDown={startSidebarResize}
-              />
-            )}
-            {isSidebarCollapsed && (
-              <button
-                type="button"
-                className="inspector-collapse-button inspector-collapse-button-collapsed"
-                onClick={() => setSidebarCollapsed(false)}
-                aria-label="Expand inspector"
-                title="Expand inspector"
-              >
-                <PanelRightOpen size={17} />
-                <span className="sr-only">Expand</span>
-              </button>
-            )}
-            <div className="inspector-content-shell">
-              {!isSidebarCollapsed && (
-                <div className="inspector-tab-bar grid gap-1 border-b border-border bg-toolbar/80 p-2">
-                  <button
-                    type="button"
-                    className="inspector-collapse-button inspector-collapse-button-inline"
-                    onClick={() => setSidebarCollapsed(true)}
-                    aria-label="Collapse inspector"
-                    title="Collapse inspector"
-                  >
-                    <PanelRightClose size={17} />
-                    <span className="sr-only">Collapse</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`segmented-button justify-center ${sidebarTab === "inspector" ? "segmented-button-active" : ""}`}
-                    onClick={() => setSidebarTab("inspector")}
-                  >
-                    <SlidersHorizontal size={14} />
-                    Inspector
-                  </button>
-                  <button
-                    type="button"
-                    className={`segmented-button justify-center ${sidebarTab === "architecture" ? "segmented-button-active" : ""}`}
-                    onClick={() => setSidebarTab("architecture")}
-                  >
-                    <GitBranch size={14} />
-                    Architecture
-                  </button>
-                  <button
-                    type="button"
-                    className={`segmented-button justify-center ${sidebarTab === "story" ? "segmented-button-active" : ""}`}
-                    onClick={() => setSidebarTab("story")}
-                  >
-                    <FileText size={14} />
-                    Story
-                  </button>
-                </div>
-              )}
-              <AppErrorBoundary label={sidebarTab} resetKey={`${sidebarTab}:${selectedNodeId || ""}:${selectedNodeIds.join(",")}`}>
-                {sidebarTab === "story" ? <StoryOutlinePanel /> : sidebarTab === "architecture" ? <ArchitectureReferencePanel /> : <InspectorPanel />}
-              </AppErrorBoundary>
-            </div>
-            {!isSidebarCollapsed && (
-              <div className="inspector-width-readout" aria-hidden="true">
-                <ChevronLeft size={12} />
-                {Math.round(sidebarWidth)}px
-                <ChevronRight size={12} />
+    <div className="asteria-v2-shell" data-testid="asteria-v2-root-shell">
+      <AsteriaV2TopBar theme={theme} onToggleTheme={toggleTheme} onToggleInspector={() => setSidebarCollapsed(!isSidebarCollapsed)} inspectorCollapsed={isSidebarCollapsed} />
+      <div className="asteria-v2-main">
+        <AppErrorBoundary label="architecture workspace" resetKey={workspaceResetKey}>
+          <ArchitectureWorkspace />
+        </AppErrorBoundary>
+        <aside
+          className={`inspector-shell ${isSidebarCollapsed ? "inspector-shell-collapsed" : "inspector-shell-expanded"}`}
+          style={{ width: isSidebarCollapsed ? collapsedSidebarWidth : sidebarWidth }}
+          aria-label="Asteria 2.0 inspector"
+        >
+          {!isSidebarCollapsed && <div className="inspector-resize-handle" role="separator" aria-label="Resize inspector" aria-orientation="vertical" onPointerDown={startSidebarResize} />}
+          {isSidebarCollapsed ? (
+            <button type="button" className="inspector-collapse-button inspector-collapse-button-collapsed" onClick={() => setSidebarCollapsed(false)} aria-label="Expand inspector" title="Expand inspector">
+              <PanelRightOpen size={17} />
+              <span className="sr-only">Expand</span>
+            </button>
+          ) : null}
+          <div className="inspector-content-shell">
+            {!isSidebarCollapsed ? (
+              <div className="inspector-tab-bar border-b border-border bg-toolbar/80 p-2">
+                <button type="button" className="inspector-collapse-button inspector-collapse-button-inline" onClick={() => setSidebarCollapsed(true)} aria-label="Collapse inspector" title="Collapse inspector">
+                  <PanelRightClose size={17} />
+                  <span className="sr-only">Collapse</span>
+                </button>
+                <span className="asteria-v2-inspector-title">Architecture</span>
               </div>
-            )}
-          </aside>
-        </div>
-        </ArchitectureSessionProvider>
-        {persistenceMode === "remote" && !workspaceReady && sharedRecord && (
-          <AsteriaChoiceDialog
-            title="Choose a starting version"
-            description="Select the workspace you want before editing Asteria on this computer."
-            primary={{
-              icon: <CloudUpload size={18} />,
-              tone: "shared",
-              badge: "Shared",
-              title: "Use shared version",
-              description: `Load the shared map last saved ${formatDialogDate(sharedRecord.updatedAt)}. A local safety backup is created first, and newer content for matching blocks on this computer is kept.`,
-              onClick: () => void chooseSharedWorkspace(),
-            }}
-            secondary={{
-              icon: <FilePlus2 size={18} />,
-              tone: "new",
-              badge: "Local only",
-              title: "New from scratch",
-              description: "Start an empty local draft. This does not replace the shared version until you save to Shared.",
-              onClick: chooseNewWorkspace,
-            }}
-          />
-        )}
-        {isSaveDialogOpen && (
-          <AsteriaChoiceDialog
-            title={showSaveConflict ? "Shared version changed" : "Save current version"}
-            description={
-              showSaveConflict
-                ? "Another computer saved the shared version after this workspace loaded. Choose how to continue."
-                : "Choose where to save the current canvas."
-            }
-            busyMessage={
-              saveDialogBusy === "shared"
-                ? showSaveConflict
-                  ? "Overwriting shared version..."
-                  : "Publishing shared version..."
-                : saveDialogBusy === "fixed"
-                  ? "Saving fixed version..."
-                  : saveDialogBusy === "load-shared"
-                    ? "Loading shared version..."
-                    : undefined
-            }
-            primary={{
-              icon: showSaveConflict ? <Save size={18} /> : <CloudUpload size={18} />,
-              tone: showSaveConflict ? "overwrite" : "shared",
-              badge: showSaveConflict ? "Replace shared" : "All computers",
-              title: showSaveConflict ? "Overwrite shared version" : "Save shared version",
-              description: showSaveConflict
-                ? "Replace the current shared version with this canvas."
-                : "Publish this canvas as the single shared version for all computers.",
-              isLoading: saveDialogBusy === "shared",
-              disabled: Boolean(saveDialogBusy),
-              onClick: () => void saveToShared(showSaveConflict),
-            }}
-            secondary={{
-              icon: showSaveConflict ? <CloudUpload size={18} /> : <Archive size={18} />,
-              tone: showSaveConflict ? "shared" : "fixed",
-              badge: showSaveConflict ? "Keep newer local" : "This computer",
-              title: showSaveConflict ? "Load shared version" : "Save fixed version",
-              description: showSaveConflict
-                ? "Create a local safety backup, load the shared version, and keep newer content for matching blocks from this computer."
-                : "Save a local fixed checkpoint. The latest three fixed versions are kept on this computer.",
-              isLoading: saveDialogBusy === (showSaveConflict ? "load-shared" : "fixed"),
-              disabled: Boolean(saveDialogBusy),
-              onClick: showSaveConflict ? () => void loadSharedFromConflict() : () => void saveToFixed(),
-            }}
-            onCancel={() => {
-              if (saveDialogBusy) return
-              setShowSaveConflict(false)
-              setIsSaveDialogOpen(false)
-            }}
-            cancelDisabled={Boolean(saveDialogBusy)}
-          />
-        )}
+            ) : null}
+            <AppErrorBoundary label="architecture inspector" resetKey={workspaceResetKey}>
+              <ArchitectureReferencePanel />
+            </AppErrorBoundary>
+          </div>
+        </aside>
       </div>
-    </ReactFlowProvider>
+    </div>
   )
 }
 
-function formatDialogDate(value?: string) {
-  if (!value) return "unknown time"
-  return new Date(value).toLocaleString()
-}
-
-type DialogAction = {
-  icon: React.ReactNode
-  tone: "shared" | "fixed" | "new" | "overwrite"
-  badge: string
-  title: string
-  description: string
-  disabled?: boolean
-  isLoading?: boolean
-  onClick: () => void
-}
-
-function AsteriaChoiceDialog({
-  title,
-  description,
-  busyMessage,
-  primary,
-  secondary,
-  onCancel,
-  cancelDisabled,
-}: {
-  title: string
-  description: string
-  busyMessage?: string
-  primary: DialogAction
-  secondary: DialogAction
-  onCancel?: () => void
-  cancelDisabled?: boolean
-}) {
+export function App() {
   return (
-    <div className="choice-dialog-backdrop" role="presentation">
-      <section className="choice-dialog nodrag nopan nowheel" role="dialog" aria-modal="true" aria-labelledby="choice-dialog-title">
-        <div className="choice-dialog-header">
-          <div>
-            <h2 id="choice-dialog-title">{title}</h2>
-            <p>{description}</p>
-          </div>
-        </div>
-        <div className="choice-dialog-options">
-          {[primary, secondary].map((action) => (
-            <button
-              key={action.title}
-              type="button"
-              className={`choice-dialog-option choice-dialog-option-${action.tone}${action.isLoading ? " choice-dialog-option-loading" : ""}`}
-              onClick={action.onClick}
-              disabled={action.disabled}
-              aria-busy={action.isLoading || undefined}
-            >
-              <span className="choice-dialog-option-icon">{action.isLoading ? <LoaderCircle size={18} className="choice-dialog-spinner" /> : action.icon}</span>
-              <span>
-                <span className="choice-dialog-option-badge">{action.badge}</span>
-                <span className="choice-dialog-option-title">{action.title}</span>
-                <span className="choice-dialog-option-description">{action.description}</span>
-              </span>
-            </button>
-          ))}
-        </div>
-        {busyMessage ? (
-          <div className="choice-dialog-busy" role="status">
-            <LoaderCircle size={14} className="choice-dialog-spinner" />
-            <span>{busyMessage}</span>
-          </div>
-        ) : null}
-        {onCancel && (
-          <div className="choice-dialog-actions">
-            <button type="button" className="toolbar-button" onClick={onCancel} disabled={cancelDisabled}>
-              Cancel
-            </button>
-          </div>
-        )}
-      </section>
-    </div>
+    <ArchitectureSessionProvider>
+      <AsteriaV2Shell />
+    </ArchitectureSessionProvider>
   )
 }

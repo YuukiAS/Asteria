@@ -68,6 +68,107 @@ body {
 }
 
 @layer components {
+  .asteria-v2-shell {
+    display: flex;
+    height: 100%;
+    min-width: 0;
+    flex-direction: column;
+    overflow: hidden;
+    background: rgb(var(--color-app));
+    color: rgb(var(--color-foreground));
+  }
+
+  .asteria-v2-topbar {
+    display: flex;
+    min-height: 52px;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 14px;
+    border-bottom: 1px solid rgb(var(--color-border));
+    background: rgb(var(--color-toolbar) / 0.96);
+    padding: 8px 12px;
+    box-shadow: 0 1px 0 rgb(var(--color-strong-border) / 0.22);
+  }
+
+  .asteria-v2-brand {
+    display: inline-flex;
+    min-width: 170px;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .asteria-v2-brand img {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+  }
+
+  .asteria-v2-brand strong,
+  .asteria-v2-brand span {
+    display: block;
+    line-height: 1.1;
+  }
+
+  .asteria-v2-brand strong {
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .asteria-v2-brand span {
+    margin-top: 2px;
+    color: rgb(var(--color-secondary));
+    font-size: 11px;
+  }
+
+  .asteria-v2-context {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+  }
+
+  .asteria-v2-context span {
+    display: inline-flex;
+    min-width: 0;
+    max-width: 250px;
+    align-items: center;
+    gap: 5px;
+    overflow: hidden;
+    border: 1px solid rgb(var(--color-border));
+    border-radius: 6px;
+    background: rgb(var(--color-panel) / 0.72);
+    padding: 5px 8px;
+    color: rgb(var(--color-secondary));
+    font-size: 12px;
+    font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .asteria-v2-actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .asteria-v2-main {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+
+  .asteria-v2-inspector-title {
+    color: rgb(var(--color-foreground));
+    font-size: 12px;
+    font-weight: 750;
+  }
+
   .toolbar-button {
     @apply inline-flex h-8 shrink-0 select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-border bg-panel px-2.5 text-xs font-medium text-secondary transition hover:border-strongBorder hover:text-foreground;
   }

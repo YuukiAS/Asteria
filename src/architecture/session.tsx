@@ -6,6 +6,18 @@ import type { ArchitectureProjectV2, SemanticLayer } from "./types"
 
 const localViewStateKey = "asteria-v2-rc-view-state"
 
+type StoredViewState = Partial<{
+  activeViewId: MultiViewId
+  modelId: CanonicalTraceProjectId
+  selectedSymbolId: string
+  selectedEntityId: string
+  traceMode: TraceMode
+  traceDirection: TraceDirection
+  traceDepth: number
+  focusedLayer: SemanticLayer | "all"
+  exportMode: "markdown" | "json"
+}>
+
 function defaultSymbolId(modelId: CanonicalTraceProjectId) {
   if (modelId === "cat-trace-frozen-v2") return "symbol:cat-trace-frozen-v2:betaU_gh"
   return "symbol:original-trace:y_ij"
@@ -19,6 +31,63 @@ function defaultEntityId(viewId: MultiViewId, modelId: CanonicalTraceProjectId) 
 
 function projectForView(viewId: MultiViewId, modelId: CanonicalTraceProjectId): ArchitectureProjectV2 {
   return viewId === multiViewIds.architecture ? canonicalTraceProjects[modelId] : catTraceMultiViewProject
+}
+
+function isCanonicalModelId(value: unknown): value is CanonicalTraceProjectId {
+  return value === "original-trace" || value === "cat-trace-frozen-v2"
+}
+
+function isMultiViewId(value: unknown): value is MultiViewId {
+  return value === multiViewIds.architecture || value === multiViewIds.lineage || value === multiViewIds.evidence
+}
+
+function isTraceMode(value: unknown): value is TraceMode {
+  return value === "direct" || value === "recursive"
+}
+
+function isTraceDirection(value: unknown): value is TraceDirection {
+  return value === "upstream" || value === "downstream" || value === "both"
+}
+
+function readStoredViewState(): StoredViewState {
+  if (typeof localStorage === "undefined") return {}
+  try {
+    const parsed = JSON.parse(localStorage.getItem(localViewStateKey) || "null") as StoredViewState | null
+    if (!parsed || typeof parsed !== "object") return {}
+    return parsed
+  } catch {
+    return {}
+  }
+}
+
+function initialSessionState(): {
+  activeViewId: MultiViewId
+  modelId: CanonicalTraceProjectId
+  selectedSymbolId: string
+  selectedEntityId: string
+  traceMode: TraceMode
+  traceDirection: TraceDirection
+  traceDepth: number
+  focusedLayer: SemanticLayer | "all"
+  exportMode: "markdown" | "json"
+} {
+  const stored = readStoredViewState()
+  const modelId = isCanonicalModelId(stored.modelId) ? stored.modelId : "cat-trace-frozen-v2"
+  const activeViewId = isMultiViewId(stored.activeViewId) ? stored.activeViewId : multiViewIds.architecture
+  const project = projectForView(activeViewId, modelId)
+  const selectedSymbolId = stored.selectedSymbolId && project.symbols[stored.selectedSymbolId] ? stored.selectedSymbolId : defaultSymbolId(modelId)
+  const selectedEntityId = stored.selectedEntityId && project.entities[stored.selectedEntityId] ? stored.selectedEntityId : defaultEntityId(activeViewId, modelId)
+  return {
+    activeViewId,
+    modelId,
+    selectedSymbolId,
+    selectedEntityId,
+    traceMode: isTraceMode(stored.traceMode) ? stored.traceMode : "direct",
+    traceDirection: isTraceDirection(stored.traceDirection) ? stored.traceDirection : "both",
+    traceDepth: typeof stored.traceDepth === "number" ? Math.max(1, Math.min(6, Math.floor(stored.traceDepth) || 1)) : 2,
+    focusedLayer: stored.focusedLayer || "all",
+    exportMode: stored.exportMode === "json" ? "json" : "markdown",
+  }
 }
 
 export type ArchitectureSessionValue = {
@@ -52,15 +121,16 @@ export type ArchitectureSessionValue = {
 const ArchitectureSessionContext = createContext<ArchitectureSessionValue | undefined>(undefined)
 
 export function ArchitectureSessionProvider({ children }: { children: ReactNode }) {
-  const [activeViewId, setActiveViewIdState] = useState<MultiViewId>(multiViewIds.architecture)
-  const [modelId, setModelIdState] = useState<CanonicalTraceProjectId>("cat-trace-frozen-v2")
-  const [selectedSymbolIdState, setSelectedSymbolIdState] = useState(defaultSymbolId("cat-trace-frozen-v2"))
-  const [selectedEntityIdState, setSelectedEntityIdState] = useState(defaultEntityId(multiViewIds.architecture, "cat-trace-frozen-v2"))
-  const [traceMode, setTraceMode] = useState<TraceMode>("direct")
-  const [traceDirection, setTraceDirection] = useState<TraceDirection>("both")
-  const [traceDepthState, setTraceDepthState] = useState(2)
-  const [focusedLayer, setFocusedLayer] = useState<SemanticLayer | "all">("all")
-  const [exportMode, setExportMode] = useState<"markdown" | "json">("markdown")
+  const [initialState] = useState(initialSessionState)
+  const [activeViewId, setActiveViewIdState] = useState<MultiViewId>(initialState.activeViewId)
+  const [modelId, setModelIdState] = useState<CanonicalTraceProjectId>(initialState.modelId)
+  const [selectedSymbolIdState, setSelectedSymbolIdState] = useState(initialState.selectedSymbolId)
+  const [selectedEntityIdState, setSelectedEntityIdState] = useState(initialState.selectedEntityId)
+  const [traceMode, setTraceMode] = useState<TraceMode>(initialState.traceMode)
+  const [traceDirection, setTraceDirection] = useState<TraceDirection>(initialState.traceDirection)
+  const [traceDepthState, setTraceDepthState] = useState(initialState.traceDepth)
+  const [focusedLayer, setFocusedLayer] = useState<SemanticLayer | "all">(initialState.focusedLayer)
+  const [exportMode, setExportMode] = useState<"markdown" | "json">(initialState.exportMode)
   const [actionStatus, setActionStatus] = useState("Ready")
 
   const project = useMemo(() => projectForView(activeViewId, modelId), [activeViewId, modelId])
@@ -145,17 +215,7 @@ export function ArchitectureSessionProvider({ children }: { children: ReactNode 
       setActionStatus("No saved local view state")
       return
     }
-    const parsed = JSON.parse(stored) as Partial<{
-      activeViewId: MultiViewId
-      modelId: CanonicalTraceProjectId
-      selectedSymbolId: string
-      selectedEntityId: string
-      traceMode: TraceMode
-      traceDirection: TraceDirection
-      traceDepth: number
-      focusedLayer: SemanticLayer | "all"
-      exportMode: "markdown" | "json"
-    }>
+    const parsed = JSON.parse(stored) as StoredViewState
     if (parsed.modelId) setModelIdState(parsed.modelId)
     if (parsed.activeViewId) setActiveViewIdState(parsed.activeViewId)
     if (parsed.selectedSymbolId) setSelectedSymbolIdState(parsed.selectedSymbolId)

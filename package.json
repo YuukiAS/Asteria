@@ -1,7 +1,7 @@
 {
   "name": "asteria",
   "private": true,
-  "version": "2.0.0-rc.3",
+  "version": "2.0.0-rc.4",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -9,13 +9,8 @@
     "preview": "vite preview --host 127.0.0.1",
     "serve:shared": "node scripts/asteria-server.mjs",
     "test:restore-safety": "node scripts/validate-restore-safety.mjs",
-    "test:search": "node scripts/validate-search-clicks.mjs",
-    "test:edges": "node scripts/validate-edge-handles.mjs",
     "test:block-usability": "node scripts/validate-block-usability.mjs",
-    "test:rich-text": "node scripts/validate-rich-text-behavior.mjs",
-    "test:image-links": "node scripts/validate-image-link-story-export.mjs",
     "test:shared-server": "node scripts/validate-shared-server-config.mjs",
-    "test:shared-save": "node scripts/validate-shared-save-feedback.mjs",
     "test:legacy-roundtrip": "node scripts/validate-legacy-v1-roundtrip.mjs",
     "test:architecture-kernel": "node scripts/validate-architecture-kernel.mjs",
     "test:canonical-trace": "node scripts/validate-canonical-trace-fixtures.mjs",
@@ -24,13 +19,15 @@
     "test:architecture-g05": "node scripts/validate-architecture-g05.mjs",
     "test:architecture-g06": "node scripts/validate-architecture-g06.mjs",
     "test:architecture-rc3": "node scripts/validate-architecture-rc3.mjs",
+    "test:architecture-rc4": "node scripts/validate-architecture-rc4.mjs",
+    "smoke:public-rc4": "node scripts/smoke-architecture-rc4-public.mjs",
     "test:browser": "playwright test",
     "test:e2e": "npm run test:browser",
     "bench:v1-baseline": "node scripts/benchmark-v1-baseline.mjs",
     "bench:architecture-kernel": "node scripts/benchmark-architecture-kernel.mjs",
     "bench:architecture-g03": "node scripts/benchmark-architecture-g03.mjs",
     "bench:architecture-g05": "node scripts/benchmark-architecture-g05.mjs",
-    "test:regression": "npm run test:legacy-roundtrip && npm run test:architecture-kernel && npm run test:canonical-trace && npm run test:architecture-g03 && npm run test:architecture-g04 && npm run test:architecture-g05 && npm run test:architecture-g06 && npm run test:architecture-rc3 && npm run test:restore-safety && npm run test:block-usability && npm run test:rich-text && npm run test:image-links && npm run test:shared-server && npm run test:shared-save"
+    "test:regression": "npm run test:legacy-roundtrip && npm run test:architecture-kernel && npm run test:canonical-trace && npm run test:architecture-g03 && npm run test:architecture-g04 && npm run test:architecture-g05 && npm run test:architecture-g06 && npm run test:architecture-rc3 && npm run test:architecture-rc4 && npm run test:shared-server"
   },
   "dependencies": {
     "@tiptap/core": "^2.26.4",

@@ -1,7 +1,7 @@
 # Asteria Product Roadmap
 
-更新时间：2026-09-11
-状态：Asteria 2.0 Web 已完成 G00–G06 与 RC.3 acceptance hardening 到 `2.0.0-rc.3`。下一步是最终人工验收；未发布 `2.0.0` stable。
+更新时间：2026-09-12
+状态：Asteria 2.0 Web 已完成 G00–G06、RC.3 acceptance hardening 与 RC.4 legacy UI archive 到 `2.0.0-rc.4`。下一步是最终人工验收；未发布 `2.0.0` stable。
 
 ## 0. 当前判断
 
@@ -15,9 +15,11 @@ A/B/C/D/E1/E2 六张 accepted concepts 已覆盖 Architecture light/dark、Symbo
 
 G00–G06 已经完成 schema、fixtures、trace、typed relations、layers、outline、export、validation、semantic diff、multi-view、browser QA 与 performance 基础。2026-09-11 RC.2 源码审计发现的 central renderer 双重 source-of-truth 已在 `2.0.0-rc.3` 中收束：central nodes 来自 `ArchitectureView.projections`，central edges 来自 `TypedRelation`，Original TRACE / CAT-TRACE 共享同一 active model/view/selection state。
 
-RC.3 执行入口：
+`2.0.0-rc.4` 进一步把产品入口收束到 Asteria 2.0：active Web app 不再进入旧 1.x Canvas / Toolbar / Inspector / Story / startup chooser；已不再使用的 1.x live UI/runtime source 归档到 `archive/asteria-v1-ui/`。active source 只保留 v1 -> v2 migration 所需 compatibility layer。
 
-`prompts/tasks/asteria_v2_rc3_acceptance_hardening_task.md`
+RC.4 执行入口：
+
+`prompts/tasks/asteria_v2_rc4_archive_legacy_acceptance_task.md`
 
 审计依据：
 
@@ -35,11 +37,11 @@ RC.3 执行入口：
 
 ### Asteria 1.x
 
-现有 React Flow + TipTap + KaTeX + Zustand + Dexie 的可编辑研究画布。`1.0.0` 已冻结为 legacy compatibility baseline。1.x 继续保留 map、rich text、Story、save/restore/import/export 兼容。
+历史 React Flow + TipTap + KaTeX + Zustand + Dexie 的可编辑研究画布。`1.0.0` 已冻结为 legacy compatibility baseline；RC.4 后不再作为 active 2.0 live shell。旧 UI/runtime source 位于 `archive/asteria-v1-ui/`，active source 只保留 v1 payload、parser、fixture、migration 与回归兼容。
 
 ### Asteria 2.0
 
-不推翻现有前端壳；重构的是“数据真值与交互语义”。核心 source of truth：
+RC.4 后，2.0 是唯一 active product shell。核心 source of truth：
 
 ```text
 entities
@@ -50,7 +52,7 @@ view projections
 validation state
 ```
 
-React Flow/中央 canvas 的 position、size、collapse、visibility 属于 view；数学定义和关系属于 canonical graph。
+中央 projection 的 position、size、collapse、visibility 属于 view；数学定义和关系属于 canonical graph。
 
 ## 2. 2.0 首个完整 Web 产品
 
@@ -68,9 +70,9 @@ RC.3 进一步要求：中央 canvas 本身也必须由 active model + `Architec
 
 Claim-centered evidence graph，区分 theory / proof / simulation / dataset / result / implementation / limitation / pending。Asteria 只显示结构化 evidence closure，不自动宣称 theorem、实验或因果识别正确。
 
-### 2.4 Story / Narrative
+### 2.4 Legacy Story Compatibility
 
-Story 是线性输出层，不成为第四个同构 graph；继续兼容旧 1.x Story workflow。
+旧 1.x Story 数据继续通过 v1 -> v2 migration compatibility 保留；它不再作为 active 2.0 顶层 live product surface，也不成为第四个同构 graph。
 
 ## 3. 首批两个 Model Variants
 
@@ -104,7 +106,7 @@ docs/design/accepted-concepts/
 
 ## 5. 技术架构原则
 
-继续保留 React + Vite、React Flow、TipTap、KaTeX、Dexie/local-first、shared server、restore safety、Story Outline 与现有 public entry point。
+继续保留 React + Vite、KaTeX、canonical architecture layer、v1 migration compatibility、shared fixed-origin server 与现有 public entry point。旧 React Flow/TipTap/Dexie live canvas runtime 已归档，不再作为 active 2.0 shell。
 
 核心边界：
 
@@ -159,15 +161,20 @@ G06A / RC.3 Acceptance Hardening -> 2.0.0-rc.3
   - trace edge linkage
   - semantic diff visual linkage
   - committed acceptance screenshots
+G06B / RC.4 Legacy UI Archive -> 2.0.0-rc.4
+  - direct 2.0 public entry
+  - no 1.x startup chooser
+  - archived live legacy UI/runtime
+  - v1 migration compatibility retained
         ↓
 FINAL USER ACCEPTANCE
         ↓
 2.0.0 stable（仅用户确认后）
 ```
 
-## 7. RC.3 不扩范围
+## 7. RC.4 不扩范围
 
-RC.3 不做新 ontology、第三个 model variant、AI 自动建图、real-data analysis、marked discovery theorem、Tauri/Electron 或 Figma 重设计。它只把已经定义好的 canonical graph 真正贯通到中央 renderer，并补足 final acceptance evidence。
+RC.4 不做新 ontology、第三个 model variant、AI 自动建图、real-data analysis、marked discovery theorem、Tauri/Electron、Figma 重设计或 `2.0.0` stable 发布。它只把 active product shell 收束到 Asteria 2.0，并归档旧 1.x live UI/runtime。
 
 ## 8. 最终验收时用户需要看什么
 
@@ -179,9 +186,9 @@ RC.3 不做新 ontology、第三个 model variant、AI 自动建图、real-data 
 4. Lineage visible edges 是否真对应 typed relations，而不是 citation/装饰线；
 5. Evidence 是否能直观看到 support、pending、limitation 与 closure gaps；
 6. dark/light 是否达到 A–E2 的产品层级；
-7. 旧 map、Story、save/restore/export 是否仍可靠；
+7. v1 -> v2 migration compatibility 是否仍可靠；
 8. 日常交互是否无明显卡顿；
-9. `results/asteria_v2_rc3_acceptance/screenshots/` 是否提供完整最终截图证据。
+9. `results/asteria_v2_rc4_acceptance/screenshots/` 是否提供完整最终截图证据。
 
 通过后再发布 `2.0.0` stable，并决定是否进入 Tauri desktop。
 

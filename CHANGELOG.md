@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0-rc.4 - Archive Legacy UI And Direct 2.0 Entry
+
+- Made Asteria 2.0 the only active Web product shell: fixed public entry now opens directly into CAT-TRACE Architecture with CAT-TRACE Frozen V2 and `beta^U_gh` selected by default.
+- Removed the Asteria 1.x startup chooser, shared/local workspace startup gate, live Canvas / Toolbar / Inspector / Story product surface, and legacy compatibility button from the active UI.
+- Archived the retired 1.x UI/runtime source under `archive/asteria-v1-ui/` while keeping v1 payload, parser, fixture, migration, and regression compatibility active for v1 -> v2 migration.
+- Added RC.4 regression and public acceptance smoke coverage for direct 2.0 entry, formal Original TRACE / CAT-TRACE selectors, first-level Architecture / Lineage / Evidence navigation, and public fixed-URL refresh.
+
 ## 2.0.0-rc.3 - Acceptance Hardening
 
 - Replaced the central Architecture / Lineage / Evidence renderer with a projection-driven graph surface whose nodes come from `ArchitectureView.projections` and whose visible edges come from `TypedRelation`.
