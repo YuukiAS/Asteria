@@ -2,6 +2,8 @@
 
 每个 GPT Work reviewer 最终都必须按同一结构返回，方便后续合并。
 
+Browser 合规必须以 `UI_BLACKBOX_BROWSER_CONTRACT.md` 为唯一来源。Browser implementation 不是结果真值；只要仍通过真实页面 UI 完成验收，使用 fallback 本身不算 contamination。
+
 ## Header
 
 ```text
@@ -9,13 +11,24 @@ AUDITOR_ID = W0X
 AUDIT_RESULT = PASS | FAIL | BLOCKED
 TARGET_URL = https://asteria.httpwwwcardiacnexus-ukb.com/
 VERSION_OBSERVED = <visible version or UNKNOWN>
-BROWSER_MODE = GPT_WORK_CLOUD_BROWSER
+BROWSER_MODE = IN_APP | UI_AUTOMATION_FALLBACK | MIXED_UI
+BLACK_BOX_CONTEXT_CONTAMINATED = YES | NO
+BROWSER_BLOCKER = NONE | BLOCKED_BY_BROWSER_ENVIRONMENT
 P0_COUNT = n
 P1_COUNT = n
 P2_COUNT = n
 P3_COUNT = n
 RELEASE_RECOMMENDATION = BLOCK | FIX_THEN_RETEST | ACCEPTABLE_WITH_P2 | ACCEPT
 ```
+
+规则：
+
+- `IN_APP`：全程使用 ChatGPT Work built-in / in-app Browser。
+- `UI_AUTOMATION_FALLBACK`：in-app Browser 不稳定或不可用，改用真实浏览器 UI automation，如 Playwright / Chromium / Chrome / Edge / Browser helper。
+- `MIXED_UI`：同一轮同时使用 in-app Browser 与合法 UI fallback。
+- 使用 Playwright / selector / accessibility tree 来定位和操作真实可见控件，本身仍应记 `BLACK_BOX_CONTEXT_CONTAMINATED = NO`。
+- 只有读取了普通用户不可见的内部实现信息，并可能影响后续判断，才设为 `YES`。
+- 只有 in-app Browser 与合理真实-browser fallback 都无法继续真实 consumer UI 时，才允许 `BROWSER_BLOCKER = BLOCKED_BY_BROWSER_ENVIRONMENT`。
 
 `PASS` 只代表该 reviewer 的指定范围没有发现 release-blocking defect；不是整个产品自动 PASS。
 
@@ -51,6 +64,8 @@ Evidence:
 Reproducibility: ALWAYS | INTERMITTENT | ONCE
 ```
 
+Browser timeout / handle lost / selector timeout 不能直接写成产品 finding。必须先重新观察真实页面，确认用户界面本身确实异常，再按 finding 记录。
+
 ## 报告正文顺序
 
 1. `Executive summary`：3–8 句，说明这一路是否可验收。
@@ -58,8 +73,9 @@ Reproducibility: ALWAYS | INTERMITTENT | ONCE
 3. `Findings`：按 P0→P3 排序。
 4. `Positive observations`：最多 5 条，只记录真正有效的地方。
 5. `Not tested / safety boundary`。
-6. `Top fixes before stable`：最多 8 条，以用户影响排序，不猜实现方案。
-7. Header 中的结构化结果块再次放在报告末尾。
+6. `Browser execution note`：说明 in-app / fallback / mixed，以及是否 contamination；不要把工具故障混成产品 bug。
+7. `Top fixes before stable`：最多 8 条，以用户影响排序，不猜实现方案。
+8. Header 中的结构化结果块再次放在报告末尾。
 
 ## Severity 校准
 
@@ -92,4 +108,6 @@ Reproducibility: ALWAYS | INTERMITTENT | ONCE
 - 不写“看代码应该……”；
 - 不因为一个按钮长得不好看就判 P1；
 - 不因为不理解统计概念就自动判模型错误；
-- 不用 concept image 中可能错误的公式作为科学真值。
+- 不用 concept image 中可能错误的公式作为科学真值；
+- 不把 Playwright / Browser helper / selector 本身判成黑箱污染；
+- 不把单纯 Browser timeout 判成产品 P1/P2/P3。
