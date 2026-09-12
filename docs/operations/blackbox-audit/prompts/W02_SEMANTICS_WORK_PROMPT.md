@@ -6,7 +6,9 @@
 目标：
 https://asteria.httpwwwcardiacnexus-ukb.com/
 
-预期版本：2.0.0-rc.4
+预期版本：2.0.0-rc.5
+
+这是一次 fresh re-audit。不要假设 RC.4 的任何问题已经修好，也不要读取上一轮报告；只根据当前真实页面重新判断。
 
 以下 Browser contract 是本次黑箱验收的完整合规规则，必须原样遵守：
 
