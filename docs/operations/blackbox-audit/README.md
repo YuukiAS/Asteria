@@ -65,7 +65,7 @@ Codex implementation / repair
 
 若 repair 广泛影响 math/layout/theme/state/search/inspector/accessibility 等多个 surface，应重跑完整 W01–W06 campaign。只有窄修复才允许只重跑受影响 reviewer + W06。
 
-## 当前状态：RC.5 re-audit 未通过，进入 RC.6
+## 当前状态：RC.6 已完成，进入 full re-audit
 
 RC.4 初轮黑箱汇总：
 
@@ -79,35 +79,66 @@ RC.5 re-audit 汇总：
 docs/operations/blackbox-audit/reports/RC5_REAUDIT_CONSOLIDATED_REPORT_2026-09-12.md
 ```
 
-RC.5 六个 reviewer 均未通过硬 gate。主要剩余问题已去重为：
-
-- CAT-TRACE Architecture 默认 projection 仍过密，核心图在 1536/1366 下不能可靠阅读；
-- recursive trace 的 root-relative upstream/downstream 语义错误；
-- Clear/reset 因 default selection 自动产生 direct trace，视觉上仍是假清空；
-- `𝒰` orphan、indexed metadata、Evidence pending status 等 semantic presentation consistency；
-- inspector object type / trace context / formula presentation；
-- Advanced JSON/validation 侵入主理解路径；
-- Semantic Diff / Evidence / Project-View-Model 仍需 researcher-facing language；
-- Light mode dense graph contrast 仍需加强。
-
-下一张唯一 repair task：
+RC.6 repair task：
 
 ```text
 prompts/tasks/asteria_v2_rc6_blackbox_repair_task.md
 ```
 
-目标版本：`2.0.0-rc.6`。RC.6 完成、刷新固定公网入口后，再完整重跑 W01–W06。GPT Work gate 通过前不进入人工验收。
+RC.6 review：
+
+```text
+prompts/tasks/asteria_v2_rc6_blackbox_repair_review.md
+```
+
+当前 review 状态：`GO -> GPT_WORK_BLACKBOX_REAUDIT`。
+
+RC.6 已完成并刷新固定公网 URL。当前产品主要新增/修复包括：
+
+- Architecture `Overview | Full model` progressive disclosure；
+- selection 与 active trace 解耦，默认/Reset 后 trace OFF；
+- recursive trace root-relative direction semantics；
+- `c(f)=empty -> 𝒰` canonical relation；
+- indexed quantity metadata；
+- Evidence Pending / object-type inspector；
+- Semantic Diff 提升与 Advanced/debug 分离；
+- light/dense readability 与 researcher-facing wording。
+
+现在必须重新跑完整 W01–W06，重新建立 fresh black-box baseline。
+
+具体计划：
+
+```text
+docs/operations/blackbox-audit/RC6_GPT_WORK_REAUDIT_PLAN_2026-09-12.md
+```
+
+Campaign index：
+
+```text
+docs/operations/blackbox-audit/ASTERIA_RC6_GPT_WORK_CAMPAIGN.md
+```
 
 ## 当前 Ready-to-Paste Work prompts
 
-当前 `docs/operations/blackbox-audit/prompts/` 下 W01–W06 仍是 **RC.5 re-audit prompts**，用于已完成的这一轮历史基线。
+RC.6 的六份 fresh prompt 位于：
 
-RC.6 产品修复完成后，ChatGPT 必须把六份 prompt 的 expected version 与必要测试点更新到 `2.0.0-rc.6`，并重新 inline 当前 Browser contract，再交给 fresh GPT Work。不要提前拿 RC.5 prompt 验收 RC.6。
+```text
+docs/operations/blackbox-audit/prompts/rc6/W01_VISUAL_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc6/W02_SEMANTICS_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc6/W03_STATE_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc6/W04_FIRST_TIME_UX_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc6/W05_RESPONSIVE_ACCESSIBILITY_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc6/W06_RELEASE_REDTEAM_WORK_PROMPT.md
+```
+
+每份都 expected version = `2.0.0-rc.6`，并完整 inline 当前 Browser contract。
+
+旧 `docs/operations/blackbox-audit/prompts/` 根目录下的 W01–W06 属于 RC.5 历史 baseline；不要再用于 RC.6。
 
 ## 使用方式
 
 1. 每个 GPT Work 新开独立任务。
-2. 直接复制对应 ready-to-paste prompt 全文。
+2. 直接复制对应 RC.6 ready-to-paste prompt 全文。
 3. 不需要把 repo source 提供给 Work；Work 不应读取 Asteria repo。
 4. Work 最终必须按 `AUDIT_RESULT_CONTRACT.md` 返回 `BROWSER_MODE`、`BLACK_BOX_CONTEXT_CONTAMINATED`、`BROWSER_BLOCKER`、P0–P3 与 release recommendation。
 5. 六份报告完成后一起交回 ChatGPT 做 consolidated triage；不要让某一个 Work 自行修改 Asteria。
@@ -125,4 +156,4 @@ RC.6 产品修复完成后，ChatGPT 必须把六份 prompt 的 expected version
 - `P2`：重要但有 workaround 的交互、视觉、术语、布局、状态反馈问题。
 - `P3`：不阻塞使用的 polish / consistency / minor accessibility 问题。
 
-当前 gate：**先完成 RC.6，再重新跑完整 W01–W06；全部 PASS 后才进入用户人工最终验收。**
+当前 gate：**现在运行 RC.6 W01–W06；全部 PASS 且 unresolved must-fix P2=0 后，才进入用户人工最终验收。**
