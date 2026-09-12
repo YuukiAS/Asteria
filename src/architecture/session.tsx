@@ -1,19 +1,23 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 import { canonicalTraceProjects, type CanonicalTraceProjectId } from "./fixtures/canonicalTraceFixtures"
 import { catTraceMultiViewProject, crossViewLinks, multiViewIds, type MultiViewId } from "./fixtures/multiViewTraceProject"
-import { traceForSymbol, type TraceDirection, type TraceMode } from "./trace"
+import { emptyTraceForSymbol, traceForSymbol, type TraceDirection, type TraceMode } from "./trace"
 import type { ArchitectureProjectV2, SemanticLayer } from "./types"
 
 const localViewStateKey = "asteria-v2-rc-view-state"
+export type ArchitectureDetailLevel = "overview" | "full"
 
 type StoredViewState = Partial<{
   activeViewId: MultiViewId
   modelId: CanonicalTraceProjectId
   selectedSymbolId: string
   selectedEntityId: string
+  activeTraceSymbolId: string
+  traceEnabled: boolean
   traceMode: TraceMode
   traceDirection: TraceDirection
   traceDepth: number
+  detailLevel: ArchitectureDetailLevel
   focusedLayer: SemanticLayer | "all"
   exportMode: "markdown" | "json"
 }>
@@ -49,6 +53,10 @@ function isTraceDirection(value: unknown): value is TraceDirection {
   return value === "upstream" || value === "downstream" || value === "both"
 }
 
+function isDetailLevel(value: unknown): value is ArchitectureDetailLevel {
+  return value === "overview" || value === "full"
+}
+
 function readStoredViewState(): StoredViewState {
   if (typeof localStorage === "undefined") return {}
   try {
@@ -65,9 +73,12 @@ function initialSessionState(): {
   modelId: CanonicalTraceProjectId
   selectedSymbolId: string
   selectedEntityId: string
+  activeTraceSymbolId: string
+  traceEnabled: boolean
   traceMode: TraceMode
   traceDirection: TraceDirection
   traceDepth: number
+  detailLevel: ArchitectureDetailLevel
   focusedLayer: SemanticLayer | "all"
   exportMode: "markdown" | "json"
 } {
@@ -82,9 +93,12 @@ function initialSessionState(): {
     modelId,
     selectedSymbolId,
     selectedEntityId,
+    activeTraceSymbolId: stored.activeTraceSymbolId && project.symbols[stored.activeTraceSymbolId] ? stored.activeTraceSymbolId : selectedSymbolId,
+    traceEnabled: Boolean(stored.traceEnabled && activeViewId === multiViewIds.architecture),
     traceMode: isTraceMode(stored.traceMode) ? stored.traceMode : "direct",
     traceDirection: isTraceDirection(stored.traceDirection) ? stored.traceDirection : "both",
     traceDepth: typeof stored.traceDepth === "number" ? Math.max(1, Math.min(6, Math.floor(stored.traceDepth) || 1)) : 2,
+    detailLevel: isDetailLevel(stored.detailLevel) ? stored.detailLevel : "overview",
     focusedLayer: stored.focusedLayer || "all",
     exportMode: stored.exportMode === "json" ? "json" : "markdown",
   }
@@ -96,9 +110,12 @@ export type ArchitectureSessionValue = {
   project: ArchitectureProjectV2
   selectedSymbolId: string
   selectedEntityId: string
+  activeTraceSymbolId: string
+  traceEnabled: boolean
   traceMode: TraceMode
   traceDirection: TraceDirection
   traceDepth: number
+  detailLevel: ArchitectureDetailLevel
   focusedLayer: SemanticLayer | "all"
   exportMode: "markdown" | "json"
   actionStatus: string
@@ -112,6 +129,7 @@ export type ArchitectureSessionValue = {
   setTraceMode: (mode: TraceMode) => void
   setTraceDirection: (direction: TraceDirection) => void
   setTraceDepth: (depth: number) => void
+  setDetailLevel: (level: ArchitectureDetailLevel) => void
   setFocusedLayer: (layer: SemanticLayer | "all") => void
   setExportMode: (mode: "markdown" | "json") => void
   setActionStatus: (status: string) => void
@@ -122,6 +140,8 @@ export type ArchitectureSessionValue = {
   openLinkedView: (view: "architecture" | "lineage" | "evidence", entityId: string) => void
   saveViewState: () => void
   restoreViewState: () => void
+  startTraceForSelected: () => void
+  clearTransientStatus: () => void
 }
 
 const ArchitectureSessionContext = createContext<ArchitectureSessionValue | undefined>(undefined)
@@ -132,9 +152,12 @@ export function ArchitectureSessionProvider({ children }: { children: ReactNode 
   const [modelId, setModelIdState] = useState<CanonicalTraceProjectId>(initialState.modelId)
   const [selectedSymbolIdState, setSelectedSymbolIdState] = useState(initialState.selectedSymbolId)
   const [selectedEntityIdState, setSelectedEntityIdState] = useState(initialState.selectedEntityId)
-  const [traceMode, setTraceMode] = useState<TraceMode>(initialState.traceMode)
-  const [traceDirection, setTraceDirection] = useState<TraceDirection>(initialState.traceDirection)
+  const [activeTraceSymbolIdState, setActiveTraceSymbolIdState] = useState(initialState.activeTraceSymbolId)
+  const [traceEnabled, setTraceEnabled] = useState(initialState.traceEnabled)
+  const [traceModeState, setTraceModeState] = useState<TraceMode>(initialState.traceMode)
+  const [traceDirectionState, setTraceDirectionState] = useState<TraceDirection>(initialState.traceDirection)
   const [traceDepthState, setTraceDepthState] = useState(initialState.traceDepth)
+  const [detailLevel, setDetailLevelState] = useState<ArchitectureDetailLevel>(initialState.detailLevel)
   const [focusedLayer, setFocusedLayer] = useState<SemanticLayer | "all">(initialState.focusedLayer)
   const [exportMode, setExportMode] = useState<"markdown" | "json">(initialState.exportMode)
   const [actionStatus, setActionStatus] = useState("Ready")
@@ -144,8 +167,30 @@ export function ArchitectureSessionProvider({ children }: { children: ReactNode 
   const project = useMemo(() => projectForView(activeViewId, modelId), [activeViewId, modelId])
   const selectedSymbolId = project.symbols[selectedSymbolIdState] ? selectedSymbolIdState : defaultSymbolId(modelId)
   const selectedEntityId = project.entities[selectedEntityIdState] ? selectedEntityIdState : defaultEntityId(activeViewId, modelId)
+  const activeTraceSymbolId = project.symbols[activeTraceSymbolIdState] ? activeTraceSymbolIdState : selectedSymbolId
+  const traceMode = traceModeState
+  const traceDirection = traceDirectionState
   const traceDepth = Math.max(1, Math.min(6, traceDepthState))
-  const trace = useMemo(() => traceForSymbol(project, selectedSymbolId, { mode: traceMode, direction: traceDirection, maxDepth: traceDepth }), [project, selectedSymbolId, traceDepth, traceDirection, traceMode])
+  const trace = useMemo(() => {
+    if (!traceEnabled || activeViewId !== multiViewIds.architecture) return emptyTraceForSymbol(project, activeTraceSymbolId || selectedSymbolId)
+    return traceForSymbol(project, activeTraceSymbolId, { mode: traceMode, direction: traceDirection, maxDepth: traceDepth })
+  }, [activeTraceSymbolId, activeViewId, project, selectedSymbolId, traceDepth, traceDirection, traceEnabled, traceMode])
+
+  useEffect(() => {
+    if (actionStatus === "Ready") return
+    const timeout = window.setTimeout(() => setActionStatus("Ready"), 2600)
+    return () => window.clearTimeout(timeout)
+  }, [actionStatus])
+
+  const clearTrace = useCallback(() => {
+    setTraceEnabled(false)
+    setActiveTraceSymbolIdState("")
+  }, [])
+
+  const activateTrace = useCallback(() => {
+    setActiveTraceSymbolIdState(selectedSymbolId)
+    setTraceEnabled(true)
+  }, [selectedSymbolId])
 
   const setActiveViewId = useCallback(
     (viewId: MultiViewId, entityId?: string) => {
@@ -155,10 +200,13 @@ export function ArchitectureSessionProvider({ children }: { children: ReactNode 
       setSelectedEntityIdState(nextEntityId)
       const symbolId = nextProject.entities[nextEntityId]?.symbolIds?.find((id) => nextProject.symbols[id])
       if (viewId === multiViewIds.architecture) setSelectedSymbolIdState(symbolId || defaultSymbolId(modelId))
+      clearTrace()
+      setDetailLevelState("overview")
       setSearchQuery("")
       setSearchScope("current")
+      setActionStatus("Ready")
     },
-    [modelId],
+    [clearTrace, modelId],
   )
 
   const setModelId = useCallback(
@@ -168,14 +216,17 @@ export function ArchitectureSessionProvider({ children }: { children: ReactNode 
       const nextEntityId = defaultEntityId(multiViewIds.architecture, nextModelId)
       setSelectedSymbolIdState(nextSymbolId)
       if (activeViewId === multiViewIds.architecture) setSelectedEntityIdState(nextEntityId)
-      setTraceMode("direct")
-      setTraceDirection("both")
+      setTraceModeState("direct")
+      setTraceDirectionState("both")
       setTraceDepthState(2)
+      clearTrace()
+      setDetailLevelState("overview")
       setFocusedLayer("all")
       setSearchQuery("")
       setSearchScope("current")
+      setActionStatus("Ready")
     },
-    [activeViewId],
+    [activeViewId, clearTrace],
   )
 
   const setSelectedSymbolId = useCallback(
@@ -183,6 +234,7 @@ export function ArchitectureSessionProvider({ children }: { children: ReactNode 
       const symbol = project.symbols[symbolId]
       setSelectedSymbolIdState(symbolId)
       if (symbol?.entityId) setSelectedEntityIdState(symbol.entityId)
+      setActionStatus("Ready")
     },
     [project],
   )
@@ -192,12 +244,29 @@ export function ArchitectureSessionProvider({ children }: { children: ReactNode 
       setSelectedEntityIdState(entityId)
       const symbolId = project.entities[entityId]?.symbolIds?.find((id) => project.symbols[id])
       if (symbolId) setSelectedSymbolIdState(symbolId)
+      setActionStatus("Ready")
     },
     [project],
   )
 
+  const setTraceMode = useCallback((mode: TraceMode) => {
+    setTraceModeState(mode)
+    activateTrace()
+  }, [activateTrace])
+
+  const setTraceDirection = useCallback((direction: TraceDirection) => {
+    setTraceDirectionState(direction)
+    activateTrace()
+  }, [activateTrace])
+
   const setTraceDepth = useCallback((depth: number) => {
     setTraceDepthState(Math.max(1, Math.min(6, Math.floor(depth) || 1)))
+    activateTrace()
+  }, [activateTrace])
+
+  const setDetailLevel = useCallback((level: ArchitectureDetailLevel) => {
+    setDetailLevelState(level)
+    setActionStatus("Ready")
   }, [])
 
   const resetArchitectureView = useCallback(() => {
@@ -206,14 +275,16 @@ export function ArchitectureSessionProvider({ children }: { children: ReactNode 
     setActiveViewIdState(multiViewIds.architecture)
     setSelectedSymbolIdState(nextSymbolId)
     setSelectedEntityIdState(nextEntityId)
-    setTraceMode("direct")
-    setTraceDirection("both")
+    setTraceModeState("direct")
+    setTraceDirectionState("both")
     setTraceDepthState(2)
+    clearTrace()
+    setDetailLevelState("overview")
     setFocusedLayer("all")
     setSearchQuery("")
     setSearchScope("current")
     setActionStatus("Architecture view reset")
-  }, [modelId])
+  }, [clearTrace, modelId])
 
   const openEntityInView = useCallback(
     (viewId: MultiViewId, entityId: string, nextModelId: CanonicalTraceProjectId = modelId) => {
@@ -224,15 +295,17 @@ export function ArchitectureSessionProvider({ children }: { children: ReactNode 
       setActiveViewIdState(viewId)
       setSelectedEntityIdState(nextEntityId)
       if (viewId === multiViewIds.architecture) setSelectedSymbolIdState(nextSymbolId)
-      setTraceMode("direct")
-      setTraceDirection("both")
+      setTraceModeState("direct")
+      setTraceDirectionState("both")
       setTraceDepthState(2)
+      clearTrace()
+      setDetailLevelState("overview")
       setFocusedLayer("all")
       setSearchQuery("")
       setSearchScope("current")
       setActionStatus(`Opened ${nextProject.entities[nextEntityId]?.label || "selected entity"}`)
     },
-    [modelId],
+    [clearTrace, modelId],
   )
 
   const openLinkedView = useCallback(
@@ -245,6 +318,8 @@ export function ArchitectureSessionProvider({ children }: { children: ReactNode 
         setSelectedEntityIdState(nextEntityId)
         const symbolId = catTraceMultiViewProject.entities[nextEntityId]?.symbolIds?.[0] || canonicalTraceProjects["cat-trace-frozen-v2"].entities[nextEntityId]?.symbolIds?.[0]
         setSelectedSymbolIdState(symbolId || defaultSymbolId("cat-trace-frozen-v2"))
+        clearTrace()
+        setDetailLevelState("overview")
         setActionStatus("Opened linked Architecture entity")
         setSearchQuery("")
         setSearchScope("current")
@@ -254,13 +329,13 @@ export function ArchitectureSessionProvider({ children }: { children: ReactNode 
       setActiveViewId(nextViewId, linkedId || defaultEntityId(nextViewId, modelId))
       setActionStatus(`Opened linked ${view}`)
     },
-    [modelId, setActiveViewId],
+    [clearTrace, modelId, setActiveViewId],
   )
 
   const saveViewState = useCallback(() => {
-    localStorage.setItem(localViewStateKey, JSON.stringify({ activeViewId, modelId, selectedSymbolId, selectedEntityId, traceMode, traceDirection, traceDepth, focusedLayer, exportMode }))
+    localStorage.setItem(localViewStateKey, JSON.stringify({ activeViewId, modelId, selectedSymbolId, selectedEntityId, activeTraceSymbolId, traceEnabled, traceMode, traceDirection, traceDepth, detailLevel, focusedLayer, exportMode }))
     setActionStatus("Local view state saved")
-  }, [activeViewId, exportMode, focusedLayer, modelId, selectedEntityId, selectedSymbolId, traceDepth, traceDirection, traceMode])
+  }, [activeTraceSymbolId, activeViewId, detailLevel, exportMode, focusedLayer, modelId, selectedEntityId, selectedSymbolId, traceDepth, traceDirection, traceEnabled, traceMode])
 
   const restoreViewState = useCallback(() => {
     const stored = localStorage.getItem(localViewStateKey)
@@ -273,15 +348,25 @@ export function ArchitectureSessionProvider({ children }: { children: ReactNode 
     if (parsed.activeViewId) setActiveViewIdState(parsed.activeViewId)
     if (parsed.selectedSymbolId) setSelectedSymbolIdState(parsed.selectedSymbolId)
     if (parsed.selectedEntityId) setSelectedEntityIdState(parsed.selectedEntityId)
-    if (parsed.traceMode) setTraceMode(parsed.traceMode)
-    if (parsed.traceDirection) setTraceDirection(parsed.traceDirection)
+    if (parsed.activeTraceSymbolId) setActiveTraceSymbolIdState(parsed.activeTraceSymbolId)
+    setTraceEnabled(Boolean(parsed.traceEnabled))
+    if (parsed.traceMode) setTraceModeState(parsed.traceMode)
+    if (parsed.traceDirection) setTraceDirectionState(parsed.traceDirection)
     if (parsed.traceDepth) setTraceDepthState(parsed.traceDepth)
+    if (parsed.detailLevel) setDetailLevelState(parsed.detailLevel)
     if (parsed.focusedLayer) setFocusedLayer(parsed.focusedLayer)
     if (parsed.exportMode) setExportMode(parsed.exportMode)
     setSearchQuery("")
     setSearchScope("current")
     setActionStatus("Local view state restored")
   }, [])
+
+  const startTraceForSelected = useCallback(() => {
+    activateTrace()
+    setActionStatus(`Trace enabled for ${project.symbols[selectedSymbolId]?.canonicalName || "selected symbol"}`)
+  }, [activateTrace, project.symbols, selectedSymbolId])
+
+  const clearTransientStatus = useCallback(() => setActionStatus("Ready"), [])
 
   const value = useMemo(
     () => ({
@@ -290,9 +375,12 @@ export function ArchitectureSessionProvider({ children }: { children: ReactNode 
       project,
       selectedSymbolId,
       selectedEntityId,
+      activeTraceSymbolId,
+      traceEnabled,
       traceMode,
       traceDirection,
       traceDepth,
+      detailLevel,
       focusedLayer,
       exportMode,
       actionStatus,
@@ -306,6 +394,7 @@ export function ArchitectureSessionProvider({ children }: { children: ReactNode 
       setTraceMode,
       setTraceDirection,
       setTraceDepth,
+      setDetailLevel,
       setFocusedLayer,
       setExportMode,
       setActionStatus,
@@ -316,8 +405,10 @@ export function ArchitectureSessionProvider({ children }: { children: ReactNode 
       openLinkedView,
       saveViewState,
       restoreViewState,
+      startTraceForSelected,
+      clearTransientStatus,
     }),
-    [activeViewId, actionStatus, exportMode, focusedLayer, modelId, openEntityInView, openLinkedView, project, resetArchitectureView, restoreViewState, saveViewState, searchQuery, searchScope, selectedEntityId, selectedSymbolId, setActiveViewId, setModelId, setSelectedEntityId, setSelectedSymbolId, setTraceDepth, trace, traceDepth, traceDirection, traceMode],
+    [activeTraceSymbolId, activeViewId, actionStatus, clearTransientStatus, detailLevel, exportMode, focusedLayer, modelId, openEntityInView, openLinkedView, project, resetArchitectureView, restoreViewState, saveViewState, searchQuery, searchScope, selectedEntityId, selectedSymbolId, setActiveViewId, setDetailLevel, setModelId, setSelectedEntityId, setSelectedSymbolId, setTraceDepth, setTraceDirection, setTraceMode, startTraceForSelected, trace, traceDepth, traceDirection, traceEnabled, traceMode],
   )
 
   return <ArchitectureSessionContext.Provider value={value}>{children}</ArchitectureSessionContext.Provider>

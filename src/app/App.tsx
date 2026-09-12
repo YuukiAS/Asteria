@@ -9,7 +9,7 @@ import { AppErrorBoundary } from "../components/AppErrorBoundary"
 import { ArchitectureReferencePanel } from "../components/ArchitectureReferencePanel"
 import { ArchitectureWorkspace } from "../components/ArchitectureWorkspace"
 
-const appVersion = "2.0.0-rc.5"
+const appVersion = "2.0.0-rc.6"
 const sidebarWidthKey = "asteria-v2-sidebar-width"
 const sidebarCollapsedKey = "asteria-v2-sidebar-collapsed"
 const minSidebarWidth = 300
@@ -82,12 +82,12 @@ function AsteriaV2TopBar({ theme, onToggleTheme, onToggleInspector, inspectorCol
       </div>
 
       <div className="asteria-v2-context" aria-label="Current Asteria 2.0 context">
-        <span data-testid="current-project">Project: CAT-TRACE</span>
+        <span data-testid="current-project" title="Project is the current research workspace.">Project: CAT-TRACE</span>
         <span data-testid="current-view">
           <Icon size={14} />
           {viewLabel(activeViewId)}
         </span>
-        {activeViewId === multiViewIds.architecture ? <span data-testid="current-model">Model: {modelLabel}</span> : null}
+        {activeViewId === multiViewIds.architecture ? <span data-testid="current-model" title="Model is the Architecture variant currently shown.">Model: {modelLabel}</span> : null}
         {activeViewId === multiViewIds.architecture ? (
           <label className="asteria-v2-model-select-label">
             <span className="sr-only">Model</span>

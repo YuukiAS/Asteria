@@ -2,20 +2,20 @@
 
 Asteria 2.0 is the active Web product shell for inspecting canonical statistical-model architecture maps. The current build focuses on Original TRACE and CAT-TRACE Frozen V2, with first-level Architecture, Lineage, and Evidence views backed by the same typed semantic graph.
 
-Current app version: `2.0.0-rc.5`.
+Current app version: `2.0.0-rc.6`.
 
 ## Product State
 
-`2.0.0-rc.5` keeps the retired Asteria 1.x live Canvas / Toolbar / Inspector / Story startup flow out of the active app and repairs the RC.4 black-box findings around math rendering, 1366 layout, Clear state, light-theme contrast, cross-view search, inspector hierarchy, and keyboard navigation. Opening Asteria goes directly to:
+`2.0.0-rc.6` keeps the retired Asteria 1.x live Canvas / Toolbar / Inspector / Story startup flow out of the active app and repairs the RC.5 re-audit blockers around Architecture readability, root-relative recursive trace truth, explicit trace activation, open-tail `mathcal U` linkage, indices metadata, researcher-facing Evidence status, and debug/export separation. Opening Asteria goes directly to:
 
 - Project: `CAT-TRACE`
 - View: `Architecture`
 - Model: `CAT-TRACE Frozen V2`
 - Selected symbol: `beta^U_gh`
 
-Architecture provides the formal `Original TRACE` / `CAT-TRACE Frozen V2` model selector. Lineage and Evidence are direct first-level views. Save/Restore stores only the Asteria 2.0 view session state, not the retired shared/local 1.x canvas workspace.
+Architecture provides the formal `Original TRACE` / `CAT-TRACE Frozen V2` model selector and an `Overview` / `Full model` detail control. Selection drives the inspector; trace highlighting only appears after `Show trace` is activated. Lineage and Evidence are direct first-level views. Save/Restore stores only the Asteria 2.0 view session state, not the retired shared/local 1.x canvas workspace.
 
-After RC.5, the next acceptance step is `GPT_WORK_BLACKBOX_REAUDIT`, not manual final acceptance or stable release.
+After RC.6, the next acceptance step is `GPT_WORK_BLACKBOX_REAUDIT`, not manual final acceptance or stable release.
 
 ## Legacy Compatibility
 
@@ -76,14 +76,15 @@ npm run test:architecture-g06
 npm run test:architecture-rc3
 npm run test:architecture-rc4
 npm run test:architecture-rc5
+npm run test:architecture-rc6
 npm run test:regression
 npm run test:browser
 ```
 
-Public acceptance smoke after a pushed RC.5 commit:
+Public acceptance smoke after a pushed RC.6 commit:
 
 ```bash
-npm run smoke:public-rc5
+npm run smoke:public-rc6
 ```
 
 ## Repository Map

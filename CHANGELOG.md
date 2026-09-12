@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0-rc.6 - Architecture Readability And Trace Truth
+
+- Added Architecture `Overview` / `Full model` detail control so CAT-TRACE opens as a readable projection while Full model preserves the complete canonical graph.
+- Corrected recursive trace semantics to keep upstream and downstream traversal root-relative, and separated selection from explicit trace activation.
+- Added the canonical `c(f) -> mathcal U` open-tail relation and explicit indices metadata for indexed CAT-TRACE quantities.
+- Improved researcher-facing inspector, Semantic Diff, Evidence pending/gap language, rendered canonical definitions, light-mode contrast, and transient status behavior ahead of GPT Work re-audit.
+
 ## 2.0.0-rc.5 - Black-box Acceptance Repair
 
 - Rendered core Architecture symbols and inspector/search math with KaTeX while preserving canonical LaTeX strings as data-layer source of truth.

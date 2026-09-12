@@ -65,8 +65,8 @@ try {
   const stylesSource = await read("src/styles/index.css")
   const activeUiSource = await readActiveUiSource()
 
-  assert(packageJson.version === "2.0.0-rc.5", "package.json must declare 2.0.0-rc.5.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.5"'), "App shell must display 2.0.0-rc.5.")
+  assert(packageJson.version === "2.0.0-rc.6", "package.json must declare the current RC version.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.6"'), "App shell must display the current RC version.")
   assert(appSource.includes("topbar-model-selector"), "A formal model selector must be in the early topbar keyboard order.")
   assert(appSource.includes("Skip to canvas") && appSource.includes("Skip to inspector"), "Keyboard skip paths must be present.")
   assert(appSource.includes('data-testid="right-panel-title"') && appSource.includes("{viewLabel(activeViewId)}"), "Right panel title must derive from active view state.")
@@ -80,7 +80,7 @@ try {
   }
 
   assert(sessionSource.includes("resetArchitectureView"), "Clear must call a single resetArchitectureView path.")
-  for (const required of ['setTraceMode("direct")', 'setTraceDirection("both")', "setTraceDepthState(2)", 'setFocusedLayer("all")', 'setSearchQuery("")']) {
+  for (const required of ['setTraceModeState("direct")', 'setTraceDirectionState("both")', "setTraceDepthState(2)", 'setFocusedLayer("all")', 'setSearchQuery("")', "clearTrace()"]) {
     assert(sessionSource.includes(required), `Reset/restore semantics must include ${required}.`)
   }
   assert(!panelSource.includes("Object.values(project.symbols)[0]"), "Clear must not jump to the first arbitrary symbol.")
@@ -92,10 +92,10 @@ try {
     assert(!activeUiSource.includes(forbidden), `Active 2.0 UI source must not expose ${forbidden}.`)
   }
 
-  for (const required of ["Meaning", "Why it matters", "Canonical definition", "Advanced metadata", "Added", "Changed", "Preserved"]) {
+  for (const required of ["Meaning", "Why it matters", "Canonical definition", "Advanced metadata", "Advanced / Export & validation", "Added", "Changed", "Preserved"]) {
     assert(panelSource.includes(required), `Inspector/diff hierarchy must include ${required}.`)
   }
-  assert(stylesSource.includes("opacity-75") && stylesSource.includes("architecture-map-edge[data-trace-role=\"upstream\"]"), "Light theme muted and trace role styling must be explicit.")
+  assert(stylesSource.includes("opacity-85") && stylesSource.includes("architecture-map-edge[data-trace-role=\"upstream\"]"), "Light theme muted and trace role styling must be explicit.")
   assert(stylesSource.includes("@media (max-width: 1400px)") && stylesSource.includes("grid-template-columns: 148px minmax(0, 1fr)"), "1366 responsive breakpoint must protect canvas space.")
 
   const [{ canonicalTraceProjects }, { catTraceMultiViewProject, multiViewIds, searchCanonicalEntities }, { traceForSymbol }, { buildProjectionLayout }, { migrateV1MapToArchitectureProjectV2 }, { legacyV1FreezeMap }] = await Promise.all([
@@ -150,7 +150,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.5",
+          version: "2.0.0-rc.6",
           mathRendering: "RenderedMath",
           clearState: "atomic",
           search: "cross-view",

@@ -99,7 +99,7 @@ try {
   for (const required of ["asteria-v2-root-shell", "Asteria 2.0", "Project: CAT-TRACE", "ArchitectureWorkspace", "ArchitectureReferencePanel", "ArchitectureSessionProvider"]) {
     assert(appSource.includes(required), `App root shell must include ${required}.`)
   }
-  assert(appSource.includes('const appVersion = "2.0.0-rc.5"'), "App shell must display 2.0.0-rc.5.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.6"'), "App shell must display the current RC version.")
   for (const forbidden of ["../components/Canvas", "../components/Toolbar", "../components/InspectorPanel", "../components/StoryOutlinePanel", "useMapStore", "ReactFlowProvider", "Choose a starting version", "Use shared version", "New from scratch"]) {
     assert(!appSource.includes(forbidden), `App root shell must not contain legacy startup/live UI reference: ${forbidden}.`)
   }
@@ -169,7 +169,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.5",
+          version: "2.0.0-rc.6",
           rootShell: "Asteria 2.0",
           archivedLegacyComponents: legacyComponentFiles.length,
           archivedLegacyScripts: archivedScripts.length,

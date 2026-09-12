@@ -54,8 +54,8 @@ function selectedButtonStyle(selected: boolean): CSSProperties {
 
 export function ArchitectureWorkspace() {
   const session = useArchitectureSession()
-  const { activeViewId, modelId, project, selectedEntityId, selectedSymbolId, trace, traceMode, traceDirection, focusedLayer, setActiveViewId, setSelectedEntityId, setSelectedSymbolId } = session
-  const layout = useMemo(() => buildProjectionLayout(project, activeViewId), [activeViewId, project])
+  const { activeViewId, modelId, project, selectedEntityId, selectedSymbolId, trace, traceEnabled, traceMode, traceDirection, focusedLayer, detailLevel, setActiveViewId, setSelectedEntityId, setSelectedSymbolId } = session
+  const layout = useMemo(() => buildProjectionLayout(project, activeViewId, { detailLevel, selectedEntityId, traceEntityIds: traceEnabled ? trace.entityIds : undefined }), [activeViewId, detailLevel, project, selectedEntityId, trace.entityIds, traceEnabled])
   const diff = useMemo(() => diffOriginalTraceToCatTrace(canonicalTraceProjects["original-trace"], canonicalTraceProjects["cat-trace-frozen-v2"]), [])
   const isArchitecture = activeViewId === multiViewIds.architecture
   const isLineage = activeViewId === multiViewIds.lineage
@@ -69,9 +69,9 @@ export function ArchitectureWorkspace() {
       : "Shows which claims are supported, pending, or limited before real-data closure."
 
   const traceRoleForEdge = (edge: ProjectionLayoutEdge) => {
-    if (!trace.relationIds.has(edge.relation.id)) return "none"
-    if (trace.upstreamEntityIds.has(edge.relation.sourceId) && trace.entityIds.has(edge.relation.targetId)) return "upstream"
-    if (trace.downstreamEntityIds.has(edge.relation.targetId) && trace.entityIds.has(edge.relation.sourceId)) return "downstream"
+    if (!traceEnabled || !trace.relationIds.has(edge.relation.id)) return "none"
+    if (trace.upstreamRelationIds.has(edge.relation.id)) return "upstream"
+    if (trace.downstreamRelationIds.has(edge.relation.id)) return "downstream"
     return "trace"
   }
 
@@ -99,7 +99,7 @@ export function ArchitectureWorkspace() {
         </button>
       </nav>
 
-      <section id="asteria-canvas" className="architecture-workspace-stage" tabIndex={-1} aria-label="Asteria semantic projection" data-testid="architecture-workspace-stage" data-active-view={activeViewId} data-active-model={modelId}>
+      <section id="asteria-canvas" className="architecture-workspace-stage" tabIndex={-1} aria-label="Asteria semantic projection" data-testid="architecture-workspace-stage" data-active-view={activeViewId} data-active-model={modelId} data-detail-level={isArchitecture ? detailLevel : "research"} data-trace-enabled={traceEnabled ? "true" : "false"}>
         <header className="architecture-workspace-header">
           <div>
             <h1>{title}</h1>
@@ -108,6 +108,7 @@ export function ArchitectureWorkspace() {
           <div className="architecture-workspace-status">
             <span data-testid="central-model-status">{project.project.title}</span>
             <span>{isArchitecture ? "Architecture map" : isLineage ? "Method lineage" : "Evidence status"}</span>
+            {isArchitecture ? <span data-testid="central-detail-status">{detailLevel === "overview" ? "Overview" : "Full model"}</span> : null}
           </div>
         </header>
 
@@ -138,23 +139,23 @@ export function ArchitectureWorkspace() {
                 </marker>
               </defs>
               {layout.edges.map((edge) => (
-                <ProjectedEdge key={edge.relation.id} edge={edge} activeViewId={activeViewId} selectedEntityId={selectedEntityId} isTraceEdge={isArchitecture && trace.relationIds.has(edge.relation.id)} traceRole={isArchitecture ? traceRoleForEdge(edge) : "none"} hasTraceSelection={isArchitecture && Boolean(selectedSymbolId)} />
+                <ProjectedEdge key={edge.relation.id} edge={edge} activeViewId={activeViewId} selectedEntityId={selectedEntityId} isTraceEdge={isArchitecture && traceEnabled && trace.relationIds.has(edge.relation.id)} traceRole={isArchitecture ? traceRoleForEdge(edge) : "none"} hasTraceSelection={isArchitecture && traceEnabled} />
               ))}
             </svg>
 
             {layout.nodes.map((node) => {
               const entity = project.entities[node.entityId]
               const isSelected = node.entityId === selectedEntityId || entity.symbolIds?.includes(selectedSymbolId)
-              const isTrace = isArchitecture && trace.entityIds.has(node.entityId)
-              const isUpstream = isArchitecture && trace.upstreamEntityIds.has(node.entityId)
-              const isDownstream = isArchitecture && trace.downstreamEntityIds.has(node.entityId)
+              const isTrace = isArchitecture && traceEnabled && trace.entityIds.has(node.entityId)
+              const isUpstream = isArchitecture && traceEnabled && trace.upstreamEntityIds.has(node.entityId)
+              const isDownstream = isArchitecture && traceEnabled && trace.downstreamEntityIds.has(node.entityId)
               const diffStatus = modelId === "cat-trace-frozen-v2" && isArchitecture ? diffEntityMap[node.entityId]?.status : undefined
               const symbol = entitySymbol(project, entity)
               return (
                 <button
                   key={node.projection.id}
                   type="button"
-                  className={`architecture-map-node architecture-map-node-${entity.kind} ${isSelected ? "architecture-map-node-selected" : ""} ${isUpstream ? "architecture-map-node-upstream" : ""} ${isDownstream ? "architecture-map-node-downstream" : ""} ${selectedSymbolId && isArchitecture && !isSelected && !isTrace ? "architecture-map-node-muted" : ""} ${diffStatus ? `architecture-map-node-diff-${diffStatus}` : ""}`}
+                  className={`architecture-map-node architecture-map-node-${entity.kind} ${isSelected ? "architecture-map-node-selected" : ""} ${isUpstream ? "architecture-map-node-upstream" : ""} ${isDownstream ? "architecture-map-node-downstream" : ""} ${traceEnabled && selectedSymbolId && isArchitecture && !isSelected && !isTrace ? "architecture-map-node-muted" : ""} ${diffStatus ? `architecture-map-node-diff-${diffStatus}` : ""}`}
                   style={{ left: `${node.leftPercent}%`, top: `${node.topPercent}%`, width: node.width, minHeight: node.height }}
                   onClick={() => selectNode(node)}
                   data-testid={`projection-node-${safeDomId(node.entityId)}`}
@@ -180,9 +181,9 @@ export function ArchitectureWorkspace() {
         <footer className="architecture-workspace-footer">
           <div>
             <Layers3 size={14} />
-            {isArchitecture ? `${traceMode} ${traceDirection} trace / ${focusedLayer === "all" ? "all layers" : focusedLayer}` : isLineage ? "Extends / preserves / borrows / computational inspiration" : "Theory / implementation / datasets / limitation / pending"}
+            {isArchitecture ? `${detailLevel === "overview" ? "Overview" : "Full model"} / ${traceEnabled ? `${traceMode} ${traceDirection} trace` : "trace off"} / ${focusedLayer === "all" ? "all layers" : focusedLayer}` : isLineage ? "Extends / preserves / borrows / computational inspiration" : "Theory / implementation / datasets / limitation / pending"}
           </div>
-          <div>{isArchitecture ? `${diff.items.length} readable model changes` : isLineage ? "Lineage relation legend" : "Evidence relation legend"}</div>
+          <div>{isArchitecture ? `${layout.nodes.length} visible nodes / ${diff.items.length} model changes` : isLineage ? "Lineage relation legend" : "Evidence relation legend"}</div>
         </footer>
       </section>
     </main>

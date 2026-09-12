@@ -1,7 +1,7 @@
 # Asteria Product Roadmap
 
 更新时间：2026-09-12
-状态：Asteria 2.0 Web 已完成 G00–G06、RC.3 acceptance hardening、RC.4 legacy UI archive 与 RC.5 black-box repair 到 `2.0.0-rc.5`。下一步是 `GPT_WORK_BLACKBOX_REAUDIT`；未发布 `2.0.0` stable。
+状态：Asteria 2.0 Web 已完成 G00–G06、RC.3 acceptance hardening、RC.4 legacy UI archive、RC.5 black-box repair 与 RC.6 architecture readability / trace truth repair 到 `2.0.0-rc.6`。下一步是 `GPT_WORK_BLACKBOX_REAUDIT`；未发布 `2.0.0` stable。
 
 ## 0. 当前判断
 
@@ -19,6 +19,8 @@ G00–G06 已经完成 schema、fixtures、trace、typed relations、layers、ou
 
 `2.0.0-rc.5` 集中修复 RC.4 GPT Work 黑箱验收发现的 release blockers：core math rendering、1366x768 layout、atomic Clear state、light-theme contrast，以及 stable 前 must-fix 的 trace grammar、search、right-panel synchronization、keyboard navigation、inspector hierarchy 和 first-time researcher comprehension。
 
+`2.0.0-rc.6` 集中修复 RC.5 re-audit 仍未通过的 Architecture readability 与 trace truth：Architecture 默认进入 `Overview` 投影，`Full model` 保留完整 canonical graph；selection 与 active trace 解耦，trace 默认 OFF，Clear 后不残留 counters/path/highlight；recursive upstream/downstream 方向按 root-relative traversal 计算；`c(f)=empty -> mathcal U`、重点 indices metadata、Evidence Pending、object-type Inspector、Semantic Diff first-class 和 Advanced/export/debug 分离均已纳入回归。
+
 RC.4 执行入口：
 
 `prompts/tasks/asteria_v2_rc4_archive_legacy_acceptance_task.md`
@@ -26,6 +28,10 @@ RC.4 执行入口：
 RC.5 执行入口：
 
 `prompts/tasks/asteria_v2_rc5_blackbox_repair_task.md`
+
+RC.6 执行入口：
+
+`prompts/tasks/asteria_v2_rc6_blackbox_repair_task.md`
 
 审计依据：
 
@@ -178,6 +184,12 @@ G06C / RC.5 Black-box Repair -> 2.0.0-rc.5
   - atomic Clear / Restore transient cleanup
   - cross-view search and right-panel sync
   - keyboard model selector and skip paths
+G06D / RC.6 Architecture Readability + Trace Truth -> 2.0.0-rc.6
+  - Overview / Full model progressive disclosure
+  - root-relative recursive trace semantics
+  - explicit trace activation and Clear trace-off state
+  - open-tail mathcal U relation and indices metadata repair
+  - researcher-facing Evidence, Inspector, Semantic Diff, and Advanced/debug separation
         ↓
 GPT WORK BLACKBOX REAUDIT
         ↓
@@ -186,9 +198,9 @@ FINAL USER ACCEPTANCE（仅 re-audit 全部通过后）
 2.0.0 stable（仅用户确认后）
 ```
 
-## 7. RC.5 不扩范围
+## 7. RC.6 不扩范围
 
-RC.5 不做新 ontology、第三个 model variant、AI 自动建图、real-data analysis、marked discovery theorem、Tauri/Electron、Figma 重设计或 `2.0.0` stable 发布。它只修复 RC.4 GPT Work 黑箱验收发现的可读性、状态一致性、导航和 stable-facing language 问题。
+RC.6 不做新 ontology、第三个 model variant、AI 自动建图、real-data analysis、marked discovery theorem、Tauri/Electron、Figma 重设计或 `2.0.0` stable 发布。它只修复 RC.5 GPT Work re-audit 发现的可读性、trace truth、状态一致性、研究者语言、Advanced/debug 分离和 light/dense viewport 问题。
 
 ## 8. Re-audit / 最终验收时需要看什么
 
@@ -202,7 +214,7 @@ RC.5 不做新 ontology、第三个 model variant、AI 自动建图、real-data 
 6. dark/light 是否达到 A–E2 的产品层级；
 7. v1 -> v2 migration compatibility 是否仍可靠；
 8. 日常交互是否无明显卡顿；
-9. `results/asteria_v2_rc5_acceptance/screenshots/` 是否提供完整 RC.5 browser evidence。
+9. `results/asteria_v2_rc6_acceptance/screenshots/` 是否提供完整 RC.6 browser evidence。
 
 GPT Work black-box re-audit 全部通过、再经用户最终验收后，才发布 `2.0.0` stable，并决定是否进入 Tauri desktop。
 

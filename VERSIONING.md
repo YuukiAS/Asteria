@@ -26,10 +26,11 @@ Asteria 当前进入明确的两代产品边界。
 - `2.0.0-rc.3`：central model-stage synchronization、relation-driven edge rendering、view-projection-driven layout、trace-edge linkage、semantic-diff visual linkage；
 - `2.0.0-rc.4`：direct Asteria 2.0 active shell、legacy startup/live UI removal、1.x UI/runtime source archive、fixed public URL acceptance refresh。
 - `2.0.0-rc.5`：RC.4 GPT Work black-box repair for rendered math, 1366 layout, atomic Clear state, light-theme contrast, trace grammar, cross-view search, synchronized right-panel title, keyboard model navigation, and researcher-first inspector language.
+- `2.0.0-rc.6`：RC.5 GPT Work re-audit repair for Overview/Full progressive disclosure, root-relative recursive trace, explicit trace activation, open-tail `mathcal U` relation, indices metadata, Evidence Pending language, object-type Inspector, Semantic Diff first-class placement, and Advanced/export/debug separation.
 
 RC.2 完成既定 G00–G06 gate 后，2026-09-11 源码验收审计发现中央 renderer 仍存在 hard-coded node/position/static edge 与 canonical view projection/typed relation 并存的双重 source-of-truth；同时 Original TRACE model switch 尚未完整驱动中央 Architecture stage。
 
-因此增加并已完成 RC.3 acceptance hardening。RC.4 又按最终人工验收反馈移除 active 1.x startup/live UI：打开 fixed public URL 直接进入 Asteria 2.0 CAT-TRACE Architecture，不再出现 `Choose a starting version`、`Use shared version` 或 `New from scratch`。RC.5 修复 RC.4 GPT Work 黑箱验收发现的 P1/P2 问题。`2.0.0` 仅在 GPT Work re-audit 全部通过并完成用户最终验收后发布 stable。
+因此增加并已完成 RC.3 acceptance hardening。RC.4 又按最终人工验收反馈移除 active 1.x startup/live UI：打开 fixed public URL 直接进入 Asteria 2.0 CAT-TRACE Architecture，不再出现 `Choose a starting version`、`Use shared version` 或 `New from scratch`。RC.5 修复 RC.4 GPT Work 黑箱验收发现的 P1/P2 问题。RC.6 修复 RC.5 re-audit 仍发现的 Architecture readability、trace truth、Evidence/Inspector language 和 Advanced/debug separation 问题。`2.0.0` 仅在 GPT Work re-audit 全部通过并完成用户最终验收后发布 stable。
 
 详细审计：
 
@@ -41,7 +42,7 @@ RC.2 完成既定 G00–G06 gate 后，2026-09-11 源码验收审计发现中央
 
 当前 repair 任务：
 
-`prompts/tasks/asteria_v2_rc5_blackbox_repair_task.md`
+`prompts/tasks/asteria_v2_rc6_blackbox_repair_task.md`
 
 Lineage / Evidence 已纳入 2.0 Web 正式范围。桌面壳仍不阻塞 2.0 Web stable；Tauri/Electron 进入后续 2.x 平台化阶段。
 

@@ -175,6 +175,11 @@ body {
     gap: 6px;
   }
 
+  .asteria-v2-actions .toolbar-button {
+    min-width: 40px;
+    min-height: 36px;
+  }
+
   .asteria-v2-main {
     display: flex;
     min-height: 0;
@@ -214,27 +219,31 @@ body {
   }
 
   .architecture-view-switch .segmented-button:not(.segmented-button-active),
-  .architecture-model-switch .segmented-button:not(.segmented-button-active) {
+  .architecture-model-switch .segmented-button:not(.segmented-button-active),
+  .architecture-detail-switch .segmented-button:not(.segmented-button-active) {
     background-color: transparent !important;
     color: rgb(var(--color-secondary)) !important;
     transition-property: none !important;
   }
 
   .architecture-view-switch .segmented-button-active,
-  .architecture-model-switch .segmented-button-active {
+  .architecture-model-switch .segmented-button-active,
+  .architecture-detail-switch .segmented-button-active {
     background-color: rgb(var(--color-accent-soft)) !important;
     color: rgb(var(--color-accent)) !important;
     transition-property: none !important;
   }
 
   .architecture-view-switch [data-asteria-selected="true"],
-  .architecture-model-switch [data-asteria-selected="true"] {
+  .architecture-model-switch [data-asteria-selected="true"],
+  .architecture-detail-switch [data-asteria-selected="true"] {
     background-color: rgb(var(--color-accent-soft)) !important;
     color: rgb(var(--color-accent)) !important;
   }
 
   .architecture-view-switch [data-asteria-selected="false"],
-  .architecture-model-switch [data-asteria-selected="false"] {
+  .architecture-model-switch [data-asteria-selected="false"],
+  .architecture-detail-switch [data-asteria-selected="false"] {
     background-color: transparent !important;
     color: rgb(var(--color-secondary)) !important;
   }
@@ -341,12 +350,33 @@ body {
     @apply grid content-start gap-3;
   }
 
-  .architecture-model-switch {
+  .architecture-model-switch,
+  .architecture-detail-switch {
     @apply grid grid-cols-1 gap-1 rounded-md border border-border bg-app/50 p-1;
+  }
+
+  .architecture-detail-switch {
+    @apply grid-cols-2;
   }
 
   .architecture-view-switch {
     @apply grid grid-cols-3 gap-1 rounded-md border border-border bg-app/50 p-1;
+  }
+
+  .architecture-context-helper {
+    @apply grid gap-2 text-xs;
+  }
+
+  .architecture-context-helper div {
+    @apply grid gap-1 rounded-md border border-border bg-app/50 px-2 py-2;
+  }
+
+  .architecture-context-helper strong {
+    @apply text-[10px] uppercase text-muted;
+  }
+
+  .architecture-context-helper span {
+    @apply leading-5 text-secondary;
   }
 
   .architecture-search-row {
@@ -771,15 +801,15 @@ body {
   }
 
   .architecture-map-node {
-    @apply absolute z-20 grid min-h-[72px] w-32 -translate-x-1/2 -translate-y-1/2 content-center gap-1 rounded-md border border-strongBorder bg-panel/95 px-2 py-2 text-center text-secondary shadow-sm transition;
+    @apply absolute z-20 grid min-h-[76px] w-32 -translate-x-1/2 -translate-y-1/2 content-center gap-1 rounded-md border border-strongBorder bg-panel/95 px-2.5 py-2 text-center text-secondary shadow-sm transition;
   }
 
   .architecture-map-node span {
-    @apply truncate text-[13px] font-semibold text-foreground;
+    @apply text-[14px] font-semibold leading-5 text-foreground;
   }
 
   .architecture-map-node small {
-    @apply line-clamp-2 text-[10px] leading-4 text-secondary;
+    @apply line-clamp-2 text-[11px] leading-4 text-secondary;
   }
 
   .architecture-map-node em {
@@ -799,11 +829,11 @@ body {
   }
 
   .architecture-map-node-muted {
-    @apply border-dashed bg-panel/80 opacity-75;
+    @apply border-dashed bg-panel/90 opacity-85;
   }
 
   [data-theme="dark"] .architecture-map-node-muted {
-    @apply opacity-60;
+    @apply opacity-70;
   }
 
   .architecture-map-node-diff-added em {
@@ -911,7 +941,7 @@ body {
   }
 
   .architecture-map-edge-muted {
-    opacity: 0.45;
+    opacity: 0.58;
   }
 
   .architecture-map-edges marker path {
@@ -936,6 +966,10 @@ body {
     overflow: visible;
     line-height: 1.15;
     white-space: nowrap;
+  }
+
+  .rendered-definition {
+    @apply inline-flex max-w-full items-center overflow-x-auto rounded border border-border bg-panel/70 px-2 py-1 text-foreground;
   }
 
   .rendered-math .katex {

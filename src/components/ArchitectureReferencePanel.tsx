@@ -1,5 +1,5 @@
-import { Download, FileJson2, GitBranch, Link2, LocateFixed, Network, RotateCcw, Search, ShieldCheck } from "lucide-react"
-import { useMemo, useState, type CSSProperties } from "react"
+import { Download, FileJson2, GitBranch, Link2, LocateFixed, Network, Play, RotateCcw, Search, ShieldCheck } from "lucide-react"
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { canonicalTraceProjects, type CanonicalTraceProjectId } from "../architecture/fixtures/canonicalTraceFixtures"
 import { catTraceMultiViewProject, evidenceClosureWarnings, multiViewIds, projectedEntities, searchCanonicalEntities, type MultiViewId } from "../architecture/fixtures/multiViewTraceProject"
 import { exportArchitectureJsonV2, exportArchitectureMarkdown } from "../architecture/export"
@@ -11,7 +11,7 @@ import { traceForSymbol, type TraceDirection, type TraceMode } from "../architec
 import { useArchitectureSession } from "../architecture/session"
 import type { ArchitectureProjectV2, RelationType, SemanticLayer, StatisticalEntity, StatisticalSymbol, TypedRelation } from "../architecture/types"
 import { validateArchitectureProject } from "../architecture/validation"
-import { RenderedMath } from "./RenderedMath"
+import { RenderedFormulaText, RenderedMath } from "./RenderedMath"
 
 const modelOptions: Array<{ id: CanonicalTraceProjectId; label: string }> = [
   { id: "original-trace", label: "Original TRACE" },
@@ -48,6 +48,13 @@ function viewHelp(viewId: MultiViewId) {
 
 function readableStatus(status?: string) {
   return (status || "not specified").replace(/_/g, " ")
+}
+
+function titleCaseStatus(status?: string) {
+  return readableStatus(status)
+    .split(" ")
+    .map((part) => (part ? `${part[0].toUpperCase()}${part.slice(1)}` : part))
+    .join(" ")
 }
 
 function relationTone(type: RelationType) {
@@ -102,6 +109,29 @@ function whyEntityMatters(project: ArchitectureProjectV2, entity?: StatisticalEn
   return `${entity.label} sits in the ${readableStatus(entity.layer)} layer with ${upstreamText} and ${downstreamText}.${symbolText}`
 }
 
+function inspectorTitle(entity?: StatisticalEntity, fallback = "Symbol") {
+  if (!entity) return `${fallback} Inspector`
+  if (entity.kind === "dataset") return "Dataset Inspector"
+  if (entity.kind === "claim" || entity.kind === "theorem") return "Claim Inspector"
+  if (entity.kind === "method" || entity.kind === "paper" || entity.kind === "prior") return "Method Inspector"
+  if (entity.kind === "proof") return "Proof Inspector"
+  if (entity.kind === "implementation") return "Implementation Inspector"
+  if (entity.kind === "limitation" || entity.kind === "open_question") return "Limitation / Open-gap Inspector"
+  return `${fallback} Inspector`
+}
+
+function researcherStatus(entity: StatisticalEntity | undefined, relations: TypedRelation[]) {
+  if (!entity) return "Not specified"
+  const hasPending = relations.some((relation) => relation.type === "pending") || entity.constraints?.some((constraint) => constraint.toLowerCase().includes("pending"))
+  const hasLimit = relations.some((relation) => relation.type === "limited_by" || relation.type === "contradicts_or_challenges" || relation.type === "contradicts")
+  const hasSupport = relations.some((relation) => ["theoretically_supports", "empirically_tests", "validates_implementation", "stress_tests", "supports", "tests", "validated_on"].includes(relation.type))
+  if (hasPending) return "Pending"
+  if (hasLimit && hasSupport) return "Supported with limits"
+  if (hasLimit) return "Open gap"
+  if (hasSupport) return "Supported"
+  return titleCaseStatus(entity.observedStatus)
+}
+
 function diffGroup(status: string) {
   if (status === "added") return "Added"
   if (status.startsWith("modified")) return "Changed"
@@ -123,9 +153,12 @@ export function ArchitectureReferencePanel() {
     project,
     selectedSymbolId,
     selectedEntityId,
+    activeTraceSymbolId,
+    traceEnabled,
     traceMode,
     traceDirection,
     traceDepth,
+    detailLevel,
     focusedLayer,
     exportMode,
     actionStatus,
@@ -139,9 +172,9 @@ export function ArchitectureReferencePanel() {
     setTraceMode,
     setTraceDirection,
     setTraceDepth,
+    setDetailLevel,
     setFocusedLayer,
     setExportMode,
-    setActionStatus,
     setSearchQuery,
     setSearchScope,
     resetArchitectureView,
@@ -149,8 +182,10 @@ export function ArchitectureReferencePanel() {
     openLinkedView,
     saveViewState,
     restoreViewState,
+    startTraceForSelected,
   } = useArchitectureSession()
   const [collapsedOutlineLayers, setCollapsedOutlineLayers] = useState<string[]>([])
+  const panelTopRef = useRef<HTMLDivElement>(null)
   const symbolList = useMemo(() => Object.values(project.symbols), [project])
   const selectedSymbol = project.symbols[selectedSymbolId] || symbolList[0]
   const selectedArchitectureEntityId = selectedSymbol?.entityId || defaultViewSelection[multiViewIds.architecture]
@@ -167,6 +202,7 @@ export function ArchitectureReferencePanel() {
     [exportMode, modelId, project],
   )
   const selectedEntity = selectedSymbol?.entityId ? project.entities[selectedSymbol.entityId] : undefined
+  const activeTraceSymbol = project.symbols[activeTraceSymbolId]
   const upstream = [...trace.upstreamEntityIds].map((id) => project.entities[id]).filter(Boolean)
   const downstream = [...trace.downstreamEntityIds].map((id) => project.entities[id]).filter(Boolean)
   const visibleSymbols = symbolList.filter((symbol) => !symbol.entityId || layerProjection.entityIds.has(symbol.entityId))
@@ -180,6 +216,10 @@ export function ArchitectureReferencePanel() {
     [activeViewId, searchProject, searchQuery, searchScope],
   )
   const hasSearchQuery = Boolean(searchQuery.trim())
+
+  useEffect(() => {
+    panelTopRef.current?.scrollIntoView({ block: "start" })
+  }, [activeViewId, selectedEntityId, selectedSymbolId])
 
   const switchModel = (next: CanonicalTraceProjectId) => {
     setModelId(next)
@@ -196,12 +236,18 @@ export function ArchitectureReferencePanel() {
 
   return (
     <aside className="inspector architecture-reference-panel" data-testid="architecture-reference-panel">
-      <div className="inspector-heading">
+      <div className="inspector-heading" ref={panelTopRef}>
         <div>
           <h2>Asteria 2.0</h2>
           <p>Explore TRACE and CAT-TRACE as readable model structure, method lineage, and evidence state.</p>
         </div>
       </div>
+
+      <section className="panel-section architecture-context-helper" data-testid="project-view-model-helper">
+        <div><strong>Project</strong><span>Current research workspace: CAT-TRACE.</span></div>
+        <div><strong>View</strong><span>{viewLabel(activeViewId)} answers {activeViewId === multiViewIds.architecture ? "model structure" : activeViewId === multiViewIds.lineage ? "method provenance" : "evidence state"} questions.</span></div>
+        <div><strong>Model</strong><span>{activeViewId === multiViewIds.architecture ? `Architecture variant: ${modelId === "original-trace" ? "Original TRACE" : "CAT-TRACE Frozen V2"}.` : "Model selection applies in Architecture."}</span></div>
+      </section>
 
       <div className="architecture-view-switch" role="tablist" aria-label="Research view">
         {researchViewOptions.map((option) => {
@@ -254,6 +300,15 @@ export function ArchitectureReferencePanel() {
             ))}
           </div>
 
+          <div className="architecture-detail-switch" role="tablist" aria-label="Architecture detail level" data-testid="architecture-detail-control">
+            <button type="button" className={`segmented-button justify-center ${detailLevel === "overview" ? "segmented-button-active" : ""}`} style={selectedButtonStyle(detailLevel === "overview")} aria-selected={detailLevel === "overview"} data-asteria-selected={detailLevel === "overview" ? "true" : "false"} onClick={() => setDetailLevel("overview")} data-testid="detail-overview">
+              Overview
+            </button>
+            <button type="button" className={`segmented-button justify-center ${detailLevel === "full" ? "segmented-button-active" : ""}`} style={selectedButtonStyle(detailLevel === "full")} aria-selected={detailLevel === "full"} data-asteria-selected={detailLevel === "full" ? "true" : "false"} onClick={() => setDetailLevel("full")} data-testid="detail-full-model">
+              Full model
+            </button>
+          </div>
+
           <div className="architecture-focus-grid">
             <label className="field-label">
               Layer focus
@@ -299,7 +354,7 @@ export function ArchitectureReferencePanel() {
                   key={symbol.id}
                   type="button"
                   className={`architecture-symbol-node ${isSelected ? "architecture-symbol-node-selected" : ""} ${isUpstream ? "architecture-symbol-node-upstream" : ""} ${isDownstream ? "architecture-symbol-node-downstream" : ""} ${
-                    selectedSymbol && !isSelected && !isInTrace ? "architecture-symbol-node-dimmed" : ""
+                    traceEnabled && selectedSymbol && !isSelected && !isInTrace ? "architecture-symbol-node-dimmed" : ""
                   }`}
                   onClick={() => setSelectedSymbolId(symbol.id)}
                   title={symbol.meaning}
@@ -313,11 +368,15 @@ export function ArchitectureReferencePanel() {
           </div>
 
           <div className="architecture-trace-controls">
-            <span className="badge">{traceMode}</span>
-            <span className="badge">Upstream {upstream.length}</span>
-            <span className="badge">Downstream {downstream.length}</span>
+            <button type="button" className={`toolbar-button ${traceEnabled ? "toolbar-button-active" : ""}`} onClick={startTraceForSelected} data-testid="enable-trace">
+              <Play size={14} />
+              {traceEnabled ? "Trace on" : "Show trace"}
+            </button>
+            <span className="badge">{traceEnabled ? `${traceMode} trace` : "Trace off"}</span>
+            {traceEnabled ? <span className="badge" data-testid="upstream-count">Upstream {upstream.length}</span> : null}
+            {traceEnabled ? <span className="badge" data-testid="downstream-count">Downstream {downstream.length}</span> : null}
             <span className="badge">{focusedLayer === "all" ? "All layers" : layerLabel(focusedLayer)}</span>
-            <span className="badge architecture-trace-legend">Upstream dashed / downstream solid</span>
+            {traceEnabled ? <span className="badge architecture-trace-legend">Upstream dashed / downstream solid</span> : null}
             <button type="button" className="toolbar-button" onClick={resetArchitectureView} data-testid="clear-architecture-selection">
               <RotateCcw size={14} />
               Clear
@@ -325,7 +384,7 @@ export function ArchitectureReferencePanel() {
           </div>
 
           <section className="panel-section">
-            <div className="section-title">Symbol Inspector</div>
+            <div className="section-title">{inspectorTitle(selectedEntity, "Symbol")}</div>
             <div className="architecture-symbol-title" data-testid="symbol-inspector">
               <RenderedMath latex={latexText(selectedSymbol)} fallback={selectedSymbol?.canonicalName} testId="selected-symbol-math" />
               <strong>{selectedSymbol?.canonicalName}</strong>
@@ -341,10 +400,11 @@ export function ArchitectureReferencePanel() {
               </div>
               <div>
                 <span>Canonical definition</span>
-                <p>{selectedEntity?.definition || selectedEntity?.description}</p>
+                <p><RenderedFormulaText source={selectedEntity?.definition || selectedEntity?.description} fallback={selectedEntity?.label || "canonical definition"} testId="selected-definition-math" /></p>
               </div>
             </div>
-            <div className="architecture-relation-list" data-testid="selected-relation-context">
+            <div className="architecture-relation-list" data-testid="selected-relation-context" aria-label="Direct relations">
+              <div className="section-title">Direct relations</div>
               {relatedRelations(project, selectedEntity?.id || "")
                 .slice(0, 5)
                 .map((relation) => {
@@ -358,6 +418,23 @@ export function ArchitectureReferencePanel() {
                   )
                 })}
             </div>
+            {traceEnabled ? (
+              <div className="architecture-trace-list" data-testid="trace-lists">
+                <div>
+                  <h3>Active trace upstream</h3>
+                  {upstream.length ? upstream.map((entity) => <span key={entity.id}>{entity.label}</span>) : <span>None</span>}
+                </div>
+                <div>
+                  <h3>Active trace downstream</h3>
+                  {downstream.length ? downstream.map((entity) => <span key={entity.id}>{entity.label}</span>) : <span>None</span>}
+                </div>
+              </div>
+            ) : (
+              <div className="architecture-binding-note" data-testid="trace-lists">
+                <GitBranch size={14} />
+                Active trace is off. Selection only controls the inspector.
+              </div>
+            )}
             <details className="architecture-advanced-metadata">
               <summary>Advanced metadata</summary>
             <dl className="architecture-inspector-grid">
@@ -391,6 +468,20 @@ export function ArchitectureReferencePanel() {
                 </button>
               </div>
             ) : null}
+          </section>
+
+          <section className="panel-section">
+            <div className="section-title">Semantic Diff</div>
+            <div className="architecture-diff-list" data-testid="semantic-diff">
+              {diffReport.items.map((item) => (
+                <button key={item.id} type="button" className={`architecture-diff-row architecture-diff-${item.status}`}>
+                  <span>{diffGroup(item.status)}</span>
+                  <strong>{item.label}</strong>
+                  <small><b>What changed:</b> {item.after || item.before || item.label}</small>
+                  <small><b>Why it matters:</b> {diffWhy(item.status)}</small>
+                </button>
+              ))}
+            </div>
           </section>
 
           <section className="panel-section">
@@ -429,7 +520,8 @@ export function ArchitectureReferencePanel() {
           </section>
 
           <section className="panel-section">
-            <div className="section-title">Export & Validation</div>
+            <details className="architecture-advanced-metadata" data-testid="advanced-export-validation">
+            <summary>Advanced / Export & validation</summary>
             <div className="architecture-export-grid">
               <span className="badge">Warnings {warnings.length}</span>
               <button type="button" className={`toolbar-button ${exportMode === "markdown" ? "toolbar-button-active" : ""}`} onClick={() => setExportMode("markdown")} data-testid="export-markdown">
@@ -445,34 +537,14 @@ export function ArchitectureReferencePanel() {
             <div className="architecture-warning-list">
               {warnings.length ? warnings.slice(0, 4).map((warning, index) => <span key={`${warning.id}:${index}`}>{warning.message}</span>) : <span>No structural warnings.</span>}
             </div>
+            </details>
           </section>
 
+          {traceEnabled ? (
           <section className="panel-section">
-            <div className="section-title">Semantic Diff</div>
-            <div className="architecture-diff-list" data-testid="semantic-diff">
-              {diffReport.items.map((item) => (
-                <button key={item.id} type="button" className={`architecture-diff-row architecture-diff-${item.status}`}>
-                  <span>{diffGroup(item.status)}</span>
-                  <strong>{item.label}</strong>
-                  <small>{diffWhy(item.status)}</small>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section className="panel-section">
-            <div className="section-title">Trace Path</div>
-            <div className="architecture-trace-list" data-testid="trace-lists">
-              <div>
-                <h3>Upstream</h3>
-                {upstream.length ? upstream.map((entity) => <span key={entity.id}>{entity.label}</span>) : <span>None</span>}
-              </div>
-              <div>
-                <h3>Downstream</h3>
-                {downstream.length ? downstream.map((entity) => <span key={entity.id}>{entity.label}</span>) : <span>None</span>}
-              </div>
-            </div>
+            <div className="section-title">Active Trace</div>
             <div className="architecture-breadcrumbs" aria-label="Trace breadcrumbs">
+              <span>{activeTraceSymbol?.canonicalName || "selected symbol"}</span>
               {trace.breadcrumbs.slice(0, 10).map((item, index) => (
                 <span key={`${item.entityId}:${index}`}>{project.entities[item.entityId]?.label || item.entityId}</span>
               ))}
@@ -482,6 +554,7 @@ export function ArchitectureReferencePanel() {
               Formula bindings use stable symbol IDs; display LaTeX can change without changing identity.
             </div>
           </section>
+          ) : null}
         </>
       ) : (
         <MultiViewPanel
@@ -556,7 +629,7 @@ function MultiViewPanel({
       </div>
 
       <section className="panel-section">
-        <div className="section-title">{isEvidence ? "Claim Inspector" : "Method Inspector"}</div>
+        <div className="section-title">{inspectorTitle(selectedEntity, isEvidence ? "Claim" : "Method")}</div>
         {selectedEntity ? (
           <>
             <div className="architecture-symbol-title" data-testid={isEvidence ? "claim-inspector" : "method-inspector"}>
@@ -575,9 +648,9 @@ function MultiViewPanel({
             </div>
             <dl className="architecture-inspector-grid">
               <dt>Status</dt>
-              <dd>{readableStatus(selectedEntity.observedStatus)}</dd>
+              <dd data-testid="researcher-status">{researcherStatus(selectedEntity, relations)}</dd>
               <dt>Definition</dt>
-              <dd>{selectedEntity.definition || "contextual graph entity"}</dd>
+              <dd><RenderedFormulaText source={selectedEntity.definition || "contextual graph entity"} fallback={selectedEntity.label} /></dd>
               <dt>Variant</dt>
               <dd>{selectedEntity.variantNote || "CAT-TRACE Frozen V2 applicability"}</dd>
               <dt>Limits</dt>
@@ -622,7 +695,7 @@ function MultiViewPanel({
           <div className="architecture-warning-list" data-testid="closure-gaps">
             {closureWarnings.map((warning) => (
               <span key={warning.claimId}>
-                {warning.label}: {warning.status}, support {warning.supportCount}, gaps {warning.gapCount}
+                <strong>{warning.label}</strong>: {titleCaseStatus(warning.status)} · {warning.supportCount} supporting item{warning.supportCount === 1 ? "" : "s"} · {warning.gapCount} open gap{warning.gapCount === 1 ? "" : "s"}. What is missing: pending theorem or real-data closure evidence where listed. What would close this: a linked proof, dataset result, or implementation result in the evidence graph.
               </span>
             ))}
           </div>

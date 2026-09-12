@@ -1,4 +1,5 @@
 import type { ArchitectureProjectV2, TypedRelation, ViewProjectionNode } from "./types"
+import type { ArchitectureDetailLevel } from "./session"
 
 export type ProjectionLayoutNode = {
   entityId: string
@@ -22,6 +23,27 @@ export type ProjectionLayout = {
   projectedEntityIds: Set<string>
   viewport: { x: number; y: number; zoom: number }
 }
+
+const catTraceOverviewKeys = new Set([
+  "Y_raw",
+  "c_f",
+  "mathcal_K",
+  "mathcal_U",
+  "g_f",
+  "mathcal_G",
+  "yU_igh",
+  "zU_igh",
+  "alphaU_gh",
+  "betaU_gh",
+  "nu",
+  "a_g",
+  "gamma0",
+  "pi_g",
+  "gamma_g",
+  "p_g",
+  "Sigma_W",
+  "richness_targets",
+])
 
 function clampPercent(value: number) {
   return Math.max(4, Math.min(96, value))
@@ -47,15 +69,41 @@ export function selectProjectedRelations(project: ArchitectureProjectV2, viewId:
   return Object.values(project.relations).filter((relation) => entityIds.has(relation.sourceId) && entityIds.has(relation.targetId))
 }
 
-export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: string): ProjectionLayout {
+function entityKey(entityId: string) {
+  return entityId.split(":").pop() || entityId
+}
+
+function selectDisplayEntityIds(project: ArchitectureProjectV2, viewId: string, options: { detailLevel?: ArchitectureDetailLevel; selectedEntityId?: string; traceEntityIds?: Set<string> } = {}) {
+  const view = project.views[viewId]
+  const base = view?.projectedEntityIds || []
+  if (!view || view.kind !== "architecture" || options.detailLevel !== "overview" || !project.project.id.includes("cat-trace-frozen-v2")) return base
+
+  const visible = new Set(base.filter((id) => catTraceOverviewKeys.has(entityKey(id))))
+  const revealDirectContext = (entityId?: string) => {
+    if (!entityId) return
+    if (!base.includes(entityId)) return
+    visible.add(entityId)
+    Object.values(project.relations).forEach((relation) => {
+      if (relation.sourceId === entityId && base.includes(relation.targetId)) visible.add(relation.targetId)
+      if (relation.targetId === entityId && base.includes(relation.sourceId)) visible.add(relation.sourceId)
+    })
+  }
+
+  revealDirectContext(options.selectedEntityId)
+  options.traceEntityIds?.forEach((entityId) => revealDirectContext(entityId))
+  return base.filter((entityId) => visible.has(entityId))
+}
+
+export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: string, options: { detailLevel?: ArchitectureDetailLevel; selectedEntityId?: string; traceEntityIds?: Set<string> } = {}): ProjectionLayout {
   const view = project.views[viewId]
   if (!view) {
     return { nodes: [], edges: [], projectedEntityIds: new Set(), viewport: { x: 0, y: 0, zoom: 1 } }
   }
 
-  const projectedEntityIds = new Set(view.projectedEntityIds)
+  const displayEntityIds = selectDisplayEntityIds(project, viewId, options)
+  const projectedEntityIds = new Set(displayEntityIds)
   const projections = projectionByEntity(view)
-  const rawNodes = view.projectedEntityIds
+  const rawNodes = displayEntityIds
     .map((entityId, index) => {
       const projection = projections.get(entityId)
       if (projection) return { entityId, projection }
@@ -86,7 +134,7 @@ export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: st
   const nodeByEntityId = new Map(nodes.map((node) => [node.entityId, node]))
   const pairCounts = new Map<string, number>()
 
-  const edges = selectProjectedRelations(project, viewId).flatMap((relation) => {
+  const edges = Object.values(project.relations).filter((relation) => projectedEntityIds.has(relation.sourceId) && projectedEntityIds.has(relation.targetId)).flatMap((relation) => {
     const source = nodeByEntityId.get(relation.sourceId)
     const target = nodeByEntityId.get(relation.targetId)
     if (!source || !target) return []
