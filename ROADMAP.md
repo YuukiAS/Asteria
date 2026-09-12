@@ -1,7 +1,7 @@
 # Asteria Product Roadmap
 
 更新时间：2026-09-12
-状态：Asteria 2.0 Web 已完成 G00–G06、RC.3 acceptance hardening 与 RC.4 legacy UI archive 到 `2.0.0-rc.4`。下一步是最终人工验收；未发布 `2.0.0` stable。
+状态：Asteria 2.0 Web 已完成 G00–G06、RC.3 acceptance hardening、RC.4 legacy UI archive 与 RC.5 black-box repair 到 `2.0.0-rc.5`。下一步是 `GPT_WORK_BLACKBOX_REAUDIT`；未发布 `2.0.0` stable。
 
 ## 0. 当前判断
 
@@ -17,9 +17,15 @@ G00–G06 已经完成 schema、fixtures、trace、typed relations、layers、ou
 
 `2.0.0-rc.4` 进一步把产品入口收束到 Asteria 2.0：active Web app 不再进入旧 1.x Canvas / Toolbar / Inspector / Story / startup chooser；已不再使用的 1.x live UI/runtime source 归档到 `archive/asteria-v1-ui/`。active source 只保留 v1 -> v2 migration 所需 compatibility layer。
 
+`2.0.0-rc.5` 集中修复 RC.4 GPT Work 黑箱验收发现的 release blockers：core math rendering、1366x768 layout、atomic Clear state、light-theme contrast，以及 stable 前 must-fix 的 trace grammar、search、right-panel synchronization、keyboard navigation、inspector hierarchy 和 first-time researcher comprehension。
+
 RC.4 执行入口：
 
 `prompts/tasks/asteria_v2_rc4_archive_legacy_acceptance_task.md`
+
+RC.5 执行入口：
+
+`prompts/tasks/asteria_v2_rc5_blackbox_repair_task.md`
 
 审计依据：
 
@@ -166,17 +172,25 @@ G06B / RC.4 Legacy UI Archive -> 2.0.0-rc.4
   - no 1.x startup chooser
   - archived live legacy UI/runtime
   - v1 migration compatibility retained
+G06C / RC.5 Black-box Repair -> 2.0.0-rc.5
+  - rendered core math surfaces
+  - 1366x768 and light-theme acceptance repair
+  - atomic Clear / Restore transient cleanup
+  - cross-view search and right-panel sync
+  - keyboard model selector and skip paths
         ↓
-FINAL USER ACCEPTANCE
+GPT WORK BLACKBOX REAUDIT
+        ↓
+FINAL USER ACCEPTANCE（仅 re-audit 全部通过后）
         ↓
 2.0.0 stable（仅用户确认后）
 ```
 
-## 7. RC.4 不扩范围
+## 7. RC.5 不扩范围
 
-RC.4 不做新 ontology、第三个 model variant、AI 自动建图、real-data analysis、marked discovery theorem、Tauri/Electron、Figma 重设计或 `2.0.0` stable 发布。它只把 active product shell 收束到 Asteria 2.0，并归档旧 1.x live UI/runtime。
+RC.5 不做新 ontology、第三个 model variant、AI 自动建图、real-data analysis、marked discovery theorem、Tauri/Electron、Figma 重设计或 `2.0.0` stable 发布。它只修复 RC.4 GPT Work 黑箱验收发现的可读性、状态一致性、导航和 stable-facing language 问题。
 
-## 8. 最终验收时用户需要看什么
+## 8. Re-audit / 最终验收时需要看什么
 
 最终用户只需集中验收：
 
@@ -188,9 +202,9 @@ RC.4 不做新 ontology、第三个 model variant、AI 自动建图、real-data 
 6. dark/light 是否达到 A–E2 的产品层级；
 7. v1 -> v2 migration compatibility 是否仍可靠；
 8. 日常交互是否无明显卡顿；
-9. `results/asteria_v2_rc4_acceptance/screenshots/` 是否提供完整最终截图证据。
+9. `results/asteria_v2_rc5_acceptance/screenshots/` 是否提供完整 RC.5 browser evidence。
 
-通过后再发布 `2.0.0` stable，并决定是否进入 Tauri desktop。
+GPT Work black-box re-audit 全部通过、再经用户最终验收后，才发布 `2.0.0` stable，并决定是否进入 Tauri desktop。
 
 ## 9. 后续 2.x
 

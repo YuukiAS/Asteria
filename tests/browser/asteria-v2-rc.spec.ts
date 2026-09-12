@@ -3,7 +3,7 @@ import fs from "node:fs/promises"
 import path from "node:path"
 
 const screenshotDir = process.env.ASTERIA_BROWSER_QA_DIR || "/tmp/asteria-browser-qa"
-const acceptanceDir = process.env.ASTERIA_ACCEPTANCE_SCREENSHOT_DIR || path.resolve("results/asteria_v2_rc4_acceptance/screenshots")
+const acceptanceDir = process.env.ASTERIA_ACCEPTANCE_SCREENSHOT_DIR || path.resolve("results/asteria_v2_rc5_acceptance/screenshots")
 
 function relationIdSelector(relationId: string) {
   return `[data-relation-id="${relationId}"]`
@@ -35,10 +35,12 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/")
   await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
   await expect(page.getByTestId("asteria-v2-topbar")).toBeVisible()
-  await expect(page.getByText("2.0.0-rc.4")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.5")).toBeVisible()
   await expect(page.getByTestId("current-project")).toContainText("Project: CAT-TRACE")
   await expect(page.getByTestId("current-view")).toContainText("Architecture")
   await expect(page.getByTestId("current-model")).toContainText("CAT-TRACE Frozen V2")
+  await expect(page.getByTestId("topbar-model-selector")).toHaveValue("cat-trace-frozen-v2")
+  await expect(page.getByTestId("right-panel-title")).toContainText("Architecture")
   await expect(page.getByTestId("architecture-reference-panel")).toBeVisible()
   await assertNoLegacyStartup(page)
   await assertNoLegacyToolbar(page)
@@ -52,6 +54,9 @@ test.afterEach(async ({ page }) => {
 test("G05 Architecture browser QA covers canonical trace, diff, export, and 2.0 local save/restore", async ({ page }) => {
   await fs.mkdir(screenshotDir, { recursive: true })
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-model", "cat-trace-frozen-v2")
+  await expect(page.getByTestId("selected-symbol-math").locator(".katex")).toBeVisible()
+  await expect(page.getByTestId("projection-node-entity-cat-trace-frozen-v2-betaU_gh").locator(".katex")).toBeVisible()
+  await expect(page.getByTestId("architecture-workspace-stage")).not.toContainText("\\beta")
   await page.getByTestId("symbol-betaU_gh").click()
   await expect(page.getByTestId("symbol-inspector")).toContainText("Open-tail slope")
   await expect(page.getByTestId("architecture-reference-panel")).toContainText("beta^U_gh = nu + a_g + v^U_gh")
@@ -67,6 +72,14 @@ test("G05 Architecture browser QA covers canonical trace, diff, export, and 2.0 
   await page.getByTestId("layer-focus").selectOption("parameterization")
   await expect(page.getByTestId("architecture-outline")).toContainText("Parameterization")
   await expect(page.getByTestId("semantic-diff")).toContainText("Finite catalogue")
+  await expect(page.getByTestId("semantic-diff")).toContainText("Added")
+  await expect(page.getByTestId("semantic-diff")).toContainText("Preserved")
+  await page.getByTestId("clear-architecture-selection").click()
+  await expect(page.getByTestId("trace-mode")).toHaveValue("direct")
+  await expect(page.getByTestId("trace-direction")).toHaveValue("both")
+  await expect(page.getByTestId("trace-depth")).toHaveValue("2")
+  await expect(page.getByTestId("layer-focus")).toHaveValue("all")
+  await expect(page.getByTestId("symbol-inspector")).toContainText("Open-tail slope")
 
   await page.getByTestId("export-json").click()
   await expect(page.getByTestId("architecture-export-preview")).toContainText("\"schemaVersion\"")
@@ -80,7 +93,7 @@ test("G05 Architecture browser QA covers canonical trace, diff, export, and 2.0 
   await expect(page.getByTestId("symbol-inspector")).toContainText("Observed occurrence")
   await page.getByTestId("restore-view-state").click()
   await expect(page.getByTestId("architecture-action-status")).toContainText("restored")
-  await expect(page.getByTestId("symbol-inspector")).toContainText("Group open-tail truncation")
+  await expect(page.getByTestId("symbol-inspector")).toContainText("Open-tail slope")
 
   await page.getByTestId("architecture-reference-panel").evaluate((element) => {
     element.scrollTop = 0
@@ -96,6 +109,8 @@ test("G06 multi-view browser QA covers Lineage, Evidence, cross-view links, sear
   await fs.mkdir(screenshotDir, { recursive: true })
   await page.getByTestId("view-lineage").click()
   await expect(page.getByTestId("current-view")).toContainText("Lineage")
+  await expect(page.getByTestId("right-panel-title")).toContainText("Lineage")
+  await expect(page.getByTestId("active-view-help")).toContainText("Lineage answers")
   await expect(page.getByTestId("current-model")).toHaveCount(0)
   await expect(page.getByTestId("architecture-workspace-stage")).toBeVisible()
   await expect(page.getByTestId("central-lineage-canvas")).toContainText("CAT-TRACE Frozen V2")
@@ -110,6 +125,8 @@ test("G06 multi-view browser QA covers Lineage, Evidence, cross-view links, sear
 
   await page.getByTestId("context-open-evidence").click()
   await expect(page.getByTestId("current-view")).toContainText("Evidence")
+  await expect(page.getByTestId("right-panel-title")).toContainText("Evidence")
+  await expect(page.getByTestId("active-view-help")).toContainText("Evidence answers")
   await expect(page.getByTestId("central-evidence-canvas")).toContainText("Open-tail response decomposition is explicit")
   await expect(page.getByTestId("view-evidence")).toHaveClass(/segmented-button-active/)
   await expect(page.getByTestId("workspace-view-evidence")).toHaveClass(/architecture-workspace-rail-active/)
@@ -122,16 +139,31 @@ test("G06 multi-view browser QA covers Lineage, Evidence, cross-view links, sear
   await page.getByTestId("architecture-search-scope").selectOption("all")
   await page.getByTestId("architecture-search-input").fill("Finland")
   await expect(page.getByTestId("architecture-search-results")).toContainText("Finland fungi")
-  await page.getByTestId("context-open-architecture").click()
-  await expect(page.getByTestId("current-view")).toContainText("Architecture")
-  await expect(page.getByTestId("architecture-trace-stage")).toBeVisible()
-  await expect(page.getByTestId("symbol-inspector")).toContainText("Open-tail slope")
+  await expect(page.getByTestId("architecture-search-results")).toContainText("Evidence / dataset")
+  await page.getByTestId("search-result-finland").click()
+  await expect(page.getByTestId("current-view")).toContainText("Evidence")
+  await expect(page.getByTestId("right-panel-title")).toContainText("Evidence")
+  await expect(page.getByTestId("claim-inspector")).toContainText("Finland fungi")
+
+  await page.getByTestId("architecture-search-scope").selectOption("all")
+  await page.getByTestId("architecture-search-input").fill("HMSC")
+  await expect(page.getByTestId("architecture-search-results")).toContainText("HMSC framework")
+  await expect(page.getByTestId("architecture-search-results")).toContainText("Lineage / method")
+  await page.getByTestId("search-result-hmsc").click()
+  await expect(page.getByTestId("current-view")).toContainText("Lineage")
+  await expect(page.getByTestId("right-panel-title")).toContainText("Lineage")
+  await expect(page.getByTestId("method-inspector")).toContainText("HMSC framework")
+
+  await page.getByTestId("architecture-search-input").fill("zzzz-no-result")
+  await expect(page.getByTestId("architecture-search-empty")).toContainText("No results")
 
   await page.getByTestId("view-lineage").click()
+  await page.getByTestId("architecture-search-input").fill("HMSC")
   await page.getByTestId("save-view-state").click()
   await page.getByTestId("view-evidence").click()
   await page.getByTestId("restore-view-state").click()
   await expect(page.getByTestId("current-view")).toContainText("Lineage")
+  await expect(page.getByTestId("architecture-search-input")).toHaveValue("")
 
   await page.getByTestId("topbar-toggle-theme").click()
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light")
@@ -142,7 +174,7 @@ test("G06 multi-view browser QA covers Lineage, Evidence, cross-view links, sear
   await page.screenshot({ path: path.join(screenshotDir, "g06-evidence-laptop.png"), fullPage: false })
 })
 
-test("RC4 acceptance covers direct 2.0 entry, selectors, views, trace-edge truth, and committed screenshots", async ({ page }) => {
+test("RC5 acceptance covers direct 2.0 entry, selectors, views, trace-edge truth, and committed screenshots", async ({ page }) => {
   await fs.mkdir(acceptanceDir, { recursive: true })
   await assertNoLegacyStartup(page)
   await assertNoLegacyToolbar(page)
@@ -156,6 +188,15 @@ test("RC4 acceptance covers direct 2.0 entry, selectors, views, trace-edge truth
   await expect(page.getByTestId("projection-node-entity-cat-trace-frozen-v2-betaU_gh")).toHaveAttribute("data-projection-x", "985")
   await expect(page.getByTestId("projection-node-entity-cat-trace-frozen-v2-betaU_gh")).toHaveAttribute("data-diff-status", "modified_definition")
   await page.screenshot({ path: path.join(acceptanceDir, "architecture-cat-trace-dark.png"), fullPage: false })
+  await page.setViewportSize({ width: 1536, height: 864 })
+  await page.getByTestId("topbar-toggle-theme").click()
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light")
+  await page.screenshot({ path: path.join(acceptanceDir, "architecture-cat-trace-light-1536.png"), fullPage: false })
+  await page.getByTestId("topbar-toggle-theme").click()
+  await page.setViewportSize({ width: 1366, height: 768 })
+  await expect(page.getByTestId("architecture-projection-canvas")).toBeVisible()
+  await expect(page.getByTestId("right-panel-title")).toContainText("Architecture")
+  await page.screenshot({ path: path.join(acceptanceDir, "architecture-cat-trace-dark-1366.png"), fullPage: false })
 
   await page.getByTestId("model-original-trace").click()
   await expect(page.getByTestId("current-model")).toContainText("Original TRACE")
@@ -174,18 +215,21 @@ test("RC4 acceptance covers direct 2.0 entry, selectors, views, trace-edge truth
   await page.getByTestId("trace-mode").selectOption("direct")
   await page.getByTestId("trace-direction").selectOption("upstream")
   await expect(page.locator(relationIdSelector("relation:cat-trace-frozen-v2:11:nu:betaU_gh"))).toHaveAttribute("data-trace-active", "true")
+  await expect(page.locator(relationIdSelector("relation:cat-trace-frozen-v2:11:nu:betaU_gh"))).toHaveAttribute("data-trace-role", "upstream")
   await expect(page.locator(relationIdSelector("relation:cat-trace-frozen-v2:12:a_g:betaU_gh"))).toHaveAttribute("data-trace-active", "true")
   await expect(page.locator(relationIdSelector("relation:cat-trace-frozen-v2:13:vU_gh:betaU_gh"))).toHaveAttribute("data-trace-active", "true")
   await page.getByTestId("trace-direction").selectOption("downstream")
   await page.getByTestId("trace-mode").selectOption("recursive")
   await page.getByTestId("trace-depth").fill("3")
   await expect(page.locator(relationIdSelector("relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh"))).toHaveAttribute("data-trace-active", "true")
+  await expect(page.locator(relationIdSelector("relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh"))).toHaveAttribute("data-trace-role", "downstream")
   await expect(page.locator(relationIdSelector("relation:cat-trace-frozen-v2:4:zU_igh:yU_igh"))).toHaveAttribute("data-trace-active", "true")
   await expect(page.locator(relationIdSelector("relation:cat-trace-frozen-v2:31:yU_igh:richness_targets"))).toHaveAttribute("data-trace-active", "true")
   await page.screenshot({ path: path.join(acceptanceDir, "architecture-trace-focus.png"), fullPage: false })
 
   await page.getByTestId("view-lineage").click()
   await expect(page.getByTestId("current-view")).toContainText("Lineage")
+  await expect(page.getByTestId("right-panel-title")).toContainText("Lineage")
   await expect(page.getByTestId("central-lineage-canvas")).toHaveAttribute("data-projected-relation-count", "5")
   await expect(page.getByTestId("view-lineage")).toHaveAttribute("data-asteria-selected", "true")
   await expect(page.locator(relationIdSelector("relation:lineage:trace-cat"))).toHaveAttribute("data-relation-type", "extends")
@@ -195,6 +239,7 @@ test("RC4 acceptance covers direct 2.0 entry, selectors, views, trace-edge truth
 
   await page.getByTestId("view-evidence").click()
   await expect(page.getByTestId("current-view")).toContainText("Evidence")
+  await expect(page.getByTestId("right-panel-title")).toContainText("Evidence")
   await expect(page.getByTestId("central-evidence-canvas")).toHaveAttribute("data-projected-relation-count", "8")
   await expect(page.getByTestId("view-evidence")).toHaveAttribute("data-asteria-selected", "true")
   await expect(page.locator(relationIdSelector("relation:evidence:proof-tail"))).toHaveAttribute("data-relation-type", "theoretically_supports")
@@ -207,4 +252,23 @@ test("RC4 acceptance covers direct 2.0 entry, selectors, views, trace-edge truth
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light")
   await page.mouse.move(600, 170)
   await page.screenshot({ path: path.join(acceptanceDir, "architecture-light.png"), fullPage: false })
+})
+
+test("RC5 keyboard model selector and skip paths are reachable before dense graph nodes", async ({ page }) => {
+  await page.keyboard.press("Tab")
+  await expect(page.getByText("Skip to canvas")).toBeFocused()
+  await page.keyboard.press("Enter")
+  await expect(page.getByTestId("architecture-workspace-stage")).toBeFocused()
+
+  await page.getByTestId("topbar-model-selector").focus()
+  await expect(page.getByTestId("topbar-model-selector")).toBeFocused()
+  await page.keyboard.press("ArrowUp")
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-model", "original-trace")
+  await expect(page.getByTestId("central-model-status")).toContainText("Original TRACE")
+  await page.keyboard.press("ArrowDown")
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-model", "cat-trace-frozen-v2")
+  await expect(page.getByTestId("central-model-status")).toContainText("CAT-TRACE Frozen V2")
+
+  await page.keyboard.press("Tab")
+  await expect(page.getByTestId("topbar-search")).toBeFocused()
 })

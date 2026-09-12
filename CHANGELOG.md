@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0-rc.5 - Black-box Acceptance Repair
+
+- Rendered core Architecture symbols and inspector/search math with KaTeX while preserving canonical LaTeX strings as data-layer source of truth.
+- Hardened 1366x768 and light-theme readability with responsive inspector sizing, clearer lane/canvas spacing, less faded muted graph states, and non-color trace cues.
+- Made Architecture Clear an atomic reset of selection, trace mode/direction/depth, layer focus, search state, and inspector state for the current model default.
+- Improved all-graph search, right-panel view synchronization, keyboard model switching, skip paths, inspector hierarchy, and stable-facing Semantic Diff language ahead of GPT Work re-audit.
+
 ## 2.0.0-rc.4 - Archive Legacy UI And Direct 2.0 Entry
 
 - Made Asteria 2.0 the only active Web product shell: fixed public entry now opens directly into CAT-TRACE Architecture with CAT-TRACE Frozen V2 and `beta^U_gh` selected by default.

@@ -11,6 +11,7 @@ import { traceForSymbol, type TraceDirection, type TraceMode } from "../architec
 import { useArchitectureSession } from "../architecture/session"
 import type { ArchitectureProjectV2, RelationType, SemanticLayer, StatisticalEntity, StatisticalSymbol, TypedRelation } from "../architecture/types"
 import { validateArchitectureProject } from "../architecture/validation"
+import { RenderedMath } from "./RenderedMath"
 
 const modelOptions: Array<{ id: CanonicalTraceProjectId; label: string }> = [
   { id: "original-trace", label: "Original TRACE" },
@@ -31,6 +32,22 @@ const defaultViewSelection: Record<MultiViewId, string> = {
 
 function latexText(symbol?: StatisticalSymbol) {
   return symbol?.latex || ""
+}
+
+function viewLabel(viewId: MultiViewId) {
+  if (viewId === multiViewIds.lineage) return "Lineage"
+  if (viewId === multiViewIds.evidence) return "Evidence"
+  return "Architecture"
+}
+
+function viewHelp(viewId: MultiViewId) {
+  if (viewId === multiViewIds.lineage) return "Lineage answers where CAT-TRACE inherits, preserves, or adapts method ideas."
+  if (viewId === multiViewIds.evidence) return "Evidence answers which claims are supported, pending, or limited before real-data closure."
+  return "Architecture answers how each statistical symbol depends on data, latent variables, parameters, and targets."
+}
+
+function readableStatus(status?: string) {
+  return (status || "not specified").replace(/_/g, " ")
 }
 
 function relationTone(type: RelationType) {
@@ -56,6 +73,49 @@ function selectedButtonStyle(selected: boolean): CSSProperties {
   }
 }
 
+function symbolForEntity(project: ArchitectureProjectV2, entity?: StatisticalEntity) {
+  return entity?.symbolIds?.map((id) => project.symbols[id]).find(Boolean) as StatisticalSymbol | undefined
+}
+
+function viewForEntity(project: ArchitectureProjectV2, entityId: string, activeViewId: MultiViewId): MultiViewId {
+  const activeScope = new Set(project.views[activeViewId]?.projectedEntityIds || [])
+  if (activeScope.has(entityId)) return activeViewId
+  for (const viewId of [multiViewIds.architecture, multiViewIds.lineage, multiViewIds.evidence]) {
+    const view = catTraceMultiViewProject.views[viewId]
+    if (view?.projectedEntityIds.includes(entityId)) return viewId
+  }
+  return multiViewIds.architecture
+}
+
+function modelForEntity(entityId: string): CanonicalTraceProjectId {
+  return entityId.includes(":original-trace:") ? "original-trace" : "cat-trace-frozen-v2"
+}
+
+function whyEntityMatters(project: ArchitectureProjectV2, entity?: StatisticalEntity, relations: TypedRelation[] = []) {
+  if (!entity) return "Select an item to see how it participates in the model graph."
+  const incoming = relations.filter((relation) => relation.targetId === entity.id)
+  const outgoing = relations.filter((relation) => relation.sourceId === entity.id)
+  const upstreamText = incoming.length ? `${incoming.length} upstream relation${incoming.length === 1 ? "" : "s"}` : "no upstream relation in this view"
+  const downstreamText = outgoing.length ? `${outgoing.length} downstream relation${outgoing.length === 1 ? "" : "s"}` : "no downstream relation in this view"
+  const symbol = symbolForEntity(project, entity)
+  const symbolText = symbol ? ` The rendered symbol is the user-facing form of the canonical source string.` : ""
+  return `${entity.label} sits in the ${readableStatus(entity.layer)} layer with ${upstreamText} and ${downstreamText}.${symbolText}`
+}
+
+function diffGroup(status: string) {
+  if (status === "added") return "Added"
+  if (status.startsWith("modified")) return "Changed"
+  if (status === "preserved_invariant" || status === "unchanged") return "Preserved"
+  return readableStatus(status)
+}
+
+function diffWhy(status: string) {
+  if (status === "added") return "New CAT-TRACE structure that Original TRACE does not expose."
+  if (status.startsWith("modified")) return "A TRACE concept is retained but its CAT-TRACE role is more specific."
+  if (status === "preserved_invariant" || status === "unchanged") return "A core TRACE invariant remains visible in Frozen V2."
+  return "Model comparison item."
+}
+
 export function ArchitectureReferencePanel() {
   const {
     activeViewId,
@@ -70,6 +130,8 @@ export function ArchitectureReferencePanel() {
     exportMode,
     actionStatus,
     trace,
+    searchQuery,
+    searchScope,
     setActiveViewId,
     setModelId,
     setSelectedSymbolId,
@@ -80,13 +142,15 @@ export function ArchitectureReferencePanel() {
     setFocusedLayer,
     setExportMode,
     setActionStatus,
+    setSearchQuery,
+    setSearchScope,
+    resetArchitectureView,
+    openEntityInView,
     openLinkedView,
     saveViewState,
     restoreViewState,
   } = useArchitectureSession()
   const [collapsedOutlineLayers, setCollapsedOutlineLayers] = useState<string[]>([])
-  const [searchQuery, setSearchQuery] = useState("")
-  const [searchScope, setSearchScope] = useState<"current" | "all">("current")
   const symbolList = useMemo(() => Object.values(project.symbols), [project])
   const selectedSymbol = project.symbols[selectedSymbolId] || symbolList[0]
   const selectedArchitectureEntityId = selectedSymbol?.entityId || defaultViewSelection[multiViewIds.architecture]
@@ -110,10 +174,12 @@ export function ArchitectureReferencePanel() {
   const currentViewSelection = project.entities[selectedEntityId] || viewEntities[0]
   const currentRelations = currentViewSelection ? relatedRelations(project, currentViewSelection.id) : []
   const closureWarnings = useMemo(() => evidenceClosureWarnings(catTraceMultiViewProject), [])
+  const searchProject = searchScope === "all" ? catTraceMultiViewProject : project
   const searchResults = useMemo(
-    () => searchCanonicalEntities(project, searchQuery, searchScope === "current" ? activeViewId : undefined).slice(0, 8),
-    [activeViewId, project, searchQuery, searchScope],
+    () => searchCanonicalEntities(searchProject, searchQuery, searchScope === "current" ? activeViewId : undefined).slice(0, 8),
+    [activeViewId, searchProject, searchQuery, searchScope],
   )
+  const hasSearchQuery = Boolean(searchQuery.trim())
 
   const switchModel = (next: CanonicalTraceProjectId) => {
     setModelId(next)
@@ -123,14 +189,18 @@ export function ArchitectureReferencePanel() {
     setActiveViewId(viewId, entityId || defaultViewSelection[viewId])
   }
 
+  const openSearchResult = (entity: StatisticalEntity) => {
+    const targetView = viewForEntity(searchProject, entity.id, activeViewId)
+    openEntityInView(targetView, entity.id, modelForEntity(entity.id))
+  }
+
   return (
     <aside className="inspector architecture-reference-panel" data-testid="architecture-reference-panel">
       <div className="inspector-heading">
         <div>
           <h2>Asteria 2.0</h2>
-          <p>Canonical graph with Architecture, Lineage, and Evidence projections.</p>
+          <p>Explore TRACE and CAT-TRACE as readable model structure, method lineage, and evidence state.</p>
         </div>
-        <span className="type-badge border-accent/30 bg-accentSoft text-accent">RC</span>
       </div>
 
       <div className="architecture-view-switch" role="tablist" aria-label="Research view">
@@ -144,6 +214,7 @@ export function ArchitectureReferencePanel() {
           )
         })}
       </div>
+      <p className="architecture-view-help" data-testid="active-view-help">{viewHelp(activeViewId)}</p>
 
       <div className="architecture-search-row">
         <Search size={14} />
@@ -155,12 +226,22 @@ export function ArchitectureReferencePanel() {
       </div>
       {searchResults.length ? (
         <div className="architecture-search-results" data-testid="architecture-search-results">
-          {searchResults.map((entity) => (
-            <button key={entity.id} type="button" onClick={() => setSelectedEntityId(entity.id)}>
-              {entity.label}
+          {searchResults.map((entity) => {
+            const targetView = viewForEntity(searchProject, entity.id, activeViewId)
+            const symbol = symbolForEntity(searchProject, entity)
+            return (
+            <button key={entity.id} type="button" onClick={() => openSearchResult(entity)} data-testid={`search-result-${entity.id.split(":").pop() || entity.id}`}>
+              <span>
+                {symbol ? <RenderedMath latex={symbol.latex} fallback={entity.label} className="architecture-search-result-math" /> : null}
+                <strong>{entity.label}</strong>
+              </span>
+              <small>{viewLabel(targetView)} / {entity.kind.replace(/_/g, " ")}</small>
             </button>
-          ))}
+            )
+          })}
         </div>
+      ) : hasSearchQuery ? (
+        <div className="architecture-search-empty" data-testid="architecture-search-empty">No results in {searchScope === "current" ? viewLabel(activeViewId) : "All graph"}.</div>
       ) : null}
 
       {activeViewId === multiViewIds.architecture ? (
@@ -224,7 +305,7 @@ export function ArchitectureReferencePanel() {
                   title={symbol.meaning}
                   data-testid={`symbol-${symbol.id.split(":").pop() || symbol.id}`}
                 >
-                  <span>{symbol.latex}</span>
+                  <RenderedMath latex={symbol.latex} fallback={symbol.canonicalName} className="architecture-symbol-math" />
                   <small>{symbol.canonicalName}</small>
                 </button>
               )
@@ -236,7 +317,8 @@ export function ArchitectureReferencePanel() {
             <span className="badge">Upstream {upstream.length}</span>
             <span className="badge">Downstream {downstream.length}</span>
             <span className="badge">{focusedLayer === "all" ? "All layers" : layerLabel(focusedLayer)}</span>
-            <button type="button" className="toolbar-button" onClick={() => setSelectedSymbolId(Object.values(project.symbols)[0]?.id || "")} data-testid="clear-architecture-selection">
+            <span className="badge architecture-trace-legend">Upstream dashed / downstream solid</span>
+            <button type="button" className="toolbar-button" onClick={resetArchitectureView} data-testid="clear-architecture-selection">
               <RotateCcw size={14} />
               Clear
             </button>
@@ -245,12 +327,40 @@ export function ArchitectureReferencePanel() {
           <section className="panel-section">
             <div className="section-title">Symbol Inspector</div>
             <div className="architecture-symbol-title" data-testid="symbol-inspector">
-              <span>{latexText(selectedSymbol)}</span>
+              <RenderedMath latex={latexText(selectedSymbol)} fallback={selectedSymbol?.canonicalName} testId="selected-symbol-math" />
               <strong>{selectedSymbol?.canonicalName}</strong>
             </div>
+            <div className="architecture-inspector-priority">
+              <div>
+                <span>Meaning</span>
+                <p>{selectedSymbol?.meaning}</p>
+              </div>
+              <div>
+                <span>Why it matters</span>
+                <p>{whyEntityMatters(project, selectedEntity, relatedRelations(project, selectedEntity?.id || ""))}</p>
+              </div>
+              <div>
+                <span>Canonical definition</span>
+                <p>{selectedEntity?.definition || selectedEntity?.description}</p>
+              </div>
+            </div>
+            <div className="architecture-relation-list" data-testid="selected-relation-context">
+              {relatedRelations(project, selectedEntity?.id || "")
+                .slice(0, 5)
+                .map((relation) => {
+                  const peer = relationPeer(project, relation, selectedEntity?.id || "")
+                  return (
+                    <button key={relation.id} type="button" className={`architecture-relation-row architecture-relation-${relationTone(relation.type)}`} onClick={() => peer?.symbolIds?.[0] && setSelectedSymbolId(peer.symbolIds[0])}>
+                      <span>{relation.type.replace(/_/g, " ")}</span>
+                      <strong>{relation.label || relation.type}</strong>
+                      <small>{peer?.label || "missing peer"}</small>
+                    </button>
+                  )
+                })}
+            </div>
+            <details className="architecture-advanced-metadata">
+              <summary>Advanced metadata</summary>
             <dl className="architecture-inspector-grid">
-              <dt>Meaning</dt>
-              <dd>{selectedSymbol?.meaning}</dd>
               <dt>Role</dt>
               <dd>{selectedSymbol?.role}</dd>
               <dt>Model</dt>
@@ -258,9 +368,7 @@ export function ArchitectureReferencePanel() {
               <dt>Layer</dt>
               <dd>{selectedSymbol?.layer}</dd>
               <dt>Status</dt>
-              <dd>{selectedSymbol?.observedStatus}</dd>
-              <dt>Definition</dt>
-              <dd>{selectedEntity?.definition || selectedEntity?.description}</dd>
+              <dd>{readableStatus(selectedSymbol?.observedStatus)}</dd>
               <dt>Indices</dt>
               <dd>{selectedSymbol?.indices?.join(", ") || "none"}</dd>
               <dt>Dimension</dt>
@@ -270,6 +378,7 @@ export function ArchitectureReferencePanel() {
               <dt>Variant note</dt>
               <dd>{selectedEntity?.variantNote || "canonical in this model scope"}</dd>
             </dl>
+            </details>
             {modelId === "cat-trace-frozen-v2" ? (
               <div className="architecture-link-row">
                 <button type="button" className="toolbar-button" onClick={() => openLinkedView("lineage", selectedArchitectureEntityId)} data-testid="open-lineage">
@@ -341,10 +450,11 @@ export function ArchitectureReferencePanel() {
           <section className="panel-section">
             <div className="section-title">Semantic Diff</div>
             <div className="architecture-diff-list" data-testid="semantic-diff">
-              {diffReport.items.slice(0, 8).map((item) => (
+              {diffReport.items.map((item) => (
                 <button key={item.id} type="button" className={`architecture-diff-row architecture-diff-${item.status}`}>
-                  <span>{item.status.replace(/_/g, " ")}</span>
+                  <span>{diffGroup(item.status)}</span>
                   <strong>{item.label}</strong>
+                  <small>{diffWhy(item.status)}</small>
                 </button>
               ))}
             </div>
@@ -453,11 +563,19 @@ function MultiViewPanel({
               <span>{selectedEntity.label}</span>
               <strong>{selectedEntity.role}</strong>
             </div>
+            <div className="architecture-inspector-priority">
+              <div>
+                <span>Meaning</span>
+                <p>{selectedEntity.description}</p>
+              </div>
+              <div>
+                <span>Why it matters</span>
+                <p>{whyEntityMatters(catTraceMultiViewProject, selectedEntity, relations)}</p>
+              </div>
+            </div>
             <dl className="architecture-inspector-grid">
-              <dt>Summary</dt>
-              <dd>{selectedEntity.description}</dd>
               <dt>Status</dt>
-              <dd>{selectedEntity.observedStatus}</dd>
+              <dd>{readableStatus(selectedEntity.observedStatus)}</dd>
               <dt>Definition</dt>
               <dd>{selectedEntity.definition || "contextual graph entity"}</dd>
               <dt>Variant</dt>

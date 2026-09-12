@@ -4,15 +4,16 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import type { PointerEvent as ReactPointerEvent } from "react"
 import { ArchitectureSessionProvider, useArchitectureSession } from "../architecture/session"
 import { multiViewIds } from "../architecture/fixtures/multiViewTraceProject"
+import type { CanonicalTraceProjectId } from "../architecture/fixtures/canonicalTraceFixtures"
 import { AppErrorBoundary } from "../components/AppErrorBoundary"
 import { ArchitectureReferencePanel } from "../components/ArchitectureReferencePanel"
 import { ArchitectureWorkspace } from "../components/ArchitectureWorkspace"
 
-const appVersion = "2.0.0-rc.4"
+const appVersion = "2.0.0-rc.5"
 const sidebarWidthKey = "asteria-v2-sidebar-width"
 const sidebarCollapsedKey = "asteria-v2-sidebar-collapsed"
-const minSidebarWidth = 320
-const maxSidebarWidth = 520
+const minSidebarWidth = 300
+const maxSidebarWidth = 460
 const collapsedSidebarWidth = 44
 
 function useTheme() {
@@ -28,8 +29,14 @@ function useTheme() {
   return [theme, setTheme] as const
 }
 
+function responsiveSidebarDefault() {
+  if (typeof window !== "undefined" && window.innerWidth <= 1400) return 320
+  return 360
+}
+
 function clampSidebarWidth(width: number) {
-  return Math.min(Math.max(width, minSidebarWidth), maxSidebarWidth)
+  const responsiveMax = typeof window !== "undefined" && window.innerWidth <= 1400 ? 380 : maxSidebarWidth
+  return Math.min(Math.max(width, minSidebarWidth), responsiveMax)
 }
 
 function viewLabel(viewId: string) {
@@ -53,8 +60,14 @@ function focusArchitectureExport() {
   document.querySelector<HTMLElement>('[data-testid="architecture-export-preview"]')?.scrollIntoView({ block: "center" })
 }
 
+function focusSkipTarget(selector: string) {
+  const target = document.querySelector<HTMLElement>(selector)
+  target?.focus()
+  target?.scrollIntoView({ block: "nearest" })
+}
+
 function AsteriaV2TopBar({ theme, onToggleTheme, onToggleInspector, inspectorCollapsed }: { theme: "light" | "dark"; onToggleTheme: () => void; onToggleInspector: () => void; inspectorCollapsed: boolean }) {
-  const { activeViewId, modelId, saveViewState, restoreViewState } = useArchitectureSession()
+  const { activeViewId, modelId, setModelId, saveViewState, restoreViewState } = useArchitectureSession()
   const Icon = viewIcon(activeViewId)
   const modelLabel = modelId === "original-trace" ? "Original TRACE" : "CAT-TRACE Frozen V2"
 
@@ -75,6 +88,31 @@ function AsteriaV2TopBar({ theme, onToggleTheme, onToggleInspector, inspectorCol
           {viewLabel(activeViewId)}
         </span>
         {activeViewId === multiViewIds.architecture ? <span data-testid="current-model">Model: {modelLabel}</span> : null}
+        {activeViewId === multiViewIds.architecture ? (
+          <label className="asteria-v2-model-select-label">
+            <span className="sr-only">Model</span>
+            <select
+              className="asteria-v2-model-select"
+              value={modelId}
+              onChange={(event) => setModelId(event.target.value as CanonicalTraceProjectId)}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+                  event.preventDefault()
+                  setModelId("original-trace")
+                }
+                if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+                  event.preventDefault()
+                  setModelId("cat-trace-frozen-v2")
+                }
+              }}
+              data-testid="topbar-model-selector"
+              aria-label="Model selector"
+            >
+              <option value="original-trace">Original TRACE</option>
+              <option value="cat-trace-frozen-v2">CAT-TRACE Frozen V2</option>
+            </select>
+          </label>
+        ) : null}
       </div>
 
       <div className="asteria-v2-actions">
@@ -109,7 +147,7 @@ function AsteriaV2Shell() {
   const [theme, setTheme] = useTheme()
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const stored = Number(localStorage.getItem(sidebarWidthKey))
-    return Number.isFinite(stored) && stored > 0 ? clampSidebarWidth(stored) : 360
+    return Number.isFinite(stored) && stored > 0 ? clampSidebarWidth(stored) : responsiveSidebarDefault()
   })
   const [isSidebarCollapsed, setIsSidebarCollapsedState] = useState(() => localStorage.getItem(sidebarCollapsedKey) === "true")
   const { activeViewId, modelId, selectedEntityId } = useArchitectureSession()
@@ -156,15 +194,21 @@ function AsteriaV2Shell() {
 
   return (
     <div className="asteria-v2-shell" data-testid="asteria-v2-root-shell">
+      <nav className="asteria-skip-links" aria-label="Keyboard shortcuts">
+        <a href="#asteria-canvas" onClick={(event) => { event.preventDefault(); focusSkipTarget("#asteria-canvas") }}>Skip to canvas</a>
+        <a href="#asteria-inspector" onClick={(event) => { event.preventDefault(); focusSkipTarget("#asteria-inspector") }}>Skip to inspector</a>
+      </nav>
       <AsteriaV2TopBar theme={theme} onToggleTheme={toggleTheme} onToggleInspector={() => setSidebarCollapsed(!isSidebarCollapsed)} inspectorCollapsed={isSidebarCollapsed} />
       <div className="asteria-v2-main">
         <AppErrorBoundary label="architecture workspace" resetKey={workspaceResetKey}>
           <ArchitectureWorkspace />
         </AppErrorBoundary>
         <aside
+          id="asteria-inspector"
           className={`inspector-shell ${isSidebarCollapsed ? "inspector-shell-collapsed" : "inspector-shell-expanded"}`}
           style={{ width: isSidebarCollapsed ? collapsedSidebarWidth : sidebarWidth }}
           aria-label="Asteria 2.0 inspector"
+          tabIndex={-1}
         >
           {!isSidebarCollapsed && <div className="inspector-resize-handle" role="separator" aria-label="Resize inspector" aria-orientation="vertical" onPointerDown={startSidebarResize} />}
           {isSidebarCollapsed ? (
@@ -180,7 +224,7 @@ function AsteriaV2Shell() {
                   <PanelRightClose size={17} />
                   <span className="sr-only">Collapse</span>
                 </button>
-                <span className="asteria-v2-inspector-title">Architecture</span>
+                <span className="asteria-v2-inspector-title" data-testid="right-panel-title">{viewLabel(activeViewId)}</span>
               </div>
             ) : null}
             <AppErrorBoundary label="architecture inspector" resetKey={workspaceResetKey}>

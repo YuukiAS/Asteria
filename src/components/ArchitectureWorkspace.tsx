@@ -6,6 +6,7 @@ import { diffOriginalTraceToCatTrace, type SemanticDiffStatus } from "../archite
 import { useArchitectureSession } from "../architecture/session"
 import type { ArchitectureProjectV2, RelationType, StatisticalEntity, StatisticalSymbol } from "../architecture/types"
 import { buildProjectionLayout, type ProjectionLayoutEdge, type ProjectionLayoutNode } from "../architecture/viewProjection"
+import { RenderedMath } from "./RenderedMath"
 
 const laneLabels = ["Observation", "Measurement", "Latent", "Parameterization", "Inference", "Prediction"]
 
@@ -35,9 +36,9 @@ function relationTone(type: RelationType) {
   return "neutral"
 }
 
-function symbolLabel(project: ArchitectureProjectV2, entity: StatisticalEntity) {
+function entitySymbol(project: ArchitectureProjectV2, entity: StatisticalEntity) {
   const symbol = entity.symbolIds?.map((id) => project.symbols[id]).find(Boolean) as StatisticalSymbol | undefined
-  return symbol?.latex || entity.label
+  return symbol
 }
 
 function safeDomId(id: string) {
@@ -58,14 +59,21 @@ export function ArchitectureWorkspace() {
   const diff = useMemo(() => diffOriginalTraceToCatTrace(canonicalTraceProjects["original-trace"], canonicalTraceProjects["cat-trace-frozen-v2"]), [])
   const isArchitecture = activeViewId === multiViewIds.architecture
   const isLineage = activeViewId === multiViewIds.lineage
-  const title = isArchitecture ? `${project.project.title} -- Model Architecture` : isLineage ? "CAT-TRACE -- Method Lineage" : "CAT-TRACE -- Evidence Graph"
+  const title = isArchitecture ? `${project.project.title} - Architecture` : isLineage ? "CAT-TRACE - Lineage" : "CAT-TRACE - Evidence"
   const subtitle = isArchitecture
     ? modelId === "original-trace"
-      ? "Original TRACE projection driven by canonical symbols, projections, and typed relations."
-      : "CAT-TRACE Frozen V2 projection driven by canonical symbols, projections, and typed relations."
+      ? "Read Original TRACE as rendered statistical symbols, assumptions, and directed dependencies."
+      : "Read CAT-TRACE Frozen V2 as finite-catalogue, open-tail, lineage, and evidence-backed model structure."
     : isLineage
-      ? "Method-level lineage map with relation-backed influence edges."
-      : "Claim-centered evidence map with support, pending, and limitation relations."
+      ? "Shows which methods CAT-TRACE extends, preserves, borrows from, or uses as implementation inspiration."
+      : "Shows which claims are supported, pending, or limited before real-data closure."
+
+  const traceRoleForEdge = (edge: ProjectionLayoutEdge) => {
+    if (!trace.relationIds.has(edge.relation.id)) return "none"
+    if (trace.upstreamEntityIds.has(edge.relation.sourceId) && trace.entityIds.has(edge.relation.targetId)) return "upstream"
+    if (trace.downstreamEntityIds.has(edge.relation.targetId) && trace.entityIds.has(edge.relation.sourceId)) return "downstream"
+    return "trace"
+  }
 
   const selectNode = (node: ProjectionLayoutNode) => {
     setSelectedEntityId(node.entityId)
@@ -91,7 +99,7 @@ export function ArchitectureWorkspace() {
         </button>
       </nav>
 
-      <section className="architecture-workspace-stage" aria-label="Asteria semantic projection" data-testid="architecture-workspace-stage" data-active-view={activeViewId} data-active-model={modelId}>
+      <section id="asteria-canvas" className="architecture-workspace-stage" tabIndex={-1} aria-label="Asteria semantic projection" data-testid="architecture-workspace-stage" data-active-view={activeViewId} data-active-model={modelId}>
         <header className="architecture-workspace-header">
           <div>
             <h1>{title}</h1>
@@ -99,7 +107,7 @@ export function ArchitectureWorkspace() {
           </div>
           <div className="architecture-workspace-status">
             <span data-testid="central-model-status">{project.project.title}</span>
-            <span>{isArchitecture ? "ArchitectureView.projections" : isLineage ? "Lineage" : "Evidence"}</span>
+            <span>{isArchitecture ? "Architecture map" : isLineage ? "Method lineage" : "Evidence status"}</span>
           </div>
         </header>
 
@@ -130,7 +138,7 @@ export function ArchitectureWorkspace() {
                 </marker>
               </defs>
               {layout.edges.map((edge) => (
-                <ProjectedEdge key={edge.relation.id} edge={edge} activeViewId={activeViewId} selectedEntityId={selectedEntityId} isTraceEdge={isArchitecture && trace.relationIds.has(edge.relation.id)} hasTraceSelection={isArchitecture && Boolean(selectedSymbolId)} />
+                <ProjectedEdge key={edge.relation.id} edge={edge} activeViewId={activeViewId} selectedEntityId={selectedEntityId} isTraceEdge={isArchitecture && trace.relationIds.has(edge.relation.id)} traceRole={isArchitecture ? traceRoleForEdge(edge) : "none"} hasTraceSelection={isArchitecture && Boolean(selectedSymbolId)} />
               ))}
             </svg>
 
@@ -141,6 +149,7 @@ export function ArchitectureWorkspace() {
               const isUpstream = isArchitecture && trace.upstreamEntityIds.has(node.entityId)
               const isDownstream = isArchitecture && trace.downstreamEntityIds.has(node.entityId)
               const diffStatus = modelId === "cat-trace-frozen-v2" && isArchitecture ? diffEntityMap[node.entityId]?.status : undefined
+              const symbol = entitySymbol(project, entity)
               return (
                 <button
                   key={node.projection.id}
@@ -157,8 +166,9 @@ export function ArchitectureWorkspace() {
                   data-left-percent={node.leftPercent.toFixed(2)}
                   data-top-percent={node.topPercent.toFixed(2)}
                   data-diff-status={diffStatus || "none"}
+                  title={isArchitecture ? `${symbol?.latex || entity.label} - ${entity.label}` : entity.label}
                 >
-                  <span>{isArchitecture ? symbolLabel(project, entity) : entity.label}</span>
+                  {isArchitecture && symbol ? <RenderedMath latex={symbol.latex} fallback={entity.label} className="architecture-node-math" /> : <span>{entity.label}</span>}
                   <small>{isArchitecture ? entity.label : entity.role}</small>
                   {diffStatus ? <em>{diffStatus.replace(/_/g, " ")}</em> : null}
                 </button>
@@ -172,14 +182,28 @@ export function ArchitectureWorkspace() {
             <Layers3 size={14} />
             {isArchitecture ? `${traceMode} ${traceDirection} trace / ${focusedLayer === "all" ? "all layers" : focusedLayer}` : isLineage ? "Extends / preserves / borrows / computational inspiration" : "Theory / implementation / datasets / limitation / pending"}
           </div>
-          <div>{diff.items.length} semantic diff facts</div>
+          <div>{isArchitecture ? `${diff.items.length} readable model changes` : isLineage ? "Lineage relation legend" : "Evidence relation legend"}</div>
         </footer>
       </section>
     </main>
   )
 }
 
-function ProjectedEdge({ edge, activeViewId, selectedEntityId, isTraceEdge, hasTraceSelection }: { edge: ProjectionLayoutEdge; activeViewId: string; selectedEntityId: string; isTraceEdge: boolean; hasTraceSelection: boolean }) {
+function ProjectedEdge({
+  edge,
+  activeViewId,
+  selectedEntityId,
+  isTraceEdge,
+  traceRole,
+  hasTraceSelection,
+}: {
+  edge: ProjectionLayoutEdge
+  activeViewId: string
+  selectedEntityId: string
+  isTraceEdge: boolean
+  traceRole: "upstream" | "downstream" | "trace" | "none"
+  hasTraceSelection: boolean
+}) {
   const isConnectedToSelection = edge.relation.sourceId === selectedEntityId || edge.relation.targetId === selectedEntityId
   const isDimmed = activeViewId === multiViewIds.architecture ? hasTraceSelection && !isTraceEdge : selectedEntityId && !isConnectedToSelection
   return (
@@ -191,6 +215,7 @@ function ProjectedEdge({ edge, activeViewId, selectedEntityId, isTraceEdge, hasT
       data-source-id={edge.relation.sourceId}
       data-target-id={edge.relation.targetId}
       data-trace-active={isTraceEdge ? "true" : "false"}
+      data-trace-role={traceRole}
     >
       <path d={edge.path} markerEnd="url(#architecture-edge-arrow)" />
       <text x={edge.labelX} y={edge.labelY}>{edge.relation.type.replace(/_/g, " ")}</text>
