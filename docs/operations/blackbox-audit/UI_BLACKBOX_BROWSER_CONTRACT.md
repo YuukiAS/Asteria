@@ -1,67 +1,80 @@
-# Asteria UI Black-box Browser Contract
+# UI Black-Box Browser Contract
 
-这是 Asteria 2.0 GPT Work 验收的唯一 black-box 浏览规则。
+本文件是 GPT Work 黑盒 UI 审计的唯一 Browser 合规来源。最终发给 GPT Work 的 prompt 必须自动 inline 本文件全文；Work 不需要、也不得访问本仓库来读取它。
 
-## Target
+## 1. 首选 in-app Browser，但不是唯一合法实现
 
-只验收固定公网产品：
+优先使用 ChatGPT Work 当前提供的 built-in / in-app Browser。如果它能正常完成真实 staging UI 操作，应优先使用。
+
+## 2. 允许真实浏览器 UI fallback
+
+如果 in-app Browser 没有暴露稳定操作接口、无法附着、反复控制失败，可以使用真实浏览器 UI automation fallback，例如 Browser plugin/helper、Playwright / playwright-core、Puppeteer、Chrome / Edge / Chromium、独立临时 browser profile、Node/Python helper script。使用这些工具本身不构成黑盒污染。
+
+## 3. fallback 必须仍然是 UI 黑盒
+
+无论底层 Browser implementation 是什么，最终产品判断必须来自真实 staging 网站、浏览器正常渲染、普通用户可以看到/操作的前端 UI。允许导航、click、fill、select、check、keyboard、scroll、refresh、Back/Forward、截图和正常页面状态观察。
+
+## 4. 严禁绕过 UI
+
+禁止使用 CUHK Date 源码、GitHub、数据库、Supabase 管理/直接查询、私有 API、direct HTTP API 代替页面流程、DevTools、Network/Console、React/Vue/Next 内部 state、hidden application state、localStorage/sessionStorage/IndexedDB/cookie 中普通 UI 不展示的信息、DOM/state mutation、调用内部 JS function 或绕过 validation。
+
+核心规则：
 
 ```text
-https://asteria.httpwwwcardiacnexus-ukb.com/
+可以自动操作页面；
+不能绕过页面。
 ```
 
-预期版本：`2.0.0-rc.4`。如果首屏观察到其他版本，记录 `P1 PUBLIC_VERSION_STALE`，不要用 localhost 或其他 URL 代替。
+## 5. DOM / accessibility 边界
 
-## 允许
+允许为了定位真实 UI 控件读取 visible text、role、label、value、checked、disabled、href、select options、当前页面路径和 accessibility tree/index。允许用 selector / role / label / accessibility index 正常操作页面。不得利用隐藏 DOM 数据推导产品事实，也不得直接修改 DOM 代替正常用户操作。
 
-- 使用 GPT Work / Cloud Browser 正常打开网页；
-- 使用普通鼠标、键盘、滚动、浏览器缩放、窗口尺寸调整；
-- 点击页面内正常可见控件；
-- 截图作为证据；
-- 使用页面本身公开的 Search / Export / Save / Restore / theme / model / view / trace / layer 等功能；
-- Export 仅用于读取导出结果，不修改 server；
-- Save/Restore 仅在 UI 明确表明是当前 2.0 local/session state 时使用；如含义不清楚，跳过并记录 ambiguity。
+## 6. Screenshot 证据
 
-## 禁止
+截图必须来自真实 staging 页面渲染结果。可以由 in-app Browser、Chrome、Edge、Chromium、Playwright 等生成。不要求必须是 founder 当前肉眼看到的那个窗口。
 
-黑箱 auditor 不得：
+## 7. Browser timeout 与产品 bug 分离
 
-- 打开 GitHub `src/`、tests、results、commit diff 或实现代码来找答案；
-- 使用 DevTools、console、Network panel、React inspector、DOM hidden state 或 accessibility tree 中用户不可见内容作为 bug 证据；
-- 直接请求 `/api/...` 或其他内部 endpoint；
-- 查询数据库、本地文件、IndexedDB/localStorage 内容；
-- 修改 URL query/hash 以进入隐藏状态；
-- 写脚本、Playwright、JavaScript 注入、自动化 selector 来代替普通 UI 操作；
-- 修改或修复产品；
-- 创建、覆盖或删除 shared/public product data；
-- 因为知道 repo 实现而推断用户看不到的 bug。
+click timeout、fill timeout、navigation wait timeout、Browser handle lost、accessibility snapshot timeout 首先是测试工具问题。发生后必须重新观察真实页面。如果页面实际上已经成功保存/跳转，则继续，不得记成产品缺陷。只有用户页面本身确实表现异常，才能记录 P1/P2/P3。
 
-## Evidence 原则
+## 8. Browser fallback 不等于 contamination
 
-每个 finding 必须来自可复现的可见现象，并至少包含：
+使用 Playwright / Chrome / helper / accessibility / selector 本身：
 
-1. 起始状态；
-2. 正常用户操作步骤；
-3. Observed；
-4. Expected；
-5. 用户影响；
-6. screenshot / visible-state evidence。
+```text
+BLACK_BOX_CONTEXT_CONTAMINATED = NO
+```
 
-不要用“代码大概是……”作为 root cause。黑箱报告只写产品症状；修复阶段由 Codex 再定位源码。
+只有 Work 已经读取普通用户无法看到的内部实现信息，并可能影响后续判断时，才设为 YES。
 
-## 修改隔离
+## 9. 真正的 Browser blocker
 
-多个 GPT Work reviewer 并行运行，必须保持只读/非破坏性。不要互相依赖前一轮的浏览器状态或报告。
+不要因为 in-app Browser 一种接口失败就 block。只有：
 
-如果某项测试需要明显改变公共数据或无法确认是否会覆盖他人状态，标记 `NOT_TESTED_SAFETY_BOUNDARY`，不要尝试。
+```text
+in-app Browser 无法工作
+AND
+合理的真实 Browser UI fallback 也无法工作
+AND
+无法通过任何真实浏览器继续 staging consumer UI
+```
 
-## 截图
+时才：
 
-优先保存：
+```text
+BLOCKED_BY_BROWSER_ENVIRONMENT
+```
 
-- 首屏；
-- finding 发生后的状态；
-- 与前后状态对比时的两个关键状态；
-- responsive / theme 差异。
+## 10. 最终判据
 
-截图应能让没有运行浏览器的人直接理解问题。
+每一个发现只问：
+
+```text
+这个现象是否能够仅通过真实网站的用户界面被观察或触发？
+```
+
+YES -> 可以作为黑盒证据。不要再问：
+
+```text
+是不是恰好由某一个指定 ChatGPT Browser implementation 打开的？
+```
