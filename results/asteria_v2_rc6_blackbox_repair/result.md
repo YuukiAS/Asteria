@@ -2,7 +2,7 @@
 
 ## Status
 
-`STATUS = LOCAL_VERIFICATION_PASS_PENDING_PUBLIC_REFRESH`
+`STATUS = COMPLETE`
 
 Implemented `2.0.0-rc.6` acceptance repair for Architecture readability, root-relative trace truth, explicit trace activation, Evidence/Inspector researcher language, and Advanced/debug separation.
 
@@ -70,15 +70,15 @@ Performance summary from `npm run bench:architecture-g05`:
 
 ## Public Refresh
 
-Public fixed-URL refresh is required after commit and push under `docs/notes/2026-09-12_asteria_acceptance_mode_public_refresh_contract.md`.
+Public fixed-URL refresh completed after commit and push under `docs/notes/2026-09-12_asteria_acceptance_mode_public_refresh_contract.md`.
 
 ```text
 PUBLIC_ACCEPTANCE_URL = https://asteria.httpwwwcardiacnexus-ukb.com/
-PUBLIC_ACCEPTANCE_URL_REFRESHED = PENDING_COMMIT_PUSH
-PUBLIC_ROOT_CHECK = PENDING_COMMIT_PUSH
-PUBLIC_STATUS_CHECK = PENDING_COMMIT_PUSH
-PUBLIC_BROWSER_SMOKE = PENDING_COMMIT_PUSH
-PUBLIC_VERSION = PENDING_COMMIT_PUSH
+PUBLIC_ACCEPTANCE_URL_REFRESHED = YES
+PUBLIC_ROOT_CHECK = PASS
+PUBLIC_STATUS_CHECK = PASS
+PUBLIC_BROWSER_SMOKE = PASS
+PUBLIC_VERSION = 2.0.0-rc.6
 ```
 
 ## Next Action
