@@ -22,6 +22,27 @@ prompts/tasks/<id>_task.md
 
 task 必须小而明确，包含 YAML frontmatter，并写明目标、背景、允许动作、禁止动作、预期产出、停止条件和人工决策点。
 
+## 生成 GPT Work / UI 黑箱验收 prompt
+
+Asteria 的 GPT Work 黑箱浏览规则只有一个 canonical source：
+
+```text
+docs/operations/blackbox-audit/UI_BLACKBOX_BROWSER_CONTRACT.md
+```
+
+ChatGPT 每次为 Asteria 制定、更新、拆分或重跑 GPT Work / Cloud Browser / UI black-box prompt 时，必须：
+
+1. 先读取当前 `UI_BLACKBOX_BROWSER_CONTRACT.md`；
+2. 将**该文件当前全文逐字 inline 到最终发给 GPT Work 的 prompt**，不能只写路径、摘要或“请遵守该文件”；
+3. Work 不需要、也不得访问本仓库来读取 Browser contract；
+4. 不在各 persona prompt 中维护第二套 Browser 规则；如角色说明与 canonical contract 冲突，以 canonical contract 为准，并应先修 prompt；
+5. 允许 in-app Browser 优先，也允许真实浏览器 UI automation fallback；不得仅因使用 Playwright / Chromium / selector / accessibility tree 就判 contamination；
+6. 必须坚持“可以自动操作页面；不能绕过页面”；
+7. 只有 in-app Browser 与合理真实-browser fallback 都无法工作时，才允许 Browser blocker；
+8. 最终 prompt 还必须要求按 `docs/operations/blackbox-audit/AUDIT_RESULT_CONTRACT.md` 的字段返回 `BROWSER_MODE`、`BLACK_BOX_CONTEXT_CONTAMINATED` 与 `BROWSER_BLOCKER`。
+
+任何没有 inline 完整 canonical Browser contract 的所谓 `ready-to-paste GPT Work prompt` 都不算 ready-to-paste，不应交给用户运行。
+
 ## 生成 note
 
 当内容只是研究分析、方案比较、会议记录、读文献总结、想法沉淀或实验复盘时，ChatGPT 应生成：
@@ -42,7 +63,7 @@ docs/wiki/
 
 写入 wiki 前先读 `docs/wiki/index.md`，避免重复页面。新增或大幅更新页面后，同步更新 `docs/wiki/index.md`，并 append `docs/wiki/log.md`。
 
-wiki 仍然不是 Codex 默认任务入口。如果某个 wiki 结论要执行，必须再生成新的 `prompts/tasks/<id>_task.md`。
+wiki 仍然不是 Codex 默认任务入口。如果某个 wiki 结论要执行，必须再生成新的 `prompts/tasks/<next_id>_task.md`。
 
 ## 复盘 result
 
