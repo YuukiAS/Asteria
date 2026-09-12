@@ -43,6 +43,29 @@ ChatGPT 每次为 Asteria 制定、更新、拆分或重跑 GPT Work / Cloud Bro
 
 任何没有 inline 完整 canonical Browser contract 的所谓 `ready-to-paste GPT Work prompt` 都不算 ready-to-paste，不应交给用户运行。
 
+## 人工验收 gate：先 GPT Work，后用户
+
+Asteria 的 release/RC 验收顺序固定为：
+
+```text
+Codex implementation / repair
+  -> automated regression + browser QA
+  -> refresh fixed public URL
+  -> GPT Work black-box campaign
+  -> ChatGPT consolidated triage
+  -> 如有 FAIL/BLOCKED 或 must-fix P2，继续 Codex repair
+  -> 所有 designated GPT Work reviewer PASS
+  -> P0 = 0, P1 = 0, unresolved must-fix P2 = 0
+  -> 用户人工最终验收
+  -> stable release
+```
+
+在 GPT Work gate 通过前，不要要求用户打开页面做人工验收。目标是先让独立 Work 找出明显问题，避免浪费用户时间。
+
+“All reviewers PASS” 指当前 campaign 的所有指定 reviewer 都返回 `AUDIT_RESULT = PASS`。PASS 仍可带少量 P2/P3，但 ChatGPT 必须逐项把 P2 归类为 `must-fix` 或 `accepted/deferred`；只要还有 unresolved must-fix P2，就不能进入人工验收。
+
+若一次 repair 广泛影响 math/layout/theme/state/search/inspector/accessibility 等多个 surface，应重跑完整 campaign，而不是只跑单一 reviewer。窄修复才允许只重跑受影响 reviewer + release red-team。
+
 ## 生成 note
 
 当内容只是研究分析、方案比较、会议记录、读文献总结、想法沉淀或实验复盘时，ChatGPT 应生成：
