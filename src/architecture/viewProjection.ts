@@ -34,6 +34,16 @@ export type ProjectionLayout = {
 }
 
 const presentationCanvas = { width: 1000, height: 620 }
+const defaultSafeInset = 14
+
+type LayoutOptions = {
+  detailLevel?: ArchitectureDetailLevel
+  selectedEntityId?: string
+  traceEntityIds?: Set<string>
+  canvasWidth?: number
+  canvasHeight?: number
+  safeInset?: number
+}
 
 const catTraceOverviewKeys = new Set([
   "Y_raw",
@@ -95,7 +105,7 @@ function projectionByEntity(view: ArchitectureProjectV2["views"][string]) {
   return entries
 }
 
-function isCatTraceArchitectureOverview(project: ArchitectureProjectV2, view: ArchitectureProjectV2["views"][string], options: { detailLevel?: ArchitectureDetailLevel }) {
+function isCatTraceArchitectureOverview(project: ArchitectureProjectV2, view: ArchitectureProjectV2["views"][string], options: LayoutOptions) {
   return view.kind === "architecture" && options.detailLevel === "overview" && project.project.id.includes("cat-trace-frozen-v2")
 }
 
@@ -136,6 +146,32 @@ function evidenceSlots(entityId: string) {
   return slots[entityId]
 }
 
+function clamp(value: number, low: number, high: number) {
+  return Math.max(low, Math.min(high, value))
+}
+
+function measuredCanvas(options: LayoutOptions) {
+  const width = Number.isFinite(options.canvasWidth) && options.canvasWidth ? Math.max(320, options.canvasWidth) : presentationCanvas.width
+  const height = Number.isFinite(options.canvasHeight) && options.canvasHeight ? Math.max(320, options.canvasHeight) : presentationCanvas.height
+  return { width, height }
+}
+
+function clampNodeToCanvas<T extends ProjectionLayoutNode>(node: T, canvas: { width: number; height: number }, safeInset = defaultSafeInset): T {
+  const minX = safeInset + node.width / 2
+  const maxX = canvas.width - safeInset - node.width / 2
+  const minY = safeInset + node.height / 2
+  const maxY = canvas.height - safeInset - node.height / 2
+  const x = maxX >= minX ? clamp(node.x, minX, maxX) : canvas.width / 2
+  const y = maxY >= minY ? clamp(node.y, minY, maxY) : canvas.height / 2
+  return {
+    ...node,
+    x,
+    y,
+    leftPercent: (x / canvas.width) * 100,
+    topPercent: (y / canvas.height) * 100,
+  }
+}
+
 function packFullArchitectureNodes(project: ArchitectureProjectV2, nodes: ProjectionLayoutNode[]) {
   const layout = layoutArchitectureLanes(nodes, (node) => project.entities[node.entityId]?.layer, { width: presentationCanvas.width, minHeight: presentationCanvas.height })
   return {
@@ -148,14 +184,14 @@ function packFullArchitectureNodes(project: ArchitectureProjectV2, nodes: Projec
   }
 }
 
-function packOriginalTraceNodes(nodes: ProjectionLayoutNode[]) {
+function packOriginalTraceNodes(nodes: ProjectionLayoutNode[], canvas: { width: number; height: number }) {
   return nodes.map((node) => {
     const slot = originalTraceSlots(entityKey(node.entityId))
     if (!slot) return node
     return {
       ...node,
-      x: (slot.left / 100) * presentationCanvas.width,
-      y: (slot.top / 100) * presentationCanvas.height,
+      x: (slot.left / 100) * canvas.width,
+      y: (slot.top / 100) * canvas.height,
       leftPercent: slot.left,
       topPercent: slot.top,
       width: slot.width || 132,
@@ -194,7 +230,7 @@ function entityKey(entityId: string) {
   return entityId.split(":").pop() || entityId
 }
 
-function selectDisplayEntityIds(project: ArchitectureProjectV2, viewId: string, options: { detailLevel?: ArchitectureDetailLevel; selectedEntityId?: string; traceEntityIds?: Set<string> } = {}) {
+function selectDisplayEntityIds(project: ArchitectureProjectV2, viewId: string, options: LayoutOptions = {}) {
   const view = project.views[viewId]
   const base = view?.projectedEntityIds || []
   if (!view || view.kind !== "architecture" || options.detailLevel !== "overview" || !project.project.id.includes("cat-trace-frozen-v2")) return base
@@ -215,10 +251,11 @@ function selectDisplayEntityIds(project: ArchitectureProjectV2, viewId: string, 
   return base.filter((entityId) => visible.has(entityId))
 }
 
-export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: string, options: { detailLevel?: ArchitectureDetailLevel; selectedEntityId?: string; traceEntityIds?: Set<string> } = {}): ProjectionLayout {
+export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: string, options: LayoutOptions = {}): ProjectionLayout {
   const view = project.views[viewId]
+  const actualCanvas = measuredCanvas(options)
   if (!view) {
-    return { nodes: [], edges: [], projectedEntityIds: new Set(), viewport: { x: 0, y: 0, zoom: 1 }, canvas: presentationCanvas }
+    return { nodes: [], edges: [], projectedEntityIds: new Set(), viewport: { x: 0, y: 0, zoom: 1 }, canvas: actualCanvas }
   }
 
   const isStableCatOverview = isCatTraceArchitectureOverview(project, view, options)
@@ -247,15 +284,17 @@ export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: st
   const minY = Math.min(...boundsNodes.map((node) => node.projection.position.y), 0)
   const maxY = Math.max(...boundsNodes.map((node) => node.projection.position.y), 1)
 
-  let canvas = presentationCanvas
+  let canvas = actualCanvas
   let nodes = rawNodes.map((node) => {
     const slot = isStableCatOverview ? catTraceOverviewSlots[entityKey(node.entityId)] : undefined
+    const leftPercent = slot?.left ?? normalize(node.projection.position.x, minX, maxX, 10, 88)
+    const topPercent = slot?.top ?? normalize(node.projection.position.y, minY, maxY, 14, 86)
     return {
       ...node,
-      x: slot ? (slot.left / 100) * presentationCanvas.width : (normalize(node.projection.position.x, minX, maxX, 10, 88) / 100) * presentationCanvas.width,
-      y: slot ? (slot.top / 100) * presentationCanvas.height : (normalize(node.projection.position.y, minY, maxY, 14, 86) / 100) * presentationCanvas.height,
-      leftPercent: slot?.left ?? normalize(node.projection.position.x, minX, maxX, 10, 88),
-      topPercent: slot?.top ?? normalize(node.projection.position.y, minY, maxY, 14, 86),
+      x: (leftPercent / 100) * canvas.width,
+      y: (topPercent / 100) * canvas.height,
+      leftPercent,
+      topPercent,
       width: slot?.width ?? (isStableCatOverview ? 104 : node.projection.size?.width || 176),
       height: slot?.height ?? (isStableCatOverview ? 78 : node.projection.size?.height || 78),
     }
@@ -266,12 +305,15 @@ export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: st
     nodes = fullLayout.nodes
     canvas = fullLayout.canvas
   } else if (view.kind === "architecture" && project.project.id.includes("original-trace")) {
-    nodes = packOriginalTraceNodes(nodes)
+    nodes = packOriginalTraceNodes(nodes, canvas)
   } else if (view.kind === "evidence") {
     nodes = nodes.map((node) => {
       const slot = evidenceSlots(node.entityId)
-      return slot ? { ...node, x: (slot.left / 100) * presentationCanvas.width, y: (slot.top / 100) * presentationCanvas.height, leftPercent: slot.left, topPercent: slot.top, width: slot.width || node.width, height: slot.height || node.height } : node
+      return slot ? { ...node, x: (slot.left / 100) * canvas.width, y: (slot.top / 100) * canvas.height, leftPercent: slot.left, topPercent: slot.top, width: slot.width || node.width, height: slot.height || node.height } : node
     })
+  }
+  if (!(view.kind === "architecture" && options.detailLevel === "full")) {
+    nodes = nodes.map((node) => clampNodeToCanvas(node, canvas, options.safeInset ?? defaultSafeInset))
   }
   const nodeByEntityId = new Map(nodes.map((node) => [node.entityId, node]))
   const nodeRects = nodes.map((node) => nodeRect(node))
@@ -313,7 +355,7 @@ export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: st
     viewport: {
       x: view.kind === "architecture" && options.detailLevel === "full" ? 0 : view.viewport?.x || 0,
       y: view.viewport?.y || 0,
-      zoom: view.kind === "architecture" && options.detailLevel === "full" ? Math.min(0.82, presentationCanvas.height / canvas.height) : view.viewport?.zoom || 1,
+      zoom: view.kind === "architecture" && options.detailLevel === "full" ? Math.min(0.82, presentationCanvas.height / canvas.height) : options.canvasWidth || options.canvasHeight ? 1 : view.viewport?.zoom || 1,
     },
     canvas,
   }

@@ -37,8 +37,8 @@ try {
   const workspaceSource = await read("src/components/ArchitectureWorkspace.tsx")
   const styleSource = await read("src/styles/index.css")
 
-  assert(packageJson.version === "2.0.0-rc.13", "package.json must declare 2.0.0-rc.13.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.13"'), "App shell must display 2.0.0-rc.13.")
+  assert(packageJson.version === "2.0.0-rc.14", "package.json must declare 2.0.0-rc.14.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.14"'), "App shell must display 2.0.0-rc.14.")
   assert(packageJson.scripts["test:architecture-rc12"] === 'node scripts/validate-architecture-rc12.mjs && playwright test --grep "RC12"', "package.json must expose RC.12 focused validation.")
   assert(packageJson.scripts["test:regression"].includes("test:architecture-rc12"), "Cumulative regression must include RC.12.")
 
@@ -59,7 +59,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.13",
+          version: "2.0.0-rc.14",
           edgeStrokeSystem: "css-px-non-scaling-stroke",
           architectureBaseEdgeCssPx: 1.35,
           architectureActiveEdgeCssPx: 1.9,

@@ -668,11 +668,9 @@ body {
   }
 
   .lineage-presentation {
-    @apply absolute left-1/2 top-1/2 overflow-visible;
-    width: var(--provenance-width);
-    height: var(--provenance-height);
-    transform: translate(-50%, -50%) scale(0.8);
-    transform-origin: center;
+    @apply absolute inset-0 overflow-visible;
+    width: 100%;
+    height: 100%;
   }
 
   .lineage-presentation-connectors {

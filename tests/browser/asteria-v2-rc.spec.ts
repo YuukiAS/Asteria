@@ -73,6 +73,7 @@ async function waitForProjectionGeometrySettled(page: Page) {
 }
 
 async function assertNoNodeOverlap(page: Page, gap = 10) {
+  await waitForProjectionGeometrySettled(page)
   const rects = await visibleRects(page, ".architecture-map-node")
   for (let i = 0; i < rects.length; i += 1) {
     for (let j = i + 1; j < rects.length; j += 1) {
@@ -218,6 +219,12 @@ async function assertLineagePresentationGeometry(page: Page) {
   await assertNoSelectorOverlap(page, ".lineage-presentation-card", 10)
   await assertNoSelectorOverlap(page, "[data-lineage-chip='true']", 6)
   await assertNoRelationChipCardCollision(page)
+  const metrics = await lineageRoutingMetrics(page)
+  expect(metrics.connectorTouchTarget).toBe(true)
+  expect(metrics.endpointErrorMax).toBeLessThanOrEqual(3)
+  expect(metrics.floatingArrowheadCount).toBe(0)
+  expect(metrics.portCollapseCount).toBe(0)
+  expect(metrics.chipPathAssociation).toBe(true)
   const target = await page.getByTestId("lineage-target-card").boundingBox()
   const canvas = await page.getByTestId("central-lineage-canvas").boundingBox()
   expect(target).not.toBeNull()
@@ -292,25 +299,118 @@ async function lineageRoutingMetrics(page: Page) {
     const presentation = document.querySelector<HTMLElement>("[data-testid='lineage-presentation']")
     const targetRect = target?.getBoundingClientRect()
     const presentationRect = presentation?.getBoundingClientRect()
-    const ports = [...document.querySelectorAll<SVGPathElement>("[data-lineage-connector]")].map((connector) => ({
-      x: Number(connector.dataset.targetX),
-      y: Number(connector.dataset.targetY),
-    }))
-    const portsInsideTarget = Boolean(targetRect && presentationRect) && ports.every((port) => {
-      const screenX = presentationRect!.left + port.x * (presentationRect!.width / 1000)
-      const screenY = presentationRect!.top + port.y * (presentationRect!.height / 620)
-      return screenX >= targetRect!.left - 2 && screenX <= targetRect!.right + 2 && screenY >= targetRect!.top - 2 && screenY <= targetRect!.bottom + 2
+    const connectorData = [...document.querySelectorAll<SVGPathElement>("[data-lineage-connector]")].map((connector) => {
+      const ctm = connector.getScreenCTM()
+      const length = connector.getTotalLength()
+      const endpoint = connector.getPointAtLength(length)
+      const screenEndpoint = ctm ? new DOMPoint(endpoint.x, endpoint.y).matrixTransform(ctm) : new DOMPoint(endpoint.x, endpoint.y)
+      return {
+        sourceId: connector.dataset.sourceId || "",
+        x: screenEndpoint.x,
+        y: screenEndpoint.y,
+      }
     })
-    const connectorTouchTarget = Boolean(targetRect && presentationRect) && ports.every((port) => {
-      const screenX = presentationRect!.left + port.x * (presentationRect!.width / 1000)
-      return Math.abs(screenX - targetRect!.left) <= 3
+    const endpointErrors = connectorData.map((port) => Math.abs(port.x - (targetRect?.left || 0)))
+    const endpointErrorMax = endpointErrors.length ? Math.max(...endpointErrors) : Infinity
+    const floatingArrowheadCount = connectorData.filter((port) => {
+      if (!targetRect) return true
+      return Math.abs(port.x - targetRect.left) > 3 || port.y < targetRect.top + 6 || port.y > targetRect.bottom - 6
+    }).length
+    const sortedPorts = connectorData.map((port) => port.y).sort((a, b) => a - b)
+    let portCollapseCount = 0
+    let minPortSeparation = Infinity
+    for (let i = 0; i < sortedPorts.length - 1; i += 1) {
+      const gap = sortedPorts[i + 1] - sortedPorts[i]
+      minPortSeparation = Math.min(minPortSeparation, gap)
+      if (gap < 12) portCollapseCount += 1
+    }
+    const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y)
+    const chipDistances = [...document.querySelectorAll<HTMLElement>("[data-lineage-chip='true']")].map((chip) => {
+      const sourceId = chip.dataset.sourceId || ""
+      const path = document.querySelector<SVGPathElement>(`[data-lineage-connector][data-source-id="${CSS.escape(sourceId)}"]`)
+      const chipRect = chip.getBoundingClientRect()
+      const chipPoint = { x: chipRect.left + chipRect.width / 2, y: chipRect.top + chipRect.height / 2 }
+      const ctm = path?.getScreenCTM()
+      const length = path?.getTotalLength() || 0
+      const samples = Array.from({ length: 25 }, (_, index) => {
+        const point = path?.getPointAtLength((length * index) / 24)
+        return point && ctm ? new DOMPoint(point.x, point.y).matrixTransform(ctm) : null
+      }).filter(Boolean) as DOMPoint[]
+      return samples.length ? Math.min(...samples.map((sample) => distance(chipPoint, sample))) : Infinity
     })
+    const maxChipDistance = chipDistances.length ? Math.max(...chipDistances) : Infinity
+    const connectorTouchTarget = endpointErrorMax <= 3 && floatingArrowheadCount === 0
+    const portsInsideTarget = Boolean(targetRect) && connectorData.every((port) => port.x >= targetRect!.left - 3 && port.x <= targetRect!.right + 3 && port.y >= targetRect!.top + 6 && port.y <= targetRect!.bottom - 6)
+    const targetSafeMargin = Boolean(targetRect && presentationRect) ? presentationRect!.right - targetRect!.right : -Infinity
     return {
-      connectorCount: ports.length,
+      connectorCount: connectorData.length,
       connectorTouchTarget,
       portsInsideTarget,
+      endpointErrorMax,
+      floatingArrowheadCount,
+      portCollapseCount,
+      minPortSeparation,
+      maxChipDistance,
+      chipPathAssociation: maxChipDistance <= 24,
+      targetSafeMargin,
     }
   })
+}
+
+async function architectureSafeBounds(page: Page, safeInset = 8) {
+  await waitForProjectionGeometrySettled(page)
+  const canvas = await page.getByTestId("architecture-projection-canvas").boundingBox()
+  expect(canvas).not.toBeNull()
+  const nodes = await visibleRects(page, ".architecture-map-node")
+  const failures = nodes.filter((node) => !canvas || node.left < canvas.x + safeInset || node.right > canvas.x + canvas.width - safeInset || node.top < canvas.y + safeInset || node.bottom > canvas.y + canvas.height - safeInset)
+  const rightMargins = nodes.map((node) => (canvas ? canvas.x + canvas.width - node.right : -Infinity))
+  return {
+    clippedCount: failures.length,
+    minRightMargin: rightMargins.length ? Math.min(...rightMargins) : Infinity,
+    nodeCount: nodes.length,
+  }
+}
+
+async function renderGenericProvenanceFixture(page: Page, sourceCount: 3 | 4 | 6, width: number) {
+  await page.goto("/")
+  const body = await page.evaluate(
+    async ({ sourceCount, width }) => {
+      const presentation = (await import("/src/architecture/graphPresentation.ts")) as any
+      const allSources = [
+        { id: "s1", label: "First source", copy: "Source evidence", chips: ["Extends"], relationIds: ["r1"], relationType: "extends" },
+        { id: "s2", label: "Second source", copy: "Method prior", chips: ["Preserves", "Borrows"], relationIds: ["r2", "r3"], relationType: "preserves" },
+        { id: "s3", label: "Third source", copy: "Inference method", chips: ["Computes"], relationIds: ["r4"], relationType: "computes" },
+        { id: "s4", label: "Fourth source", copy: "Sparse prior", chips: ["Shrinks"], relationIds: ["r5"], relationType: "shrinks" },
+        { id: "s5", label: "Fifth source", copy: "Dataset evidence", chips: ["Validates"], relationIds: ["r6"], relationType: "validates" },
+        { id: "s6", label: "Sixth source", copy: "Negative control", chips: ["Constrains"], relationIds: ["r7"], relationType: "constrains" },
+      ].slice(0, sourceCount)
+      const layout = presentation.layoutProvenanceFlow(allSources, { width, height: 620, sourceWidth: 218, targetWidth: 228 })
+      const paths = layout.sources
+        .map((source: any) => `<path class="lineage-presentation-connector" d="${source.path}" data-lineage-connector="${source.id}" data-source-id="${source.id}" data-target-id="target" data-target-x="${source.targetPort.x}" data-target-y="${source.targetPort.y}" />`)
+        .join("")
+      const sources = layout.sources
+        .map((source: any) => `<div class="lineage-presentation-card lineage-presentation-source-card" data-lineage-card="source" data-entity-id="${source.id}" style="left:${source.rect.x}px;top:${source.rect.y}px;width:${source.rect.width}px;min-height:${source.rect.height}px"><strong>${source.label}</strong><span>${source.copy}</span></div>`)
+        .join("")
+      const chips = layout.sources
+        .flatMap((source: any) => source.chipsLayout.map((chip: any) => `<span class="lineage-relation-chip" data-lineage-chip="true" data-source-id="${source.id}" style="left:${chip.x}px;top:${chip.y}px">${chip.label}</span>`))
+        .join("")
+      const target = `<div class="lineage-presentation-card lineage-presentation-target-card" data-testid="lineage-target-card" data-lineage-card="target" data-entity-id="target" style="left:${layout.target.x}px;top:${layout.target.y}px;width:${layout.target.width}px;min-height:${layout.target.height}px"><strong>Generic target</strong><span>${sourceCount} sources</span></div>`
+      return { html: `<svg class="lineage-presentation-connectors" viewBox="0 0 ${layout.width} ${layout.height}" aria-hidden="true">${paths}</svg><div class="lineage-presentation-sources">${sources}</div><div class="lineage-presentation-chip-layer">${chips}</div>${target}`, height: layout.height }
+    },
+    { sourceCount, width },
+  )
+  await page.setContent(`<!doctype html><html><head><style>
+    body { margin: 0; background: #111827; font-family: Inter, system-ui, sans-serif; }
+    .fixture-stage { position: relative; width: ${width}px; height: ${body.height}px; margin: 40px auto; border: 1px solid #334155; background: #0f172a; overflow: hidden; }
+    .lineage-presentation { position: absolute; inset: 0; overflow: visible; width: 100%; height: 100%; }
+    .lineage-presentation-connectors { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 10; pointer-events: none; }
+    .lineage-presentation-connector { fill: none; stroke: #38bdf8; stroke-linecap: round; stroke-width: 1.5px; vector-effect: non-scaling-stroke; opacity: .84; }
+    .lineage-presentation-sources, .lineage-presentation-chip-layer { position: absolute; inset: 0; }
+    .lineage-presentation-card { position: absolute; display: grid; align-content: center; gap: 4px; transform: translate(-50%, -50%); border: 1px solid #64748b; border-radius: 6px; background: #1e293b; color: #e5edf7; padding: 10px 14px; text-align: left; box-sizing: border-box; }
+    .lineage-presentation-card strong { font-size: 13px; line-height: 18px; }
+    .lineage-presentation-card span { font-size: 11px; color: #cbd5e1; }
+    .lineage-relation-chip { position: absolute; transform: translate(-50%, -50%); border: 1px solid #475569; border-radius: 999px; background: #162033; color: #cbd5e1; padding: 4px 8px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+  </style></head><body><div class="fixture-stage"><div class="lineage-presentation" data-testid="lineage-presentation">${body.html}</div></div></body></html>`)
 }
 
 async function nodeCenters(page: Page) {
@@ -346,6 +446,7 @@ async function assertStableSharedNodeCenters(before: Map<string, Rect>, after: M
 }
 
 async function computedStrokeWidth(page: Page, selector: string) {
+  await page.waitForTimeout(180)
   const value = await page.locator(selector).first().evaluate((element) => Number.parseFloat(getComputedStyle(element).strokeWidth))
   expect(Number.isFinite(value)).toBe(true)
   return value
@@ -374,7 +475,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/")
   await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
   await expect(page.getByTestId("asteria-v2-topbar")).toBeVisible()
-  await expect(page.getByText("2.0.0-rc.13")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.14")).toBeVisible()
   await expect(page.getByTestId("current-project")).toContainText("Project")
   await expect(page.getByTestId("current-project")).toContainText("CAT-TRACE")
   await expect(page.getByTestId("current-view")).toContainText("Architecture")
@@ -765,6 +866,7 @@ test("RC8 light trace contrast keeps muted context readable without flattening a
   await page.getByTestId("trace-direction").selectOption("upstream")
   await page.getByTestId("enable-trace").click()
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-trace-enabled", "true")
+  await page.waitForTimeout(180)
 
   const mutedContextEdge = page.locator(".architecture-map-edge-muted:not(.architecture-map-edge-selected):not(.architecture-map-edge-trace)").first()
   await expect(mutedContextEdge).toBeVisible()
@@ -1305,4 +1407,74 @@ test("RC13 generic graph fixture validates lane layout, fan-in ports, and proven
   expect(metrics.provenanceSourceCount).toBe(6)
   expect(metrics.provenanceChipCollision).toBe(0)
   expect(metrics.provenanceFloatingArrowhead).toBe(0)
+})
+
+test("RC14 responsive coordinate space keeps Lineage endpoints and Architecture cards in rendered bounds", async ({ page }) => {
+  await fs.mkdir(screenshotDir, { recursive: true })
+  await page.setViewportSize({ width: 1536, height: 864 })
+  await page.getByTestId("model-cat-trace-frozen-v2").click()
+  await page.getByTestId("detail-overview").click()
+  let safe = await architectureSafeBounds(page)
+  expect(safe.clippedCount).toBe(0)
+  expect(safe.minRightMargin).toBeGreaterThanOrEqual(8)
+
+  await page.setViewportSize({ width: 1366, height: 768 })
+  if ((await page.locator("html").getAttribute("data-theme")) !== "light") await page.getByTestId("topbar-toggle-theme").click()
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light")
+  safe = await architectureSafeBounds(page)
+  expect(safe.clippedCount).toBe(0)
+  expect(safe.minRightMargin).toBeGreaterThanOrEqual(8)
+  const beforeSelection = await nodeCenters(page)
+  await page.getByTestId("symbol-gamma_g").click()
+  await page.getByTestId("symbol-betaU_gh").click()
+  await page.getByTestId("enable-trace").click()
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-trace-enabled", "true")
+  safe = await architectureSafeBounds(page)
+  expect(safe.clippedCount).toBe(0)
+  expect(safe.minRightMargin).toBeGreaterThanOrEqual(8)
+  await assertStableSharedNodeCenters(beforeSelection, await nodeCenters(page))
+
+  await page.setViewportSize({ width: 1536, height: 864 })
+  safe = await architectureSafeBounds(page)
+  expect(safe.clippedCount).toBe(0)
+  expect(safe.minRightMargin).toBeGreaterThanOrEqual(8)
+
+  await page.getByTestId("view-lineage").click()
+  await page.setViewportSize({ width: 1536, height: 864 })
+  await assertLineagePresentationGeometry(page)
+  let lineageMetrics = await lineageRoutingMetrics(page)
+  expect(lineageMetrics.endpointErrorMax).toBeLessThanOrEqual(3)
+  expect(lineageMetrics.targetSafeMargin).toBeGreaterThanOrEqual(48)
+  await page.screenshot({ path: path.join(screenshotDir, "rc14-lineage-1536.png"), fullPage: false })
+
+  await page.setViewportSize({ width: 1366, height: 768 })
+  await assertLineagePresentationGeometry(page)
+  lineageMetrics = await lineageRoutingMetrics(page)
+  expect(lineageMetrics.endpointErrorMax).toBeLessThanOrEqual(3)
+  expect(lineageMetrics.targetSafeMargin).toBeGreaterThanOrEqual(48)
+  await page.screenshot({ path: path.join(screenshotDir, "rc14-lineage-1366.png"), fullPage: false })
+
+  await page.setViewportSize({ width: 1536, height: 864 })
+  await assertLineagePresentationGeometry(page)
+  lineageMetrics = await lineageRoutingMetrics(page)
+  expect(lineageMetrics.endpointErrorMax).toBeLessThanOrEqual(3)
+  await page.screenshot({ path: path.join(screenshotDir, "rc14-lineage-resize-return-1536.png"), fullPage: false })
+
+  let genericEndpointErrorMax = 0
+  let genericPortCollapseCount = 0
+  for (const sourceCount of [3, 4, 6] as const) {
+    for (const width of [760, 1040]) {
+      await page.setViewportSize({ width: width + 120, height: 740 })
+      await renderGenericProvenanceFixture(page, sourceCount, width)
+      const metrics = await lineageRoutingMetrics(page)
+      genericEndpointErrorMax = Math.max(genericEndpointErrorMax, metrics.endpointErrorMax)
+      genericPortCollapseCount += metrics.portCollapseCount
+      expect(metrics.endpointErrorMax).toBeLessThanOrEqual(3)
+      expect(metrics.floatingArrowheadCount).toBe(0)
+      expect(metrics.portCollapseCount).toBe(0)
+      expect(metrics.chipPathAssociation).toBe(true)
+    }
+  }
+  expect(genericEndpointErrorMax).toBeLessThanOrEqual(3)
+  expect(genericPortCollapseCount).toBe(0)
 })

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0-rc.14 - Responsive Coordinate Space
+
+- Unified Lineage provenance rendering around container-driven CSS-pixel geometry so SVG connectors, source/target cards, and relation chips share the same measured coordinate space through viewport resize.
+- Added actual-canvas safe bounds for Architecture Overview and related research projections so visible cards stay inside the rendered canvas at 1366px with the inspector open.
+- Added RC.14 focused browser geometry coverage for SVG endpoint-to-target contact, source-count port separation, resize alignment, and rendered Architecture safe margins.
+
 ## 2.0.0-rc.13 - Graph Presentation Foundation
 
 - Added a generic graph-presentation helper for lane-aware Architecture Full model layout, reusable card-boundary ports, and multi-input fan-in routing without CAT-TRACE example-specific hardcoding.

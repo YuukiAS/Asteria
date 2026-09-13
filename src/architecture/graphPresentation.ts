@@ -190,7 +190,7 @@ function routeOnObstacleGrid(sourcePort: BoundaryPort, targetPort: BoundaryPort,
   }
 
   if (!visited.has(endKey)) return null
-  const points = [targetPort]
+  const points: Array<{ x: number; y: number }> = [targetPort]
   let cursor = endKey
   while (cursor !== startKey) {
     cursor = previous.get(cursor) || startKey
@@ -411,15 +411,16 @@ export function layoutProvenanceFlow(sources: readonly ProvenanceSource[], optio
   const width = options.width || 1000
   const height = options.height || 620
   const sourceWidth = options.sourceWidth || 250
-  const sourceHeight = options.sourceHeight || 122
   const targetWidth = options.targetWidth || 260
-  const targetHeight = options.targetHeight || 104
-  const sourceX = 165
-  const target: GraphRect = { id: "provenance-target", x: width - 188, y: height / 2, width: targetWidth, height: targetHeight }
   const topPad = 76
   const bottomPad = 76
   const available = height - topPad - bottomPad
   const step = sources.length <= 1 ? 0 : available / (sources.length - 1)
+  const sourceHeight = Math.min(options.sourceHeight || 122, sources.length <= 1 ? options.sourceHeight || 122 : Math.max(76, step - 14))
+  const targetHeight = Math.min(Math.max(options.targetHeight || 104, sources.length * 22), Math.max(104, height - topPad - bottomPad))
+  const sidePad = Math.min(76, Math.max(42, width * 0.06))
+  const sourceX = sidePad + sourceWidth / 2
+  const target: GraphRect = { id: "provenance-target", x: width - sidePad - targetWidth / 2, y: height / 2, width: targetWidth, height: targetHeight }
 
   const items = sources.map((source, index) => {
     const rect: GraphRect = {
@@ -434,14 +435,22 @@ export function layoutProvenanceFlow(sources: readonly ProvenanceSource[], optio
     const targetPort: BoundaryPort = { x: target.x - target.width / 2, y: targetY, side: "left" }
     const midX = sourcePort.x + (targetPort.x - sourcePort.x) * 0.56
     const path = `M ${sourcePort.x.toFixed(2)} ${sourcePort.y.toFixed(2)} C ${midX.toFixed(2)} ${sourcePort.y.toFixed(2)}, ${midX.toFixed(2)} ${targetPort.y.toFixed(2)}, ${targetPort.x.toFixed(2)} ${targetPort.y.toFixed(2)}`
-    const chipAnchorX = sourcePort.x + (targetPort.x - sourcePort.x) * 0.38
-    const chipAnchorY = sourcePort.y + (targetPort.y - sourcePort.y) * 0.5
-    const chipGap = 31
-    const chipsLayout = source.chips.map((label, chipIndex) => ({
-      label,
-      x: chipAnchorX + (chipIndex - (source.chips.length - 1) / 2) * 12,
-      y: chipAnchorY + (chipIndex - (source.chips.length - 1) / 2) * chipGap,
-    }))
+    const cubicPoint = (t: number) => {
+      const u = 1 - t
+      return {
+        x: u ** 3 * sourcePort.x + 3 * u ** 2 * t * midX + 3 * u * t ** 2 * midX + t ** 3 * targetPort.x,
+        y: u ** 3 * sourcePort.y + 3 * u ** 2 * t * sourcePort.y + 3 * u * t ** 2 * targetPort.y + t ** 3 * targetPort.y,
+      }
+    }
+    const chipsLayout = source.chips.map((label, chipIndex) => {
+      const offset = chipIndex - (source.chips.length - 1) / 2
+      const point = cubicPoint(0.42 + offset * 0.34)
+      return {
+        label,
+        x: point.x,
+        y: point.y + offset * 32,
+      }
+    })
     return { ...source, rect, path, sourcePort, targetPort, chipsLayout }
   })
 

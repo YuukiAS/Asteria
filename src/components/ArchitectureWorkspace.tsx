@@ -1,5 +1,5 @@
 import { GitBranch, Layers3, Maximize2, Minus, Move, Network, Plus, ShieldCheck } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react"
 import { canonicalTraceProjects } from "../architecture/fixtures/canonicalTraceFixtures"
 import { multiViewIds } from "../architecture/fixtures/multiViewTraceProject"
 import { layoutProvenanceFlow } from "../architecture/graphPresentation"
@@ -115,25 +115,69 @@ const lineageCards = [
   { id: "entity:lineage:mgp", label: "Sparse Bayesian infinite factor / MGP", copy: "Factor shrinkage", chips: ["Factor shrinkage"], relationIds: ["relation:lineage:mgp-cat"], relationType: "uses_methodological_component_from" },
 ] as const
 
+type PresentationSize = { width: number; height: number }
+
+const fallbackPresentationSize: PresentationSize = { width: 1000, height: 620 }
+
+function useElementSize<T extends HTMLElement>(fallback: PresentationSize) {
+  const [element, setElement] = useState<T | null>(null)
+  const [size, setSize] = useState(fallback)
+
+  useLayoutEffect(() => {
+    if (!element) return undefined
+
+    const commitSize = (width: number, height: number) => {
+      const next = {
+        width: Math.max(320, Number(width.toFixed(2))),
+        height: Math.max(320, Number(height.toFixed(2))),
+      }
+      setSize((current) => (Math.abs(current.width - next.width) < 0.5 && Math.abs(current.height - next.height) < 0.5 ? current : next))
+    }
+    const measure = () => {
+      const rect = element.getBoundingClientRect()
+      commitSize(rect.width, rect.height)
+    }
+
+    measure()
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (!entry) return
+      commitSize(entry.contentRect.width, entry.contentRect.height)
+    })
+    observer.observe(element)
+    window.addEventListener("resize", measure)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener("resize", measure)
+    }
+  }, [element])
+
+  return [setElement, size] as const
+}
+
 function LineagePresentation({
   project,
   selectedEntityId,
   onSelectEntity,
+  canvasSize,
 }: {
   project: ArchitectureProjectV2
   selectedEntityId: string
   onSelectEntity: (entityId: string) => void
+  canvasSize: PresentationSize
 }) {
   const targetId = "entity:lineage:cat-trace"
-  const provenanceLayout = useMemo(() => layoutProvenanceFlow(lineageCards), [])
+  const provenanceLayout = useMemo(() => layoutProvenanceFlow(lineageCards, canvasSize), [canvasSize.height, canvasSize.width])
   const targetRect = provenanceLayout.target
   return (
     <div
       className="lineage-presentation"
       data-testid="lineage-presentation"
+      data-layout-width={provenanceLayout.width.toFixed(2)}
+      data-layout-height={provenanceLayout.height.toFixed(2)}
       style={{ "--provenance-width": `${provenanceLayout.width}px`, "--provenance-height": `${provenanceLayout.height}px` } as CSSProperties}
     >
-      <svg className="lineage-presentation-connectors" viewBox={`0 0 ${provenanceLayout.width} ${provenanceLayout.height}`} preserveAspectRatio="none" aria-hidden="true">
+      <svg className="lineage-presentation-connectors" viewBox={`0 0 ${provenanceLayout.width} ${provenanceLayout.height}`} aria-hidden="true">
         <defs>
           <marker id="lineage-presentation-arrow" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="8.2" refY="4.5" orient="auto">
             <path d="M0,0 L9,4.5 L0,9 z" />
@@ -213,8 +257,9 @@ export function ArchitectureWorkspace() {
   const [readingZoom, setReadingZoom] = useState(1)
   const [readingPan, setReadingPan] = useState({ x: 0, y: 0 })
   const [panMode, setPanMode] = useState(false)
+  const [setCanvasElement, canvasSize] = useElementSize<HTMLDivElement>(fallbackPresentationSize)
   const panStartRef = useRef<{ pointerId: number; startX: number; startY: number; panX: number; panY: number } | null>(null)
-  const layout = useMemo(() => buildProjectionLayout(project, activeViewId, { detailLevel, selectedEntityId, traceEntityIds: traceEnabled ? trace.entityIds : undefined }), [activeViewId, detailLevel, project, selectedEntityId, trace.entityIds, traceEnabled])
+  const layout = useMemo(() => buildProjectionLayout(project, activeViewId, { detailLevel, selectedEntityId, traceEntityIds: traceEnabled ? trace.entityIds : undefined, canvasWidth: canvasSize.width, canvasHeight: canvasSize.height }), [activeViewId, canvasSize.height, canvasSize.width, detailLevel, project, selectedEntityId, trace.entityIds, traceEnabled])
   const diff = useMemo(() => diffOriginalTraceToCatTrace(canonicalTraceProjects["original-trace"], canonicalTraceProjects["cat-trace-frozen-v2"]), [])
   const isArchitecture = activeViewId === multiViewIds.architecture
   const isLineage = activeViewId === multiViewIds.lineage
@@ -341,6 +386,7 @@ export function ArchitectureWorkspace() {
         ) : null}
 
         <div
+          ref={setCanvasElement}
           className={`architecture-workspace-canvas ${!isArchitecture ? "architecture-workspace-research-canvas" : ""} ${canUseReadingControls && panMode ? "architecture-workspace-canvas-pannable" : ""}`}
           data-testid={isArchitecture ? "architecture-projection-canvas" : isLineage ? "central-lineage-canvas" : "central-evidence-canvas"}
           data-projected-entity-count={layout.nodes.length}
@@ -354,7 +400,7 @@ export function ArchitectureWorkspace() {
           onPointerCancel={stopCanvasPan}
         >
           {isLineage ? (
-            <LineagePresentation project={project} selectedEntityId={selectedEntityId} onSelectEntity={setSelectedEntityId} />
+            <LineagePresentation project={project} selectedEntityId={selectedEntityId} onSelectEntity={setSelectedEntityId} canvasSize={canvasSize} />
           ) : (
             <div
               className="architecture-projection-layer"
