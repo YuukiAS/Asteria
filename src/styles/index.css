@@ -1606,24 +1606,26 @@ body {
   gap: 8px;
 }
 
-.asteria-skip-links a {
-  position: relative;
-  transform: translateY(-160%);
-  border: 1px solid rgb(var(--color-accent));
-  border-radius: 6px;
-  background: rgb(var(--color-panel));
-  padding: 6px 9px;
-  color: rgb(var(--color-accent));
-  font-size: 12px;
-  font-weight: 700;
-  text-decoration: none;
-  transition: transform 120ms ease;
-}
+  .asteria-skip-links a {
+    position: relative;
+    border: 1px solid rgb(var(--color-accent));
+    border-radius: 6px;
+    background: rgb(var(--color-panel));
+    padding: 6px 9px;
+    color: rgb(var(--color-accent));
+    font-size: 12px;
+    font-weight: 700;
+    opacity: 0;
+    pointer-events: none;
+    text-decoration: none;
+    transition: opacity 120ms ease;
+  }
 
   .asteria-skip-links:focus-within a,
   .asteria-skip-links a:focus,
   .asteria-skip-links a:focus-visible {
-    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
   }
 
 .inspector-shell {

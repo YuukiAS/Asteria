@@ -217,8 +217,8 @@ function AsteriaV2Shell() {
   return (
     <div className="asteria-v2-shell" data-testid="asteria-v2-root-shell">
       <nav className="asteria-skip-links" aria-label="Keyboard shortcuts">
-        <a href="#asteria-canvas" onClick={(event) => { event.preventDefault(); focusSkipTarget("#asteria-canvas") }}>Skip to canvas</a>
-        <a href="#asteria-inspector" onClick={(event) => { event.preventDefault(); focusSkipTarget("#asteria-inspector") }}>Skip to inspector</a>
+        <a href="#asteria-canvas" tabIndex={0} onClick={(event) => { event.preventDefault(); focusSkipTarget("#asteria-canvas") }}>Skip to canvas</a>
+        <a href="#asteria-inspector" tabIndex={0} onClick={(event) => { event.preventDefault(); focusSkipTarget("#asteria-inspector") }}>Skip to inspector</a>
       </nav>
       <AsteriaV2TopBar theme={theme} onToggleTheme={toggleTheme} onToggleInspector={() => setSidebarCollapsed(!isSidebarCollapsed)} onOpenInspector={() => setSidebarCollapsed(false)} inspectorCollapsed={isSidebarCollapsed} />
       <div className="asteria-v2-main">

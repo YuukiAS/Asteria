@@ -28,6 +28,7 @@ Implemented the narrow `2.0.0-rc.7` release polish for W01/W05/W06 without chang
 - Improved 1366 light-theme trace readability for muted context nodes/edges and active relation labels, including higher label opacity and halo/stroke styling for selected/trace relations.
 - Improved Project/View/Model label-value spacing in the topbar and context helper.
 - Updated RC.7 browser and static regression coverage, public smoke coverage, version docs, and changelog.
+- Repaired the first public smoke finding where the fixed URL initially skipped past transparent skip links; skip anchors now remain in the viewport with standard `tabIndex={0}` anchor semantics and become visible on focus.
 
 ## Scope Guard
 
@@ -69,9 +70,9 @@ Performance summary from `npm run bench:architecture-g05`:
   "entityCount": 2200,
   "relationCount": 6200,
   "visibleProjectionCount": 260,
-  "indexAverageMs": 2.879,
-  "traceAverageMs": 3.15,
-  "layerFocusAverageMs": 4.256
+  "indexAverageMs": 2.891,
+  "traceAverageMs": 2.845,
+  "layerFocusAverageMs": 3.927
 }
 ```
 
