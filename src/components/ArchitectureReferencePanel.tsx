@@ -109,6 +109,65 @@ function whyEntityMatters(project: ArchitectureProjectV2, entity?: StatisticalEn
   return `${entity.label} sits in the ${readableStatus(entity.layer)} layer with ${upstreamText} and ${downstreamText}.${symbolText}`
 }
 
+function evidenceWhyEntityMatters(entity?: StatisticalEntity, relations: TypedRelation[] = []) {
+  if (!entity) return "Select a claim, evidence item, dataset, or limitation to inspect its closure status."
+  const hasPending = relations.some((relation) => relation.type === "pending") || entity.constraints?.some((constraint) => constraint.toLowerCase().includes("pending"))
+  const hasLimit = relations.some((relation) => relation.type === "limited_by")
+  const hasSupport = relations.some((relation) => ["theoretically_supports", "validates_implementation", "stress_tests", "supports", "tests", "validated_on"].includes(relation.type))
+  if (entity.kind === "claim" || entity.kind === "theorem") {
+    if (entity.id.includes("tail-calibration")) return "This claim protects the TRACE extreme-value tail calibration inside CAT-TRACE; it has theoretical support, while real-data closure is still explicitly pending."
+    if (entity.id.includes("open-tail-response")) return "This is the core CAT-TRACE response decomposition: shared response, group deviation, and open-tail residual are separated without claiming empirical closure."
+    if (entity.id.includes("zero-slots")) return "This keeps anonymous all-zero open-tail slots in the likelihood story instead of treating them as disposable empty columns."
+    if (entity.id.includes("marked-discovery")) return "This theorem remains open; the evidence map must expose that future marked-discovery distributional closure has not yet been claimed."
+    return hasSupport && hasPending ? "This claim has linked support, but at least one pending evidence line still prevents closure." : "This claim needs linked support before it can be treated as closed."
+  }
+  if (entity.kind === "proof") return "This anchors the CAT-TRACE tail-calibration claim in Original TRACE theory; it supports the calibration transfer but does not prove new real-data performance."
+  if (entity.kind === "dataset") return "This dataset is a relevant first-paper evidence line, but it remains pending until a linked analysis result is added to the evidence graph."
+  if (entity.kind === "implementation" || entity.kind === "result") return "This validates implementation and stress behavior for the displayed architecture; it does not replace theorem proof or real-data evidence."
+  if (entity.kind === "limitation" || entity.kind === "open_question") return hasLimit ? "This records the missing real-data closure so the UI does not overstate scientific support." : "This marks a concrete open gap that must be closed before stronger evidence claims are made."
+  return whyEntityMatters(catTraceMultiViewProject, entity, relations)
+}
+
+function lineageWhyEntityMatters(entity?: StatisticalEntity) {
+  if (!entity) return "Select a lineage method to inspect how it contributes to CAT-TRACE."
+  if (entity.id.includes(":trace")) return "TRACE is the open-tail foundation: CAT-TRACE extends its response architecture while preserving tail calibration semantics."
+  if (entity.id.includes(":hmsc")) return "HMSC contributes ecological hierarchy language for reading grouped and related catalogue structure without becoming a third model variant."
+  if (entity.id.includes(":bigmvp")) return "bigMVP frames scalable multivariate probit computation as implementation inspiration, not as a replacement for TRACE semantics."
+  if (entity.id.includes(":mgp")) return "The sparse factor/MGP lineage explains residual-factor shrinkage without changing the two active model variants."
+  if (entity.id.includes(":cat-trace")) return "CAT-TRACE is the catalogue-aware extension point where inherited open-tail calibration, grouped interpretation, scalable computation, and factor shrinkage meet."
+  return entity.description
+}
+
+function researchWhyEntityMatters(viewId: MultiViewId, entity?: StatisticalEntity, relations: TypedRelation[] = []) {
+  if (viewId === multiViewIds.evidence) return evidenceWhyEntityMatters(entity, relations)
+  if (viewId === multiViewIds.lineage) return lineageWhyEntityMatters(entity)
+  return whyEntityMatters(catTraceMultiViewProject, entity, relations)
+}
+
+function closureCopy(warning: ReturnType<typeof evidenceClosureWarnings>[number]) {
+  const byClaim: Record<string, { missing: string; close: string }> = {
+    "entity:evidence:claim:tail-calibration": {
+      missing: "linked real-data evidence for the group-indexed open-tail calibration.",
+      close: "a reproducible dataset result that supports the calibration claim without changing TRACE semantics.",
+    },
+    "entity:evidence:claim:open-tail-response": {
+      missing: "empirical evidence that the shared/group/species response split behaves as intended on the target datasets.",
+      close: "a linked analysis result or validation report for the open-tail response decomposition.",
+    },
+    "entity:evidence:claim:zero-slots": {
+      missing: "dataset-level evidence that anonymous zero slots are retained and interpreted correctly in the finite truncation.",
+      close: "a linked zero-slot diagnostic or analysis result showing their likelihood role.",
+    },
+    "entity:evidence:claim:marked-discovery": {
+      missing: "the future marked-discovery distributional theorem.",
+      close: "a linked proof for the marked-discovery distributional result.",
+    },
+  }
+  const copy = byClaim[warning.claimId]
+  if (!copy) return `What is missing: claim-specific closure evidence. What would close this: a linked result tied to ${warning.label}.`
+  return `What is missing: ${copy.missing} What would close this: ${copy.close}`
+}
+
 function inspectorTitle(entity?: StatisticalEntity, fallback = "Symbol") {
   if (!entity) return `${fallback} Inspector`
   if (entity.kind === "dataset") return "Dataset Inspector"
@@ -562,23 +621,25 @@ export function ArchitectureReferencePanel() {
                 <span>Advanced / Export & validation</span>
                 <small>{exportExpanded ? "Hide export tools" : "Show export tools"}</small>
               </button>
-              <div id="architecture-export-validation-region" className="architecture-export-region" role="region" aria-label="Advanced export and validation" hidden={!exportExpanded} data-testid="advanced-export-validation-region">
-                <div className="architecture-export-grid">
-                  <span className="badge">Warnings {warnings.length}</span>
-                  <button type="button" className={`toolbar-button ${exportMode === "markdown" ? "toolbar-button-active" : ""}`} onClick={() => setExportMode("markdown")} data-testid="export-markdown">
-                    <Download size={14} />
-                    Markdown
-                  </button>
-                  <button type="button" className={`toolbar-button ${exportMode === "json" ? "toolbar-button-active" : ""}`} onClick={() => setExportMode("json")} data-testid="export-json">
-                    <FileJson2 size={14} />
-                    Schema V2
-                  </button>
+              {exportExpanded ? (
+                <div id="architecture-export-validation-region" className="architecture-export-region" role="region" aria-label="Advanced export and validation" data-testid="advanced-export-validation-region">
+                  <div className="architecture-export-grid">
+                    <span className="badge">Warnings {warnings.length}</span>
+                    <button type="button" className={`toolbar-button ${exportMode === "markdown" ? "toolbar-button-active" : ""}`} onClick={() => setExportMode("markdown")} data-testid="export-markdown">
+                      <Download size={14} />
+                      Markdown
+                    </button>
+                    <button type="button" className={`toolbar-button ${exportMode === "json" ? "toolbar-button-active" : ""}`} onClick={() => setExportMode("json")} data-testid="export-json">
+                      <FileJson2 size={14} />
+                      Schema V2
+                    </button>
+                  </div>
+                  <pre ref={exportPreviewRef} tabIndex={-1} className="architecture-export-preview" data-testid="architecture-export-preview">{exportText}</pre>
+                  <div className="architecture-warning-list">
+                    {warnings.length ? warnings.slice(0, 4).map((warning, index) => <span key={`${warning.id}:${index}`}>{warning.message}</span>) : <span>No structural warnings.</span>}
+                  </div>
                 </div>
-                <pre ref={exportPreviewRef} tabIndex={-1} className="architecture-export-preview" data-testid="architecture-export-preview">{exportText}</pre>
-                <div className="architecture-warning-list">
-                  {warnings.length ? warnings.slice(0, 4).map((warning, index) => <span key={`${warning.id}:${index}`}>{warning.message}</span>) : <span>No structural warnings.</span>}
-                </div>
-              </div>
+              ) : null}
             </div>
           </section>
 
@@ -685,7 +746,7 @@ function MultiViewPanel({
               </div>
               <div>
                 <span>Why it matters</span>
-                <p>{whyEntityMatters(catTraceMultiViewProject, selectedEntity, relations)}</p>
+                <p>{researchWhyEntityMatters(viewId, selectedEntity, relations)}</p>
               </div>
             </div>
             <dl className="architecture-inspector-grid">
@@ -737,7 +798,7 @@ function MultiViewPanel({
           <div className="architecture-warning-list" data-testid="closure-gaps">
             {closureWarnings.map((warning) => (
               <span key={warning.claimId}>
-                <strong>{warning.label}</strong>: {titleCaseStatus(warning.status)} · {warning.supportCount} supporting item{warning.supportCount === 1 ? "" : "s"} · {warning.gapCount} open gap{warning.gapCount === 1 ? "" : "s"}. What is missing: pending theorem or real-data closure evidence where listed. What would close this: a linked proof, dataset result, or implementation result in the evidence graph.
+                <strong>{warning.label}</strong>: {titleCaseStatus(warning.status)} · {warning.supportCount} supporting item{warning.supportCount === 1 ? "" : "s"} · {warning.gapCount} open gap{warning.gapCount === 1 ? "" : "s"}. {closureCopy(warning)}
               </span>
             ))}
           </div>

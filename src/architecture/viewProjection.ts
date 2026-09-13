@@ -1,4 +1,4 @@
-import type { ArchitectureProjectV2, TypedRelation, ViewProjectionNode } from "./types"
+import type { ArchitectureProjectV2, SemanticLayer, TypedRelation, ViewProjectionNode } from "./types"
 import type { ArchitectureDetailLevel } from "./session"
 
 export type ProjectionLayoutNode = {
@@ -90,6 +90,99 @@ function projectionByEntity(view: ArchitectureProjectV2["views"][string]) {
 
 function isCatTraceArchitectureOverview(project: ArchitectureProjectV2, view: ArchitectureProjectV2["views"][string], options: { detailLevel?: ArchitectureDetailLevel }) {
   return view.kind === "architecture" && options.detailLevel === "overview" && project.project.id.includes("cat-trace-frozen-v2")
+}
+
+function architectureLane(layer?: SemanticLayer) {
+  const lanes: Record<SemanticLayer, number> = {
+    observation: 0,
+    measurement: 1,
+    latent: 2,
+    parameterization: 3,
+    assumption: 3,
+    inference: 4,
+    prediction: 5,
+    target: 5,
+    validation: 5,
+    legacy: 5,
+  }
+  return layer ? lanes[layer] : 3
+}
+
+function originalTraceSlots(key: string) {
+  const slots: Record<string, { left: number; top: number; width?: number; height?: number }> = {
+    y_ij: { left: 9, top: 30, width: 132 },
+    z_ij: { left: 28, top: 30, width: 132 },
+    x_i: { left: 9, top: 68, width: 132 },
+    alpha_j: { left: 47, top: 18, width: 132 },
+    beta_j: { left: 47, top: 40, width: 132 },
+    gamma: { left: 65, top: 14, width: 116 },
+    p: { left: 65, top: 34, width: 116 },
+    mu_p_gamma: { left: 86, top: 14, width: 130 },
+    tau_p: { left: 86, top: 34, width: 130 },
+    nu: { left: 65, top: 58, width: 116 },
+    Psi: { left: 65, top: 78, width: 116 },
+    posterior_inference: { left: 86, top: 58, width: 130 },
+    marginal_probability: { left: 86, top: 78, width: 160 },
+    richness_target: { left: 47, top: 76, width: 140 },
+  }
+  return slots[key]
+}
+
+function evidenceSlots(entityId: string) {
+  const slots: Record<string, { left: number; top: number; width?: number; height?: number }> = {
+    "entity:evidence:proof:trace-reference": { left: 14, top: 14, width: 150, height: 66 },
+    "entity:evidence:claim:tail-calibration": { left: 38, top: 14, width: 154, height: 68 },
+    "entity:evidence:data:finland": { left: 62, top: 14, width: 150, height: 66 },
+    "entity:evidence:limitation:real-data": { left: 86, top: 32, width: 150, height: 66 },
+    "entity:evidence:data:malagasy": { left: 14, top: 50, width: 150, height: 66 },
+    "entity:evidence:claim:open-tail-response": { left: 38, top: 50, width: 154, height: 68 },
+    "entity:evidence:claim:marked-discovery": { left: 86, top: 56, width: 150, height: 66 },
+    "entity:evidence:implementation:fixtures": { left: 14, top: 84, width: 150, height: 66 },
+    "entity:evidence:claim:zero-slots": { left: 38, top: 84, width: 154, height: 68 },
+    "entity:evidence:stress:g05": { left: 62, top: 84, width: 150, height: 66 },
+    "entity:evidence:data:swa-plants": { left: 86, top: 84, width: 150, height: 66 },
+  }
+  return slots[entityId]
+}
+
+function packFullArchitectureNodes(project: ArchitectureProjectV2, nodes: ProjectionLayoutNode[]) {
+  const columns = [8, 22, 36, 50, 64, 78, 90]
+  const rows = [8, 24, 40, 56, 72, 88]
+  const laneBuckets = new Map<number, ProjectionLayoutNode[]>()
+  nodes.forEach((node) => {
+    const lane = architectureLane(project.entities[node.entityId]?.layer)
+    const bucket = laneBuckets.get(lane) || []
+    bucket.push(node)
+    laneBuckets.set(lane, bucket)
+  })
+
+  const ordered: ProjectionLayoutNode[] = []
+  ;[0, 1, 2, 3, 4, 5].forEach((lane) => {
+    const bucket = (laneBuckets.get(lane) || []).sort((a, b) => a.projection.position.y - b.projection.position.y || a.projection.position.x - b.projection.position.x || a.entityId.localeCompare(b.entityId))
+    ordered.push(...bucket)
+  })
+
+  return ordered.map((node, index) => ({
+    ...node,
+    leftPercent: columns[index % columns.length],
+    topPercent: rows[Math.floor(index / columns.length)] || 90,
+    width: 82,
+    height: 46,
+  }))
+}
+
+function packOriginalTraceNodes(nodes: ProjectionLayoutNode[]) {
+  return nodes.map((node) => {
+    const slot = originalTraceSlots(entityKey(node.entityId))
+    if (!slot) return node
+    return {
+      ...node,
+      leftPercent: slot.left,
+      topPercent: slot.top,
+      width: slot.width || 132,
+      height: slot.height || 58,
+    }
+  })
 }
 
 function stableBoundsNodes(view: ArchitectureProjectV2["views"][string], rawNodes: Array<{ entityId: string; projection: ViewProjectionNode }>) {
@@ -203,7 +296,7 @@ export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: st
   const minY = Math.min(...boundsNodes.map((node) => node.projection.position.y), 0)
   const maxY = Math.max(...boundsNodes.map((node) => node.projection.position.y), 1)
 
-  const nodes = rawNodes.map((node) => {
+  let nodes = rawNodes.map((node) => {
     const slot = isStableCatOverview ? catTraceOverviewSlots[entityKey(node.entityId)] : undefined
     return {
       ...node,
@@ -213,6 +306,17 @@ export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: st
       height: slot?.height ?? (isStableCatOverview ? 66 : node.projection.size?.height || 78),
     }
   })
+
+  if (view.kind === "architecture" && options.detailLevel === "full" && project.project.id.includes("cat-trace-frozen-v2")) {
+    nodes = packFullArchitectureNodes(project, nodes)
+  } else if (view.kind === "architecture" && project.project.id.includes("original-trace")) {
+    nodes = packOriginalTraceNodes(nodes)
+  } else if (view.kind === "evidence") {
+    nodes = nodes.map((node) => {
+      const slot = evidenceSlots(node.entityId)
+      return slot ? { ...node, leftPercent: slot.left, topPercent: slot.top, width: slot.width || node.width, height: slot.height || node.height } : node
+    })
+  }
   const nodeByEntityId = new Map(nodes.map((node) => [node.entityId, node]))
   const pairCounts = new Map<string, number>()
 

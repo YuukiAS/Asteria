@@ -33,8 +33,8 @@ try {
   const panelSource = await read("src/components/ArchitectureReferencePanel.tsx")
   const styleSource = await read("src/styles/index.css")
 
-  assert(packageJson.version === "2.0.0-rc.9", "package.json must declare 2.0.0-rc.9.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.9"'), "App shell must display 2.0.0-rc.9.")
+  assert(packageJson.version === "2.0.0-rc.10", "package.json must declare 2.0.0-rc.10.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.10"'), "App shell must display 2.0.0-rc.10.")
 
   assert(appSource.indexOf('<nav className="asteria-skip-links"') < appSource.indexOf("<AsteriaV2TopBar"), "Skip links must be the first page-level tab stops before the topbar.")
   assert(appSource.includes('href="#asteria-canvas"') && appSource.includes('href="#asteria-inspector"'), "Skip links must target canvas and inspector anchors.")
@@ -47,7 +47,7 @@ try {
 
   assert(panelSource.includes("exportExpanded") && panelSource.includes("aria-expanded={exportExpanded}") && panelSource.includes('aria-controls="architecture-export-validation-region"'), "Advanced export must use a controlled button disclosure.")
   assert(panelSource.includes("Export tools opened") && appSource.includes("asteria:open-export-tools"), "Top Export must open the export surface and set visible feedback.")
-  assert(panelSource.includes('hidden={!exportExpanded}') && panelSource.includes('data-testid="advanced-export-validation-region"'), "Export/schema details must stay out of the main path while closed.")
+  assert(panelSource.includes("exportExpanded ? (") && panelSource.includes('data-testid="advanced-export-validation-region"') && panelSource.includes(") : null"), "Export/schema details must not render into the main path while closed.")
 
   assert(workspaceSource.includes("full-model-reading-controls"), "Full model must expose reading controls.")
   assert(workspaceSource.includes("Zoom out") && workspaceSource.includes("Fit") && workspaceSource.includes("Zoom in"), "Full model controls must include Zoom out, Fit, and Zoom in.")
@@ -90,7 +90,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.9",
+          version: "2.0.0-rc.10",
           skipLinks: "first-tab-ready",
           exportDisclosure: "controlled",
           fullModelControls: "zoom-fit-pan",

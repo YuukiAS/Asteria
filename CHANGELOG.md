@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0-rc.10 - Final Visual Finish
+
+- Rebuilt Lineage as a dedicated method-provenance presentation with aligned source cards, one TRACE visual connector carrying `Extends` and `Preserves` chips, distinct target-side ports, compact HTML relation chips, and preserved typed relation metadata.
+- Added deterministic non-overlap presentation packing for CAT-TRACE Full model and an independent Original TRACE architecture layout.
+- Replaced Evidence `Why it matters` and closure-gap template copy with entity-specific research explanations, and made Advanced / Export content conditional so preview/schema/warnings are absent while collapsed.
+- Added RC.10 focused browser coverage and public fixed-URL smoke for Full model, Original TRACE, Lineage chip geometry, Evidence copy, math rendering, and disclosure behavior.
+
 ## 2.0.0-rc.9 - Human Visual Acceptance Repair
 
 - Stabilized CAT-TRACE Architecture Overview geometry so selection and trace reveal no longer re-normalize shared node positions.

@@ -3,7 +3,7 @@ import fs from "node:fs/promises"
 import path from "node:path"
 
 const screenshotDir = process.env.ASTERIA_BROWSER_QA_DIR || "/tmp/asteria-browser-qa"
-const acceptanceDir = process.env.ASTERIA_ACCEPTANCE_SCREENSHOT_DIR || path.resolve("results/asteria_v2_rc9_acceptance/screenshots")
+const acceptanceDir = process.env.ASTERIA_ACCEPTANCE_SCREENSHOT_DIR || path.resolve("results/asteria_v2_rc10_acceptance/screenshots")
 
 function relationIdSelector(relationId: string) {
   return `[data-relation-id="${relationId}"]`
@@ -90,6 +90,40 @@ async function assertNoEdgeLabelNodeCollision(page: Page) {
   }
 }
 
+async function assertNoSelectorOverlap(page: Page, selector: string, gap = 0) {
+  const rects = await visibleRects(page, selector)
+  for (let i = 0; i < rects.length; i += 1) {
+    for (let j = i + 1; j < rects.length; j += 1) {
+      expect(overlaps(rects[i], rects[j], gap), `${rects[i].id} overlaps ${rects[j].id}`).toBe(false)
+    }
+  }
+}
+
+async function assertNoRelationChipCardCollision(page: Page) {
+  const chips = await visibleRects(page, "[data-lineage-chip='true']")
+  const cards = await visibleRects(page, ".lineage-presentation-card")
+  expect(chips.length).toBe(5)
+  for (const chip of chips) {
+    for (const card of cards) {
+      expect(overlaps(chip, card, 4), `${chip.id} relation chip collides with ${card.id}`).toBe(false)
+    }
+  }
+}
+
+async function assertLineagePresentationGeometry(page: Page) {
+  await expect(page.getByTestId("lineage-presentation")).toBeVisible()
+  await expect(page.locator("[data-lineage-connector]")).toHaveCount(4)
+  await expect(page.locator("[data-edge-label='true']")).toHaveCount(0)
+  await assertNoSelectorOverlap(page, ".lineage-presentation-card", 10)
+  await assertNoSelectorOverlap(page, "[data-lineage-chip='true']", 6)
+  await assertNoRelationChipCardCollision(page)
+  const target = await page.getByTestId("lineage-target-card").boundingBox()
+  const canvas = await page.getByTestId("central-lineage-canvas").boundingBox()
+  expect(target).not.toBeNull()
+  expect(canvas).not.toBeNull()
+  expect((canvas?.x || 0) + (canvas?.width || 0) - ((target?.x || 0) + (target?.width || 0))).toBeGreaterThanOrEqual(48)
+}
+
 async function nodeCenters(page: Page) {
   const rects = await visibleRects(page, ".architecture-map-node")
   return new Map(rects.map((rect) => [rect.id, rect]))
@@ -121,7 +155,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/")
   await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
   await expect(page.getByTestId("asteria-v2-topbar")).toBeVisible()
-  await expect(page.getByText("2.0.0-rc.9")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.10")).toBeVisible()
   await expect(page.getByTestId("current-project")).toContainText("Project")
   await expect(page.getByTestId("current-project")).toContainText("CAT-TRACE")
   await expect(page.getByTestId("current-view")).toContainText("Architecture")
@@ -370,7 +404,8 @@ test("RC7 acceptance covers direct 2.0 entry, selectors, views, trace-edge truth
   await expect(page.getByTestId("view-lineage")).toHaveAttribute("data-asteria-selected", "true")
   await expect(page.locator(relationIdSelector("relation:lineage:trace-cat"))).toHaveAttribute("data-relation-type", "extends")
   await expect(page.locator(relationIdSelector("relation:lineage:trace-preserve"))).toHaveAttribute("data-relation-type", "preserves")
-  await expect(page.locator(".architecture-map-edge")).toHaveCount(5)
+  await expect(page.locator("[data-lineage-connector]")).toHaveCount(4)
+  await expect(page.locator("[data-lineage-chip='true']")).toHaveCount(5)
   await page.screenshot({ path: path.join(acceptanceDir, "lineage-dark.png"), fullPage: false })
 
   await page.getByTestId("view-evidence").click()
@@ -603,28 +638,26 @@ test("RC9 human visual acceptance repairs Architecture geometry, labels, math co
   await expect(page.locator("[data-edge-label='true']").first()).toBeVisible()
   const visibleEdgeLabels = await page.locator("[data-edge-label='true']").evaluateAll((elements) => elements.map((element) => element.textContent?.trim() || ""))
   expect(visibleEdgeLabels.every((label) => !label.includes("_") && label.length <= 18)).toBe(true)
-  await page.screenshot({ path: path.join(screenshotDir, "rc9-architecture-visual-1366.png"), fullPage: false })
+  await page.screenshot({ path: path.join(screenshotDir, "rc10-architecture-visual-1366.png"), fullPage: false })
 
   const diffText = await page.getByTestId("semantic-diff").evaluate((element) => element.innerText)
   for (const forbidden of ["beta^U_gh", "gamma_0*pi_g", "mathcal K", "Sigma_W", "New CAT-TRACE structure that Original TRACE does not expose"]) {
     expect(diffText).not.toContain(forbidden)
   }
   await expect(page.getByTestId("semantic-diff").locator(".katex").first()).toBeVisible()
-  await expect(page.getByTestId("semantic-diff")).toContainText("This makes the observed catalogue boundary explicit")
+  await expect(page.getByTestId("semantic-diff")).toContainText("known identities from open-tail discovery")
 
   await page.setViewportSize({ width: 1536, height: 864 })
   await assertNoNodeOverlap(page, 10)
   await assertNoPrimaryTextClipping(page)
   await assertNoEdgeLabelNodeCollision(page)
-  await page.screenshot({ path: path.join(screenshotDir, "rc9-architecture-visual-1536.png"), fullPage: false })
+  await page.screenshot({ path: path.join(screenshotDir, "rc10-architecture-visual-1536.png"), fullPage: false })
 
   await page.getByTestId("view-lineage").click()
-  await assertNoNodeOverlap(page, 8)
-  await assertNoEdgeLabelNodeCollision(page)
-  const lineageLabels = await page.locator("[data-edge-label='true']").evaluateAll((elements) => elements.map((element) => element.textContent?.trim() || ""))
-  expect(lineageLabels).toEqual(expect.arrayContaining(["Extends", "Preserves", "Borrows", "Inspired by", "Uses"]))
-  expect(lineageLabels.every((label) => label.split(/\s+/).length <= 2)).toBe(true)
-  await page.screenshot({ path: path.join(screenshotDir, "rc9-lineage-visual.png"), fullPage: false })
+  await assertLineagePresentationGeometry(page)
+  const lineageChips = await page.locator("[data-lineage-chip='true']").evaluateAll((elements) => elements.map((element) => element.textContent?.trim() || ""))
+  expect(lineageChips).toEqual(expect.arrayContaining(["Ecological hierarchy", "Extends", "Preserves", "Scalable probit", "Factor shrinkage"]))
+  await page.screenshot({ path: path.join(screenshotDir, "rc10-lineage-visual.png"), fullPage: false })
 
   await page.getByTestId("view-evidence").click()
   await assertNoNodeOverlap(page, 8)
@@ -633,5 +666,114 @@ test("RC9 human visual acceptance repairs Architecture geometry, labels, math co
   await expect(page.getByTestId("central-evidence-canvas")).toContainText("Large-graph performance check")
   await expect(page.getByTestId("central-evidence-canvas")).not.toContainText("Web RC")
   await expect(page.getByTestId("central-evidence-canvas")).not.toContainText("first-paper dataset")
-  await page.screenshot({ path: path.join(screenshotDir, "rc9-evidence-visual.png"), fullPage: false })
+  await page.screenshot({ path: path.join(screenshotDir, "rc10-evidence-visual.png"), fullPage: false })
+})
+
+test("RC10 final visual finish validates Full model, Original TRACE, Lineage chips, Evidence copy, math, and disclosure", async ({ page }) => {
+  await fs.mkdir(screenshotDir, { recursive: true })
+
+  for (const viewport of [
+    { width: 1366, height: 768, file: "rc10-cat-full-1366.png" },
+    { width: 1536, height: 864, file: "rc10-cat-full-1536.png" },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.getByTestId("model-cat-trace-frozen-v2").click()
+    await page.getByTestId("detail-full-model").click()
+    await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-detail-level", "full")
+    await assertNoNodeOverlap(page, 8)
+    await assertNoPrimaryTextClipping(page)
+    await assertNoEdgeLabelNodeCollision(page)
+    await page.screenshot({ path: path.join(screenshotDir, viewport.file), fullPage: false })
+  }
+
+  for (const viewport of [
+    { width: 1366, height: 768, file: "rc10-original-1366.png" },
+    { width: 1536, height: 864, file: "rc10-original-1536.png" },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.getByTestId("model-original-trace").click()
+    await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-model", "original-trace")
+    await assertNoNodeOverlap(page, 8)
+    await assertNoPrimaryTextClipping(page)
+    await assertNoEdgeLabelNodeCollision(page)
+    await expect(page.getByTestId("selected-definition-math").locator(".katex")).toBeVisible()
+    await page.screenshot({ path: path.join(screenshotDir, viewport.file), fullPage: false })
+  }
+
+  await page.getByTestId("model-cat-trace-frozen-v2").click()
+  await page.getByTestId("detail-overview").click()
+  await page.getByTestId("symbol-betaU_gh").click()
+  await expect(page.getByTestId("selected-definition-math").locator(".katex")).toBeVisible()
+  await page.getByTestId("symbol-gamma_g").click()
+  await expect(page.getByTestId("selected-definition-math").locator(".katex")).toBeVisible()
+  await page.screenshot({ path: path.join(screenshotDir, "rc10-inspector-math.png"), fullPage: false })
+
+  const diffText = await page.getByTestId("semantic-diff").evaluate((element) => element.innerText)
+  for (const forbidden of ["mathcal K", "a_g", "p_g^*", "gamma_0", "pi_g", "gamma_g", "beta^U_gh", "Sigma_W", "New CAT-TRACE structure that Original TRACE does not expose"]) {
+    expect(diffText).not.toContain(forbidden)
+  }
+  await expect(page.getByTestId("semantic-diff").locator(".katex").first()).toBeVisible()
+  await expect(page.getByTestId("semantic-diff")).toContainText("known identities from open-tail discovery")
+  await page.screenshot({ path: path.join(screenshotDir, "rc10-semantic-diff.png"), fullPage: false })
+
+  const exportToggle = page.getByTestId("advanced-export-validation")
+  await expect(exportToggle).toHaveAttribute("aria-expanded", "false")
+  await expect(page.getByTestId("advanced-export-validation-region")).toHaveCount(0)
+  await expect(page.getByTestId("architecture-export-preview")).toHaveCount(0)
+  await page.screenshot({ path: path.join(screenshotDir, "rc10-advanced-collapsed.png"), fullPage: false })
+  await exportToggle.click()
+  await expect(exportToggle).toHaveAttribute("aria-expanded", "true")
+  await expect(page.getByTestId("advanced-export-validation-region")).toBeVisible()
+  await page.getByTestId("export-json").click()
+  await expect(page.getByTestId("architecture-export-preview")).toContainText("\"schemaVersion\"")
+  await exportToggle.click()
+  await expect(exportToggle).toHaveAttribute("aria-expanded", "false")
+  await expect(page.getByTestId("advanced-export-validation-region")).toHaveCount(0)
+  await exportToggle.focus()
+  await page.keyboard.press("Enter")
+  await expect(exportToggle).toHaveAttribute("aria-expanded", "true")
+  await page.keyboard.press("Space")
+  await expect(exportToggle).toHaveAttribute("aria-expanded", "false")
+  await page.getByTestId("topbar-export").click()
+  await expect(exportToggle).toHaveAttribute("aria-expanded", "true")
+  await expect(exportToggle).toBeFocused()
+
+  for (const viewport of [
+    { width: 1366, height: 768, file: "rc10-lineage-1366.png" },
+    { width: 1536, height: 864, file: "rc10-lineage-1536.png" },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.getByTestId("view-lineage").click()
+    await expect(page.getByTestId("central-lineage-canvas")).toHaveAttribute("data-projected-relation-count", "5")
+    await assertLineagePresentationGeometry(page)
+    await expect(page.getByTestId("lineage-card-entity-lineage-hmsc")).toContainText("Ecological hierarchy")
+    await expect(page.getByTestId("lineage-card-entity-lineage-trace")).toContainText("Open-tail foundation")
+    await expect(page.getByTestId("lineage-card-entity-lineage-bigmvp")).toContainText("Scalable probit computation")
+    await expect(page.getByTestId("lineage-card-entity-lineage-mgp")).toContainText("Factor shrinkage")
+    await expect(page.getByTestId("lineage-target-card")).toContainText("Catalogue-aware extension")
+    await page.screenshot({ path: path.join(screenshotDir, viewport.file), fullPage: false })
+  }
+
+  for (const viewport of [
+    { width: 1366, height: 768 },
+    { width: 1536, height: 864 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.getByTestId("view-evidence").click()
+    await assertNoNodeOverlap(page, 8)
+    await assertNoEdgeLabelNodeCollision(page)
+    await expect(page.getByTestId("closure-gaps")).not.toContainText("pending theorem or real-data closure evidence where listed")
+    await expect(page.getByTestId("closure-gaps")).toContainText("group-indexed open-tail calibration")
+    await expect(page.getByTestId("architecture-reference-panel")).not.toContainText("sits in the validation layer")
+  }
+  await page.screenshot({ path: path.join(screenshotDir, "rc10-evidence-1536.png"), fullPage: false })
+
+  await page.getByTestId("architecture-search-scope").selectOption("all")
+  await page.getByTestId("architecture-search-input").fill("beta")
+  await expect(page.getByTestId("architecture-search-results")).toBeVisible()
+  await page.getByTestId("save-view-state").click()
+  await expect(page.getByTestId("architecture-action-status")).toContainText("saved")
+  await page.getByTestId("view-lineage").click()
+  await page.getByTestId("restore-view-state").click()
+  await expect(page.getByTestId("current-view")).toContainText("Evidence")
 })

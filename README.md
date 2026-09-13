@@ -2,11 +2,11 @@
 
 Asteria 2.0 is the active Web product shell for inspecting canonical statistical-model architecture maps. The current build focuses on Original TRACE and CAT-TRACE Frozen V2, with first-level Architecture, Lineage, and Evidence views backed by the same typed semantic graph.
 
-Current app version: `2.0.0-rc.9`.
+Current app version: `2.0.0-rc.10`.
 
 ## Product State
 
-`2.0.0-rc.9` keeps the retired Asteria 1.x live Canvas / Toolbar / Inspector / Story startup flow out of the active app and repairs the final human visual acceptance blockers over RC.8: CAT-TRACE Architecture Overview now uses stable non-overlap positions, concise active relation labels, rendered Semantic Diff math, and stable-facing Lineage/Evidence wording. Opening Asteria goes directly to:
+`2.0.0-rc.10` keeps the retired Asteria 1.x live Canvas / Toolbar / Inspector / Story startup flow out of the active app and finishes the remaining stable-facing visual blockers: CAT Full model and Original TRACE use deterministic non-overlap presentation layouts, Lineage uses a dedicated method-provenance presentation with HTML relation chips, Evidence closure copy is entity-specific, and Advanced export content is not rendered while collapsed. Opening Asteria goes directly to:
 
 - Project: `CAT-TRACE`
 - View: `Architecture`
@@ -15,7 +15,7 @@ Current app version: `2.0.0-rc.9`.
 
 Architecture provides the formal `Original TRACE` / `CAT-TRACE Frozen V2` model selector and an `Overview` / `Full model` detail control. Selection drives the inspector; trace highlighting only appears after `Show trace` is activated. Lineage and Evidence are direct first-level views. Save/Restore stores only the Asteria 2.0 view session state, not the retired shared/local 1.x canvas workspace.
 
-After RC.9, the next acceptance step is `GPT_WORK_FULL_REAUDIT_W01_W06`, not manual final acceptance or stable release.
+After RC.10, the next acceptance step is `GPT_WORK_REAUDIT_W01_W02_W04_W05_W06`, not manual final acceptance or stable release.
 
 ## Legacy Compatibility
 

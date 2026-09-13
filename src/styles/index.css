@@ -663,6 +663,88 @@ body {
       radial-gradient(circle at 78% 78%, rgba(239, 68, 68, 0.1), transparent 28%);
   }
 
+  .lineage-presentation {
+    @apply absolute inset-0 overflow-hidden;
+  }
+
+  .lineage-presentation-connectors {
+    @apply pointer-events-none absolute inset-0 z-10 h-full w-full;
+  }
+
+  .lineage-presentation-connector {
+    fill: none;
+    stroke: rgb(14 165 233);
+    stroke-linecap: round;
+    stroke-width: 0.18;
+    opacity: 0.76;
+    transition:
+      opacity 140ms ease,
+      stroke-width 140ms ease,
+      stroke 140ms ease;
+  }
+
+  [data-theme="light"] .lineage-presentation-connector {
+    stroke: rgb(2 132 199);
+    opacity: 0.84;
+  }
+
+  .lineage-presentation-connector-active {
+    stroke-width: 0.24;
+    opacity: 0.96;
+  }
+
+  .lineage-presentation-connectors marker path {
+    fill: rgb(14 165 233);
+    stroke: none;
+  }
+
+  [data-theme="light"] .lineage-presentation-connectors marker path {
+    fill: rgb(2 132 199);
+  }
+
+  .lineage-presentation-sources {
+    @apply absolute bottom-8 left-9 top-8 z-20 grid w-[250px] grid-rows-4 gap-4;
+  }
+
+  .lineage-presentation-card {
+    @apply grid content-center gap-1 rounded-md border border-strongBorder bg-panel/95 px-4 py-3 text-left shadow-sm;
+    transition:
+      border-color 140ms ease,
+      background-color 140ms ease,
+      box-shadow 140ms ease,
+      color 140ms ease;
+  }
+
+  .lineage-presentation-card strong {
+    @apply text-[13px] font-semibold leading-5 text-foreground;
+  }
+
+  .lineage-presentation-card span {
+    @apply text-[11px] leading-4 text-secondary;
+  }
+
+  .lineage-presentation-card-selected {
+    @apply border-accent bg-accentSoft shadow-md;
+  }
+
+  .lineage-presentation-target-card {
+    @apply absolute right-14 top-1/2 z-20 min-h-[104px] w-[260px] -translate-y-1/2;
+  }
+
+  .lineage-presentation-target-card strong {
+    @apply text-[15px] leading-5;
+  }
+
+  .lineage-presentation-chip-layer {
+    @apply pointer-events-none absolute inset-0 z-30;
+  }
+
+  .lineage-relation-chip {
+    @apply absolute rounded-full border border-border bg-panel/95 px-2 py-1 text-[10px] font-semibold leading-none text-secondary shadow-sm;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+  }
+
   .research-view-node {
     @apply grid min-h-[86px] min-w-0 content-start gap-1 rounded-md border border-border bg-panel/90 px-2.5 py-2 text-left text-secondary transition hover:border-strongBorder hover:text-foreground;
   }
@@ -876,6 +958,26 @@ body {
 
   .architecture-map-node em {
     @apply mt-1 justify-self-center rounded border border-border bg-app/70 px-1.5 py-0.5 text-[9px] not-italic uppercase leading-none tracking-normal text-muted;
+  }
+
+  .architecture-map-node-full,
+  .architecture-map-node-original {
+    @apply min-h-[46px] px-1.5 py-1.5;
+  }
+
+  .architecture-map-node-full span,
+  .architecture-map-node-original span {
+    @apply text-[9px] leading-4;
+  }
+
+  .architecture-map-node-full small,
+  .architecture-map-node-original small {
+    @apply text-[9px] leading-3;
+  }
+
+  .architecture-map-node-full em,
+  .architecture-map-node-original em {
+    @apply hidden;
   }
 
   .architecture-map-node-selected {
@@ -1126,6 +1228,11 @@ body {
   .architecture-map-node .rendered-math {
     font-size: 13px;
     font-weight: 700;
+  }
+
+  .architecture-map-node-full .rendered-math,
+  .architecture-map-node-original .rendered-math {
+    font-size: 10px;
   }
 
   .architecture-diff-math {

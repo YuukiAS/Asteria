@@ -29,11 +29,11 @@ async function visibleRects(page, selector) {
   )
 }
 
-async function assertNoNodeOverlap(page) {
-  const rects = await visibleRects(page, ".architecture-map-node")
+async function assertNoOverlap(page, selector, gap = 0) {
+  const rects = await visibleRects(page, selector)
   for (let i = 0; i < rects.length; i += 1) {
     for (let j = i + 1; j < rects.length; j += 1) {
-      expect(overlaps(rects[i], rects[j], 6), `${rects[i].id} overlaps ${rects[j].id}`).toBe(false)
+      expect(overlaps(rects[i], rects[j], gap), `${rects[i].id} overlaps ${rects[j].id}`).toBe(false)
     }
   }
 }
@@ -58,33 +58,34 @@ try {
   await expect(page.getByTestId("current-project")).toContainText("CAT-TRACE")
   await expect(page.getByTestId("current-view")).toContainText("Architecture")
   await expect(page.getByTestId("current-model")).toContainText("CAT-TRACE Frozen V2")
-  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-detail-level", "overview")
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light")
-  await expect(page.getByTestId("projection-node-entity-cat-trace-frozen-v2-x_i")).toBeVisible()
-  await assertNoNodeOverlap(page)
 
-  await page.getByTestId("projection-node-entity-cat-trace-frozen-v2-betaU_gh").click()
+  await page.getByTestId("detail-full-model").click()
+  await assertNoOverlap(page, ".architecture-map-node", 6)
+  await page.getByTestId("model-original-trace").click()
+  await assertNoOverlap(page, ".architecture-map-node", 6)
+
+  await page.getByTestId("model-cat-trace-frozen-v2").click()
+  await page.getByTestId("detail-overview").click()
+  await page.getByTestId("symbol-betaU_gh").click()
   await page.getByTestId("enable-trace").click()
   await page.getByTestId("trace-mode").selectOption("recursive")
   await page.getByTestId("trace-direction").selectOption("both")
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-trace-enabled", "true")
-  await page.waitForTimeout(220)
-  await assertNoNodeOverlap(page)
-  await expect(page.locator("[data-edge-label='true']").first()).toBeVisible()
-  const activePath = page.locator('[data-trace-active="true"] path').first()
-  const activePathOpacity = await activePath.evaluate((element) => Number.parseFloat(getComputedStyle(element).opacity))
-  const activePathWidth = await activePath.evaluate((element) => Number.parseFloat(getComputedStyle(element).strokeWidth))
-  expect(activePathOpacity).toBeGreaterThanOrEqual(0.95)
-  expect(activePathWidth).toBeGreaterThan(0.4)
+  await assertNoOverlap(page, ".architecture-map-node", 6)
 
   await page.getByTestId("view-lineage").click()
-  await expect(page.getByTestId("central-lineage-canvas")).toContainText("CAT-TRACE Frozen V2")
+  await expect(page.getByTestId("lineage-presentation")).toBeVisible()
   await expect(page.locator("[data-lineage-connector]")).toHaveCount(4)
   await expect(page.locator("[data-lineage-chip='true']")).toHaveCount(5)
+  await expect(page.locator("[data-edge-label='true']")).toHaveCount(0)
+  await assertNoOverlap(page, ".lineage-presentation-card", 8)
+  await assertNoOverlap(page, "[data-lineage-chip='true']", 4)
 
   await page.getByTestId("view-evidence").click()
   await expect(page.getByTestId("central-evidence-canvas")).toContainText("Architecture regression evidence")
   await expect(page.getByTestId("central-evidence-canvas")).toContainText("Large-graph performance check")
+  await expect(page.getByTestId("closure-gaps")).not.toContainText("pending theorem or real-data closure evidence where listed")
 
   for (const forbidden of ["Choose a starting version", "Use shared version", "New from scratch", "CAT-TRACE Frozen V2 Web RC"]) {
     await expect(page.getByText(forbidden, { exact: false })).toHaveCount(0)

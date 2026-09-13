@@ -35,6 +35,15 @@ export function RenderedMath({ latex, fallback, display = false, className = "",
 }
 
 const canonicalDefinitionLatex: Record<string, string> = {
+  "y_ij = 1{z_ij > 0}": "y_{ij}=1\\{z_{ij}>0\\}",
+  "z_ij = alpha_j + x_i^T beta_j + epsilon_ij": "z_{ij}=\\alpha_j+x_i^\\top\\beta_j+\\varepsilon_{ij}",
+  "alpha_j | gamma,p ~ N(mu_p(gamma), tau_p^2)": "\\alpha_j\\mid\\gamma,p\\sim N\\{\\mu_p(\\gamma),\\tau_p^2\\}",
+  "beta_j ~ N_q(nu, Psi)": "\\beta_j\\sim N_q(\\nu,\\Psi)",
+  "p -> infinity": "p\\to\\infty",
+  "mu_p(gamma) uses gamma/(gamma+p)": "\\mu_p(\\gamma)\\text{ uses }\\gamma/(\\gamma+p)",
+  "sqrt(1+tau_p^2) Phi^{-1}(gamma/(gamma+p))": "\\sqrt{1+\\tau_p^2}\\,\\Phi^{-1}\\!\\left(\\frac{\\gamma}{\\gamma+p}\\right)",
+  "tau_p = sqrt(2 log p)": "\\tau_p=\\sqrt{2\\log p}",
+  "Phi(alpha_j + x_i^T beta_j)": "\\Phi(\\alpha_j+x_i^\\top\\beta_j)",
   "beta^U_gh = nu + a_g + v^U_gh": "\\beta^{\\mathcal U}_{gh}=\\nu+a_g+v^{\\mathcal U}_{gh}",
   "gamma_g = gamma_0*pi_g": "\\gamma_g=\\gamma_0\\pi_g",
   "alpha^U_gh | gamma_g,p_g ~ N(mu_{p_g}(gamma_g),tau_{p_g}^2)": "\\alpha^{\\mathcal U}_{gh}\\mid\\gamma_g,p_g\\sim N\\{\\mu_{p_g}(\\gamma_g),\\tau_{p_g}^2\\}",
@@ -46,6 +55,7 @@ const canonicalDefinitionLatex: Record<string, string> = {
   "Lambda_W Lambda_W^T + I": "\\Lambda_{\\mathcal W}\\Lambda_{\\mathcal W}^\\top+I",
   "K=|mathcal K|": "K=|\\mathcal K|",
   "c(f) in mathcal K union {empty}": "c(f)\\in\\mathcal K\\cup\\{\\varnothing\\}",
+  "nu+a_{g_j}+Gamma^T t_j+b^phy_j+v^K_j": "\\nu+a_{g_j}+\\Gamma^\\top t_j+b^{\\mathrm{phy}}_j+v^{\\mathcal K}_j",
 }
 
 export function RenderedFormulaText({ source, fallback = "canonical definition", testId }: { source?: string; fallback?: string; testId?: string }) {
