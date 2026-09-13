@@ -1,9 +1,9 @@
 # Asteria 2.0 GPT Work Black-box Audit
 
 日期：2026-09-13  
-固定验收入口：`https://asteria.httpwwwcardiacnexus-ukb.com/`
-当前产品版本：`2.0.0-rc.7`
-当前验收阶段：`GPT_WORK_TARGETED_REAUDIT_W01_W05_W06`
+固定验收入口：`https://asteria.httpwwwcardiacnexus-ukb.com/`  
+当前产品版本：`2.0.0-rc.8`  
+当前验收阶段：`GPT_WORK_TARGETED_REAUDIT_W05_W06`
 
 ## 目的
 
@@ -52,24 +52,15 @@ Codex implementation / repair
 
 GPT Work gate 通过前，不要求用户人工打开页面。
 
-## Dynamic reviewer selection：问题变少后缩减 Work 数量
+## Dynamic reviewer selection
 
 不要机械地每个 RC 都跑 W01–W06 六轮。
 
-### Full campaign
+- broad architecture / ontology / scientific semantics / multi-surface repair：完整 W01–W06；
+- narrow repair：只跑受影响 reviewer + W06；
+- 上一 RC 已 PASS 且本轮没有触碰该 reviewer 核心 scope：可由 consolidated report 明确 carry forward。
 
-只有以下情况使用完整 W01–W06：
-
-- broad architecture / ontology / scientific semantics 改动；
-- 同时修改 math/layout/theme/state/search/inspector/accessibility 等多个 surface；
-- 上一轮没有可靠 PASS baseline；
-- consolidated triage 明确要求重建完整 baseline。
-
-### Targeted campaign
-
-如果 repair 范围窄，ChatGPT 必须只选择**受影响 reviewer + W06**。
-
-推荐映射：
+Reviewer scope 映射：
 
 ```text
 visual / layout / theme / graph grammar           -> W01
@@ -80,41 +71,48 @@ responsive / keyboard / accessibility            -> W05
 any release repair                                -> W06
 ```
 
-### Carry-forward PASS
+Carry-forward PASS 必须满足：
 
-上一 RC 的 reviewer PASS 可以 carry forward 到下一 RC，但必须同时满足：
+1. consolidated triage 明确记录；
+2. repair task 明确限制 scope；
+3. Codex result 返回 `REVIEWER_SCOPE_EXPANDED` / touched surfaces；
+4. 若实际越界，必须把对应 reviewer 加回。
 
-1. 本轮 repair 没有触碰其核心 scope；
-2. consolidated report 明确记录 carry-forward；
-3. Codex result 返回 touched surfaces / `REVIEWER_SCOPE_EXPANDED`；
-4. 如果实现实际越界，立即把对应 reviewer 加回 re-audit。
+## 当前状态：RC.8 完成，进入最终 targeted re-audit
 
-这样既保持 gate 严格，又避免问题已经收敛后继续浪费 6 个 Work。
-
-## 当前状态：RC.7 完成，进入 targeted re-audit
-
-RC.6 re-audit 汇总：
+RC.7 targeted re-audit 汇总：
 
 ```text
-docs/operations/blackbox-audit/reports/RC6_REAUDIT_CONSOLIDATED_REPORT_2026-09-13.md
+docs/operations/blackbox-audit/reports/RC7_TARGETED_REAUDIT_CONSOLIDATED_REPORT_2026-09-13.md
 ```
 
-RC.7 repair task / review：
+RC.8 task / review：
 
 ```text
-prompts/tasks/asteria_v2_rc7_release_polish_task.md
-prompts/tasks/asteria_v2_rc7_release_polish_review.md
+prompts/tasks/asteria_v2_rc8_light_trace_contrast_task.md
+prompts/tasks/asteria_v2_rc8_light_trace_contrast_review.md
 ```
 
-RC.7 result：
+RC.8 result：
 
 ```text
-results/asteria_v2_rc7_release_polish/result.md
+results/asteria_v2_rc8_light_trace_contrast/result.md
 ```
 
-RC.7 报告：`REVIEWER_SCOPE_EXPANDED = NO`，因此 carry-forward：
+RC.8 报告明确：
 
 ```text
+REVIEWER_SCOPE_EXPANDED = NO
+SCIENTIFIC_FIXTURES_CHANGED = NO
+TRACE_ALGORITHM_CHANGED = NO
+SESSION_CONTRACT_CHANGED = NO
+DARK_THEME_UNCHANGED = YES
+```
+
+因此 carry-forward：
+
+```text
+W01 PASS from RC.7
 W02 PASS from RC.6
 W03 PASS from RC.6
 W04 PASS from RC.6
@@ -123,26 +121,25 @@ W04 PASS from RC.6
 当前只需要 fresh targeted re-audit：
 
 ```text
-W01 + W05 + W06
+W05 + W06
 ```
 
 计划：
 
 ```text
-docs/operations/blackbox-audit/RC7_TARGETED_REAUDIT_PLAN_2026-09-13.md
+docs/operations/blackbox-audit/RC8_TARGETED_REAUDIT_PLAN_2026-09-13.md
 ```
 
 Ready-to-paste prompts：
 
 ```text
-docs/operations/blackbox-audit/prompts/rc7/W01_VISUAL_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/rc7/W05_RESPONSIVE_ACCESSIBILITY_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/rc7/W06_RELEASE_REDTEAM_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc8/W05_RESPONSIVE_ACCESSIBILITY_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc8/W06_RELEASE_REDTEAM_WORK_PROMPT.md
 ```
 
-## Targeted gate
+## RC.8 targeted gate
 
-W01/W05/W06 必须全部：
+W05/W06 必须：
 
 ```text
 AUDIT_RESULT = PASS
@@ -152,17 +149,28 @@ P0_COUNT = 0
 P1_COUNT = 0
 ```
 
-P2 必须由 ChatGPT consolidated triage 明确归类为 `must-fix before stable` 或 `accepted/deferred`。
+并由 ChatGPT triage 确认：
 
-如果三者全部 PASS，carry-forward 仍有效，且 unresolved must-fix P2 = 0，则进入用户人工最终验收。
+```text
+RC8_LIGHT_TRACE_FINDING_CLOSED = YES
+RC8_RELEASE_REGRESSION_CLEAN = YES
+unresolved must-fix P2 = 0
+```
 
-如果只有一个/两个 reviewer 仍有窄问题，下一轮只修对应 surface，并只重跑受影响 reviewer + W06；不恢复六轮全跑，除非 repair 实际扩 scope。
+如果满足，则所有 reviewer coverage 由 fresh + carry-forward 共同满足，下一步直接进入：
+
+```text
+USER_FINAL_HUMAN_ACCEPTANCE
+```
+
+到该节点后停止自动 polish。除非用户最终验收发现具体问题，否则不要自行创建 RC.9。
 
 ## 历史审计
 
 - RC.4：`reports/RC4_CONSOLIDATED_REPORT_2026-09-12.md`
 - RC.5：`reports/RC5_REAUDIT_CONSOLIDATED_REPORT_2026-09-12.md`
 - RC.6：`reports/RC6_REAUDIT_CONSOLIDATED_REPORT_2026-09-13.md`
+- RC.7：`reports/RC7_TARGETED_REAUDIT_CONSOLIDATED_REPORT_2026-09-13.md`
 
 ## Severity
 
@@ -171,4 +179,4 @@ P2 必须由 ChatGPT consolidated triage 明确归类为 `must-fix before stable
 - `P2`：重要、有 workaround，但明显降低科研工具价值。
 - `P3`：不阻塞使用的 polish。
 
-当前 gate：**现在只跑 W01/W05/W06；三者 PASS、carry-forward 仍有效且 unresolved must-fix P2=0 后，才进入用户人工最终验收。**
+当前 gate：**只跑 RC.8 W05/W06；两者 PASS 且 unresolved must-fix P2=0 后，进入用户人工最终验收。**
