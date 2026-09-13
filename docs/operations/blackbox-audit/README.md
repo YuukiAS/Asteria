@@ -2,8 +2,8 @@
 
 日期：2026-09-13  
 固定验收入口：`https://asteria.httpwwwcardiacnexus-ukb.com/`  
-当前产品版本：`2.0.0-rc.9`  
-当前验收阶段：`RC9_REAUDIT_FAILED -> RC10_VISUAL_FINISH`
+当前产品版本：`2.0.0-rc.10`  
+当前验收阶段：`GPT_WORK_RC10_STAGED_REAUDIT`
 
 ## 目的
 
@@ -90,66 +90,121 @@ responsive / keyboard / accessibility            -> W05
 any release repair                               -> W06
 ```
 
-## 当前状态：RC.9 re-audit 未通过
+## 当前状态：RC.10 已完成
 
-RC.9 full re-audit consolidated report：
-
-```text
-docs/operations/blackbox-audit/reports/RC9_FULL_REAUDIT_CONSOLIDATED_REPORT_2026-09-13.md
-```
-
-结果：
-
-```text
-W01 = FAIL
-W02 = PASS
-W03 = PASS
-W04 = FAIL
-W05 = FAIL
-W06 = FAIL
-```
-
-剩余 must-fix 已收敛为：
-
-- CAT Full model 1366/1536 overlap；
-- Original TRACE Architecture overlap；
-- Lineage connector / relation chip / target margin 视觉语法不合格；
-- inspector / Semantic Diff 主阅读层数学仍有 raw/碎裂；
-- Evidence Why-it-matters / closure copy 模板化；
-- Advanced / Export collapsed 状态与实际可见内容不一致。
-
-Lineage/Evidence dedicated visual grammar：
-
-```text
-docs/design/LINEAGE_EVIDENCE_VISUAL_GRAMMAR_SPEC.md
-```
-
-当前唯一 repair task：
+RC.10 task / result / review：
 
 ```text
 prompts/tasks/asteria_v2_rc10_visual_finish_task.md
+results/asteria_v2_rc10_visual_finish/result.md
+prompts/tasks/asteria_v2_rc10_visual_finish_review.md
 ```
 
-目标版本：`2.0.0-rc.10`。
-
-## RC.10 re-audit strategy
-
-若 RC.10 result 明确：
+Product commit：
 
 ```text
+f5aa22a7866b65ce243d2b31ac26343df7d155a3
+```
+
+RC.10 result reports：
+
+```text
+CAT_FULL_NODE_OVERLAP_COUNT = 0
+ORIGINAL_TRACE_NODE_OVERLAP_COUNT = 0
+LINEAGE_TARGET_CLIPPED = NO
+LINEAGE_RELATION_CHIP_COLLISION_COUNT = 0
+EDGE_LABEL_CARD_COLLISION_COUNT = 0
+PRIMARY_TEXT_CLIPPING = 0
+MATH_RENDERING_MAIN_UI = PASS
+COPY_QUALITY_MAIN_UI = PASS
+ADVANCED_COLLAPSED_CONTENT_HIDDEN = PASS
+LINEAGE_VISUAL_GRAMMAR = PASS
+EVIDENCE_COPY_QUALITY = PASS
 SCIENTIFIC_TRUTH_CHANGED = NO
 TRACE_ALGORITHM_CHANGED = NO
 SESSION_CONTRACT_CHANGED = NO
+REVIEWER_SCOPE_EXPANDED = NO
+PUBLIC_VERSION = 2.0.0-rc.10
 ```
 
-则 targeted-but-broad re-audit：
+因此 W03 interaction/state 可以 carry forward RC.9 PASS。
+
+## RC.10 staged re-audit
+
+不要一次性跑六个，也不要一开始把 5 个全部跑掉。
+
+计划：
 
 ```text
-W01 + W02 + W04 + W05 + W06
+docs/operations/blackbox-audit/RC10_GPT_WORK_REAUDIT_PLAN_2026-09-13.md
 ```
 
-W03 carry forward RC.9 PASS。
+Campaign：
 
-如果 RC.10 实际触碰 trace/session/state，则把 W03 加回。
+```text
+docs/operations/blackbox-audit/ASTERIA_RC10_GPT_WORK_CAMPAIGN.md
+```
 
-当前 gate：**先完成 RC.10；在新一轮 GPT Work 通过前，不再邀请用户人工验收。**
+### Wave A — first
+
+并行运行：
+
+```text
+W01 + W04 + W05 + W06
+```
+
+Ready-to-paste：
+
+```text
+docs/operations/blackbox-audit/prompts/rc10/W01_VISUAL_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc10/W04_FIRST_TIME_UX_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc10/W05_RESPONSIVE_ACCESSIBILITY_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc10/W06_RELEASE_REDTEAM_WORK_PROMPT.md
+```
+
+如果任意 Wave A reviewer FAIL/BLOCKED，或出现 unresolved core visual P2，立即停止；不要浪费 W02。
+
+### Wave B — only if Wave A passes
+
+再运行：
+
+```text
+W02 Statistical semantics
+```
+
+Ready-to-paste：
+
+```text
+docs/operations/blackbox-audit/prompts/rc10/W02_SEMANTICS_WORK_PROMPT.md
+```
+
+W02 负责确认 RC.10 的 math/copy/presentation cleanup 没有改变 scientific truth。
+
+## RC.10 final gate
+
+```text
+W01 = PASS
+W02 = PASS
+W04 = PASS
+W05 = PASS
+W06 = PASS
+W03 = carry-forward PASS from RC.9
+BROWSER_BLOCKER = NONE
+BLACK_BOX_CONTEXT_CONTAMINATED = NO
+P0 = 0
+P1 = 0
+unresolved must-fix P2 = 0
+NO_NODE_OVERLAP = PASS
+NO_EDGE_LABEL_CARD_COLLISION = PASS
+NO_PRIMARY_TEXT_CLIPPING = PASS
+SELECTION_GEOMETRY_STABLE = PASS
+MOTION_QUALITY = PASS
+MATH_RENDERING_MAIN_UI = PASS
+COPY_QUALITY_MAIN_UI = PASS
+LINEAGE_VISUAL_GRAMMAR = PASS
+EVIDENCE_VISUAL_GRAMMAR = PASS
+```
+
+任何一项未知或失败，都不能再次声明 `FINAL_HUMAN_ACCEPTANCE = READY`。
+
+当前 gate：**先跑 Wave A W01/W04/W05/W06；只有 Wave A 通过后才跑 W02。**
