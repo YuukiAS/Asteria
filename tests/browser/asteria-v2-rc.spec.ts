@@ -3,7 +3,7 @@ import fs from "node:fs/promises"
 import path from "node:path"
 
 const screenshotDir = process.env.ASTERIA_BROWSER_QA_DIR || "/tmp/asteria-browser-qa"
-const acceptanceDir = process.env.ASTERIA_ACCEPTANCE_SCREENSHOT_DIR || path.resolve("results/asteria_v2_rc6_acceptance/screenshots")
+const acceptanceDir = process.env.ASTERIA_ACCEPTANCE_SCREENSHOT_DIR || path.resolve("results/asteria_v2_rc7_acceptance/screenshots")
 
 function relationIdSelector(relationId: string) {
   return `[data-relation-id="${relationId}"]`
@@ -35,8 +35,9 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/")
   await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
   await expect(page.getByTestId("asteria-v2-topbar")).toBeVisible()
-  await expect(page.getByText("2.0.0-rc.6")).toBeVisible()
-  await expect(page.getByTestId("current-project")).toContainText("Project: CAT-TRACE")
+  await expect(page.getByText("2.0.0-rc.7")).toBeVisible()
+  await expect(page.getByTestId("current-project")).toContainText("Project")
+  await expect(page.getByTestId("current-project")).toContainText("CAT-TRACE")
   await expect(page.getByTestId("current-view")).toContainText("Architecture")
   await expect(page.getByTestId("current-model")).toContainText("CAT-TRACE Frozen V2")
   await expect(page.getByTestId("topbar-model-selector")).toHaveValue("cat-trace-frozen-v2")
@@ -101,6 +102,7 @@ test("G05 Architecture browser QA covers canonical trace, diff, export, and 2.0 
   await expect(page.locator('[data-trace-active="true"]')).toHaveCount(0)
 
   await page.getByTestId("advanced-export-validation").click()
+  await expect(page.getByTestId("advanced-export-validation")).toHaveAttribute("aria-expanded", "true")
   await page.getByTestId("export-json").click()
   await expect(page.getByTestId("architecture-export-preview")).toContainText("\"schemaVersion\"")
   await expect(page.getByTestId("architecture-export-preview")).toContainText("\"validationWarnings\"")
@@ -203,7 +205,7 @@ test("G06 multi-view browser QA covers Lineage, Evidence, cross-view links, sear
   await page.screenshot({ path: path.join(screenshotDir, "g06-evidence-laptop.png"), fullPage: false })
 })
 
-test("RC6 acceptance covers direct 2.0 entry, selectors, views, trace-edge truth, and committed screenshots", async ({ page }) => {
+test("RC7 acceptance covers direct 2.0 entry, selectors, views, trace-edge truth, and committed screenshots", async ({ page }) => {
   await fs.mkdir(acceptanceDir, { recursive: true })
   await assertNoLegacyStartup(page)
   await assertNoLegacyToolbar(page)
@@ -302,12 +304,21 @@ test("RC6 acceptance covers direct 2.0 entry, selectors, views, trace-edge truth
   await page.screenshot({ path: path.join(acceptanceDir, "architecture-light.png"), fullPage: false })
 })
 
-test("RC6 keyboard model selector and skip paths are reachable before dense graph nodes", async ({ page }) => {
+test("RC7 keyboard model selector and skip paths are reachable before dense graph nodes", async ({ page }) => {
   await page.goto("/")
   await page.keyboard.press("Tab")
   await expect(page.getByText("Skip to canvas")).toBeFocused()
+  await expect(page.getByText("Skip to canvas")).toBeVisible()
   await page.keyboard.press("Enter")
   await expect(page.getByTestId("architecture-workspace-stage")).toBeFocused()
+
+  await page.goto("/")
+  await page.keyboard.press("Tab")
+  await page.keyboard.press("Tab")
+  await expect(page.getByText("Skip to inspector")).toBeFocused()
+  await expect(page.getByText("Skip to inspector")).toBeVisible()
+  await page.keyboard.press("Enter")
+  await expect(page.locator("#asteria-inspector")).toBeFocused()
 
   await page.getByTestId("topbar-model-selector").focus()
   await expect(page.getByTestId("topbar-model-selector")).toBeFocused()
@@ -320,4 +331,81 @@ test("RC6 keyboard model selector and skip paths are reachable before dense grap
 
   await page.keyboard.press("Tab")
   await expect(page.getByTestId("topbar-search")).toBeFocused()
+})
+
+test("RC7 polish covers compact actions, controlled export disclosure, light trace readability, and full-model reading controls", async ({ page }) => {
+  await fs.mkdir(screenshotDir, { recursive: true })
+  await page.setViewportSize({ width: 1366, height: 768 })
+
+  for (const [testId, name] of [
+    ["topbar-search", "Search architecture"],
+    ["topbar-export", "Open export tools"],
+    ["topbar-save-view", "Save view state"],
+    ["topbar-restore-view", "Restore view state"],
+  ] as const) {
+    const button = page.getByTestId(testId)
+    await expect(button).toHaveAttribute("aria-label", name)
+    const box = await button.boundingBox()
+    expect(box?.width).toBeGreaterThanOrEqual(39)
+    expect(box?.height).toBeGreaterThanOrEqual(39)
+  }
+
+  await page.getByTestId("topbar-toggle-theme").click()
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light")
+  await page.screenshot({ path: path.join(screenshotDir, "rc7-light-trace-off-1366.png"), fullPage: false })
+  await page.getByTestId("enable-trace").click()
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-trace-enabled", "true")
+  await expect(page.locator('[data-trace-active="true"]').first()).toBeVisible()
+  await expect(page.locator(".architecture-map-edge-trace text").first()).toBeVisible()
+  await page.screenshot({ path: path.join(screenshotDir, "rc7-light-trace-on-1366.png"), fullPage: false })
+  await page.getByTestId("topbar-toggle-theme").click()
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark")
+  await page.screenshot({ path: path.join(screenshotDir, "rc7-dark-trace-on-1366.png"), fullPage: false })
+  await page.getByTestId("topbar-toggle-theme").click()
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light")
+
+  const exportToggle = page.getByTestId("advanced-export-validation")
+  await expect(exportToggle).toHaveAttribute("aria-expanded", "false")
+  await exportToggle.click()
+  await expect(exportToggle).toHaveAttribute("aria-expanded", "true")
+  await expect(page.getByTestId("advanced-export-validation-region")).toBeVisible()
+  await expect(page.getByTestId("architecture-export-preview")).toContainText("# CAT-TRACE Frozen V2")
+  await exportToggle.click()
+  await expect(exportToggle).toHaveAttribute("aria-expanded", "false")
+
+  await exportToggle.focus()
+  await page.keyboard.press("Enter")
+  await expect(exportToggle).toHaveAttribute("aria-expanded", "true")
+  await page.keyboard.press("Space")
+  await expect(exportToggle).toHaveAttribute("aria-expanded", "false")
+
+  await page.getByTestId("topbar-export").click()
+  await expect(exportToggle).toHaveAttribute("aria-expanded", "true")
+  await expect(exportToggle).toBeFocused()
+  await expect(page.getByTestId("architecture-action-status")).toContainText("Export tools opened")
+
+  await page.getByTestId("detail-full-model").click()
+  await expect(page.getByTestId("full-model-reading-controls")).toBeVisible()
+  const canvas = page.getByTestId("architecture-projection-canvas")
+  await expect(canvas).toHaveAttribute("data-reading-zoom", "1.00")
+  await page.getByRole("button", { name: "Zoom in full model" }).click()
+  await expect(canvas).toHaveAttribute("data-reading-zoom", "1.18")
+  await page.getByTestId("full-model-pan-mode").click()
+  await expect(page.getByTestId("full-model-pan-mode")).toHaveAttribute("aria-pressed", "true")
+  const box = await canvas.boundingBox()
+  expect(box).not.toBeNull()
+  await page.mouse.move((box?.x || 0) + (box?.width || 0) / 2, (box?.y || 0) + (box?.height || 0) / 2)
+  await page.mouse.down()
+  await page.mouse.move((box?.x || 0) + (box?.width || 0) / 2 + 72, (box?.y || 0) + (box?.height || 0) / 2 + 38)
+  await page.mouse.up()
+  await expect(canvas).not.toHaveAttribute("data-reading-pan-x", "0")
+  await page.screenshot({ path: path.join(screenshotDir, "rc7-full-model-zoom-pan.png"), fullPage: false })
+  await page.getByRole("button", { name: "Fit full model" }).click()
+  await expect(canvas).toHaveAttribute("data-reading-zoom", "1.00")
+  await expect(canvas).toHaveAttribute("data-reading-pan-x", "0")
+  await expect(canvas).toHaveAttribute("data-reading-pan-y", "0")
+
+  await expect(page.getByTestId("project-view-model-helper")).toContainText("Project")
+  await expect(page.getByTestId("project-view-model-helper")).toContainText("CAT-TRACE")
+  await page.screenshot({ path: path.join(screenshotDir, "rc7-context-helper-spacing.png"), fullPage: false })
 })

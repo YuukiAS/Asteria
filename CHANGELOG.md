@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0-rc.7 - Release Polish Accessibility And Disclosure
+
+- Hardened keyboard-first skip links, compact topbar accessible names, and approximately 40px top action targets for 1366px desktop review.
+- Replaced the Advanced / Export & validation native disclosure with a controlled button/region flow, and made top Export visibly open/focus the export surface with status feedback.
+- Added Full model presentation-only Zoom out / Fit / Zoom in controls plus pointer-drag pan without changing canonical coordinates or relations.
+- Improved 1366 light-theme trace readability, active relation-label halo/opacity, and Project/View/Model label-value spacing ahead of targeted W01/W05/W06 re-audit.
+
 ## 2.0.0-rc.6 - Architecture Readability And Trace Truth
 
 - Added Architecture `Overview` / `Full model` detail control so CAT-TRACE opens as a readable projection while Full model preserves the complete canonical graph.

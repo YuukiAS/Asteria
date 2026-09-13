@@ -1,5 +1,5 @@
 import { Download, FileJson2, GitBranch, Link2, LocateFixed, Network, Play, RotateCcw, Search, ShieldCheck } from "lucide-react"
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { canonicalTraceProjects, type CanonicalTraceProjectId } from "../architecture/fixtures/canonicalTraceFixtures"
 import { catTraceMultiViewProject, evidenceClosureWarnings, multiViewIds, projectedEntities, searchCanonicalEntities, type MultiViewId } from "../architecture/fixtures/multiViewTraceProject"
 import { exportArchitectureJsonV2, exportArchitectureMarkdown } from "../architecture/export"
@@ -175,6 +175,7 @@ export function ArchitectureReferencePanel() {
     setDetailLevel,
     setFocusedLayer,
     setExportMode,
+    setActionStatus,
     setSearchQuery,
     setSearchScope,
     resetArchitectureView,
@@ -185,7 +186,10 @@ export function ArchitectureReferencePanel() {
     startTraceForSelected,
   } = useArchitectureSession()
   const [collapsedOutlineLayers, setCollapsedOutlineLayers] = useState<string[]>([])
+  const [exportExpanded, setExportExpanded] = useState(false)
   const panelTopRef = useRef<HTMLDivElement>(null)
+  const exportToggleRef = useRef<HTMLButtonElement>(null)
+  const exportPreviewRef = useRef<HTMLPreElement>(null)
   const symbolList = useMemo(() => Object.values(project.symbols), [project])
   const selectedSymbol = project.symbols[selectedSymbolId] || symbolList[0]
   const selectedArchitectureEntityId = selectedSymbol?.entityId || defaultViewSelection[multiViewIds.architecture]
@@ -220,6 +224,20 @@ export function ArchitectureReferencePanel() {
   useEffect(() => {
     panelTopRef.current?.scrollIntoView({ block: "start" })
   }, [activeViewId, selectedEntityId, selectedSymbolId])
+
+  const openExportTools = useCallback(() => {
+    setExportExpanded(true)
+    setActionStatus("Export tools opened")
+    window.requestAnimationFrame(() => {
+      exportToggleRef.current?.scrollIntoView({ block: "center" })
+      exportToggleRef.current?.focus()
+    })
+  }, [setActionStatus])
+
+  useEffect(() => {
+    window.addEventListener("asteria:open-export-tools", openExportTools)
+    return () => window.removeEventListener("asteria:open-export-tools", openExportTools)
+  }, [openExportTools])
 
   const switchModel = (next: CanonicalTraceProjectId) => {
     setModelId(next)
@@ -520,24 +538,37 @@ export function ArchitectureReferencePanel() {
           </section>
 
           <section className="panel-section">
-            <details className="architecture-advanced-metadata" data-testid="advanced-export-validation">
-            <summary>Advanced / Export & validation</summary>
-            <div className="architecture-export-grid">
-              <span className="badge">Warnings {warnings.length}</span>
-              <button type="button" className={`toolbar-button ${exportMode === "markdown" ? "toolbar-button-active" : ""}`} onClick={() => setExportMode("markdown")} data-testid="export-markdown">
-                <Download size={14} />
-                Markdown
+            <div className="architecture-advanced-metadata architecture-export-disclosure">
+              <button
+                ref={exportToggleRef}
+                type="button"
+                className="architecture-disclosure-button"
+                aria-expanded={exportExpanded}
+                aria-controls="architecture-export-validation-region"
+                onClick={() => setExportExpanded((current) => !current)}
+                data-testid="advanced-export-validation"
+              >
+                <span>Advanced / Export & validation</span>
+                <small>{exportExpanded ? "Hide export tools" : "Show export tools"}</small>
               </button>
-              <button type="button" className={`toolbar-button ${exportMode === "json" ? "toolbar-button-active" : ""}`} onClick={() => setExportMode("json")} data-testid="export-json">
-                <FileJson2 size={14} />
-                Schema V2
-              </button>
+              <div id="architecture-export-validation-region" className="architecture-export-region" role="region" aria-label="Advanced export and validation" hidden={!exportExpanded} data-testid="advanced-export-validation-region">
+                <div className="architecture-export-grid">
+                  <span className="badge">Warnings {warnings.length}</span>
+                  <button type="button" className={`toolbar-button ${exportMode === "markdown" ? "toolbar-button-active" : ""}`} onClick={() => setExportMode("markdown")} data-testid="export-markdown">
+                    <Download size={14} />
+                    Markdown
+                  </button>
+                  <button type="button" className={`toolbar-button ${exportMode === "json" ? "toolbar-button-active" : ""}`} onClick={() => setExportMode("json")} data-testid="export-json">
+                    <FileJson2 size={14} />
+                    Schema V2
+                  </button>
+                </div>
+                <pre ref={exportPreviewRef} tabIndex={-1} className="architecture-export-preview" data-testid="architecture-export-preview">{exportText}</pre>
+                <div className="architecture-warning-list">
+                  {warnings.length ? warnings.slice(0, 4).map((warning, index) => <span key={`${warning.id}:${index}`}>{warning.message}</span>) : <span>No structural warnings.</span>}
+                </div>
+              </div>
             </div>
-            <pre className="architecture-export-preview" data-testid="architecture-export-preview">{exportText}</pre>
-            <div className="architecture-warning-list">
-              {warnings.length ? warnings.slice(0, 4).map((warning, index) => <span key={`${warning.id}:${index}`}>{warning.message}</span>) : <span>No structural warnings.</span>}
-            </div>
-            </details>
           </section>
 
           {traceEnabled ? (

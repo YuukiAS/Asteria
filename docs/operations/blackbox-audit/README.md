@@ -2,8 +2,8 @@
 
 日期：2026-09-13  
 固定验收入口：`https://asteria.httpwwwcardiacnexus-ukb.com/`
-当前产品版本：`2.0.0-rc.6`  
-下一目标版本：`2.0.0-rc.7`
+当前产品版本：`2.0.0-rc.7`
+下一目标版本：`GPT_WORK_TARGETED_REAUDIT_W01_W05_W06`
 
 ## 目的
 

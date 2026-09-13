@@ -65,8 +65,8 @@ try {
   const stylesSource = await read("src/styles/index.css")
   const activeUiSource = await readActiveUiSource()
 
-  assert(packageJson.version === "2.0.0-rc.6", "package.json must declare the current RC version.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.6"'), "App shell must display the current RC version.")
+  assert(packageJson.version === "2.0.0-rc.7", "package.json must declare the current RC version.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.7"'), "App shell must display the current RC version.")
   assert(appSource.includes("topbar-model-selector"), "A formal model selector must be in the early topbar keyboard order.")
   assert(appSource.includes("Skip to canvas") && appSource.includes("Skip to inspector"), "Keyboard skip paths must be present.")
   assert(appSource.includes('data-testid="right-panel-title"') && appSource.includes("{viewLabel(activeViewId)}"), "Right panel title must derive from active view state.")
@@ -95,7 +95,7 @@ try {
   for (const required of ["Meaning", "Why it matters", "Canonical definition", "Advanced metadata", "Advanced / Export & validation", "Added", "Changed", "Preserved"]) {
     assert(panelSource.includes(required), `Inspector/diff hierarchy must include ${required}.`)
   }
-  assert(stylesSource.includes("opacity-85") && stylesSource.includes("architecture-map-edge[data-trace-role=\"upstream\"]"), "Light theme muted and trace role styling must be explicit.")
+  assert(stylesSource.includes("[data-theme=\"light\"] .architecture-map-node-muted") && stylesSource.includes("[data-theme=\"light\"] .architecture-map-edge-muted") && stylesSource.includes("architecture-map-edge[data-trace-role=\"upstream\"]"), "Light theme muted and trace role styling must be explicit.")
   assert(stylesSource.includes("@media (max-width: 1400px)") && stylesSource.includes("grid-template-columns: 148px minmax(0, 1fr)"), "1366 responsive breakpoint must protect canvas space.")
 
   const [{ canonicalTraceProjects }, { catTraceMultiViewProject, multiViewIds, searchCanonicalEntities }, { traceForSymbol }, { buildProjectionLayout }, { migrateV1MapToArchitectureProjectV2 }, { legacyV1FreezeMap }] = await Promise.all([
@@ -150,7 +150,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.6",
+          version: "2.0.0-rc.7",
           mathRendering: "RenderedMath",
           clearState: "atomic",
           search: "cross-view",

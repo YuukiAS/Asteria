@@ -1,5 +1,5 @@
-import { GitBranch, Layers3, Network, ShieldCheck } from "lucide-react"
-import { useMemo, type CSSProperties } from "react"
+import { GitBranch, Layers3, Maximize2, Minus, Move, Network, Plus, ShieldCheck } from "lucide-react"
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react"
 import { canonicalTraceProjects } from "../architecture/fixtures/canonicalTraceFixtures"
 import { multiViewIds } from "../architecture/fixtures/multiViewTraceProject"
 import { diffOriginalTraceToCatTrace, type SemanticDiffStatus } from "../architecture/semanticDiff"
@@ -55,10 +55,17 @@ function selectedButtonStyle(selected: boolean): CSSProperties {
 export function ArchitectureWorkspace() {
   const session = useArchitectureSession()
   const { activeViewId, modelId, project, selectedEntityId, selectedSymbolId, trace, traceEnabled, traceMode, traceDirection, focusedLayer, detailLevel, setActiveViewId, setSelectedEntityId, setSelectedSymbolId } = session
+  const [readingZoom, setReadingZoom] = useState(1)
+  const [readingPan, setReadingPan] = useState({ x: 0, y: 0 })
+  const [panMode, setPanMode] = useState(false)
+  const panStartRef = useRef<{ pointerId: number; startX: number; startY: number; panX: number; panY: number } | null>(null)
   const layout = useMemo(() => buildProjectionLayout(project, activeViewId, { detailLevel, selectedEntityId, traceEntityIds: traceEnabled ? trace.entityIds : undefined }), [activeViewId, detailLevel, project, selectedEntityId, trace.entityIds, traceEnabled])
   const diff = useMemo(() => diffOriginalTraceToCatTrace(canonicalTraceProjects["original-trace"], canonicalTraceProjects["cat-trace-frozen-v2"]), [])
   const isArchitecture = activeViewId === multiViewIds.architecture
   const isLineage = activeViewId === multiViewIds.lineage
+  const canUseReadingControls = isArchitecture && detailLevel === "full"
+  const appliedReadingZoom = canUseReadingControls ? readingZoom : 1
+  const appliedReadingPan = canUseReadingControls ? readingPan : { x: 0, y: 0 }
   const title = isArchitecture ? `${project.project.title} - Architecture` : isLineage ? "CAT-TRACE - Lineage" : "CAT-TRACE - Evidence"
   const subtitle = isArchitecture
     ? modelId === "original-trace"
@@ -80,6 +87,43 @@ export function ArchitectureWorkspace() {
     const symbolId = node.projection.symbolIds?.find((id) => project.symbols[id]) || project.entities[node.entityId]?.symbolIds?.find((id) => project.symbols[id])
     if (symbolId) setSelectedSymbolId(symbolId)
   }
+
+  const fitReadingView = useCallback(() => {
+    setReadingZoom(1)
+    setReadingPan({ x: 0, y: 0 })
+    setPanMode(false)
+  }, [])
+
+  useEffect(() => {
+    fitReadingView()
+  }, [activeViewId, detailLevel, fitReadingView, modelId])
+
+  const zoomReadingView = useCallback((direction: "in" | "out") => {
+    setReadingZoom((current) => {
+      const next = direction === "in" ? current + 0.18 : current - 0.18
+      return Math.min(1.9, Math.max(0.82, Number(next.toFixed(2))))
+    })
+  }, [])
+
+  const startCanvasPan = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (!canUseReadingControls || !panMode) return
+      event.preventDefault()
+      event.currentTarget.setPointerCapture(event.pointerId)
+      panStartRef.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, panX: readingPan.x, panY: readingPan.y }
+    },
+    [canUseReadingControls, panMode, readingPan.x, readingPan.y],
+  )
+
+  const moveCanvasPan = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = panStartRef.current
+    if (!start || start.pointerId !== event.pointerId) return
+    setReadingPan({ x: start.panX + event.clientX - start.startX, y: start.panY + event.clientY - start.startY })
+  }, [])
+
+  const stopCanvasPan = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (panStartRef.current?.pointerId === event.pointerId) panStartRef.current = null
+  }, [])
 
   return (
     <main className="architecture-workspace" data-testid="architecture-workspace">
@@ -120,17 +164,51 @@ export function ArchitectureWorkspace() {
           </div>
         ) : null}
 
-        <div className={`architecture-workspace-canvas ${!isArchitecture ? "architecture-workspace-research-canvas" : ""}`} data-testid={isArchitecture ? "architecture-projection-canvas" : isLineage ? "central-lineage-canvas" : "central-evidence-canvas"} data-projected-entity-count={layout.nodes.length} data-projected-relation-count={layout.edges.length}>
+        {canUseReadingControls ? (
+          <div className="architecture-reading-controls" aria-label="Full model reading controls" data-testid="full-model-reading-controls">
+            <button type="button" className="toolbar-button" onClick={() => zoomReadingView("out")} aria-label="Zoom out full model" title="Zoom out">
+              <Minus size={14} />
+              <span>Zoom out</span>
+            </button>
+            <button type="button" className="toolbar-button" onClick={fitReadingView} aria-label="Fit full model" title="Fit">
+              <Maximize2 size={14} />
+              <span>Fit</span>
+            </button>
+            <button type="button" className="toolbar-button" onClick={() => zoomReadingView("in")} aria-label="Zoom in full model" title="Zoom in">
+              <Plus size={14} />
+              <span>Zoom in</span>
+            </button>
+            <button type="button" className={`toolbar-button ${panMode ? "toolbar-button-active" : ""}`} onClick={() => setPanMode((current) => !current)} aria-label="Pan full model with pointer drag" aria-pressed={panMode} title="Pan with pointer drag" data-testid="full-model-pan-mode">
+              <Move size={14} />
+              <span>Pan</span>
+            </button>
+          </div>
+        ) : null}
+
+        <div
+          className={`architecture-workspace-canvas ${!isArchitecture ? "architecture-workspace-research-canvas" : ""} ${canUseReadingControls && panMode ? "architecture-workspace-canvas-pannable" : ""}`}
+          data-testid={isArchitecture ? "architecture-projection-canvas" : isLineage ? "central-lineage-canvas" : "central-evidence-canvas"}
+          data-projected-entity-count={layout.nodes.length}
+          data-projected-relation-count={layout.edges.length}
+          data-reading-zoom={appliedReadingZoom.toFixed(2)}
+          data-reading-pan-x={Math.round(appliedReadingPan.x)}
+          data-reading-pan-y={Math.round(appliedReadingPan.y)}
+          onPointerDown={startCanvasPan}
+          onPointerMove={moveCanvasPan}
+          onPointerUp={stopCanvasPan}
+          onPointerCancel={stopCanvasPan}
+        >
           <div
             className="architecture-projection-layer"
             style={{
-              "--projection-pan-x": `${layout.viewport.x * 0.04}px`,
-              "--projection-pan-y": `${layout.viewport.y * 0.04}px`,
-              "--projection-zoom": layout.viewport.zoom,
+              "--projection-pan-x": `${layout.viewport.x * 0.04 + appliedReadingPan.x}px`,
+              "--projection-pan-y": `${layout.viewport.y * 0.04 + appliedReadingPan.y}px`,
+              "--projection-zoom": layout.viewport.zoom * appliedReadingZoom,
             } as CSSProperties}
             data-viewport-x={layout.viewport.x}
             data-viewport-y={layout.viewport.y}
             data-viewport-zoom={layout.viewport.zoom}
+            data-reading-zoom={appliedReadingZoom.toFixed(2)}
           >
             <svg className="architecture-map-edges" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Projected semantic relations">
               <defs>

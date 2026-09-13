@@ -9,7 +9,7 @@ import { AppErrorBoundary } from "../components/AppErrorBoundary"
 import { ArchitectureReferencePanel } from "../components/ArchitectureReferencePanel"
 import { ArchitectureWorkspace } from "../components/ArchitectureWorkspace"
 
-const appVersion = "2.0.0-rc.6"
+const appVersion = "2.0.0-rc.7"
 const sidebarWidthKey = "asteria-v2-sidebar-width"
 const sidebarCollapsedKey = "asteria-v2-sidebar-collapsed"
 const minSidebarWidth = 300
@@ -55,21 +55,32 @@ function focusArchitectureSearch() {
   document.querySelector<HTMLElement>('[data-testid="architecture-search-input"]')?.focus()
 }
 
-function focusArchitectureExport() {
-  document.querySelector<HTMLElement>('[data-testid="export-markdown"]')?.click()
-  document.querySelector<HTMLElement>('[data-testid="architecture-export-preview"]')?.scrollIntoView({ block: "center" })
-}
-
 function focusSkipTarget(selector: string) {
   const target = document.querySelector<HTMLElement>(selector)
   target?.focus()
   target?.scrollIntoView({ block: "nearest" })
 }
 
-function AsteriaV2TopBar({ theme, onToggleTheme, onToggleInspector, inspectorCollapsed }: { theme: "light" | "dark"; onToggleTheme: () => void; onToggleInspector: () => void; inspectorCollapsed: boolean }) {
+function AsteriaV2TopBar({
+  theme,
+  onToggleTheme,
+  onToggleInspector,
+  onOpenInspector,
+  inspectorCollapsed,
+}: {
+  theme: "light" | "dark"
+  onToggleTheme: () => void
+  onToggleInspector: () => void
+  onOpenInspector: () => void
+  inspectorCollapsed: boolean
+}) {
   const { activeViewId, modelId, setModelId, saveViewState, restoreViewState } = useArchitectureSession()
   const Icon = viewIcon(activeViewId)
   const modelLabel = modelId === "original-trace" ? "Original TRACE" : "CAT-TRACE Frozen V2"
+  const openExportTools = useCallback(() => {
+    if (inspectorCollapsed) onOpenInspector()
+    window.dispatchEvent(new CustomEvent("asteria:open-export-tools"))
+  }, [inspectorCollapsed, onOpenInspector])
 
   return (
     <header className="asteria-v2-topbar" data-testid="asteria-v2-topbar">
@@ -82,12 +93,23 @@ function AsteriaV2TopBar({ theme, onToggleTheme, onToggleInspector, inspectorCol
       </div>
 
       <div className="asteria-v2-context" aria-label="Current Asteria 2.0 context">
-        <span data-testid="current-project" title="Project is the current research workspace.">Project: CAT-TRACE</span>
-        <span data-testid="current-view">
-          <Icon size={14} />
-          {viewLabel(activeViewId)}
+        <span data-testid="current-project" title="Project is the current research workspace.">
+          <strong>Project</strong>
+          <em>CAT-TRACE</em>
         </span>
-        {activeViewId === multiViewIds.architecture ? <span data-testid="current-model" title="Model is the Architecture variant currently shown.">Model: {modelLabel}</span> : null}
+        <span data-testid="current-view">
+          <strong>View</strong>
+          <em>
+            <Icon size={14} />
+            {viewLabel(activeViewId)}
+          </em>
+        </span>
+        {activeViewId === multiViewIds.architecture ? (
+          <span data-testid="current-model" title="Model is the Architecture variant currently shown.">
+            <strong>Model</strong>
+            <em>{modelLabel}</em>
+          </span>
+        ) : null}
         {activeViewId === multiViewIds.architecture ? (
           <label className="asteria-v2-model-select-label">
             <span className="sr-only">Model</span>
@@ -116,19 +138,19 @@ function AsteriaV2TopBar({ theme, onToggleTheme, onToggleInspector, inspectorCol
       </div>
 
       <div className="asteria-v2-actions">
-        <button type="button" className="toolbar-button" onClick={focusArchitectureSearch} data-testid="topbar-search">
+        <button type="button" className="toolbar-button" onClick={focusArchitectureSearch} aria-label="Search architecture" title="Search architecture" data-testid="topbar-search">
           <Search size={15} />
           <span className="toolbar-label">Search</span>
         </button>
-        <button type="button" className="toolbar-button" onClick={focusArchitectureExport} data-testid="topbar-export">
+        <button type="button" className="toolbar-button" onClick={openExportTools} aria-label="Open export tools" title="Open export tools" data-testid="topbar-export">
           <Download size={15} />
           <span className="toolbar-label">Export</span>
         </button>
-        <button type="button" className="toolbar-button" onClick={saveViewState} data-testid="topbar-save-view">
+        <button type="button" className="toolbar-button" onClick={saveViewState} aria-label="Save view state" title="Save view state" data-testid="topbar-save-view">
           <Save size={15} />
           <span className="toolbar-label">Save</span>
         </button>
-        <button type="button" className="toolbar-button" onClick={restoreViewState} data-testid="topbar-restore-view">
+        <button type="button" className="toolbar-button" onClick={restoreViewState} aria-label="Restore view state" title="Restore view state" data-testid="topbar-restore-view">
           <RotateCcw size={15} />
           <span className="toolbar-label">Restore</span>
         </button>
@@ -198,7 +220,7 @@ function AsteriaV2Shell() {
         <a href="#asteria-canvas" onClick={(event) => { event.preventDefault(); focusSkipTarget("#asteria-canvas") }}>Skip to canvas</a>
         <a href="#asteria-inspector" onClick={(event) => { event.preventDefault(); focusSkipTarget("#asteria-inspector") }}>Skip to inspector</a>
       </nav>
-      <AsteriaV2TopBar theme={theme} onToggleTheme={toggleTheme} onToggleInspector={() => setSidebarCollapsed(!isSidebarCollapsed)} inspectorCollapsed={isSidebarCollapsed} />
+      <AsteriaV2TopBar theme={theme} onToggleTheme={toggleTheme} onToggleInspector={() => setSidebarCollapsed(!isSidebarCollapsed)} onOpenInspector={() => setSidebarCollapsed(false)} inspectorCollapsed={isSidebarCollapsed} />
       <div className="asteria-v2-main">
         <AppErrorBoundary label="architecture workspace" resetKey={workspaceResetKey}>
           <ArchitectureWorkspace />

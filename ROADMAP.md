@@ -1,7 +1,7 @@
 # Asteria Product Roadmap
 
-更新时间：2026-09-12
-状态：Asteria 2.0 Web 已完成 G00–G06、RC.3 acceptance hardening、RC.4 legacy UI archive、RC.5 black-box repair 与 RC.6 architecture readability / trace truth repair 到 `2.0.0-rc.6`。下一步是 `GPT_WORK_BLACKBOX_REAUDIT`；未发布 `2.0.0` stable。
+更新时间：2026-09-13
+状态：Asteria 2.0 Web 已完成 G00–G06、RC.3 acceptance hardening、RC.4 legacy UI archive、RC.5 black-box repair、RC.6 architecture readability / trace truth repair 与 RC.7 accessibility/disclosure release polish 到 `2.0.0-rc.7`。下一步是 `GPT_WORK_TARGETED_REAUDIT_W01_W05_W06`；未发布 `2.0.0` stable。
 
 ## 0. 当前判断
 
@@ -21,6 +21,8 @@ G00–G06 已经完成 schema、fixtures、trace、typed relations、layers、ou
 
 `2.0.0-rc.6` 集中修复 RC.5 re-audit 仍未通过的 Architecture readability 与 trace truth：Architecture 默认进入 `Overview` 投影，`Full model` 保留完整 canonical graph；selection 与 active trace 解耦，trace 默认 OFF，Clear 后不残留 counters/path/highlight；recursive upstream/downstream 方向按 root-relative traversal 计算；`c(f)=empty -> mathcal U`、重点 indices metadata、Evidence Pending、object-type Inspector、Semantic Diff first-class 和 Advanced/export/debug 分离均已纳入回归。
 
+`2.0.0-rc.7` 只处理 RC.6 re-audit 剩余的 W01/W05/W06 release polish：可靠 keyboard-first skip links、1366 light trace-on muted-context/readability、受控 Advanced / Export & validation disclosure、top Export 可见反馈、compact topbar accessible names 与约 40px hit targets、Full model presentation-only Zoom/Fit/pan controls、Project/View/Model label-value spacing，以及 selected/active relation-label readability。科学定义、canonical ontology、trace 算法、Evidence truth 与 session persistence contract 保持不变。
+
 RC.4 执行入口：
 
 `prompts/tasks/asteria_v2_rc4_archive_legacy_acceptance_task.md`
@@ -32,6 +34,10 @@ RC.5 执行入口：
 RC.6 执行入口：
 
 `prompts/tasks/asteria_v2_rc6_blackbox_repair_task.md`
+
+RC.7 执行入口：
+
+`prompts/tasks/asteria_v2_rc7_release_polish_task.md`
 
 审计依据：
 

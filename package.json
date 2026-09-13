@@ -1,7 +1,7 @@
 {
   "name": "asteria",
   "private": true,
-  "version": "2.0.0-rc.6",
+  "version": "2.0.0-rc.7",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -22,16 +22,18 @@
     "test:architecture-rc4": "node scripts/validate-architecture-rc4.mjs",
     "test:architecture-rc5": "node scripts/validate-architecture-rc5.mjs",
     "test:architecture-rc6": "node scripts/validate-architecture-rc6.mjs",
+    "test:architecture-rc7": "node scripts/validate-architecture-rc7.mjs",
     "smoke:public-rc4": "node scripts/smoke-architecture-rc4-public.mjs",
     "smoke:public-rc5": "node scripts/smoke-architecture-rc5-public.mjs",
     "smoke:public-rc6": "node scripts/smoke-architecture-rc6-public.mjs",
+    "smoke:public-rc7": "node scripts/smoke-architecture-rc7-public.mjs",
     "test:browser": "playwright test",
     "test:e2e": "npm run test:browser",
     "bench:v1-baseline": "node scripts/benchmark-v1-baseline.mjs",
     "bench:architecture-kernel": "node scripts/benchmark-architecture-kernel.mjs",
     "bench:architecture-g03": "node scripts/benchmark-architecture-g03.mjs",
     "bench:architecture-g05": "node scripts/benchmark-architecture-g05.mjs",
-    "test:regression": "npm run test:legacy-roundtrip && npm run test:architecture-kernel && npm run test:canonical-trace && npm run test:architecture-g03 && npm run test:architecture-g04 && npm run test:architecture-g05 && npm run test:architecture-g06 && npm run test:architecture-rc3 && npm run test:architecture-rc4 && npm run test:architecture-rc5 && npm run test:architecture-rc6 && npm run test:shared-server"
+    "test:regression": "npm run test:legacy-roundtrip && npm run test:architecture-kernel && npm run test:canonical-trace && npm run test:architecture-g03 && npm run test:architecture-g04 && npm run test:architecture-g05 && npm run test:architecture-g06 && npm run test:architecture-rc3 && npm run test:architecture-rc4 && npm run test:architecture-rc5 && npm run test:architecture-rc6 && npm run test:architecture-rc7 && npm run test:shared-server"
   },
   "dependencies": {
     "@tiptap/core": "^2.26.4",

@@ -135,7 +135,7 @@ body {
     min-width: 0;
     max-width: 250px;
     align-items: center;
-    gap: 5px;
+    gap: 7px;
     overflow: hidden;
     border: 1px solid rgb(var(--color-border));
     border-radius: 6px;
@@ -144,6 +144,26 @@ body {
     color: rgb(var(--color-secondary));
     font-size: 12px;
     font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .asteria-v2-context span strong {
+    flex: 0 0 auto;
+    color: rgb(var(--color-muted));
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .asteria-v2-context span em {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 5px;
+    overflow: hidden;
+    color: rgb(var(--color-foreground));
+    font-style: normal;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -177,7 +197,7 @@ body {
 
   .asteria-v2-actions .toolbar-button {
     min-width: 40px;
-    min-height: 36px;
+    min-height: 40px;
   }
 
   .asteria-v2-main {
@@ -368,11 +388,11 @@ body {
   }
 
   .architecture-context-helper div {
-    @apply grid gap-1 rounded-md border border-border bg-app/50 px-2 py-2;
+    @apply grid grid-cols-[72px_minmax(0,1fr)] items-start gap-3 rounded-md border border-border bg-app/50 px-2 py-2;
   }
 
   .architecture-context-helper strong {
-    @apply text-[10px] uppercase text-muted;
+    @apply pt-0.5 text-[10px] uppercase text-muted;
   }
 
   .architecture-context-helper span {
@@ -554,6 +574,18 @@ body {
 
   .architecture-export-grid {
     @apply flex flex-wrap gap-2;
+  }
+
+  .architecture-disclosure-button {
+    @apply flex w-full items-center justify-between gap-3 rounded-md px-1 py-1 text-left text-xs font-semibold text-foreground transition hover:bg-panel;
+  }
+
+  .architecture-disclosure-button small {
+    @apply shrink-0 text-[11px] font-medium text-muted;
+  }
+
+  .architecture-export-region {
+    @apply mt-3 grid gap-3 border-t border-border pt-3;
   }
 
   .architecture-export-preview {
@@ -794,6 +826,22 @@ body {
       radial-gradient(circle at center, rgb(var(--color-panel) / 0.28), transparent 58%);
   }
 
+  .architecture-workspace-canvas-pannable {
+    cursor: grab;
+  }
+
+  .architecture-workspace-canvas-pannable:active {
+    cursor: grabbing;
+  }
+
+  .architecture-reading-controls {
+    @apply absolute right-7 top-28 z-20 flex flex-wrap items-center justify-end gap-1.5 rounded-md border border-border bg-panel/90 p-1 shadow-sm;
+  }
+
+  .architecture-reading-controls .toolbar-button {
+    min-height: 34px;
+  }
+
   .architecture-projection-layer {
     @apply absolute inset-0;
     transform: translate(var(--projection-pan-x), var(--projection-pan-y)) scale(var(--projection-zoom));
@@ -829,7 +877,13 @@ body {
   }
 
   .architecture-map-node-muted {
-    @apply border-dashed bg-panel/90 opacity-85;
+    @apply border-dashed bg-panel/95 opacity-90;
+  }
+
+  [data-theme="light"] .architecture-map-node-muted {
+    border-color: rgb(var(--color-strong-border));
+    color: rgb(55 65 81);
+    opacity: 0.94;
   }
 
   [data-theme="dark"] .architecture-map-node-muted {
@@ -893,13 +947,15 @@ body {
 
   .architecture-map-edge text {
     fill: rgb(var(--color-muted));
-    font-size: 1.55px;
+    font-size: 1.62px;
     font-weight: 650;
     letter-spacing: 0;
     opacity: 0;
     paint-order: stroke;
     stroke: rgb(var(--color-canvas));
-    stroke-width: 0.24px;
+    stroke-linejoin: round;
+    stroke-width: 0.3px;
+    text-anchor: middle;
   }
 
   .architecture-map-edge-neutral path {
@@ -937,11 +993,33 @@ body {
   .architecture-map-edge-trace text,
   .architecture-map-edge-selected text {
     fill: rgb(var(--color-foreground));
-    opacity: 0.52;
+    opacity: 0.78;
+    stroke: rgb(var(--color-panel));
+    stroke-width: 0.42px;
   }
 
   .architecture-map-edge-muted {
-    opacity: 0.58;
+    opacity: 0.68;
+  }
+
+  .architecture-map-edge-muted path {
+    opacity: 0.62;
+    stroke-width: 0.28;
+  }
+
+  [data-theme="light"] .architecture-map-edge-muted {
+    opacity: 0.74;
+  }
+
+  [data-theme="light"] .architecture-map-edge-muted path {
+    opacity: 0.68;
+  }
+
+  [data-theme="light"] .architecture-map-edge-trace text,
+  [data-theme="light"] .architecture-map-edge-selected text {
+    opacity: 0.86;
+    stroke: rgb(255 255 255);
+    stroke-width: 0.48px;
   }
 
   .architecture-map-edges marker path {
@@ -1502,20 +1580,22 @@ body {
   overflow-wrap: anywhere;
 }
 
-.toolbar-button:focus-visible,
-.primary-button:focus-visible,
-.segmented-button:focus-visible,
-.danger-button:focus-visible,
-.field-input:focus-visible,
-.asteria-v2-model-select:focus-visible,
-.architecture-map-node:focus-visible,
-.architecture-symbol-node:focus-visible,
-.research-view-node:focus-visible,
-.architecture-search-results button:focus-visible,
-.asteria-skip-links a:focus-visible {
-  outline: 2px solid rgb(var(--color-accent));
-  outline-offset: 2px;
-}
+  .toolbar-button:focus-visible,
+  .primary-button:focus-visible,
+  .segmented-button:focus-visible,
+  .danger-button:focus-visible,
+  .field-input:focus-visible,
+  .asteria-v2-model-select:focus-visible,
+  .architecture-disclosure-button:focus-visible,
+  .architecture-map-node:focus-visible,
+  .architecture-symbol-node:focus-visible,
+  .research-view-node:focus-visible,
+  .architecture-search-results button:focus-visible,
+  .asteria-skip-links a:focus,
+  .asteria-skip-links a:focus-visible {
+    outline: 2px solid rgb(var(--color-accent));
+    outline-offset: 2px;
+  }
 
 .asteria-skip-links {
   position: absolute;
@@ -1540,9 +1620,11 @@ body {
   transition: transform 120ms ease;
 }
 
-.asteria-skip-links a:focus-visible {
-  transform: translateY(0);
-}
+  .asteria-skip-links:focus-within a,
+  .asteria-skip-links a:focus,
+  .asteria-skip-links a:focus-visible {
+    transform: translateY(0);
+  }
 
 .inspector-shell {
   position: relative;
@@ -3266,7 +3348,8 @@ body {
   }
 
   .asteria-v2-actions .toolbar-button {
-    width: 32px;
+    width: 40px;
+    height: 40px;
     padding-right: 0;
     padding-left: 0;
   }
