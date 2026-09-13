@@ -19,12 +19,12 @@ docs/operations/blackbox-audit/RC5_GPT_WORK_REAUDIT_PLAN_2026-09-12.md
 当前 ready-to-paste prompts：
 
 ```text
-docs/operations/blackbox-audit/prompts/W01_VISUAL_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/W02_SEMANTICS_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/W03_STATE_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/W04_FIRST_TIME_UX_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/W05_RESPONSIVE_ACCESSIBILITY_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/W06_RELEASE_REDTEAM_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc5/W01_VISUAL_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc5/W02_SEMANTICS_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc5/W03_STATE_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc5/W04_FIRST_TIME_UX_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc5/W05_RESPONSIVE_ACCESSIBILITY_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc5/W06_RELEASE_REDTEAM_WORK_PROMPT.md
 ```
 
 这些 prompt 当前目标版本均为 `2.0.0-rc.5`，并逐字 inline canonical Browser contract。

@@ -17,12 +17,12 @@ Use six independent ChatGPT Work tasks. Do not reuse a browser session or previo
 Ready-to-paste prompts:
 
 ```text
-docs/operations/blackbox-audit/prompts/W01_VISUAL_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/W02_SEMANTICS_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/W03_STATE_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/W04_FIRST_TIME_UX_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/W05_RESPONSIVE_ACCESSIBILITY_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/W06_RELEASE_REDTEAM_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc5/W01_VISUAL_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc5/W02_SEMANTICS_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc5/W03_STATE_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc5/W04_FIRST_TIME_UX_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc5/W05_RESPONSIVE_ACCESSIBILITY_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc5/W06_RELEASE_REDTEAM_WORK_PROMPT.md
 ```
 
 All six currently target `2.0.0-rc.5` and inline the current canonical Browser contract in full.
