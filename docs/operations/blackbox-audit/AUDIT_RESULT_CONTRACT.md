@@ -4,6 +4,14 @@
 
 Browser 合规必须以 `UI_BLACKBOX_BROWSER_CONTRACT.md` 为唯一来源。Browser implementation 不是结果真值；只要仍通过真实页面 UI 完成验收，使用 fallback 本身不算 contamination。
 
+Broad visual repair 还必须遵守：
+
+```text
+docs/operations/blackbox-audit/VISUAL_ACCEPTANCE_CONTRACT.md
+```
+
+该文件定义成品视觉质量，不改变 Browser 合规边界。
+
 ## Header
 
 ```text
@@ -31,6 +39,27 @@ RELEASE_RECOMMENDATION = BLOCK | FIX_THEN_RETEST | ACCEPTABLE_WITH_P2 | ACCEPT
 - 只有 in-app Browser 与合理真实-browser fallback 都无法继续真实 consumer UI 时，才允许 `BROWSER_BLOCKER = BLOCKED_BY_BROWSER_ENVIRONMENT`。
 
 `PASS` 只代表该 reviewer 的指定范围没有发现 release-blocking defect；不是整个产品自动 PASS。
+
+### Core visual P2 special rule
+
+对 W01 / W04 / W05：如果 P2 位于核心 Architecture / Lineage / Evidence 主读图路径，并涉及以下任一项：
+
+- card/node overlap；
+- edge / relation label 覆盖 card 或主文字；
+- primary symbol/title clipping；
+- selection/trace 导致全图无意义 reflow / stiff motion；
+- 主阅读层 raw math / raw LaTeX；
+- 大量重复 generic AI copy；
+- Lineage/Evidence graph grammar 明显难读；
+
+则该 reviewer **不得**返回 `PASS + P2` 作为 stable 可接受结果，应返回：
+
+```text
+AUDIT_RESULT = FAIL
+RELEASE_RECOMMENDATION = FIX_THEN_RETEST
+```
+
+只有明确不影响主科研读图的局部 polish 才允许 `PASS + P2`。
 
 ## Finding 格式
 
@@ -98,6 +127,8 @@ Browser timeout / handle lost / selector timeout 不能直接写成产品 findin
 
 重要可用性、视觉层级、术语、反馈、布局问题，存在 workaround 但明显降低科研工具价值。
 
+对于核心 visual surface，P2 是否允许 PASS 必须按上面的 `Core visual P2 special rule` 判断。
+
 ### P3
 
 细节 polish；不应把主观审美差异全部升成 P2。
@@ -110,4 +141,5 @@ Browser timeout / handle lost / selector timeout 不能直接写成产品 findin
 - 不因为不理解统计概念就自动判模型错误；
 - 不用 concept image 中可能错误的公式作为科学真值；
 - 不把 Playwright / Browser helper / selector 本身判成黑箱污染；
-- 不把单纯 Browser timeout 判成产品 P1/P2/P3。
+- 不把单纯 Browser timeout 判成产品 P1/P2/P3；
+- 不允许以“功能可用”为由忽略整屏明显的 overlap/clipping/raw-math/reflow 问题。
