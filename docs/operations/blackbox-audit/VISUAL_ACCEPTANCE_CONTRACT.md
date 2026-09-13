@@ -26,7 +26,9 @@ PREVIOUS_PASS_FOR_AFFECTED_SCOPE = INVALIDATED
 - 交互动画是否僵硬、夸张或像 debug transition；
 - Light/Dark 是否都能长时间阅读；
 - user-facing math 是否真正排版为数学，而不是 `a_g`, `gamma_0`, `p_g^*`, `mathcal K` 等 raw ASCII/LaTeX；
+- canonical formula 是否是一个完整横向数学表达式，而不是 KaTeX 存在但 glyph/上下标被挤成纵向碎片；
 - 文案是否存在大量重复模板、内部实现口吻、generic AI 句式；
+- `Why it matters` 是否真正解释统计意义，而不是只报告 layer/upstream/downstream relation count；
 - Architecture / Lineage / Evidence 是否各自有清楚、克制的 graph grammar。
 
 核心 Architecture/Lineage/Evidence 的上述问题如果达到 P2，W01/W04/W05 不得以 `PASS + P2` 放行 stable；应返回 FAIL/FIX_THEN_RETEST。
@@ -44,7 +46,10 @@ PREVIOUS_PASS_FOR_AFFECTED_SCOPE = INVALIDATED
 7. Original TRACE Architecture；
 8. Lineage；
 9. Evidence；
-10. Semantic Diff / inspector 中至少一屏包含数学表达式。
+10. Semantic Diff / inspector 中至少一屏包含数学表达式；
+11. Inspector 中 `beta^U_gh` canonical definition；
+12. Inspector 中 `gamma_g` canonical definition；
+13. Original TRACE 至少一个长 canonical definition。
 
 不能只检查默认首屏。
 
@@ -55,11 +60,13 @@ PREVIOUS_PASS_FOR_AFFECTED_SCOPE = INVALIDATED
 - visible node bounding boxes 不得互相覆盖；
 - edge label bounding box 不得覆盖 node/card 的主要内容区；
 - primary node title/symbol 必须完整可辨；
+- stable-facing scientific card label 不得依赖 `line-clamp` / ellipsis；需要时允许 card 自适应宽高与 2–3 行自然换行；
+- tooltip/title 只能辅助，不能替代主卡完整显示；
 - selection/trace 开关前后，未新增/删除的共享节点应保持稳定位置；
 - reveal context 可以新增节点，但不得通过重新归一化整个画布造成所有节点整体跳动；
 - Lineage/Evidence 的 target/source card 必须留出安全边距，不贴 canvas 边缘。
 
-自动 browser regression 应尽可能直接测 DOM/SVG bounding-box overlap，而不是只看 screenshot 是否生成成功。
+自动 browser regression 应尽可能直接测 DOM/SVG bounding-box overlap，同时检查 primary label 自身是否被 CSS clamp/ellipsis 或容器高度裁切，而不是只看 screenshot 是否生成成功。
 
 ## 5. Edge / relation-label grammar
 
@@ -85,13 +92,18 @@ PREVIOUS_PASS_FOR_AFFECTED_SCOPE = INVALIDATED
 - 符号、公式、上下标使用统一数学渲染；
 - Semantic Diff、Evidence、Inspector、relation explanation 中出现数学对象时也必须渲染；
 - raw canonical string 可以保留在 Advanced/export/debug，但不得成为主阅读层；
-- browser regression / copy lint 应拦截主 UI 中 `mathcal `、`gamma_`、`beta^`、`p_g^*`、`a_g` 等明显 raw math token（仅允许在隐藏/Advanced canonical source 中存在）。
+- browser regression / copy lint 应拦截主 UI 中 `mathcal `、`gamma_`、`beta^`、`p_g^*`、`a_g` 等明显 raw math token（仅允许在隐藏/Advanced canonical source 中存在）；
+- 不能只断言 `.katex` 存在；必须检查真实公式截图与 bounding rect；
+- canonical formula 必须作为一个连续的 reader-facing math box，不能被 `break-words`、窄 grid cell 或 flex 压缩成纵向碎片；
+- 长公式允许在公式块内部水平滚动，但不得造成 inspector 整体 horizontal overflow；
+- 至少验证 `beta^U_gh`、`gamma_g`、open-tail intercept calibration、Original TRACE latent equation / beta prior / alpha calibration、`Sigma_W` normalization。
 
 ## 8. Copy quality gate
 
 主 UI 不得依赖重复的模板化说明，例如多项都重复同一句 `New ... structure ...`。必须：
 
 - 每个 Semantic Diff item 的 `Why it matters` 对应具体统计含义；
+- Architecture Inspector 的 `Why it matters` 不得以 “N upstream / downstream relations” 或 “sits in the X layer” 作为主要解释；
 - stable-facing 页面避免 `Web RC`, `fixture`, `G05`, `source string`, `selected method` 等工程/内部措辞，除非位于 Advanced；
 - Lineage relation copy 简短、自然，不在画布上写长句；
 - Evidence 状态用研究者自然语言表达，不使用 schema/debug 口吻。
@@ -107,7 +119,9 @@ NO_PRIMARY_TEXT_CLIPPING = PASS
 SELECTION_GEOMETRY_STABLE = PASS
 MOTION_QUALITY = PASS
 MATH_RENDERING_MAIN_UI = PASS
+FORMULA_FRAGMENTED_COUNT = 0
 COPY_QUALITY_MAIN_UI = PASS
+GENERIC_GRAPH_TOPOLOGY_WHY_COUNT = 0
 LINEAGE_VISUAL_GRAMMAR = PASS
 EVIDENCE_VISUAL_GRAMMAR = PASS
 ```
