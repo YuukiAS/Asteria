@@ -2,8 +2,8 @@
 
 日期：2026-09-13  
 固定验收入口：`https://asteria.httpwwwcardiacnexus-ukb.com/`  
-当前产品版本：`2.0.0-rc.8`  
-当前验收阶段：`HUMAN_ACCEPTANCE_FAILED -> RC9_VISUAL_REPAIR`
+当前产品版本：`2.0.0-rc.9`  
+当前验收阶段：`GPT_WORK_FULL_REAUDIT_W01_W06`
 
 ## 目的
 
@@ -34,18 +34,18 @@ docs/operations/blackbox-audit/UI_BLACKBOX_BROWSER_CONTRACT.md
 docs/operations/blackbox-audit/VISUAL_ACCEPTANCE_CONTRACT.md
 ```
 
-该文件不是第二套 Browser 规则，而是 stable 前的视觉质量 gate。Broad visual repair 后，W01/W04/W05 必须显式覆盖其中的整屏 gestalt、动态 selection、card/edge-label collision、clipping、math rendering、copy quality 和 motion 要求。
+该文件不是第二套 Browser 规则，而是 stable 前的视觉质量 gate。Broad visual repair 后，W01/W04/W05/W06 必须显式覆盖整屏 gestalt、动态 selection、card/edge-label collision、clipping、math rendering、copy quality 和 motion 要求。
 
-核心 Architecture/Lineage/Evidence 的视觉 P2 不得再以 `PASS + P2` 自动放行 stable；如果影响科研读图，应 FAIL/FIX_THEN_RETEST。
+核心 Architecture/Lineage/Evidence 的视觉 P2 不得再以 `PASS + P2` 放行 stable；如果影响科研读图，应 FAIL/FIX_THEN_RETEST。
 
 ## Reviewer scopes
 
-- `W01` Visual / scientific-product design：布局、数学可读性、graph visual grammar、theme、motion、accepted concept fidelity。
+- `W01` Visual / scientific-product design：布局、数学可读性、graph visual grammar、theme、motion、gestalt quality。
 - `W02` Statistical semantics：Original TRACE / CAT-TRACE scientific truth、symbol/relations、Evidence truth boundary、visible math correctness。
 - `W03` Interaction / state coherence：model/view/trace/layer/search/export/theme/save-restore state truth，以及 selection/trace 前后 geometry stability。
 - `W04` First-time researcher UX：首次理解、信息层级、stable-facing copy、AI/internal language cleanup。
 - `W05` Responsive / accessibility：1366/1536、keyboard/focus/contrast/scroll/hit target、collision/clipping。
-- `W06` Release red-team：正常用户 stress、恢复能力、stale/double-active/blank/失效 disclosure 等。
+- `W06` Release red-team：正常用户 stress、恢复能力、motion/overlap/stale/double-active/blank/失效 disclosure 等。
 
 ## Acceptance Gate：先 Work，后用户
 
@@ -95,59 +95,82 @@ responsive / keyboard / accessibility            -> W05
 any release repair                               -> W06
 ```
 
-## 当前状态：RC.8 人工验收失败
+## 当前状态：RC.9 已完成，进入 full re-audit
 
-RC.8 GPT Work final gate 曾记录：
-
-```text
-GPT_WORK_GATE = PASS
-P0 = 0
-P1 = 0
-UNRESOLVED_MUST_FIX_P2 = 0
-```
-
-但用户最终人工验收在真实页面中发现：
-
-- Architecture card / arrow / relation label 明显拥挤、重叠；
-- 连续点击后的 graph reflow / motion 僵硬；
-- observed covariate / raw feature 等主节点在部分状态下被挡住或难读；
-- Semantic Diff 有 raw ASCII math / LaTeX 未渲染；
-- 多个 `Why it matters` 为重复模板化 AI 文案；
-- Lineage / Evidence 的 relation text / arrow 视觉质量明显不合格。
-
-正式记录：
+RC.8 人工验收失败记录：
 
 ```text
 docs/operations/acceptance/RC8_HUMAN_ACCEPTANCE_FAILURE_2026-09-13.md
 ```
 
-因此：
-
-```text
-FINAL_HUMAN_ACCEPTANCE = FAIL
-STABLE_RELEASE = BLOCKED
-NEXT_VERSION = 2.0.0-rc.9
-```
-
-当前唯一 repair task：
+RC.9 repair task / result / review：
 
 ```text
 prompts/tasks/asteria_v2_rc9_human_visual_repair_task.md
+results/asteria_v2_rc9_human_visual_repair/result.md
+prompts/tasks/asteria_v2_rc9_human_visual_repair_review.md
 ```
 
-## RC.9 re-audit strategy
+RC.9 product commit：
 
-RC.9 横跨 Architecture / Lineage / Evidence、math presentation、copy、motion、responsive，属于 broad repair。完成后重新建立完整 baseline：
+```text
+1afa2dd8d0d20bccf05c58eb7b5c6e48cc9deb9d
+```
+
+RC.9 result reports PASS for:
+
+```text
+NO_NODE_OVERLAP
+NO_EDGE_LABEL_CARD_COLLISION
+NO_PRIMARY_TEXT_CLIPPING
+SELECTION_GEOMETRY_STABLE
+MOTION_QUALITY
+MATH_RENDERING_MAIN_UI
+COPY_QUALITY_MAIN_UI
+LINEAGE_VISUAL_GRAMMAR
+EVIDENCE_VISUAL_GRAMMAR
+```
+
+Because RC.9 touches Architecture geometry/motion/edge grammar, Semantic Diff math/copy, Lineage/Evidence presentation and responsive visual behavior, it is a broad repair. Rebuild the full black-box baseline:
 
 ```text
 W01 + W02 + W03 + W04 + W05 + W06
 ```
 
-其中 W01/W04/W05 prompt 必须显式包含 `VISUAL_ACCEPTANCE_CONTRACT.md` 的 mandatory states / pass conditions。
-
-再次进入用户人工验收前，ChatGPT 必须确认：
+Plan:
 
 ```text
+docs/operations/blackbox-audit/RC9_GPT_WORK_FULL_REAUDIT_PLAN_2026-09-13.md
+```
+
+Campaign:
+
+```text
+docs/operations/blackbox-audit/ASTERIA_RC9_GPT_WORK_CAMPAIGN.md
+```
+
+Ready-to-paste prompts:
+
+```text
+docs/operations/blackbox-audit/prompts/rc9/W01_VISUAL_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc9/W02_SEMANTICS_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc9/W03_STATE_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc9/W04_FIRST_TIME_UX_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc9/W05_RESPONSIVE_ACCESSIBILITY_WORK_PROMPT.md
+docs/operations/blackbox-audit/prompts/rc9/W06_RELEASE_REDTEAM_WORK_PROMPT.md
+```
+
+Each reviewer must start fresh and must not receive RC.8 screenshots, RC.9 implementation result, source code, or another reviewer report.
+
+## RC.9 full gate
+
+```text
+W01-W06 = PASS
+BROWSER_BLOCKER = NONE
+BLACK_BOX_CONTEXT_CONTAMINATED = NO
+P0 = 0
+P1 = 0
+unresolved must-fix P2 = 0
 NO_NODE_OVERLAP = PASS
 NO_EDGE_LABEL_CARD_COLLISION = PASS
 NO_PRIMARY_TEXT_CLIPPING = PASS
@@ -159,7 +182,7 @@ LINEAGE_VISUAL_GRAMMAR = PASS
 EVIDENCE_VISUAL_GRAMMAR = PASS
 ```
 
-任何一项未知或失败，都不能再声明 `FINAL_HUMAN_ACCEPTANCE = READY`。
+任何一项未知或失败，都不能再次声明 `FINAL_HUMAN_ACCEPTANCE = READY`。
 
 ## 历史审计
 
@@ -170,11 +193,4 @@ EVIDENCE_VISUAL_GRAMMAR = PASS
 - RC.8 GPT Work gate：`reports/RC8_FINAL_BLACKBOX_GATE_2026-09-13.md`
 - RC.8 human failure：`../acceptance/RC8_HUMAN_ACCEPTANCE_FAILURE_2026-09-13.md`
 
-## Severity
-
-- `P0`：数据损坏、安全/隐私严重问题、产品完全不可用。
-- `P1`：核心流程/科学真值/状态真值/关键可读性失败。
-- `P2`：重要、有 workaround，但明显降低科研工具价值。
-- `P3`：不阻塞使用的 polish。
-
-当前 gate：**人工验收已失败；执行 RC.9 broad visual repair，重新做完整 GPT Work baseline 后再决定是否值得再次邀请用户验收。**
+当前 gate：**运行 RC.9 fresh W01–W06。全部通过后，再决定是否值得重新邀请用户做人工验收。**
