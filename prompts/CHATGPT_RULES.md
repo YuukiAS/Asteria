@@ -62,9 +62,35 @@ Codex implementation / repair
 
 在 GPT Work gate 通过前，不要要求用户打开页面做人工验收。目标是先让独立 Work 找出明显问题，避免浪费用户时间。
 
-“All reviewers PASS” 指当前 campaign 的所有指定 reviewer 都返回 `AUDIT_RESULT = PASS`。PASS 仍可带少量 P2/P3，但 ChatGPT 必须逐项把 P2 归类为 `must-fix` 或 `accepted/deferred`；只要还有 unresolved must-fix P2，就不能进入人工验收。
+“All reviewers PASS” 指**当前被指定的 reviewer 集合**全部返回 `AUDIT_RESULT = PASS`。PASS 仍可带少量 P2/P3，但 ChatGPT 必须逐项把 P2 归类为 `must-fix` 或 `accepted/deferred`；只要还有 unresolved must-fix P2，就不能进入人工验收。
 
-若一次 repair 广泛影响 math/layout/theme/state/search/inspector/accessibility 等多个 surface，应重跑完整 campaign，而不是只跑单一 reviewer。窄修复才允许只重跑受影响 reviewer + release red-team。
+### Reviewer 数量必须随风险收敛
+
+不要机械地每个 RC 都跑 W01–W06 六轮。
+
+- broad repair / semantic or multi-surface change：重跑完整 W01–W06；
+- narrow repair：只跑受影响 reviewer + W06 release red-team；
+- 上一 RC 已 PASS 且本轮没有触碰该 reviewer 核心 scope，可在 consolidated report 中明确 carry forward，不需要重复跑。
+
+Reviewer scope 映射：
+
+```text
+visual / layout / theme / graph grammar           -> W01
+scientific semantics / ontology / evidence truth -> W02
+trace / state / session / search coherence       -> W03
+learnability / copy / first-use IA                -> W04
+responsive / keyboard / accessibility            -> W05
+any release repair                                -> W06
+```
+
+Carry-forward PASS 必须满足：
+
+1. consolidated triage 明确记录哪些 reviewer 被 carry forward；
+2. Codex repair task 明确限制 scope；
+3. Codex result 返回 touched surfaces / `REVIEWER_SCOPE_EXPANDED`；
+4. 如果实际实现越界，ChatGPT 必须把对应 reviewer 加回 re-audit。
+
+目标是“足够覆盖当前风险”，而不是固定消耗六个 Work。
 
 ## 生成 note
 
