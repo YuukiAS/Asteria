@@ -1,7 +1,7 @@
 ---
 id: asteria_v2_release
-title: Promote accepted Asteria 2.0 RC to stable
-created_at: 2026-09-08
+title: Promote human-accepted Asteria 2.0 RC.8 to stable
+created_at: 2026-09-13
 allow_code_change: true
 allow_shell_command: true
 allow_network: true
@@ -9,59 +9,126 @@ allow_external_upload: false
 requires_human_approval: true
 ---
 
-# Final Release Goal — 用户验收后将 2.0 RC 晋升为 stable
+# Final Release Goal — 用户最终验收后将 Asteria 2.0 RC.8 晋升为 stable
 
 ## 1. 触发条件
 
-本任务**不得自动执行**。只有用户已经人工验收 `2.0.0-rc.1`，并明确要求发布 `2.0.0` stable 后才能运行。
+本任务**不得自动执行**。
 
-开始前确认：
+只有同时满足以下条件才能运行：
+
+1. fixed public URL 当前候选版本为 `2.0.0-rc.8`；
+2. `docs/operations/blackbox-audit/reports/RC8_FINAL_BLACKBOX_GATE_2026-09-13.md` 记录：
 
 ```text
-results/asteria_v2_g05_result.md
-ASTERIA_V2_RC_READY_FOR_USER_ACCEPTANCE = YES
+GPT_WORK_GATE = PASS
+P0 = 0
+P1 = 0
+UNRESOLVED_MUST_FIX_P2 = 0
+FINAL_HUMAN_ACCEPTANCE = READY
 ```
 
-同时需要当前用户明确发布授权。
+3. 用户已完成 `docs/operations/acceptance/ASTERIA_2_0_FINAL_HUMAN_ACCEPTANCE_2026-09-13.md` 的集中人工验收；
+4. 当前用户在执行本任务前明确给出：
 
-## 2. 目标
+```text
+FINAL_HUMAN_ACCEPTANCE = PASS
+```
 
-不再增加 feature。只完成：
+并明确要求发布 `2.0.0` stable。
 
-- 处理用户最终验收发现的 P0/P1 release blocker；
-- 跑完整 regression/performance/browser acceptance；
-- 更新 package/README/CHANGELOG 为 `2.0.0`；
-- 生成简洁 migration/release note；
-- commit `v2.0.0`；
-- push 到既有 origin。
+若没有用户明确 PASS，立即停止，不得自行推断验收通过。
 
-如果固定公网入口的 source update/deploy 在当时已有明确授权，按 `AGENTS.md` 现有固定入口规则更新并验证；若没有授权，只记录 pending，不创建新 URL。
+## 2. Release 原则
 
-## 3. 禁止
+这是 **promotion / freeze task**，不是 feature task。
 
-- 不顺便做 G06 multi-view；
-- 不顺便做 desktop；
-- 不大改 design；
-- 不改 schemaVersion 语义；
-- 不做不可逆旧 map cleanup；
-- 不 force push / rewrite history。
+默认不得改变 RC.8 已验收的产品行为。只完成 stable 晋升、版本记录、release note、最终回归与固定公网刷新。
 
-## 4. Stable release gate
+若在 release regression 中发现真实 P0/P1 或明显 must-fix P2：
 
-必须重新通过：
+- 不发布 stable；
+- 记录 blocker；
+- 停止并等待新的窄 repair task；
+- 不在 release task 中临时扩功能或重构。
 
-- V1 migration；
-- CAT-TRACE reference five symbol cases；
-- typed relations/layers/outline；
-- Markdown/JSON export；
-- validation；
-- semantic variant diff；
-- frequentist + causal fixtures；
-- stress/performance regression；
-- Story/version/search/restore regression；
-- browser core workflow。
+## 3. 必须保持不变
 
-## 5. Result
+禁止顺手修改：
+
+- Original TRACE / CAT-TRACE Frozen V2 scientific fixtures；
+- canonical ontology / relations；
+- recursive trace semantics；
+- Evidence pending/support truth；
+- Overview / Full model product design；
+- Lineage / Evidence 信息架构；
+- Save/Restore contract；
+- desktop/Tauri/Electron；
+- Figma redesign；
+- fixed public URL / DNS / tunnel identity；
+- legacy migration compatibility。
+
+已接受/延期的 2.0.x backlog 不在本任务处理：Lineage 1366 小幅 composition、theme restore、进一步 onboarding/reading mode、claim-specific Evidence copy、exact-symbol search ranking 等。
+
+## 4. Stable version work
+
+将版本从 `2.0.0-rc.8` 晋升为：
+
+```text
+2.0.0
+```
+
+更新至少包括：
+
+- `package.json`；
+- lockfile；
+- app visible version；
+- `CHANGELOG.md`；
+- `README.md`；
+- `ROADMAP.md`；
+- `VERSIONING.md`；
+- 必要的 release/migration note。
+
+Stable changelog 不需要重写所有 RC 历史；总结 2.0 的正式范围：
+
+- active Asteria 2.0 Web shell；
+- Original TRACE + CAT-TRACE Frozen V2；
+- Architecture / Lineage / Evidence；
+- canonical symbol registry / typed semantic relations；
+- Overview / Full model；
+- explicit symbol trace；
+- Semantic Diff；
+- search / export / validation / session state；
+- v1 -> v2 compatibility migration；
+- fixed public Web acceptance path。
+
+## 5. Final regression gate
+
+必须从 clean current `main` 运行完整 release verification。
+
+至少：
+
+```text
+npm run build
+npm run test:regression
+npm run test:architecture-rc8
+npm run bench:architecture-g05
+npm run test:browser
+git diff --check
+```
+
+并确认：
+
+- V1 migration regression PASS；
+- Original TRACE / CAT-TRACE canonical reference PASS；
+- Architecture / Lineage / Evidence browser workflows PASS；
+- trace / Overview / Full model PASS；
+- W02 scientific invariants PASS；
+- search / export / Save/Restore / refresh PASS；
+- no active 1.x live UI；
+- performance 无异常回退。
+
+## 6. Stable commit / push
 
 写：
 
@@ -69,8 +136,54 @@ ASTERIA_V2_RC_READY_FOR_USER_ACCEPTANCE = YES
 results/asteria_v2_release_result.md
 ```
 
-记录用户验收依据、修复项、所有测试、version/commit/push、public-link 状态、known limitations，并最后写：
+记录：
+
+- 用户验收依据；
+- RC.8 black-box gate；
+- stable version changes；
+- 完整测试结果；
+- performance summary；
+- known accepted/deferred limitations；
+- public URL refresh result。
+
+然后：
 
 ```text
-ASTERIA_2_0_STABLE_RELEASED = YES/NO
+commit = v2.0.0
+push origin/main
+HEAD == origin/main
+worktree clean
 ```
+
+不要 force push / rewrite history / change remote。
+
+## 7. Fixed public URL
+
+发布 stable 后必须刷新同一个固定入口：
+
+`https://asteria.httpwwwcardiacnexus-ukb.com/`
+
+不得创建 quick tunnel / alternate URL / VPS proxy。
+
+验证：
+
+```text
+PUBLIC_ACCEPTANCE_URL_REFRESHED = YES
+PUBLIC_ROOT_CHECK = PASS
+PUBLIC_STATUS_CHECK = PASS
+PUBLIC_BROWSER_SMOKE = PASS
+PUBLIC_VERSION = 2.0.0
+```
+
+## 8. Stop condition
+
+只有全部 release gate 通过，才能最终返回：
+
+```text
+ASTERIA_2_0_STABLE_RELEASED = YES
+CURRENT_VERSION = 2.0.0
+FINAL_COMMIT = <sha>
+PUBLIC_VERSION = 2.0.0
+```
+
+然后停止。不要自动进入 desktop、2.1、多模型扩展或新的 product-design iteration。
