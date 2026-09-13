@@ -68,6 +68,7 @@ try {
   await page.getByTestId("trace-mode").selectOption("recursive")
   await page.getByTestId("trace-direction").selectOption("both")
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-trace-enabled", "true")
+  await page.waitForTimeout(220)
   await assertNoNodeOverlap(page)
   await expect(page.locator("[data-edge-label='true']").first()).toBeVisible()
   const activePath = page.locator('[data-trace-active="true"] path').first()
