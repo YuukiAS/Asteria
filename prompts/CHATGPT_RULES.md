@@ -43,6 +43,29 @@ ChatGPT 每次为 Asteria 制定、更新、拆分或重跑 GPT Work / Cloud Bro
 
 任何没有 inline 完整 canonical Browser contract 的所谓 `ready-to-paste GPT Work prompt` 都不算 ready-to-paste，不应交给用户运行。
 
+### Broad visual repair 还必须读取 Visual Acceptance Contract
+
+当 repair 触及 Architecture / Lineage / Evidence 的 layout、graph grammar、motion、math rendering、stable-facing copy 或 responsive visual quality 时，ChatGPT 还必须读取：
+
+```text
+docs/operations/blackbox-audit/VISUAL_ACCEPTANCE_CONTRACT.md
+```
+
+并把其中 mandatory states / pass conditions 明确写进 W01/W04/W05 prompt。它不是第二套 Browser 合规规则，而是成品视觉质量 gate。
+
+不得只做 checklist 式“功能能点开即 PASS”。必须要求：
+
+- full-screen gestalt review；
+- 连续点击多个节点观察 motion / reflow；
+- node/card overlap；
+- edge-label/card collision；
+- clipping/truncation；
+- raw math / LaTeX；
+- repeated generic AI copy；
+- Lineage/Evidence relation-label grammar。
+
+核心 Architecture/Lineage/Evidence 的视觉 P2 如果影响科研读图，不得以 `PASS + P2` 放行 stable，应要求 FAIL/FIX_THEN_RETEST。
+
 ## 人工验收 gate：先 GPT Work，后用户
 
 Asteria 的 release/RC 验收顺序固定为：
@@ -64,6 +87,40 @@ Codex implementation / repair
 
 “All reviewers PASS” 指**当前被指定的 reviewer 集合**全部返回 `AUDIT_RESULT = PASS`。PASS 仍可带少量 P2/P3，但 ChatGPT 必须逐项把 P2 归类为 `must-fix` 或 `accepted/deferred`；只要还有 unresolved must-fix P2，就不能进入人工验收。
 
+### Human override
+
+用户最终人工验收的明确 blocker 优先级高于此前 GPT Work PASS。
+
+如果用户在真实页面中指出 card overlap、edge/label collision、raw math、明显 AI copy、motion/reflow、clipping 或其它一眼可见的 release blocker：
+
+```text
+FINAL_HUMAN_ACCEPTANCE = FAIL
+PREVIOUS_PASS_FOR_AFFECTED_SCOPE = INVALIDATED
+STABLE_RELEASE = BLOCKED
+```
+
+ChatGPT 必须：
+
+1. 记录 human failure；
+2. 把用户看到的具体状态转成 exact regression；
+3. 创建窄或 broad repair task；
+4. 根据 touched surfaces 重新选择 reviewer；
+5. 不得引用“之前 Work 已 PASS”来降级用户发现的问题。
+
+再次声明 `FINAL_HUMAN_ACCEPTANCE = READY` 前，若涉及 broad visual repair，必须确认：
+
+```text
+NO_NODE_OVERLAP = PASS
+NO_EDGE_LABEL_CARD_COLLISION = PASS
+NO_PRIMARY_TEXT_CLIPPING = PASS
+SELECTION_GEOMETRY_STABLE = PASS
+MOTION_QUALITY = PASS
+MATH_RENDERING_MAIN_UI = PASS
+COPY_QUALITY_MAIN_UI = PASS
+LINEAGE_VISUAL_GRAMMAR = PASS
+EVIDENCE_VISUAL_GRAMMAR = PASS
+```
+
 ### Reviewer 数量必须随风险收敛
 
 不要机械地每个 RC 都跑 W01–W06 六轮。
@@ -75,12 +132,12 @@ Codex implementation / repair
 Reviewer scope 映射：
 
 ```text
-visual / layout / theme / graph grammar           -> W01
-scientific semantics / ontology / evidence truth -> W02
-trace / state / session / search coherence       -> W03
-learnability / copy / first-use IA                -> W04
-responsive / keyboard / accessibility            -> W05
-any release repair                                -> W06
+visual / layout / theme / graph grammar / motion -> W01
+scientific semantics / ontology / evidence truth / visible math -> W02
+trace / state / session / search / geometry stability -> W03
+learnability / copy / first-use IA -> W04
+responsive / keyboard / accessibility / clipping -> W05
+any release repair -> W06
 ```
 
 Carry-forward PASS 必须满足：
