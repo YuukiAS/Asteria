@@ -3,7 +3,7 @@ import fs from "node:fs/promises"
 import path from "node:path"
 
 const screenshotDir = process.env.ASTERIA_BROWSER_QA_DIR || "/tmp/asteria-browser-qa"
-const acceptanceDir = process.env.ASTERIA_ACCEPTANCE_SCREENSHOT_DIR || path.resolve("results/asteria_v2_rc8_acceptance/screenshots")
+const acceptanceDir = process.env.ASTERIA_ACCEPTANCE_SCREENSHOT_DIR || path.resolve("results/asteria_v2_rc9_acceptance/screenshots")
 
 function relationIdSelector(relationId: string) {
   return `[data-relation-id="${relationId}"]`
@@ -21,6 +21,92 @@ async function assertNoLegacyToolbar(page: Page) {
   }
 }
 
+type Rect = { id: string; left: number; top: number; right: number; bottom: number; width: number; height: number; cx: number; cy: number }
+
+function overlaps(a: Rect, b: Rect, gap = 0) {
+  return a.left - gap < b.right && a.right + gap > b.left && a.top - gap < b.bottom && a.bottom + gap > b.top
+}
+
+async function visibleRects(page: Page, selector: string): Promise<Rect[]> {
+  return page.locator(selector).evaluateAll((elements) =>
+    elements
+      .filter((element) => {
+        const style = window.getComputedStyle(element)
+        const rect = element.getBoundingClientRect()
+        return style.visibility !== "hidden" && style.display !== "none" && Number.parseFloat(style.opacity || "1") > 0.05 && rect.width > 1 && rect.height > 1
+      })
+      .map((element) => {
+        const rect = element.getBoundingClientRect()
+        return {
+          id: element.getAttribute("data-entity-id") || element.getAttribute("data-relation-id") || element.textContent?.trim() || "",
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+          cx: rect.left + rect.width / 2,
+          cy: rect.top + rect.height / 2,
+        }
+      }),
+  )
+}
+
+async function assertNoNodeOverlap(page: Page, gap = 10) {
+  const rects = await visibleRects(page, ".architecture-map-node")
+  for (let i = 0; i < rects.length; i += 1) {
+    for (let j = i + 1; j < rects.length; j += 1) {
+      expect(overlaps(rects[i], rects[j], gap), `${rects[i].id} overlaps ${rects[j].id}`).toBe(false)
+    }
+  }
+}
+
+async function assertNoPrimaryTextClipping(page: Page) {
+  const failures = await page.locator("[data-node-primary='true']").evaluateAll((elements) =>
+    elements
+      .map((element) => {
+        const parent = element.closest(".architecture-map-node")
+        const rect = element.getBoundingClientRect()
+        const parentRect = parent?.getBoundingClientRect()
+        const id = parent?.getAttribute("data-entity-id") || element.textContent || ""
+        return {
+          id,
+          horizontalClip: element.scrollWidth > element.clientWidth + 1,
+          escapesCard: parentRect ? rect.left < parentRect.left - 1 || rect.right > parentRect.right + 1 || rect.top < parentRect.top - 1 || rect.bottom > parentRect.bottom + 1 : false,
+        }
+      })
+      .filter((item) => item.horizontalClip || item.escapesCard),
+  )
+  expect(failures).toEqual([])
+}
+
+async function assertNoEdgeLabelNodeCollision(page: Page) {
+  const labels = await visibleRects(page, "[data-edge-label='true']")
+  const nodes = await visibleRects(page, ".architecture-map-node")
+  for (const label of labels) {
+    for (const node of nodes) {
+      expect(overlaps(label, node, 2), `${label.id} edge label overlaps ${node.id}`).toBe(false)
+    }
+  }
+}
+
+async function nodeCenters(page: Page) {
+  const rects = await visibleRects(page, ".architecture-map-node")
+  return new Map(rects.map((rect) => [rect.id, rect]))
+}
+
+async function assertStableSharedNodeCenters(before: Map<string, Rect>, after: Map<string, Rect>) {
+  let compared = 0
+  for (const [id, rect] of before) {
+    const next = after.get(id)
+    if (!next) continue
+    compared += 1
+    expect(Math.abs(rect.cx - next.cx), `${id} moved horizontally`).toBeLessThan(2)
+    expect(Math.abs(rect.cy - next.cy), `${id} moved vertically`).toBeLessThan(2)
+  }
+  expect(compared).toBeGreaterThanOrEqual(10)
+}
+
 test.beforeEach(async ({ page }) => {
   const consoleIssues: string[] = []
   ;(page as unknown as { __asteriaConsoleIssues: string[] }).__asteriaConsoleIssues = consoleIssues
@@ -35,7 +121,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/")
   await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
   await expect(page.getByTestId("asteria-v2-topbar")).toBeVisible()
-  await expect(page.getByText("2.0.0-rc.8")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.9")).toBeVisible()
   await expect(page.getByTestId("current-project")).toContainText("Project")
   await expect(page.getByTestId("current-project")).toContainText("CAT-TRACE")
   await expect(page.getByTestId("current-view")).toContainText("Architecture")
@@ -356,7 +442,8 @@ test("RC7 polish covers compact actions, controlled export disclosure, light tra
   await page.getByTestId("enable-trace").click()
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-trace-enabled", "true")
   await expect(page.locator('[data-trace-active="true"]').first()).toBeVisible()
-  await expect(page.locator(".architecture-map-edge-trace text").first()).toBeVisible()
+  const rc7ActivePathWidth = await page.locator('[data-trace-active="true"] path').first().evaluate((element) => Number.parseFloat(getComputedStyle(element).strokeWidth))
+  expect(rc7ActivePathWidth).toBeGreaterThan(0.4)
   await page.screenshot({ path: path.join(screenshotDir, "rc7-light-trace-on-1366.png"), fullPage: false })
   await page.getByTestId("topbar-toggle-theme").click()
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark")
@@ -437,17 +524,18 @@ test("RC8 light trace contrast keeps muted context readable without flattening a
   const selectedMutedEdge = page.locator(".architecture-map-edge-muted.architecture-map-edge-selected").first()
   await expect(selectedMutedEdge).toBeVisible()
   const selectedMutedGroupOpacity = await selectedMutedEdge.evaluate((element) => Number.parseFloat(getComputedStyle(element).opacity))
-  const selectedMutedLabelOpacity = await selectedMutedEdge.locator("text").evaluate((element) => Number.parseFloat(getComputedStyle(element).opacity))
   const selectedMutedPathWidth = await selectedMutedEdge.locator("path").evaluate((element) => Number.parseFloat(getComputedStyle(element).strokeWidth))
   expect(selectedMutedGroupOpacity).toBe(1)
-  expect(selectedMutedLabelOpacity).toBeGreaterThanOrEqual(0.9)
 
   const activeTraceEdge = page.locator('[data-trace-active="true"]').first()
   const activeTracePathWidth = await activeTraceEdge.locator("path").evaluate((element) => Number.parseFloat(getComputedStyle(element).strokeWidth))
-  const activeTraceLabelOpacity = await activeTraceEdge.locator("text").evaluate((element) => Number.parseFloat(getComputedStyle(element).opacity))
   expect(activeTracePathWidth).toBeGreaterThan(mutedPathWidth)
   expect(selectedMutedPathWidth).toBeGreaterThan(mutedPathWidth)
-  expect(activeTraceLabelOpacity).toBeGreaterThanOrEqual(0.9)
+  const activeTraceLabel = activeTraceEdge.locator("text")
+  if ((await activeTraceLabel.count()) > 0) {
+    const activeTraceLabelOpacity = await activeTraceLabel.first().evaluate((element) => Number.parseFloat(getComputedStyle(element).opacity))
+    expect(activeTraceLabelOpacity).toBeGreaterThanOrEqual(0.9)
+  }
   await page.screenshot({ path: path.join(screenshotDir, "rc8-light-trace-on-1366.png"), fullPage: false })
 
   await page.getByTestId("topbar-toggle-theme").click()
@@ -473,4 +561,77 @@ test("RC8 light trace contrast keeps muted context readable without flattening a
   await page.reload()
   await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
   await assertNoLegacyStartup(page)
+})
+
+test("RC9 human visual acceptance repairs Architecture geometry, labels, math copy, Lineage, and Evidence", async ({ page }) => {
+  await fs.mkdir(screenshotDir, { recursive: true })
+  await page.setViewportSize({ width: 1366, height: 768 })
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-view", "view:architecture")
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-model", "cat-trace-frozen-v2")
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-detail-level", "overview")
+
+  await expect(page.getByTestId("projection-node-entity-cat-trace-frozen-v2-x_i")).toBeVisible()
+  await assertNoNodeOverlap(page, 8)
+  await assertNoPrimaryTextClipping(page)
+  await assertNoEdgeLabelNodeCollision(page)
+
+  const initialCenters = await nodeCenters(page)
+  await page.getByTestId("projection-node-entity-cat-trace-frozen-v2-yU_igh").click()
+  await assertStableSharedNodeCenters(initialCenters, await nodeCenters(page))
+  await assertNoNodeOverlap(page, 8)
+  await assertNoPrimaryTextClipping(page)
+
+  const yCenters = await nodeCenters(page)
+  await page.getByTestId("projection-node-entity-cat-trace-frozen-v2-gamma_g").click()
+  await assertStableSharedNodeCenters(yCenters, await nodeCenters(page))
+  await assertNoNodeOverlap(page, 8)
+  await assertNoPrimaryTextClipping(page)
+
+  const gammaCenters = await nodeCenters(page)
+  await page.getByTestId("projection-node-entity-cat-trace-frozen-v2-betaU_gh").click()
+  await assertStableSharedNodeCenters(gammaCenters, await nodeCenters(page))
+  await page.getByTestId("enable-trace").click()
+  await page.getByTestId("trace-mode").selectOption("recursive")
+  await page.getByTestId("trace-direction").selectOption("both")
+  await assertNoNodeOverlap(page, 8)
+  await assertNoPrimaryTextClipping(page)
+  await assertNoEdgeLabelNodeCollision(page)
+
+  const nodeTransitionProps = await page.locator(".architecture-map-node").first().evaluate((element) => getComputedStyle(element).transitionProperty)
+  expect(nodeTransitionProps).not.toMatch(/all|left|top|transform|width|height/)
+  await expect(page.locator("[data-edge-label-visible='false'] text")).toHaveCount(0)
+  await expect(page.locator("[data-edge-label='true']").first()).toBeVisible()
+  const visibleEdgeLabels = await page.locator("[data-edge-label='true']").evaluateAll((elements) => elements.map((element) => element.textContent?.trim() || ""))
+  expect(visibleEdgeLabels.every((label) => !label.includes("_") && label.length <= 18)).toBe(true)
+  await page.screenshot({ path: path.join(screenshotDir, "rc9-architecture-visual-1366.png"), fullPage: false })
+
+  const diffText = await page.getByTestId("semantic-diff").evaluate((element) => element.innerText)
+  for (const forbidden of ["beta^U_gh", "gamma_0*pi_g", "mathcal K", "Sigma_W", "New CAT-TRACE structure that Original TRACE does not expose"]) {
+    expect(diffText).not.toContain(forbidden)
+  }
+  await expect(page.getByTestId("semantic-diff").locator(".katex").first()).toBeVisible()
+  await expect(page.getByTestId("semantic-diff")).toContainText("This makes the observed catalogue boundary explicit")
+
+  await page.setViewportSize({ width: 1536, height: 864 })
+  await assertNoNodeOverlap(page, 10)
+  await assertNoPrimaryTextClipping(page)
+  await assertNoEdgeLabelNodeCollision(page)
+  await page.screenshot({ path: path.join(screenshotDir, "rc9-architecture-visual-1536.png"), fullPage: false })
+
+  await page.getByTestId("view-lineage").click()
+  await assertNoNodeOverlap(page, 8)
+  await assertNoEdgeLabelNodeCollision(page)
+  const lineageLabels = await page.locator("[data-edge-label='true']").evaluateAll((elements) => elements.map((element) => element.textContent?.trim() || ""))
+  expect(lineageLabels).toEqual(expect.arrayContaining(["Extends", "Preserves", "Borrows", "Inspired by", "Uses"]))
+  expect(lineageLabels.every((label) => label.split(/\s+/).length <= 2)).toBe(true)
+  await page.screenshot({ path: path.join(screenshotDir, "rc9-lineage-visual.png"), fullPage: false })
+
+  await page.getByTestId("view-evidence").click()
+  await assertNoNodeOverlap(page, 8)
+  await assertNoEdgeLabelNodeCollision(page)
+  await expect(page.getByTestId("central-evidence-canvas")).toContainText("Architecture regression evidence")
+  await expect(page.getByTestId("central-evidence-canvas")).toContainText("Large-graph performance check")
+  await expect(page.getByTestId("central-evidence-canvas")).not.toContainText("Web RC")
+  await expect(page.getByTestId("central-evidence-canvas")).not.toContainText("first-paper dataset")
+  await page.screenshot({ path: path.join(screenshotDir, "rc9-evidence-visual.png"), fullPage: false })
 })

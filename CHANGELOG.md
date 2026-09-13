@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0-rc.9 - Human Visual Acceptance Repair
+
+- Stabilized CAT-TRACE Architecture Overview geometry so selection and trace reveal no longer re-normalize shared node positions.
+- Repacked Overview cards around the main CAT-TRACE story, restored `x_i` to the baseline, and reduced edge label/card collisions with side-port edges and concise active relation labels.
+- Rendered Semantic Diff math as KaTeX-backed inline formula parts, replaced generic diff why copy with item-specific explanations, and cleaned Lineage/Evidence stable-facing wording.
+- Added RC.9 static, browser, and public smoke coverage for node overlap, primary-text clipping, selection geometry stability, compact relation labels, Semantic Diff math, and Lineage/Evidence visual grammar.
+
 ## 2.0.0-rc.8 - Light Trace Contrast Patch
 
 - Applied a final narrow Light-theme contrast patch for 1366px CAT-TRACE Architecture Overview with trace enabled, keeping muted relation lines and surrounding context readable without flattening active trace hierarchy.

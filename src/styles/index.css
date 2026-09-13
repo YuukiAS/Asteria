@@ -849,7 +849,21 @@ body {
   }
 
   .architecture-map-node {
-    @apply absolute z-20 grid min-h-[76px] w-32 -translate-x-1/2 -translate-y-1/2 content-center gap-1 rounded-md border border-strongBorder bg-panel/95 px-2.5 py-2 text-center text-secondary shadow-sm transition;
+    @apply absolute z-20 grid min-h-[76px] w-32 -translate-x-1/2 -translate-y-1/2 content-center gap-1 rounded-md border border-strongBorder bg-panel/95 px-2.5 py-2 text-center text-secondary shadow-sm;
+    transition:
+      opacity 140ms ease,
+      border-color 140ms ease,
+      background-color 140ms ease,
+      box-shadow 140ms ease,
+      color 140ms ease;
+  }
+
+  .architecture-map-node-primary {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+    text-align: center;
   }
 
   .architecture-map-node span {
@@ -916,6 +930,10 @@ body {
     @apply whitespace-normal text-[13px] leading-4;
   }
 
+  .architecture-workspace-research-canvas .architecture-map-node-primary {
+    text-align: left;
+  }
+
   .architecture-map-node-claim {
     @apply border-sky-400/70;
   }
@@ -948,19 +966,33 @@ body {
     stroke-width: 0.22;
     stroke-linecap: round;
     opacity: 0.72;
+    transition:
+      opacity 140ms ease,
+      stroke 140ms ease,
+      stroke-width 140ms ease;
   }
 
   .architecture-map-edge text {
     fill: rgb(var(--color-muted));
-    font-size: 1.62px;
+    font-size: 1.08px;
     font-weight: 650;
     letter-spacing: 0;
     opacity: 0;
     paint-order: stroke;
     stroke: rgb(var(--color-canvas));
     stroke-linejoin: round;
-    stroke-width: 0.3px;
+    stroke-width: 0.24px;
     text-anchor: middle;
+    pointer-events: none;
+    transition:
+      opacity 140ms ease,
+      fill 140ms ease,
+      stroke 140ms ease;
+  }
+
+  .architecture-map-edge-labeled text {
+    fill: rgb(var(--color-secondary));
+    opacity: 0.76;
   }
 
   .architecture-map-edge-neutral path {
@@ -998,9 +1030,9 @@ body {
   .architecture-map-edge-trace text,
   .architecture-map-edge-selected text {
     fill: rgb(var(--color-foreground));
-    opacity: 0.78;
+    opacity: 0.92;
     stroke: rgb(var(--color-panel));
-    stroke-width: 0.42px;
+    stroke-width: 0.36px;
   }
 
   .architecture-map-edge-muted {
@@ -1094,6 +1126,17 @@ body {
   .architecture-map-node .rendered-math {
     font-size: 13px;
     font-weight: 700;
+  }
+
+  .architecture-diff-math {
+    display: inline-flex;
+    vertical-align: -0.08em;
+  }
+
+  .architecture-diff-row strong,
+  .architecture-diff-row small {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .architecture-symbol-node .rendered-math,

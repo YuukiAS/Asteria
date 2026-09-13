@@ -6,7 +6,7 @@ import { exportArchitectureJsonV2, exportArchitectureMarkdown } from "../archite
 import { architectureLayerDefinitions, layerLabel } from "../architecture/layers"
 import { generateArchitectureOutline } from "../architecture/outline"
 import { projectLayerFocus } from "../architecture/projection"
-import { diffOriginalTraceToCatTrace } from "../architecture/semanticDiff"
+import { diffOriginalTraceToCatTrace, type SemanticDiffInlinePart, type SemanticDiffItem } from "../architecture/semanticDiff"
 import { traceForSymbol, type TraceDirection, type TraceMode } from "../architecture/trace"
 import { useArchitectureSession } from "../architecture/session"
 import type { ArchitectureProjectV2, RelationType, SemanticLayer, StatisticalEntity, StatisticalSymbol, TypedRelation } from "../architecture/types"
@@ -105,7 +105,7 @@ function whyEntityMatters(project: ArchitectureProjectV2, entity?: StatisticalEn
   const upstreamText = incoming.length ? `${incoming.length} upstream relation${incoming.length === 1 ? "" : "s"}` : "no upstream relation in this view"
   const downstreamText = outgoing.length ? `${outgoing.length} downstream relation${outgoing.length === 1 ? "" : "s"}` : "no downstream relation in this view"
   const symbol = symbolForEntity(project, entity)
-  const symbolText = symbol ? ` The rendered symbol is the user-facing form of the canonical source string.` : ""
+  const symbolText = symbol ? ` The rendered symbol below is the reader-facing notation for this entity.` : ""
   return `${entity.label} sits in the ${readableStatus(entity.layer)} layer with ${upstreamText} and ${downstreamText}.${symbolText}`
 }
 
@@ -139,11 +139,16 @@ function diffGroup(status: string) {
   return readableStatus(status)
 }
 
-function diffWhy(status: string) {
-  if (status === "added") return "New CAT-TRACE structure that Original TRACE does not expose."
-  if (status.startsWith("modified")) return "A TRACE concept is retained but its CAT-TRACE role is more specific."
-  if (status === "preserved_invariant" || status === "unchanged") return "A core TRACE invariant remains visible in Frozen V2."
-  return "Model comparison item."
+function renderDiffParts(parts: SemanticDiffInlinePart[] | undefined, fallback: string) {
+  if (!parts?.length) return fallback
+  return parts.map((part, index) => {
+    if (part.latex) return <RenderedMath key={`${part.latex}:${index}`} latex={part.latex} fallback={part.fallback || part.text || part.latex} className="architecture-diff-math" />
+    return <span key={`${part.text || "part"}:${index}`}>{part.text}</span>
+  })
+}
+
+function diffWhy(item: SemanticDiffItem) {
+  return item.why
 }
 
 export function ArchitectureReferencePanel() {
@@ -500,9 +505,9 @@ export function ArchitectureReferencePanel() {
               {diffReport.items.map((item) => (
                 <button key={item.id} type="button" className={`architecture-diff-row architecture-diff-${item.status}`}>
                   <span>{diffGroup(item.status)}</span>
-                  <strong>{item.label}</strong>
-                  <small><b>What changed:</b> {item.after || item.before || item.label}</small>
-                  <small><b>Why it matters:</b> {diffWhy(item.status)}</small>
+                  <strong>{renderDiffParts(item.labelParts, item.label)}</strong>
+                  <small><b>What changed:</b> {renderDiffParts(item.afterParts || item.beforeParts, item.after || item.before || item.label)}</small>
+                  <small><b>Why it matters:</b> {diffWhy(item)}</small>
                 </button>
               ))}
             </div>

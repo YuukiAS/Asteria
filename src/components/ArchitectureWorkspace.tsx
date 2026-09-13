@@ -52,6 +52,61 @@ function selectedButtonStyle(selected: boolean): CSSProperties {
   }
 }
 
+function compactRelationLabel(type: RelationType, label?: string) {
+  const byType: Partial<Record<RelationType, string>> = {
+    borrows_interpretation_from: "Borrows",
+    computationally_inspired_by: "Inspired by",
+    uses_methodological_component_from: "Uses",
+    validates_implementation: "Validates",
+    theoretically_supports: "Supports",
+    empirically_tests: "Tests",
+    stress_tests: "Stress",
+    limited_by: "Limited by",
+    preserves: "Preserves",
+    extends: "Extends",
+    pending: "Pending",
+    parameterized_by: "Param",
+    derived_from: "Derived",
+    depends_on: "Depends",
+    generates: "Generates",
+    targets: "Targets",
+    estimated_by: "Estimated",
+    conditions_on: "Conditions",
+  }
+  const fallback = label || byType[type] || type.replace(/_/g, " ")
+  const conciseByPhrase: Record<string, string> = {
+    "empty/unmatched feature enters open tail": "Open tail",
+    "matched catalogue feature enters finite set": "Catalogue",
+    "observed raw features are matched": "Matched",
+    "indexes open-tail grouping": "Groups",
+    "environmental design enters latent score": "Covariates",
+    "open-tail slope enters latent score": "Slope",
+    "tail intercept enters latent score": "Intercept",
+    "latent open-tail score generates open-tail occurrence": "Probit",
+    "open-tail occurrence informs richness target": "Target",
+    "derived grouped open-tail intensity": "Derived",
+    "fixed truncation sets anonymous slots": "Truncation",
+    "residual margin normalized": "Residual",
+    "posterior targets richness": "Inference",
+    "extends open-tail calibration": "Extends",
+    "preserves marginal probit tail semantics": "Preserves",
+    "borrows ecological hierarchy interpretation": "Borrows",
+    "computationally inspired by scalable probit work": "Inspired by",
+    "uses factor shrinkage idea": "Uses",
+    "theory/proof support": "Supports",
+    "fixture validates symbol truth": "Validates",
+    "stress-tests zero-slot projection": "Stress",
+    "real-data result pending": "Pending",
+    "dataset line pending result": "Pending",
+    "future theorem pending": "Pending",
+  }
+  return conciseByPhrase[fallback] || byType[type] || fallback.split(/\s+/).slice(0, 3).join(" ")
+}
+
+function architectureAllowsInlineLabel(type: RelationType) {
+  return ["generates", "targets"].includes(type)
+}
+
 export function ArchitectureWorkspace() {
   const session = useArchitectureSession()
   const { activeViewId, modelId, project, selectedEntityId, selectedSymbolId, trace, traceEnabled, traceMode, traceDirection, focusedLayer, detailLevel, setActiveViewId, setSelectedEntityId, setSelectedSymbolId } = session
@@ -247,7 +302,7 @@ export function ArchitectureWorkspace() {
                   data-diff-status={diffStatus || "none"}
                   title={isArchitecture ? `${symbol?.latex || entity.label} - ${entity.label}` : entity.label}
                 >
-                  {isArchitecture && symbol ? <RenderedMath latex={symbol.latex} fallback={entity.label} className="architecture-node-math" /> : <span>{entity.label}</span>}
+                  <span className="architecture-map-node-primary" data-node-primary="true">{isArchitecture && symbol ? <RenderedMath latex={symbol.latex} fallback={entity.label} className="architecture-node-math" /> : entity.label}</span>
                   <small>{isArchitecture ? entity.label : entity.role}</small>
                   {diffStatus ? <em>{diffStatus.replace(/_/g, " ")}</em> : null}
                 </button>
@@ -285,19 +340,23 @@ function ProjectedEdge({
 }) {
   const isConnectedToSelection = edge.relation.sourceId === selectedEntityId || edge.relation.targetId === selectedEntityId
   const isDimmed = activeViewId === multiViewIds.architecture ? hasTraceSelection && !isTraceEdge : selectedEntityId && !isConnectedToSelection
+  const showLabel = activeViewId === multiViewIds.architecture ? architectureAllowsInlineLabel(edge.relation.type) && (isTraceEdge || (hasTraceSelection && isConnectedToSelection)) : activeViewId === multiViewIds.lineage
+  const label = compactRelationLabel(edge.relation.type, edge.relation.label)
   return (
     <g
-      className={`architecture-map-edge architecture-map-edge-${relationTone(edge.relation.type)} ${isTraceEdge ? "architecture-map-edge-trace" : ""} ${isConnectedToSelection ? "architecture-map-edge-selected" : ""} ${isDimmed ? "architecture-map-edge-muted" : ""}`}
+      className={`architecture-map-edge architecture-map-edge-${relationTone(edge.relation.type)} ${showLabel ? "architecture-map-edge-labeled" : ""} ${isTraceEdge ? "architecture-map-edge-trace" : ""} ${isConnectedToSelection ? "architecture-map-edge-selected" : ""} ${isDimmed ? "architecture-map-edge-muted" : ""}`}
       data-testid={`semantic-edge-${safeDomId(edge.relation.id)}`}
       data-relation-id={edge.relation.id}
       data-relation-type={edge.relation.type}
+      data-relation-label={label}
       data-source-id={edge.relation.sourceId}
       data-target-id={edge.relation.targetId}
       data-trace-active={isTraceEdge ? "true" : "false"}
       data-trace-role={traceRole}
+      data-edge-label-visible={showLabel ? "true" : "false"}
     >
       <path d={edge.path} markerEnd="url(#architecture-edge-arrow)" />
-      <text x={edge.labelX} y={edge.labelY}>{edge.relation.type.replace(/_/g, " ")}</text>
+      {showLabel ? <text x={edge.labelX} y={edge.labelY} data-edge-label="true">{label}</text> : null}
     </g>
   )
 }

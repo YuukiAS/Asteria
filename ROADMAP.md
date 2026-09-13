@@ -1,7 +1,7 @@
 # Asteria Product Roadmap
 
 更新时间：2026-09-13
-状态：Asteria 2.0 Web 已完成 G00–G06、RC.3 acceptance hardening、RC.4 legacy UI archive、RC.5 black-box repair、RC.6 architecture readability / trace truth repair、RC.7 accessibility/disclosure release polish 与 RC.8 light trace contrast patch 到 `2.0.0-rc.8`。下一步是 `GPT_WORK_TARGETED_REAUDIT_W05_W06`；未发布 `2.0.0` stable。
+状态：Asteria 2.0 Web 已完成 G00–G06、RC.3 acceptance hardening、RC.4 legacy UI archive、RC.5 black-box repair、RC.6 architecture readability / trace truth repair、RC.7 accessibility/disclosure release polish、RC.8 light trace contrast patch 与 RC.9 human visual acceptance repair 到 `2.0.0-rc.9`。下一步是 `GPT_WORK_FULL_REAUDIT_W01_W06`；未发布 `2.0.0` stable。
 
 ## 0. 当前判断
 
@@ -25,6 +25,8 @@ G00–G06 已经完成 schema、fixtures、trace、typed relations、layers、ou
 
 `2.0.0-rc.8` 只处理 RC.7 targeted re-audit 收敛后的单一 W05/W01 重复 finding：1366×768 Light theme + CAT-TRACE Architecture Overview + trace ON 时 muted relation/context 对比不足。该补丁只调整 Light-theme presentation contrast，保留 active trace 层级、dark theme、科学 fixtures、trace 算法、session contract、projection、Full-model controls、Lineage 与 Evidence 范围。
 
+`2.0.0-rc.9` 只处理 RC.8 后最终人工验收指出的视觉 acceptance blocker：Architecture Overview 坐标随 selection/reveal 重排、卡片/边标签碰撞、主符号裁切、Semantic Diff / Evidence / Inspector 主界面源码式数学和工程态文案、Lineage/Evidence graph grammar。该补丁不改变 Original TRACE / CAT-TRACE Frozen V2 scientific truth、trace algorithm、model/view/session state contract 或 fixed public infrastructure。
+
 RC.4 执行入口：
 
 `prompts/tasks/asteria_v2_rc4_archive_legacy_acceptance_task.md`
@@ -44,6 +46,10 @@ RC.7 执行入口：
 RC.8 执行入口：
 
 `prompts/tasks/asteria_v2_rc8_light_trace_contrast_task.md`
+
+RC.9 执行入口：
+
+`prompts/tasks/asteria_v2_rc9_human_visual_repair_task.md`
 
 审计依据：
 

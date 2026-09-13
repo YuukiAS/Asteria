@@ -83,17 +83,17 @@ const viewPositions: Partial<Record<MultiViewId, Record<string, { x: number; y: 
     "entity:lineage:cat-trace": { x: 620, y: 292, width: 220 },
   },
   [multiViewIds.evidence]: {
-    "entity:evidence:proof:trace-reference": { x: 430, y: 70 },
-    "entity:evidence:claim:tail-calibration": { x: 560, y: 214 },
+    "entity:evidence:proof:trace-reference": { x: 300, y: 40 },
+    "entity:evidence:claim:tail-calibration": { x: 560, y: 176 },
     "entity:evidence:claim:open-tail-response": { x: 560, y: 360 },
-    "entity:evidence:claim:zero-slots": { x: 440, y: 530 },
-    "entity:evidence:implementation:fixtures": { x: 150, y: 590 },
-    "entity:evidence:stress:g05": { x: 760, y: 590 },
-    "entity:evidence:data:finland": { x: 930, y: 168 },
+    "entity:evidence:claim:zero-slots": { x: 440, y: 548 },
+    "entity:evidence:implementation:fixtures": { x: 150, y: 612 },
+    "entity:evidence:stress:g05": { x: 690, y: 612 },
+    "entity:evidence:data:finland": { x: 930, y: 118 },
     "entity:evidence:data:malagasy": { x: 150, y: 360 },
-    "entity:evidence:data:swa-plants": { x: 930, y: 690 },
-    "entity:evidence:limitation:real-data": { x: 930, y: 298 },
-    "entity:evidence:claim:marked-discovery": { x: 930, y: 498 },
+    "entity:evidence:data:swa-plants": { x: 930, y: 716 },
+    "entity:evidence:limitation:real-data": { x: 930, y: 306 },
+    "entity:evidence:claim:marked-discovery": { x: 930, y: 516 },
   },
 }
 
@@ -101,7 +101,8 @@ function makeView(id: MultiViewId, kind: ArchitectureViewKind, label: string, en
   const projections: ArchitectureProjectV2["views"][string]["projections"] = {}
   entityIds.forEach((entityId, index) => {
     const position = viewPositions[id]?.[entityId] || { x: (index % columns) * 230, y: Math.floor(index / columns) * 138 }
-    projections[`projection:${id}:${index}`] = projection(`projection:${id}:${index}`, entityId, position.x, position.y, position.width)
+    const width = position.width || (kind === "evidence" ? 164 : kind === "lineage" ? 176 : 190)
+    projections[`projection:${id}:${index}`] = projection(`projection:${id}:${index}`, entityId, position.x, position.y, width)
   })
   return {
     id,
@@ -134,7 +135,7 @@ export function createCatTraceMultiViewProject() {
   project.project = {
     ...project.project,
     id: "project:cat-trace-web-rc",
-    title: "CAT-TRACE Frozen V2 Web RC",
+    title: "CAT-TRACE Frozen V2",
     updatedAt: at,
   }
   project.updatedAt = at
@@ -144,21 +145,21 @@ export function createCatTraceMultiViewProject() {
     { id: "entity:lineage:hmsc", kind: "method", label: "HMSC framework", role: "interpretation source", description: "Hierarchical modelling language for community ecology covariate, trait, and latent factor interpretation.", observedStatus: "fixed" },
     { id: "entity:lineage:bigmvp", kind: "method", label: "bigMVP", role: "computational inspiration", description: "High-dimensional multivariate binary response computation informing scalable probit implementation concerns.", observedStatus: "fixed" },
     { id: "entity:lineage:mgp", kind: "prior", label: "Sparse Bayesian infinite factor / MGP", role: "methodological component", description: "Shrinkage idea for residual factor structure; not a third Asteria model variant.", observedStatus: "fixed" },
-    { id: "entity:lineage:cat-trace", kind: "method", label: "CAT-TRACE Frozen V2", role: "selected method", description: "Catalogue-aware TRACE extension that preserves open-tail calibration while separating finite catalogue identity from anonymous discovery.", observedStatus: "fixed", variantNote: "Not a mechanical TRACE + HMSC merge." },
+    { id: "entity:lineage:cat-trace", kind: "method", label: "CAT-TRACE Frozen V2", role: "catalogue-aware extension", description: "Catalogue-aware TRACE extension that preserves open-tail calibration while separating finite catalogue identity from anonymous discovery.", observedStatus: "fixed", variantNote: "Not a mechanical TRACE + HMSC merge." },
   ]
 
   const evidenceEntities: EntitySeed[] = [
     { id: "entity:evidence:claim:tail-calibration", kind: "claim", label: "Open-tail calibration is TRACE-preserving", role: "claim", description: "CAT-TRACE keeps TRACE extreme-value calibration on group open-tail intercepts.", observedStatus: "derived" },
-    { id: "entity:evidence:claim:open-tail-response", kind: "claim", label: "Open-tail response decomposition is explicit", role: "claim", description: "The open-tail slope uses beta^U_gh = nu + a_g + v^U_gh with nu as environment-response vector.", observedStatus: "derived" },
-    { id: "entity:evidence:claim:zero-slots", kind: "claim", label: "Zero slots remain model information", role: "claim", description: "p_g-p_g^* anonymous zero slots are retained as likelihood information rather than discarded as empty UI rows.", observedStatus: "derived" },
+    { id: "entity:evidence:claim:open-tail-response", kind: "claim", label: "Open-tail response decomposition is explicit", role: "claim", description: "The open-tail slope separates the shared environmental-response vector from group and species-level deviations.", observedStatus: "derived" },
+    { id: "entity:evidence:claim:zero-slots", kind: "claim", label: "Zero slots remain model information", role: "claim", description: "The fixed group truncation and observed open-tail count leave anonymous zero slots as likelihood information rather than discarded rows.", observedStatus: "derived" },
     { id: "entity:evidence:claim:marked-discovery", kind: "claim", label: "Marked discovery theorem", role: "claim", description: "Future marked-discovery distributional theorem remains an open item.", observedStatus: "not_applicable", constraints: ["pending theorem"] },
     { id: "entity:evidence:proof:trace-reference", kind: "proof", label: "TRACE proof reference", role: "theory/proof evidence", description: "Original TRACE source supports tail calibration semantics used by the open-tail component.", observedStatus: "fixed" },
-    { id: "entity:evidence:implementation:fixtures", kind: "implementation", label: "Asteria implementation fixtures", role: "implementation evidence", description: "Regression fixtures validate canonical symbols, semantic diff, export, and V1 migration.", observedStatus: "observed" },
-    { id: "entity:evidence:stress:g05", kind: "result", label: "G05 stress fixture", role: "performance evidence", description: "Synthetic graph benchmark covers large entity/relation indexing, trace, and layer projection operations.", observedStatus: "observed" },
-    { id: "entity:evidence:data:finland", kind: "dataset", label: "Finland fungi", role: "first-paper dataset", description: "Recognized first-paper data line; current Web RC does not mark it as empirical support without a linked result.", observedStatus: "fixed" },
-    { id: "entity:evidence:data:malagasy", kind: "dataset", label: "Malagasy arthropods", role: "first-paper dataset", description: "Recognized first-paper data line; current Web RC keeps result status pending.", observedStatus: "fixed" },
-    { id: "entity:evidence:data:swa-plants", kind: "dataset", label: "South-West Australia plants", role: "first-paper dataset", description: "Recognized first-paper data line using taxonomy-derived relatedness, not branch-length C_phy.", observedStatus: "fixed" },
-    { id: "entity:evidence:limitation:real-data", kind: "limitation", label: "Real-data closure gap", role: "limitation", description: "No final real-data result is claimed in the first Web RC evidence seed.", observedStatus: "not_applicable" },
+    { id: "entity:evidence:implementation:fixtures", kind: "implementation", label: "Architecture regression evidence", role: "implementation evidence", description: "Automated checks validate canonical symbols, semantic diff, export, and V1 migration compatibility.", observedStatus: "observed" },
+    { id: "entity:evidence:stress:g05", kind: "result", label: "Large-graph performance check", role: "performance evidence", description: "Large synthetic graph checks cover entity and relation indexing, trace, and layer projection operations.", observedStatus: "observed" },
+    { id: "entity:evidence:data:finland", kind: "dataset", label: "Finland fungi", role: "candidate study dataset", description: "Recognized study data line; it is not marked as empirical support without a linked result.", observedStatus: "fixed" },
+    { id: "entity:evidence:data:malagasy", kind: "dataset", label: "Malagasy arthropods", role: "candidate study dataset", description: "Recognized study data line; result status remains pending until evidence is linked.", observedStatus: "fixed" },
+    { id: "entity:evidence:data:swa-plants", kind: "dataset", label: "South-West Australia plants", role: "candidate study dataset", description: "Recognized study data line using taxonomy-derived relatedness, not branch-length relatedness.", observedStatus: "fixed" },
+    { id: "entity:evidence:limitation:real-data", kind: "limitation", label: "Real-data closure gap", role: "limitation", description: "No final real-data result is claimed in the current evidence graph.", observedStatus: "not_applicable" },
   ]
 
   ;[...lineageEntities, ...evidenceEntities].forEach((entity) => addEntity(project, entity))
@@ -173,7 +174,7 @@ export function createCatTraceMultiViewProject() {
 
   const evidenceRelations: RelationSeed[] = [
     { id: "relation:evidence:proof-tail", type: "theoretically_supports", sourceId: "entity:evidence:proof:trace-reference", targetId: "entity:evidence:claim:tail-calibration", label: "theory/proof support" },
-    { id: "relation:evidence:fixture-response", type: "validates_implementation", sourceId: "entity:evidence:implementation:fixtures", targetId: "entity:evidence:claim:open-tail-response", label: "fixture validates symbol truth" },
+    { id: "relation:evidence:fixture-response", type: "validates_implementation", sourceId: "entity:evidence:implementation:fixtures", targetId: "entity:evidence:claim:open-tail-response", label: "validates symbol truth" },
     { id: "relation:evidence:stress-zero", type: "stress_tests", sourceId: "entity:evidence:stress:g05", targetId: "entity:evidence:claim:zero-slots", label: "stress-tests zero-slot projection" },
     { id: "relation:evidence:realdata-gap-tail", type: "limited_by", sourceId: "entity:evidence:limitation:real-data", targetId: "entity:evidence:claim:tail-calibration", label: "real-data result pending" },
     { id: "relation:evidence:finland-pending", type: "pending", sourceId: "entity:evidence:data:finland", targetId: "entity:evidence:claim:tail-calibration", label: "dataset line pending result" },
