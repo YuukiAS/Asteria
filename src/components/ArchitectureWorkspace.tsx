@@ -128,8 +128,8 @@ function LineagePresentation({
     <div className="lineage-presentation" data-testid="lineage-presentation">
       <svg className="lineage-presentation-connectors" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
         <defs>
-          <marker id="lineage-presentation-arrow" markerWidth="5" markerHeight="5" refX="4.6" refY="2.5" orient="auto">
-            <path d="M0,0 L5,2.5 L0,5 z" />
+          <marker id="lineage-presentation-arrow" markerUnits="userSpaceOnUse" markerWidth="1.15" markerHeight="1.15" refX="1.05" refY="0.575" orient="auto">
+            <path d="M0,0 L1.15,0.575 L0,1.15 z" />
           </marker>
         </defs>
         {lineageCards.map((card) => (
@@ -353,8 +353,8 @@ export function ArchitectureWorkspace() {
             >
               <svg className="architecture-map-edges" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Projected semantic relations">
                 <defs>
-                  <marker id="architecture-edge-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
-                    <path d="M0,0 L7,3.5 L0,7 z" />
+                  <marker id="architecture-edge-arrow" markerUnits="userSpaceOnUse" markerWidth="0.95" markerHeight="0.95" refX="0.86" refY="0.475" orient="auto">
+                    <path d="M0,0 L0.95,0.475 L0,0.95 z" />
                   </marker>
                 </defs>
                 {layout.edges.map((edge) => (

@@ -2,11 +2,11 @@
 
 Asteria 2.0 is the active Web product shell for inspecting canonical statistical-model architecture maps. The current build focuses on Original TRACE and CAT-TRACE Frozen V2, with first-level Architecture, Lineage, and Evidence views backed by the same typed semantic graph.
 
-Current app version: `2.0.0-rc.11`.
+Current app version: `2.0.0-rc.12`.
 
 ## Product State
 
-`2.0.0-rc.11` keeps Asteria 2.0 as the only active product shell and finishes the Architecture reader-facing blockers from the RC.10 Wave A re-audit: canonical definitions render in dedicated formula blocks, CAT Architecture cards show full scientific labels without ellipsis, and `Why it matters` explains statistical meaning rather than graph topology. Opening Asteria goes directly to:
+`2.0.0-rc.12` keeps Asteria 2.0 as the only active product shell and normalizes Architecture / Lineage / Evidence edge presentation with stable CSS-pixel strokes, smaller fixed arrowheads, and developer-owned visual self-QA screenshots before any external GPT Work review. Opening Asteria goes directly to:
 
 - Project: `CAT-TRACE`
 - View: `Architecture`
@@ -15,7 +15,7 @@ Current app version: `2.0.0-rc.11`.
 
 Architecture provides the formal `Original TRACE` / `CAT-TRACE Frozen V2` model selector and an `Overview` / `Full model` detail control. Selection drives the inspector; trace highlighting only appears after `Show trace` is activated. Lineage and Evidence are direct first-level views. Save/Restore stores only the Asteria 2.0 view session state, not the retired shared/local 1.x canvas workspace.
 
-After RC.11, the next acceptance step is `GPT_WORK_RC11_WAVE_A_W01_W04_W05_W06`, not manual final acceptance or stable release.
+After RC.12, the next acceptance step is `CHATGPT_REVIEW_DEVELOPER_SCREENSHOTS`, not manual final acceptance, GPT Work launch, or stable release.
 
 ## Legacy Compatibility
 
@@ -80,14 +80,17 @@ npm run test:architecture-rc6
 npm run test:architecture-rc7
 npm run test:architecture-rc8
 npm run test:architecture-rc9
+npm run test:architecture-rc10
+npm run test:architecture-rc11
+npm run test:architecture-rc12
 npm run test:regression
 npm run test:browser
 ```
 
-Public acceptance smoke after a pushed RC.9 commit:
+Public acceptance smoke after a pushed RC.12 commit:
 
 ```bash
-npm run smoke:public-rc9
+npm run smoke:public-rc12
 ```
 
 ## Repository Map

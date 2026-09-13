@@ -222,6 +222,21 @@ async function assertStableSharedNodeCenters(before: Map<string, Rect>, after: M
   expect(compared).toBeGreaterThanOrEqual(10)
 }
 
+async function computedStrokeWidth(page: Page, selector: string) {
+  const value = await page.locator(selector).first().evaluate((element) => Number.parseFloat(getComputedStyle(element).strokeWidth))
+  expect(Number.isFinite(value)).toBe(true)
+  return value
+}
+
+async function assertModelCoherence(page: Page, modelId: "cat-trace-frozen-v2" | "original-trace", label: "CAT-TRACE Frozen V2" | "Original TRACE") {
+  await expect(page.getByTestId("current-model")).toContainText(label)
+  await expect(page.getByTestId("topbar-model-selector")).toHaveValue(modelId)
+  await expect(page.getByTestId(`model-${modelId}`)).toHaveAttribute("data-asteria-selected", "true")
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-model", modelId)
+  await expect(page.getByTestId("central-model-status")).toContainText(label)
+  await expect(page.getByRole("heading", { name: new RegExp(`${label} - Architecture`) })).toBeVisible()
+}
+
 test.beforeEach(async ({ page }) => {
   const consoleIssues: string[] = []
   ;(page as unknown as { __asteriaConsoleIssues: string[] }).__asteriaConsoleIssues = consoleIssues
@@ -236,7 +251,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/")
   await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
   await expect(page.getByTestId("asteria-v2-topbar")).toBeVisible()
-  await expect(page.getByText("2.0.0-rc.11")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.12")).toBeVisible()
   await expect(page.getByTestId("current-project")).toContainText("Project")
   await expect(page.getByTestId("current-project")).toContainText("CAT-TRACE")
   await expect(page.getByTestId("current-view")).toContainText("Architecture")
@@ -960,4 +975,73 @@ test("RC11 reader-facing Architecture finish keeps formulas, labels, and why cop
   await expect(page.getByTestId("advanced-export-validation")).toHaveAttribute("aria-expanded", "false")
   await page.getByTestId("save-view-state").click()
   await expect(page.getByTestId("architecture-action-status")).toContainText("saved")
+})
+
+test("RC12 edge and arrow presentation uses stable restrained visual weights", async ({ page }) => {
+  test.setTimeout(90_000)
+  await fs.mkdir(screenshotDir, { recursive: true })
+
+  await page.setViewportSize({ width: 1536, height: 864 })
+  await page.getByTestId("model-cat-trace-frozen-v2").click()
+  await page.getByTestId("detail-overview").click()
+  await assertModelCoherence(page, "cat-trace-frozen-v2", "CAT-TRACE Frozen V2")
+  await selectArchitectureSymbol(page, "betaU_gh")
+
+  const archBaseWidth = await computedStrokeWidth(page, ".architecture-map-edge:not(.architecture-map-edge-selected):not(.architecture-map-edge-trace):not(.architecture-map-edge-muted) path")
+  const archSelectedWidth = await computedStrokeWidth(page, ".architecture-map-edge-selected path")
+  expect(archBaseWidth).toBeGreaterThanOrEqual(1.2)
+  expect(archBaseWidth).toBeLessThanOrEqual(1.6)
+  expect(archSelectedWidth).toBeGreaterThanOrEqual(1.8)
+  expect(archSelectedWidth).toBeLessThanOrEqual(2.1)
+  expect(archSelectedWidth / archBaseWidth).toBeLessThanOrEqual(1.7)
+
+  const vectorEffect = await page.locator(".architecture-map-edge path").first().evaluate((element) => getComputedStyle(element).vectorEffect)
+  expect(vectorEffect).toBe("non-scaling-stroke")
+  const marker = page.locator("#architecture-edge-arrow")
+  await expect(marker).toHaveAttribute("markerUnits", "userSpaceOnUse")
+  expect(Number(await marker.getAttribute("markerWidth"))).toBeLessThanOrEqual(1.1)
+  expect(Number(await marker.getAttribute("markerHeight"))).toBeLessThanOrEqual(1.1)
+  await assertNoNodeOverlap(page, 8)
+  await assertNoPrimaryTextClipping(page)
+  await page.screenshot({ path: path.join(screenshotDir, "rc12-architecture-selected-1536.png"), fullPage: false })
+
+  await page.setViewportSize({ width: 1366, height: 768 })
+  await page.getByTestId("topbar-toggle-theme").click()
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light")
+  await page.getByTestId("enable-trace").click()
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-trace-enabled", "true")
+  const archTraceWidth = await computedStrokeWidth(page, ".architecture-map-edge-trace path")
+  const archMutedWidth = await computedStrokeWidth(page, ".architecture-map-edge-muted:not(.architecture-map-edge-selected):not(.architecture-map-edge-trace) path")
+  expect(archTraceWidth).toBeGreaterThanOrEqual(1.8)
+  expect(archTraceWidth).toBeLessThanOrEqual(2.1)
+  expect(archMutedWidth).toBeGreaterThanOrEqual(1.0)
+  expect(archMutedWidth).toBeLessThanOrEqual(1.3)
+  expect(archTraceWidth / archBaseWidth).toBeLessThanOrEqual(1.7)
+  await assertNoEdgeLabelNodeCollision(page)
+  await page.screenshot({ path: path.join(screenshotDir, "rc12-architecture-trace-light-1366.png"), fullPage: false })
+
+  await page.getByTestId("view-lineage").click()
+  await expect(page.getByTestId("lineage-presentation")).toBeVisible()
+  const lineageWidth = await computedStrokeWidth(page, "[data-lineage-connector]")
+  expect(lineageWidth).toBeGreaterThanOrEqual(1.4)
+  expect(lineageWidth).toBeLessThanOrEqual(1.9)
+  await expect(page.locator("#lineage-presentation-arrow")).toHaveAttribute("markerUnits", "userSpaceOnUse")
+  await assertLineagePresentationGeometry(page)
+  await page.screenshot({ path: path.join(screenshotDir, "rc12-lineage-1536.png"), fullPage: false })
+
+  await page.getByTestId("view-evidence").click()
+  await expect(page.getByTestId("central-evidence-canvas")).toBeVisible()
+  const evidenceActiveWidth = await computedStrokeWidth(page, ".architecture-map-edge-selected path")
+  expect(evidenceActiveWidth).toBeGreaterThanOrEqual(1.7)
+  expect(evidenceActiveWidth).toBeLessThanOrEqual(2.1)
+  await assertNoNodeOverlap(page, 8)
+  await page.screenshot({ path: path.join(screenshotDir, "rc12-evidence-1536.png"), fullPage: false })
+
+  await page.getByTestId("view-architecture").click()
+  await page.getByTestId("model-original-trace").click()
+  await assertModelCoherence(page, "original-trace", "Original TRACE")
+  await page.screenshot({ path: path.join(screenshotDir, "rc12-model-selector-original.png"), fullPage: false })
+  await page.getByTestId("model-cat-trace-frozen-v2").click()
+  await assertModelCoherence(page, "cat-trace-frozen-v2", "CAT-TRACE Frozen V2")
+  await page.screenshot({ path: path.join(screenshotDir, "rc12-model-selector-cat.png"), fullPage: false })
 })

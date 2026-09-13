@@ -679,7 +679,8 @@ body {
     fill: none;
     stroke: rgb(14 165 233);
     stroke-linecap: round;
-    stroke-width: 0.18;
+    stroke-width: 1.5px;
+    vector-effect: non-scaling-stroke;
     opacity: 0.76;
     transition:
       opacity 140ms ease,
@@ -693,17 +694,18 @@ body {
   }
 
   .lineage-presentation-connector-active {
-    stroke-width: 0.24;
+    stroke-width: 1.85px;
     opacity: 0.96;
   }
 
   .lineage-presentation-connectors marker path {
-    fill: rgb(14 165 233);
+    fill: context-stroke;
     stroke: none;
+    opacity: 0.86;
   }
 
   [data-theme="light"] .lineage-presentation-connectors marker path {
-    fill: rgb(2 132 199);
+    opacity: 0.9;
   }
 
   .lineage-presentation-sources {
@@ -1074,8 +1076,10 @@ body {
   .architecture-map-edge path {
     fill: none;
     stroke: rgb(var(--color-accent));
-    stroke-width: 0.22;
+    stroke-width: 1.35px;
     stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
     opacity: 0.72;
     transition:
       opacity 140ms ease,
@@ -1125,9 +1129,9 @@ body {
 
   .architecture-map-edge-trace path,
   .architecture-map-edge-selected path {
-    stroke-width: 0.56;
+    stroke-width: 1.9px;
     opacity: 0.96;
-    filter: drop-shadow(0 0 4px rgb(var(--color-accent) / 0.5));
+    filter: drop-shadow(0 0 1px rgb(var(--color-accent) / 0.32));
   }
 
   .architecture-map-edge[data-trace-role="upstream"] path {
@@ -1152,7 +1156,7 @@ body {
 
   .architecture-map-edge-muted path {
     opacity: 0.62;
-    stroke-width: 0.28;
+    stroke-width: 1.15px;
   }
 
   [data-theme="light"] .architecture-map-edge-muted {
@@ -1161,7 +1165,7 @@ body {
 
   [data-theme="light"] .architecture-map-edge-muted path {
     opacity: 0.82;
-    stroke-width: 0.34;
+    stroke-width: 1.2px;
   }
 
   [data-theme="light"] .architecture-map-edge-muted.architecture-map-edge-selected,
@@ -1172,7 +1176,7 @@ body {
   [data-theme="light"] .architecture-map-edge-muted.architecture-map-edge-selected path,
   [data-theme="light"] .architecture-map-edge-muted.architecture-map-edge-trace path {
     opacity: 0.98;
-    stroke-width: 0.56;
+    stroke-width: 1.9px;
   }
 
   [data-theme="light"] .architecture-map-edge-muted.architecture-map-edge-selected text,
@@ -1191,8 +1195,9 @@ body {
   }
 
   .architecture-map-edges marker path {
-    fill: rgb(var(--color-accent));
+    fill: context-stroke;
     stroke: none;
+    opacity: 0.76;
   }
 
   .architecture-workspace-footer {

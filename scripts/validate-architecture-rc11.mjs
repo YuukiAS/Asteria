@@ -40,8 +40,8 @@ try {
   const projectionSource = await read("src/architecture/viewProjection.ts")
   const styleSource = await read("src/styles/index.css")
 
-  assert(packageJson.version === "2.0.0-rc.11", "package.json must declare 2.0.0-rc.11.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.11"'), "App shell must display 2.0.0-rc.11.")
+  assert(packageJson.version === "2.0.0-rc.12", "package.json must declare 2.0.0-rc.12.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.12"'), "App shell must display 2.0.0-rc.12.")
   assert(packageJson.scripts["test:architecture-rc11"] === 'node scripts/validate-architecture-rc11.mjs && playwright test --grep "RC11"', "package.json must expose RC.11 focused validation.")
   assert(packageJson.scripts["test:regression"].includes("test:architecture-rc11"), "Cumulative regression must include RC.11.")
 
@@ -97,7 +97,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.11",
+          version: "2.0.0-rc.12",
           formulaBlock: "dedicated-scroll-box",
           primaryLabelClamp: "removed",
           architectureWhyCopy: "scientific-item-specific",

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0-rc.12 - Edge Visual Self-QA Finish
+
+- Normalized Architecture / Evidence relation strokes to stable CSS-pixel widths with `vector-effect: non-scaling-stroke`, keeping ordinary edges near 1.35px and selected/trace paths at 1.9px.
+- Reduced Architecture arrowhead scale and decoupled graph markers from selected stroke width so active paths no longer form heavy endpoint knots around selected nodes.
+- Kept Lineage connectors restrained with CSS-pixel stroke widths and fixed marker units while preserving the RC.11 provenance presentation.
+- Added RC.12 focused static/browser coverage and a screenshot capture script for two-round developer visual self-QA, including CAT/Original model selector coherence.
+
 ## 2.0.0-rc.11 - Reader-facing Architecture Finish
 
 - Added a dedicated canonical formula block in the Architecture inspector so core TRACE and CAT-TRACE definitions render as continuous KaTeX math with local horizontal scrolling instead of fragmented metadata text.
