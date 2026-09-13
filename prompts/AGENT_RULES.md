@@ -98,6 +98,33 @@ docs/operations/development/DEVELOPER_VISUAL_SELF_QA_CONTRACT.md
 
 目标是先在开发阶段消灭明显问题，减少用户启动 GPT Work 和人工验收的次数。
 
+## Canonical scientific graph visual system
+
+凡 task 修改 Architecture / Lineage / Evidence / graph connector / relation label / inspector reader-facing layout，必须同时读取并遵守：
+
+```text
+docs/design/SCIENTIFIC_GRAPH_VISUAL_SYSTEM.md
+```
+
+它是 stable-facing presentation 的 canonical 视觉规范，优先级高于某个 RC 临时 screenshot patch。核心要求包括：
+
+- Architecture 必须像 layered scientific model flow，不能退化成 hard-orthogonal electrical wiring；
+- Lineage 每个 visual connector 只有一个统一 relation-label group，label 必须由 path geometry 派生；
+- Evidence 必须保持 claim-centered、轻量、非线路图的 relation grammar；
+- right inspector 遵守 single-scroll principle，不允许 tiny clipped section / nested-scroll strip 挡住 Primary Inspector；
+- selected scientific object 永远高于 active edge / ordinary edge / muted context；
+- visual tokens、arrowhead、stroke、capsule、motion 使用统一 scale，不在各 view 自由发挥。
+
+如果现有实现与该规范冲突，应优先修通用 presentation mechanism，而不是为当前 fixture 加 magic numbers。
+
+视觉 task result 中必须说明本轮是否保持：
+
+```text
+VISUAL_SYSTEM_CONFORMANCE = PASS | FAIL
+```
+
+若 `FAIL`，不得报告 visual task COMPLETE。
+
 ## Example 是诊断 fixture，不是 hardcode 目标
 
 当用户、ChatGPT、GPT Work 或 browser regression 用 CAT-TRACE、Original TRACE、Lineage、Evidence 或其它 fixture 暴露 UI/graph 问题时，默认把该 fixture 当作**诊断样例**，而不是只把该样例修到截图好看。
