@@ -2,11 +2,11 @@
 
 Asteria 2.0 is the active Web product shell for inspecting canonical statistical-model architecture maps. The current build focuses on Original TRACE and CAT-TRACE Frozen V2, with first-level Architecture, Lineage, and Evidence views backed by the same typed semantic graph.
 
-Current app version: `2.0.0-rc.12`.
+Current app version: `2.0.0-rc.13`.
 
 ## Product State
 
-`2.0.0-rc.12` keeps Asteria 2.0 as the only active product shell and normalizes Architecture / Lineage / Evidence edge presentation with stable CSS-pixel strokes, smaller fixed arrowheads, and developer-owned visual self-QA screenshots before any external GPT Work review. Opening Asteria goes directly to:
+`2.0.0-rc.13` keeps Asteria 2.0 as the only active product shell and adds a generic graph-presentation foundation for Architecture / Lineage / Evidence: lane-aware Full model layout, reusable card-boundary ports, multi-input fan-in routing, and rect-driven Lineage provenance connectors. Opening Asteria goes directly to:
 
 - Project: `CAT-TRACE`
 - View: `Architecture`
@@ -15,7 +15,7 @@ Current app version: `2.0.0-rc.12`.
 
 Architecture provides the formal `Original TRACE` / `CAT-TRACE Frozen V2` model selector and an `Overview` / `Full model` detail control. Selection drives the inspector; trace highlighting only appears after `Show trace` is activated. Lineage and Evidence are direct first-level views. Save/Restore stores only the Asteria 2.0 view session state, not the retired shared/local 1.x canvas workspace.
 
-After RC.12, the next acceptance step is `CHATGPT_REVIEW_DEVELOPER_SCREENSHOTS`, not manual final acceptance, GPT Work launch, or stable release.
+After RC.13, the next acceptance step is `CHATGPT_REVIEW_DEVELOPER_SCREENSHOTS`, not manual final acceptance, GPT Work launch, or stable release.
 
 ## Legacy Compatibility
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0-rc.13 - Graph Presentation Foundation
+
+- Added a generic graph-presentation helper for lane-aware Architecture Full model layout, reusable card-boundary ports, and multi-input fan-in routing without CAT-TRACE example-specific hardcoding.
+- Replaced the previous Full model row-major packing with semantic lane locality and a virtual canvas that can grow vertically while Fit preserves lane order and card separation.
+- Reworked Lineage provenance connectors to derive source/target ports and relation-chip placement from rect geometry instead of fixed percentages.
+- Added RC.13 focused static/browser coverage and generic synthetic fixtures for multi-lane graphs, multi-source targets, and six-source provenance routing.
+
 ## 2.0.0-rc.12 - Edge Visual Self-QA Finish
 
 - Normalized Architecture / Evidence relation strokes to stable CSS-pixel widths with `vector-effect: non-scaling-stroke`, keeping ordinary edges near 1.35px and selected/trace paths at 1.9px.

@@ -668,7 +668,11 @@ body {
   }
 
   .lineage-presentation {
-    @apply absolute inset-0 overflow-hidden;
+    @apply absolute left-1/2 top-1/2 overflow-visible;
+    width: var(--provenance-width);
+    height: var(--provenance-height);
+    transform: translate(-50%, -50%) scale(0.8);
+    transform-origin: center;
   }
 
   .lineage-presentation-connectors {
@@ -709,11 +713,11 @@ body {
   }
 
   .lineage-presentation-sources {
-    @apply absolute bottom-8 left-9 top-8 z-20 grid w-[250px] grid-rows-4 gap-4;
+    @apply absolute inset-0 z-20;
   }
 
   .lineage-presentation-card {
-    @apply grid content-center gap-1 rounded-md border border-strongBorder bg-panel/95 px-4 py-3 text-left shadow-sm;
+    @apply absolute grid -translate-x-1/2 -translate-y-1/2 content-center gap-1 rounded-md border border-strongBorder bg-panel/95 px-4 py-3 text-left shadow-sm;
     transition:
       border-color 140ms ease,
       background-color 140ms ease,
@@ -734,7 +738,7 @@ body {
   }
 
   .lineage-presentation-target-card {
-    @apply absolute right-14 top-1/2 z-20 min-h-[104px] w-[260px] -translate-y-1/2;
+    @apply z-20;
   }
 
   .lineage-presentation-target-card strong {
@@ -931,8 +935,10 @@ body {
   }
 
   .architecture-projection-layer {
-    @apply absolute inset-0;
-    transform: translate(var(--projection-pan-x), var(--projection-pan-y)) scale(var(--projection-zoom));
+    @apply absolute left-1/2 top-1/2;
+    width: var(--projection-width);
+    height: var(--projection-height);
+    transform: translate(calc(-50% + var(--projection-pan-x)), calc(-50% + var(--projection-pan-y))) scale(var(--projection-zoom));
     transform-origin: center;
   }
 
@@ -1070,7 +1076,7 @@ body {
   }
 
   .architecture-map-edges {
-    @apply absolute inset-0 z-10 h-full w-full;
+    @apply absolute inset-0 z-10 h-full w-full overflow-visible;
   }
 
   .architecture-map-edge path {

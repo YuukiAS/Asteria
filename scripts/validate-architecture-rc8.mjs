@@ -18,8 +18,8 @@ try {
   const appSource = await read("src/app/App.tsx")
   const styleSource = await read("src/styles/index.css")
 
-  assert(packageJson.version === "2.0.0-rc.12", "package.json must declare 2.0.0-rc.12.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.12"'), "App shell must display 2.0.0-rc.12.")
+  assert(packageJson.version === "2.0.0-rc.13", "package.json must declare 2.0.0-rc.13.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.13"'), "App shell must display 2.0.0-rc.13.")
 
   assert(
     styleSource.includes('[data-theme="light"] .architecture-map-edge-muted {') &&
@@ -54,7 +54,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.12",
+          version: "2.0.0-rc.13",
           lightTraceContextReadability: "dedicated-css",
           activeTraceHierarchy: "overlap-protected",
           darkThemeUnchanged: true,

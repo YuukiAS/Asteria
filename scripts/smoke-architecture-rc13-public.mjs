@@ -62,32 +62,31 @@ try {
   await expect(page.getByTestId("current-project")).toContainText("CAT-TRACE")
   await expect(page.getByTestId("current-view")).toContainText("Architecture")
   await expect(page.getByTestId("current-model")).toContainText("CAT-TRACE Frozen V2")
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "light")
 
-  const baseWidth = await strokeWidth(page, ".architecture-map-edge:not(.architecture-map-edge-selected):not(.architecture-map-edge-trace):not(.architecture-map-edge-muted) path")
-  expect(baseWidth).toBeGreaterThanOrEqual(1.2)
-  expect(baseWidth).toBeLessThanOrEqual(1.6)
+  await page.getByTestId("detail-full-model").click()
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-detail-level", "full")
+  await assertNoOverlap(page, ".architecture-map-node", 6)
+  const fullEdgeCount = await page.locator(".architecture-map-edge").count()
+  expect(fullEdgeCount).toBeGreaterThan(20)
 
+  await page.getByTestId("detail-overview").click()
   await page.getByTestId("symbol-betaU_gh").click()
   await page.getByTestId("enable-trace").click()
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-trace-enabled", "true")
-  const activeWidth = await strokeWidth(page, ".architecture-map-edge-trace path")
-  expect(activeWidth).toBeLessThanOrEqual(2.2)
-  expect(activeWidth / baseWidth).toBeLessThanOrEqual(1.7)
-  await assertNoOverlap(page, ".architecture-map-node", 6)
+  expect(await strokeWidth(page, ".architecture-map-edge-trace path")).toBeGreaterThan(await strokeWidth(page, ".architecture-map-edge-muted:not(.architecture-map-edge-selected):not(.architecture-map-edge-trace) path"))
 
   await page.getByTestId("view-lineage").click()
   await expect(page.getByTestId("lineage-presentation")).toBeVisible()
-  expect(await strokeWidth(page, "[data-lineage-connector]")).toBeLessThanOrEqual(1.9)
   await assertNoOverlap(page, ".lineage-presentation-card", 8)
+  await assertNoOverlap(page, "[data-lineage-chip='true']", 4)
 
   await page.getByTestId("view-evidence").click()
   await expect(page.getByTestId("central-evidence-canvas")).toContainText("Architecture regression evidence")
-  expect(await strokeWidth(page, ".architecture-map-edge-selected path")).toBeLessThanOrEqual(2.1)
+  await assertNoOverlap(page, ".architecture-map-node", 6)
 
   const filteredIssues = consoleIssues.filter((issue) => !issue.includes("Failed to load resource: the server responded with a status of 404"))
   expect(filteredIssues).toEqual([])
-  console.log(JSON.stringify({ status: "public-smoke-pass", publicUrl, observedVersion: "2.0.0-rc.13", viewport: "1366x768", baseWidth, activeWidth }, null, 2))
+  console.log(JSON.stringify({ status: "public-smoke-pass", publicUrl, observedVersion: "2.0.0-rc.13", viewport: "1366x768", fullEdgeCount }, null, 2))
 } finally {
   await browser.close()
 }

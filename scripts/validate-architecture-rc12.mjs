@@ -37,8 +37,8 @@ try {
   const workspaceSource = await read("src/components/ArchitectureWorkspace.tsx")
   const styleSource = await read("src/styles/index.css")
 
-  assert(packageJson.version === "2.0.0-rc.12", "package.json must declare 2.0.0-rc.12.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.12"'), "App shell must display 2.0.0-rc.12.")
+  assert(packageJson.version === "2.0.0-rc.13", "package.json must declare 2.0.0-rc.13.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.13"'), "App shell must display 2.0.0-rc.13.")
   assert(packageJson.scripts["test:architecture-rc12"] === 'node scripts/validate-architecture-rc12.mjs && playwright test --grep "RC12"', "package.json must expose RC.12 focused validation.")
   assert(packageJson.scripts["test:regression"].includes("test:architecture-rc12"), "Cumulative regression must include RC.12.")
 
@@ -48,7 +48,7 @@ try {
   assert(styleSource.includes("stroke-width: 1.5px"), "Lineage base connector stroke must use CSS-pixel width.")
   assert(styleSource.includes("stroke-width: 1.85px"), "Lineage active connector stroke must remain below the RC.12 cap.")
   assert(workspaceSource.includes('markerUnits="userSpaceOnUse"'), "SVG markers must be decoupled from selected stroke width.")
-  assert(workspaceSource.includes('markerWidth="0.95"') && workspaceSource.includes('markerWidth="1.15"'), "Architecture and Lineage arrows must use small fixed marker dimensions.")
+  assert(workspaceSource.includes('markerWidth="0.95"') && workspaceSource.includes('markerWidth="9"'), "Architecture and Lineage arrows must use fixed user-space marker dimensions.")
   assert(styleSource.includes("fill: context-stroke"), "Arrowheads must inherit the relation stroke color instead of forming one-color knots.")
 
   const protectedChanges = changedProtectedTruthFiles()
@@ -59,7 +59,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.12",
+          version: "2.0.0-rc.13",
           edgeStrokeSystem: "css-px-non-scaling-stroke",
           architectureBaseEdgeCssPx: 1.35,
           architectureActiveEdgeCssPx: 1.9,

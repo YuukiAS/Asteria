@@ -33,8 +33,8 @@ try {
   const panelSource = await read("src/components/ArchitectureReferencePanel.tsx")
   const styleSource = await read("src/styles/index.css")
 
-  assert(packageJson.version === "2.0.0-rc.12", "package.json must declare 2.0.0-rc.12.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.12"'), "App shell must display 2.0.0-rc.12.")
+  assert(packageJson.version === "2.0.0-rc.13", "package.json must declare 2.0.0-rc.13.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.13"'), "App shell must display 2.0.0-rc.13.")
 
   assert(appSource.indexOf('<nav className="asteria-skip-links"') < appSource.indexOf("<AsteriaV2TopBar"), "Skip links must be the first page-level tab stops before the topbar.")
   assert(appSource.includes('href="#asteria-canvas"') && appSource.includes('href="#asteria-inspector"'), "Skip links must target canvas and inspector anchors.")
@@ -90,7 +90,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.12",
+          version: "2.0.0-rc.13",
           skipLinks: "first-tab-ready",
           exportDisclosure: "controlled",
           fullModelControls: "zoom-fit-pan",

@@ -2,6 +2,7 @@ import { GitBranch, Layers3, Maximize2, Minus, Move, Network, Plus, ShieldCheck 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react"
 import { canonicalTraceProjects } from "../architecture/fixtures/canonicalTraceFixtures"
 import { multiViewIds } from "../architecture/fixtures/multiViewTraceProject"
+import { layoutProvenanceFlow } from "../architecture/graphPresentation"
 import { diffOriginalTraceToCatTrace, type SemanticDiffStatus } from "../architecture/semanticDiff"
 import { useArchitectureSession } from "../architecture/session"
 import type { ArchitectureProjectV2, RelationType, StatisticalEntity, StatisticalSymbol } from "../architecture/types"
@@ -108,10 +109,10 @@ function architectureAllowsInlineLabel(type: RelationType) {
 }
 
 const lineageCards = [
-  { id: "entity:lineage:hmsc", label: "HMSC framework", copy: "Ecological hierarchy", y: 18, port: 32, chips: ["Ecological hierarchy"], relationIds: ["relation:lineage:hmsc-cat"], relationType: "borrows_interpretation_from" },
-  { id: "entity:lineage:trace", label: "TRACE / Infinite JSDM", copy: "Open-tail foundation", y: 38, port: 44, chips: ["Extends", "Preserves"], relationIds: ["relation:lineage:trace-cat", "relation:lineage:trace-preserve"], relationType: "extends preserves" },
-  { id: "entity:lineage:bigmvp", label: "bigMVP", copy: "Scalable probit computation", y: 60, port: 56, chips: ["Scalable probit"], relationIds: ["relation:lineage:bigmvp-cat"], relationType: "computationally_inspired_by" },
-  { id: "entity:lineage:mgp", label: "Sparse Bayesian infinite factor / MGP", copy: "Factor shrinkage", y: 80, port: 68, chips: ["Factor shrinkage"], relationIds: ["relation:lineage:mgp-cat"], relationType: "uses_methodological_component_from" },
+  { id: "entity:lineage:hmsc", label: "HMSC framework", copy: "Ecological hierarchy", chips: ["Ecological hierarchy"], relationIds: ["relation:lineage:hmsc-cat"], relationType: "borrows_interpretation_from" },
+  { id: "entity:lineage:trace", label: "TRACE / Infinite JSDM", copy: "Open-tail foundation", chips: ["Extends", "Preserves"], relationIds: ["relation:lineage:trace-cat", "relation:lineage:trace-preserve"], relationType: "extends preserves" },
+  { id: "entity:lineage:bigmvp", label: "bigMVP", copy: "Scalable probit computation", chips: ["Scalable probit"], relationIds: ["relation:lineage:bigmvp-cat"], relationType: "computationally_inspired_by" },
+  { id: "entity:lineage:mgp", label: "Sparse Bayesian infinite factor / MGP", copy: "Factor shrinkage", chips: ["Factor shrinkage"], relationIds: ["relation:lineage:mgp-cat"], relationType: "uses_methodological_component_from" },
 ] as const
 
 function LineagePresentation({
@@ -124,37 +125,49 @@ function LineagePresentation({
   onSelectEntity: (entityId: string) => void
 }) {
   const targetId = "entity:lineage:cat-trace"
+  const provenanceLayout = useMemo(() => layoutProvenanceFlow(lineageCards), [])
+  const targetRect = provenanceLayout.target
   return (
-    <div className="lineage-presentation" data-testid="lineage-presentation">
-      <svg className="lineage-presentation-connectors" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+    <div
+      className="lineage-presentation"
+      data-testid="lineage-presentation"
+      style={{ "--provenance-width": `${provenanceLayout.width}px`, "--provenance-height": `${provenanceLayout.height}px` } as CSSProperties}
+    >
+      <svg className="lineage-presentation-connectors" viewBox={`0 0 ${provenanceLayout.width} ${provenanceLayout.height}`} preserveAspectRatio="none" aria-hidden="true">
         <defs>
-          <marker id="lineage-presentation-arrow" markerUnits="userSpaceOnUse" markerWidth="1.15" markerHeight="1.15" refX="1.05" refY="0.575" orient="auto">
-            <path d="M0,0 L1.15,0.575 L0,1.15 z" />
+          <marker id="lineage-presentation-arrow" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="8.2" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 z" />
           </marker>
         </defs>
-        {lineageCards.map((card) => (
+        {provenanceLayout.sources.map((card) => (
           <path
             key={card.id}
             className={`lineage-presentation-connector ${card.id === selectedEntityId || targetId === selectedEntityId ? "lineage-presentation-connector-active" : ""}`}
-            d={`M 27 ${card.y} C 43 ${card.y}, 54 ${card.port}, 72 ${card.port}`}
+            d={card.path}
             markerEnd="url(#lineage-presentation-arrow)"
             data-lineage-connector={card.id}
             data-source-id={card.id}
             data-target-id={targetId}
             data-relation-ids={card.relationIds.join(" ")}
             data-relation-type={card.relationType}
+            data-source-x={card.sourcePort.x.toFixed(2)}
+            data-source-y={card.sourcePort.y.toFixed(2)}
+            data-target-x={card.targetPort.x.toFixed(2)}
+            data-target-y={card.targetPort.y.toFixed(2)}
           />
         ))}
       </svg>
       <div className="lineage-presentation-sources">
-        {lineageCards.map((card) => (
+        {provenanceLayout.sources.map((card) => (
           <button
             key={card.id}
             type="button"
             className={`lineage-presentation-card lineage-presentation-source-card ${selectedEntityId === card.id ? "lineage-presentation-card-selected" : ""}`}
+            style={{ left: `${card.rect.x}px`, top: `${card.rect.y}px`, width: `${card.rect.width}px`, minHeight: `${card.rect.height}px` }}
             onClick={() => onSelectEntity(card.id)}
             data-testid={`lineage-card-${safeDomId(card.id)}`}
             data-entity-id={card.id}
+            data-lineage-card="source"
           >
             <strong>{card.label}</strong>
             <span>{card.copy}</span>
@@ -162,18 +175,22 @@ function LineagePresentation({
         ))}
       </div>
       <div className="lineage-presentation-chip-layer" aria-label="Lineage relations">
-        <span className="lineage-relation-chip" style={{ left: "48%", top: "26%" }} data-lineage-chip="true">Ecological hierarchy</span>
-        <span className="lineage-relation-chip" style={{ left: "43%", top: "34%" }} data-lineage-chip="true">Extends</span>
-        <span className="lineage-relation-chip" style={{ left: "54%", top: "45%" }} data-lineage-chip="true">Preserves</span>
-        <span className="lineage-relation-chip" style={{ left: "47%", top: "57%" }} data-lineage-chip="true">Scalable probit</span>
-        <span className="lineage-relation-chip" style={{ left: "48%", top: "73%" }} data-lineage-chip="true">Factor shrinkage</span>
+        {provenanceLayout.sources.flatMap((card) =>
+          card.chipsLayout.map((chip) => (
+            <span key={`${card.id}:${chip.label}`} className="lineage-relation-chip" style={{ left: `${chip.x}px`, top: `${chip.y}px` }} data-lineage-chip="true" data-source-id={card.id}>
+              {chip.label}
+            </span>
+          )),
+        )}
       </div>
       <button
         type="button"
         className={`lineage-presentation-card lineage-presentation-target-card ${selectedEntityId === targetId ? "lineage-presentation-card-selected" : ""}`}
+        style={{ left: `${targetRect.x}px`, top: `${targetRect.y}px`, width: `${targetRect.width}px`, minHeight: `${targetRect.height}px` }}
         onClick={() => onSelectEntity(targetId)}
         data-testid="lineage-target-card"
         data-entity-id={targetId}
+        data-lineage-card="target"
       >
         <strong>{project.entities[targetId]?.label || "CAT-TRACE Frozen V2"}</strong>
         <span>Catalogue-aware extension</span>
@@ -345,13 +362,15 @@ export function ArchitectureWorkspace() {
                 "--projection-pan-x": `${layout.viewport.x * 0.04 + appliedReadingPan.x}px`,
                 "--projection-pan-y": `${layout.viewport.y * 0.04 + appliedReadingPan.y}px`,
                 "--projection-zoom": layout.viewport.zoom * appliedReadingZoom,
+                "--projection-width": `${layout.canvas.width}px`,
+                "--projection-height": `${layout.canvas.height}px`,
               } as CSSProperties}
               data-viewport-x={layout.viewport.x}
               data-viewport-y={layout.viewport.y}
               data-viewport-zoom={layout.viewport.zoom}
               data-reading-zoom={appliedReadingZoom.toFixed(2)}
             >
-              <svg className="architecture-map-edges" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Projected semantic relations">
+              <svg className="architecture-map-edges" viewBox={`0 0 ${layout.canvas.width} ${layout.canvas.height}`} preserveAspectRatio="none" role="img" aria-label="Projected semantic relations">
                 <defs>
                   <marker id="architecture-edge-arrow" markerUnits="userSpaceOnUse" markerWidth="0.95" markerHeight="0.95" refX="0.86" refY="0.475" orient="auto">
                     <path d="M0,0 L0.95,0.475 L0,0.95 z" />
@@ -375,7 +394,7 @@ export function ArchitectureWorkspace() {
                     key={node.projection.id}
                     type="button"
                     className={`architecture-map-node architecture-map-node-${entity.kind} ${isArchitecture && detailLevel === "full" ? "architecture-map-node-full" : ""} ${isArchitecture && modelId === "original-trace" ? "architecture-map-node-original" : ""} ${isSelected ? "architecture-map-node-selected" : ""} ${isUpstream ? "architecture-map-node-upstream" : ""} ${isDownstream ? "architecture-map-node-downstream" : ""} ${traceEnabled && selectedSymbolId && isArchitecture && !isSelected && !isTrace ? "architecture-map-node-muted" : ""} ${diffStatus ? `architecture-map-node-diff-${diffStatus}` : ""}`}
-                    style={{ left: `${node.leftPercent}%`, top: `${node.topPercent}%`, width: node.width, minHeight: node.height }}
+                    style={{ left: `${node.x}px`, top: `${node.y}px`, width: node.width, minHeight: node.height }}
                     onClick={() => selectNode(node)}
                     data-testid={`projection-node-${safeDomId(node.entityId)}`}
                     data-entity-id={node.entityId}
@@ -385,6 +404,11 @@ export function ArchitectureWorkspace() {
                     data-projection-y={node.projection.position.y}
                     data-left-percent={node.leftPercent.toFixed(2)}
                     data-top-percent={node.topPercent.toFixed(2)}
+                    data-node-x={node.x.toFixed(2)}
+                    data-node-y={node.y.toFixed(2)}
+                    data-node-width={node.width.toFixed(2)}
+                    data-node-height={node.height.toFixed(2)}
+                    data-node-lane={node.lane ?? ""}
                     data-diff-status={diffStatus || "none"}
                     title={isArchitecture ? `${symbol?.latex || entity.label} - ${entity.label}` : entity.label}
                   >
@@ -441,6 +465,10 @@ function ProjectedEdge({
       data-trace-active={isTraceEdge ? "true" : "false"}
       data-trace-role={traceRole}
       data-edge-label-visible={showLabel ? "true" : "false"}
+      data-source-port-x={edge.sourceX.toFixed(2)}
+      data-source-port-y={edge.sourceY.toFixed(2)}
+      data-target-port-x={edge.targetX.toFixed(2)}
+      data-target-port-y={edge.targetY.toFixed(2)}
     >
       <path d={edge.path} markerEnd="url(#architecture-edge-arrow)" />
       {showLabel ? <text x={edge.labelX} y={edge.labelY} data-edge-label="true">{label}</text> : null}

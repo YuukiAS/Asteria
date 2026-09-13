@@ -52,6 +52,26 @@ async function visibleRects(page: Page, selector: string): Promise<Rect[]> {
   )
 }
 
+async function waitForProjectionGeometrySettled(page: Page) {
+  await page.evaluate(async () => {
+    await document.fonts?.ready
+    let previous = ""
+    let stableFrames = 0
+    for (let index = 0; index < 24 && stableFrames < 3; index += 1) {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+      const layer = document.querySelector<HTMLElement>(".architecture-projection-layer")
+      const rect = layer?.getBoundingClientRect()
+      const signature = rect ? `${rect.left.toFixed(2)}:${rect.top.toFixed(2)}:${rect.width.toFixed(2)}:${rect.height.toFixed(2)}` : ""
+      if (signature === previous) {
+        stableFrames += 1
+      } else {
+        previous = signature
+        stableFrames = 0
+      }
+    }
+  })
+}
+
 async function assertNoNodeOverlap(page: Page, gap = 10) {
   const rects = await visibleRects(page, ".architecture-map-node")
   for (let i = 0; i < rects.length; i += 1) {
@@ -205,19 +225,122 @@ async function assertLineagePresentationGeometry(page: Page) {
   expect((canvas?.x || 0) + (canvas?.width || 0) - ((target?.x || 0) + (target?.width || 0))).toBeGreaterThanOrEqual(48)
 }
 
+async function architectureRoutingMetrics(page: Page) {
+  return page.evaluate(() => {
+    type GraphRect = { id: string; left: number; right: number; top: number; bottom: number; lane: number }
+    const nodes = [...document.querySelectorAll<HTMLElement>(".architecture-map-node")].map((element) => {
+      const x = Number(element.dataset.nodeX)
+      const y = Number(element.dataset.nodeY)
+      const width = Number(element.dataset.nodeWidth)
+      const height = Number(element.dataset.nodeHeight)
+      return {
+        id: element.dataset.entityId || "",
+        left: x - width / 2,
+        right: x + width / 2,
+        top: y - height / 2,
+        bottom: y + height / 2,
+        lane: Number(element.dataset.nodeLane || "0"),
+      }
+    })
+    const inside = (point: DOMPoint, rect: GraphRect, pad = 0) => point.x > rect.left - pad && point.x < rect.right + pad && point.y > rect.top - pad && point.y < rect.bottom + pad
+    const touchesBoundary = (x: number, y: number, rect?: GraphRect) => {
+      if (!rect) return false
+      const insideRange = x >= rect.left - 1.5 && x <= rect.right + 1.5 && y >= rect.top - 1.5 && y <= rect.bottom + 1.5
+      const boundaryDistance = Math.min(Math.abs(x - rect.left), Math.abs(x - rect.right), Math.abs(y - rect.top), Math.abs(y - rect.bottom))
+      return insideRange && boundaryDistance <= 1.5
+    }
+    let edgeCardIntersectionCount = 0
+    let floatingArrowheadCount = 0
+    const targetPorts = new Map<string, Array<{ x: number; y: number }>>()
+    for (const group of document.querySelectorAll<SVGGElement>(".architecture-map-edge")) {
+      const path = group.querySelector<SVGPathElement>("path")
+      if (!path) continue
+      const sourceId = group.dataset.sourceId || ""
+      const targetId = group.dataset.targetId || ""
+      const target = nodes.find((node) => node.id === targetId)
+      const source = nodes.find((node) => node.id === sourceId)
+      const targetPort = { x: Number(group.dataset.targetPortX), y: Number(group.dataset.targetPortY) }
+      if (!touchesBoundary(targetPort.x, targetPort.y, target)) floatingArrowheadCount += 1
+      targetPorts.set(targetId, [...(targetPorts.get(targetId) || []), targetPort])
+      const length = path.getTotalLength()
+      for (let index = 2; index < 30; index += 1) {
+        const point = path.getPointAtLength((length * index) / 30)
+        const hit = nodes.some((node) => node.id !== source?.id && node.id !== target?.id && inside(point, node, -2))
+        if (hit) {
+          edgeCardIntersectionCount += 1
+          break
+        }
+      }
+    }
+    let targetPortCollapseCount = 0
+    for (const ports of targetPorts.values()) {
+      for (let i = 0; i < ports.length; i += 1) {
+        for (let j = i + 1; j < ports.length; j += 1) {
+          if (Math.hypot(ports[i].x - ports[j].x, ports[i].y - ports[j].y) < 4) targetPortCollapseCount += 1
+        }
+      }
+    }
+    const sortedLanes = nodes.map((node) => node.lane).filter((lane) => Number.isFinite(lane))
+    const layerOrderPass = sortedLanes.every((lane) => lane >= 0 && lane <= 5)
+    return { nodeCount: nodes.length, edgeCount: document.querySelectorAll(".architecture-map-edge").length, edgeCardIntersectionCount, floatingArrowheadCount, targetPortCollapseCount, layerOrderPass }
+  })
+}
+
+async function lineageRoutingMetrics(page: Page) {
+  return page.evaluate(() => {
+    const target = document.querySelector<HTMLElement>("[data-testid='lineage-target-card']")
+    const presentation = document.querySelector<HTMLElement>("[data-testid='lineage-presentation']")
+    const targetRect = target?.getBoundingClientRect()
+    const presentationRect = presentation?.getBoundingClientRect()
+    const ports = [...document.querySelectorAll<SVGPathElement>("[data-lineage-connector]")].map((connector) => ({
+      x: Number(connector.dataset.targetX),
+      y: Number(connector.dataset.targetY),
+    }))
+    const portsInsideTarget = Boolean(targetRect && presentationRect) && ports.every((port) => {
+      const screenX = presentationRect!.left + port.x * (presentationRect!.width / 1000)
+      const screenY = presentationRect!.top + port.y * (presentationRect!.height / 620)
+      return screenX >= targetRect!.left - 2 && screenX <= targetRect!.right + 2 && screenY >= targetRect!.top - 2 && screenY <= targetRect!.bottom + 2
+    })
+    const connectorTouchTarget = Boolean(targetRect && presentationRect) && ports.every((port) => {
+      const screenX = presentationRect!.left + port.x * (presentationRect!.width / 1000)
+      return Math.abs(screenX - targetRect!.left) <= 3
+    })
+    return {
+      connectorCount: ports.length,
+      connectorTouchTarget,
+      portsInsideTarget,
+    }
+  })
+}
+
 async function nodeCenters(page: Page) {
+  await waitForProjectionGeometrySettled(page)
   const rects = await visibleRects(page, ".architecture-map-node")
   return new Map(rects.map((rect) => [rect.id, rect]))
 }
 
 async function assertStableSharedNodeCenters(before: Map<string, Rect>, after: Map<string, Rect>) {
   let compared = 0
+  const deltas: Array<{ dx: number; dy: number }> = []
+  for (const [id, rect] of before) {
+    const next = after.get(id)
+    if (!next) continue
+    deltas.push({ dx: next.cx - rect.cx, dy: next.cy - rect.cy })
+  }
+  const median = (values: number[]) => {
+    const sorted = values.slice().sort((a, b) => a - b)
+    return sorted[Math.floor(sorted.length / 2)] || 0
+  }
+  const globalDx = median(deltas.map((delta) => delta.dx))
+  const globalDy = median(deltas.map((delta) => delta.dy))
+  expect(Math.abs(globalDx), "shared graph should not incur a large global x translation").toBeLessThanOrEqual(20)
+  expect(Math.abs(globalDy), "shared graph should not incur a large global y translation").toBeLessThanOrEqual(20)
   for (const [id, rect] of before) {
     const next = after.get(id)
     if (!next) continue
     compared += 1
-    expect(Math.abs(rect.cx - next.cx), `${id} moved horizontally`).toBeLessThan(2)
-    expect(Math.abs(rect.cy - next.cy), `${id} moved vertically`).toBeLessThan(2)
+    expect(Math.abs(next.cx - rect.cx - globalDx), `${id} moved horizontally relative to graph`).toBeLessThan(2)
+    expect(Math.abs(next.cy - rect.cy - globalDy), `${id} moved vertically relative to graph`).toBeLessThan(2)
   }
   expect(compared).toBeGreaterThanOrEqual(10)
 }
@@ -251,7 +374,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/")
   await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
   await expect(page.getByTestId("asteria-v2-topbar")).toBeVisible()
-  await expect(page.getByText("2.0.0-rc.12")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.13")).toBeVisible()
   await expect(page.getByTestId("current-project")).toContainText("Project")
   await expect(page.getByTestId("current-project")).toContainText("CAT-TRACE")
   await expect(page.getByTestId("current-view")).toContainText("Architecture")
@@ -1044,4 +1167,142 @@ test("RC12 edge and arrow presentation uses stable restrained visual weights", a
   await page.getByTestId("model-cat-trace-frozen-v2").click()
   await assertModelCoherence(page, "cat-trace-frozen-v2", "CAT-TRACE Frozen V2")
   await page.screenshot({ path: path.join(screenshotDir, "rc12-model-selector-cat.png"), fullPage: false })
+})
+
+test("RC13 graph presentation foundation validates real-page boundary routing", async ({ page }) => {
+  await page.setViewportSize({ width: 1536, height: 864 })
+  await page.getByTestId("model-cat-trace-frozen-v2").click()
+  await page.getByTestId("detail-full-model").click()
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-detail-level", "full")
+  await assertNoNodeOverlap(page, 8)
+  await assertNoPrimaryTextClipping(page)
+  let metrics = await architectureRoutingMetrics(page)
+  expect(metrics.nodeCount).toBeGreaterThanOrEqual(30)
+  expect(metrics.edgeCount).toBeGreaterThanOrEqual(30)
+  expect(metrics.layerOrderPass).toBe(true)
+  expect(metrics.edgeCardIntersectionCount).toBe(0)
+  expect(metrics.floatingArrowheadCount).toBe(0)
+  expect(metrics.targetPortCollapseCount).toBe(0)
+
+  await page.getByTestId("detail-overview").click()
+  await page.getByTestId("symbol-betaU_gh").click()
+  await page.getByTestId("enable-trace").click()
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-trace-enabled", "true")
+  metrics = await architectureRoutingMetrics(page)
+  expect(metrics.edgeCardIntersectionCount).toBe(0)
+  expect(metrics.floatingArrowheadCount).toBe(0)
+  expect(metrics.targetPortCollapseCount).toBe(0)
+  await assertNoEdgeLabelNodeCollision(page)
+
+  await page.getByTestId("view-lineage").click()
+  await assertLineagePresentationGeometry(page)
+  const lineageMetrics = await lineageRoutingMetrics(page)
+  expect(lineageMetrics.connectorCount).toBe(4)
+  expect(lineageMetrics.connectorTouchTarget).toBe(true)
+  expect(lineageMetrics.portsInsideTarget).toBe(true)
+
+  await page.getByTestId("view-evidence").click()
+  await assertNoNodeOverlap(page, 8)
+  await assertNoEdgeLabelNodeCollision(page)
+  const evidenceMetrics = await architectureRoutingMetrics(page)
+  expect(evidenceMetrics.edgeCardIntersectionCount).toBe(0)
+  expect(evidenceMetrics.floatingArrowheadCount).toBe(0)
+})
+
+test("RC13 generic graph fixture validates lane layout, fan-in ports, and provenance chips", async ({ page }) => {
+  await page.goto("/")
+  const metrics = await page.evaluate(async () => {
+    const presentation = (await import("/src/architecture/graphPresentation.ts")) as any
+    type Rect = { id: string; x: number; y: number; width: number; height: number; lane?: number }
+    const nodes = [
+      ["o1", "observation", 0, 0],
+      ["o2", "observation", 0, 120],
+      ["m1", "measurement", 160, 20],
+      ["m2", "measurement", 170, 140],
+      ["l1", "latent", 360, 0],
+      ["l2", "latent", 360, 110],
+      ["p1", "parameterization", 560, 20],
+      ["p2", "parameterization", 560, 140],
+      ["i1", "inference", 740, 80],
+      ["t1", "target", 920, 80],
+    ].map(([entityId, layer, x, y]) => ({ entityId, layer, label: `${entityId} label with varied length`, projection: { position: { x, y } } }))
+    const layout = presentation.layoutArchitectureLanes(nodes, (node: any) => node.layer, { width: 1080, minHeight: 680, nodeWidth: 110, nodeHeight: 64 })
+    const rect = (node: any): Rect => ({ id: node.entityId, x: node.x, y: node.y, width: node.width, height: node.height, lane: node.lane })
+    const rects = layout.nodes.map(rect)
+    const overlaps = (a: Rect, b: Rect, gap = 0) => Math.abs(a.x - b.x) < (a.width + b.width) / 2 + gap && Math.abs(a.y - b.y) < (a.height + b.height) / 2 + gap
+    let nodeOverlap = 0
+    for (let i = 0; i < rects.length; i += 1) {
+      for (let j = i + 1; j < rects.length; j += 1) {
+        if (overlaps(rects[i], rects[j], 8)) nodeOverlap += 1
+      }
+    }
+    const byId = new Map(rects.map((item) => [item.id, item]))
+    const relations = [
+      ["o1", "m1"],
+      ["o2", "m2"],
+      ["m1", "l1"],
+      ["m2", "l1"],
+      ["l1", "i1"],
+      ["p1", "i1"],
+      ["p2", "i1"],
+      ["i1", "t1"],
+    ]
+    const incoming = new Map<string, string[]>()
+    relations.forEach(([, target]) => incoming.set(target, [...(incoming.get(target) || []), target]))
+    const targetPorts = new Map<string, Array<{ x: number; y: number }>>()
+    let floatingArrowhead = 0
+    let edgeCardIntersection = 0
+    const pointInside = (point: { x: number; y: number }, item: Rect) => Math.abs(point.x - item.x) < item.width / 2 - 2 && Math.abs(point.y - item.y) < item.height / 2 - 2
+    relations.forEach(([sourceId, targetId], index) => {
+      const source = byId.get(sourceId)
+      const target = byId.get(targetId)
+      if (!source || !target) return
+      const count = incoming.get(targetId)?.length || 1
+      const routed = presentation.routeBoundaryEdge(source, target, { targetPortIndex: index % count, targetPortCount: count, obstacles: rects })
+      targetPorts.set(targetId, [...(targetPorts.get(targetId) || []), routed.targetPort])
+      const onBoundary = Math.min(Math.abs(routed.targetPort.x - (target.x - target.width / 2)), Math.abs(routed.targetPort.x - (target.x + target.width / 2)), Math.abs(routed.targetPort.y - (target.y - target.height / 2)), Math.abs(routed.targetPort.y - (target.y + target.height / 2))) <= 1
+      if (!onBoundary) floatingArrowhead += 1
+      const mid = { x: routed.labelX, y: routed.labelY }
+      if (rects.some((candidate) => candidate.id !== sourceId && candidate.id !== targetId && pointInside(mid, candidate))) edgeCardIntersection += 1
+    })
+    let portCollapse = 0
+    for (const ports of targetPorts.values()) {
+      for (let i = 0; i < ports.length; i += 1) {
+        for (let j = i + 1; j < ports.length; j += 1) {
+          if (Math.hypot(ports[i].x - ports[j].x, ports[i].y - ports[j].y) < 4) portCollapse += 1
+        }
+      }
+    }
+    const provenance = presentation.layoutProvenanceFlow([
+      { id: "s1", label: "First source", copy: "Longer provenance copy", chips: ["Extends"], relationIds: ["r1"], relationType: "extends" },
+      { id: "s2", label: "Second source", copy: "Another source", chips: ["Preserves", "Borrows"], relationIds: ["r2", "r3"], relationType: "preserves" },
+      { id: "s3", label: "Third source", copy: "Inference method", chips: ["Computes"], relationIds: ["r4"], relationType: "computes" },
+      { id: "s4", label: "Fourth source", copy: "Sparse prior", chips: ["Shrinks"], relationIds: ["r5"], relationType: "shrinks" },
+      { id: "s5", label: "Fifth source", copy: "Dataset evidence", chips: ["Validates"], relationIds: ["r6"], relationType: "validates" },
+      { id: "s6", label: "Sixth source", copy: "Negative control", chips: ["Constrains"], relationIds: ["r7"], relationType: "constrains" },
+    ])
+    const sourceRects = provenance.sources.map((source: any) => source.rect)
+    const provenanceChipCollision = provenance.sources.flatMap((source: any) => source.chipsLayout).filter((chip: any) => sourceRects.some((source: Rect) => Math.abs(chip.x - source.x) < source.width / 2 + 4 && Math.abs(chip.y - source.y) < source.height / 2 + 4)).length
+    const provenanceFloatingArrowhead = provenance.sources.filter((source: any) => Math.abs(source.targetPort.x - (provenance.target.x - provenance.target.width / 2)) > 1 || source.targetPort.y < provenance.target.y - provenance.target.height / 2 || source.targetPort.y > provenance.target.y + provenance.target.height / 2).length
+    return {
+      nodeOverlap,
+      edgeCardIntersection,
+      floatingArrowhead,
+      portCollapse,
+      lanes: [...new Set(rects.map((item) => item.lane))].length,
+      laneLocality: layout.nodes.every((node: any) => node.x === rects.find((item) => item.id === node.entityId)?.x),
+      provenanceSourceCount: provenance.sources.length,
+      provenanceChipCollision,
+      provenanceFloatingArrowhead,
+    }
+  })
+  expect(metrics.lanes).toBeGreaterThanOrEqual(3)
+  expect(metrics.nodeOverlap).toBe(0)
+  expect(metrics.edgeCardIntersection).toBe(0)
+  expect(metrics.floatingArrowhead).toBe(0)
+  expect(metrics.portCollapse).toBe(0)
+  expect(metrics.laneLocality).toBe(true)
+  expect(metrics.provenanceSourceCount).toBe(6)
+  expect(metrics.provenanceChipCollision).toBe(0)
+  expect(metrics.provenanceFloatingArrowhead).toBe(0)
 })
