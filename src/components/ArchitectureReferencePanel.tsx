@@ -188,6 +188,7 @@ export function ArchitectureReferencePanel() {
   const [collapsedOutlineLayers, setCollapsedOutlineLayers] = useState<string[]>([])
   const [exportExpanded, setExportExpanded] = useState(false)
   const panelTopRef = useRef<HTMLDivElement>(null)
+  const didMountRef = useRef(false)
   const exportToggleRef = useRef<HTMLButtonElement>(null)
   const exportPreviewRef = useRef<HTMLPreElement>(null)
   const symbolList = useMemo(() => Object.values(project.symbols), [project])
@@ -222,6 +223,11 @@ export function ArchitectureReferencePanel() {
   const hasSearchQuery = Boolean(searchQuery.trim())
 
   useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true
+      return
+    }
+    if (document.activeElement === document.body) return
     panelTopRef.current?.scrollIntoView({ block: "start" })
   }, [activeViewId, selectedEntityId, selectedSymbolId])
 
