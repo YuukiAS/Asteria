@@ -28,10 +28,11 @@ Asteria 当前进入明确的两代产品边界。
 - `2.0.0-rc.5`：RC.4 GPT Work black-box repair for rendered math, 1366 layout, atomic Clear state, light-theme contrast, trace grammar, cross-view search, synchronized right-panel title, keyboard model navigation, and researcher-first inspector language.
 - `2.0.0-rc.6`：RC.5 GPT Work re-audit repair for Overview/Full progressive disclosure, root-relative recursive trace, explicit trace activation, open-tail `mathcal U` relation, indices metadata, Evidence Pending language, object-type Inspector, Semantic Diff first-class placement, and Advanced/export/debug separation.
 - `2.0.0-rc.7`：RC.6 targeted release polish for keyboard-first skip links, 1366 light trace readability, controlled Advanced / Export disclosure, top Export feedback, compact accessible top actions, Full model Zoom/Fit/pan reading controls, context label-value spacing, and active relation-label readability.
+- `2.0.0-rc.8`：Final narrow Light-theme trace contrast patch for 1366 CAT-TRACE Architecture Overview with trace ON, preventing muted relation/context watermarking while preserving active trace hierarchy and all scientific/state contracts.
 
 RC.2 完成既定 G00–G06 gate 后，2026-09-11 源码验收审计发现中央 renderer 仍存在 hard-coded node/position/static edge 与 canonical view projection/typed relation 并存的双重 source-of-truth；同时 Original TRACE model switch 尚未完整驱动中央 Architecture stage。
 
-因此增加并已完成 RC.3 acceptance hardening。RC.4 又按最终人工验收反馈移除 active 1.x startup/live UI：打开 fixed public URL 直接进入 Asteria 2.0 CAT-TRACE Architecture，不再出现 `Choose a starting version`、`Use shared version` 或 `New from scratch`。RC.5 修复 RC.4 GPT Work 黑箱验收发现的 P1/P2 问题。RC.6 修复 RC.5 re-audit 仍发现的 Architecture readability、trace truth、Evidence/Inspector language 和 Advanced/debug separation 问题。RC.7 只修 RC.6 re-audit 剩余的 W01/W05/W06 accessibility、light trace readability、disclosure/export 和 Full-model reading-control polish。`2.0.0` 仅在 GPT Work re-audit 全部通过并完成用户最终验收后发布 stable。
+因此增加并已完成 RC.3 acceptance hardening。RC.4 又按最终人工验收反馈移除 active 1.x startup/live UI：打开 fixed public URL 直接进入 Asteria 2.0 CAT-TRACE Architecture，不再出现 `Choose a starting version`、`Use shared version` 或 `New from scratch`。RC.5 修复 RC.4 GPT Work 黑箱验收发现的 P1/P2 问题。RC.6 修复 RC.5 re-audit 仍发现的 Architecture readability、trace truth、Evidence/Inspector language 和 Advanced/debug separation 问题。RC.7 只修 RC.6 re-audit 剩余的 W01/W05/W06 accessibility、light trace readability、disclosure/export 和 Full-model reading-control polish。RC.8 只修 RC.7 targeted re-audit 收敛后的 1366 Light trace muted-context contrast finding。`2.0.0` 仅在 GPT Work re-audit 全部通过并完成用户最终验收后发布 stable。
 
 详细审计：
 
@@ -43,7 +44,7 @@ RC.2 完成既定 G00–G06 gate 后，2026-09-11 源码验收审计发现中央
 
 当前 repair 任务：
 
-`prompts/tasks/asteria_v2_rc7_release_polish_task.md`
+`prompts/tasks/asteria_v2_rc8_light_trace_contrast_task.md`
 
 Lineage / Evidence 已纳入 2.0 Web 正式范围。桌面壳仍不阻塞 2.0 Web stable；Tauri/Electron 进入后续 2.x 平台化阶段。
 

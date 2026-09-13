@@ -3,7 +3,7 @@ import fs from "node:fs/promises"
 import path from "node:path"
 
 const screenshotDir = process.env.ASTERIA_BROWSER_QA_DIR || "/tmp/asteria-browser-qa"
-const acceptanceDir = process.env.ASTERIA_ACCEPTANCE_SCREENSHOT_DIR || path.resolve("results/asteria_v2_rc7_acceptance/screenshots")
+const acceptanceDir = process.env.ASTERIA_ACCEPTANCE_SCREENSHOT_DIR || path.resolve("results/asteria_v2_rc8_acceptance/screenshots")
 
 function relationIdSelector(relationId: string) {
   return `[data-relation-id="${relationId}"]`
@@ -35,7 +35,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/")
   await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
   await expect(page.getByTestId("asteria-v2-topbar")).toBeVisible()
-  await expect(page.getByText("2.0.0-rc.7")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.8")).toBeVisible()
   await expect(page.getByTestId("current-project")).toContainText("Project")
   await expect(page.getByTestId("current-project")).toContainText("CAT-TRACE")
   await expect(page.getByTestId("current-view")).toContainText("Architecture")
@@ -408,4 +408,69 @@ test("RC7 polish covers compact actions, controlled export disclosure, light tra
   await expect(page.getByTestId("project-view-model-helper")).toContainText("Project")
   await expect(page.getByTestId("project-view-model-helper")).toContainText("CAT-TRACE")
   await page.screenshot({ path: path.join(screenshotDir, "rc7-context-helper-spacing.png"), fullPage: false })
+})
+
+test("RC8 light trace contrast keeps muted context readable without flattening active hierarchy", async ({ page }) => {
+  await fs.mkdir(screenshotDir, { recursive: true })
+  await page.setViewportSize({ width: 1366, height: 768 })
+  await page.getByTestId("topbar-toggle-theme").click()
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light")
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-view", "view:architecture")
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-model", "cat-trace-frozen-v2")
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-detail-level", "overview")
+
+  await page.getByTestId("symbol-c_f").click()
+  await expect(page.getByTestId("symbol-inspector")).toContainText("Catalogue match")
+  await page.getByTestId("trace-direction").selectOption("upstream")
+  await page.getByTestId("enable-trace").click()
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-trace-enabled", "true")
+
+  const mutedContextEdge = page.locator(".architecture-map-edge-muted:not(.architecture-map-edge-selected):not(.architecture-map-edge-trace)").first()
+  await expect(mutedContextEdge).toBeVisible()
+  const mutedContextOpacity = await mutedContextEdge.evaluate((element) => Number.parseFloat(getComputedStyle(element).opacity))
+  const mutedPathOpacity = await mutedContextEdge.locator("path").evaluate((element) => Number.parseFloat(getComputedStyle(element).opacity))
+  const mutedPathWidth = await mutedContextEdge.locator("path").evaluate((element) => Number.parseFloat(getComputedStyle(element).strokeWidth))
+  expect(mutedContextOpacity).toBeGreaterThanOrEqual(0.86)
+  expect(mutedPathOpacity).toBeGreaterThanOrEqual(0.8)
+  expect(mutedPathWidth).toBeGreaterThanOrEqual(0.3)
+
+  const selectedMutedEdge = page.locator(".architecture-map-edge-muted.architecture-map-edge-selected").first()
+  await expect(selectedMutedEdge).toBeVisible()
+  const selectedMutedGroupOpacity = await selectedMutedEdge.evaluate((element) => Number.parseFloat(getComputedStyle(element).opacity))
+  const selectedMutedLabelOpacity = await selectedMutedEdge.locator("text").evaluate((element) => Number.parseFloat(getComputedStyle(element).opacity))
+  const selectedMutedPathWidth = await selectedMutedEdge.locator("path").evaluate((element) => Number.parseFloat(getComputedStyle(element).strokeWidth))
+  expect(selectedMutedGroupOpacity).toBe(1)
+  expect(selectedMutedLabelOpacity).toBeGreaterThanOrEqual(0.9)
+
+  const activeTraceEdge = page.locator('[data-trace-active="true"]').first()
+  const activeTracePathWidth = await activeTraceEdge.locator("path").evaluate((element) => Number.parseFloat(getComputedStyle(element).strokeWidth))
+  const activeTraceLabelOpacity = await activeTraceEdge.locator("text").evaluate((element) => Number.parseFloat(getComputedStyle(element).opacity))
+  expect(activeTracePathWidth).toBeGreaterThan(mutedPathWidth)
+  expect(selectedMutedPathWidth).toBeGreaterThan(mutedPathWidth)
+  expect(activeTraceLabelOpacity).toBeGreaterThanOrEqual(0.9)
+  await page.screenshot({ path: path.join(screenshotDir, "rc8-light-trace-on-1366.png"), fullPage: false })
+
+  await page.getByTestId("topbar-toggle-theme").click()
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark")
+  const darkMutedEdge = page.locator(".architecture-map-edge-muted:not(.architecture-map-edge-selected):not(.architecture-map-edge-trace)").first()
+  const darkMutedGroupOpacity = await darkMutedEdge.evaluate((element) => Number.parseFloat(getComputedStyle(element).opacity))
+  expect(darkMutedGroupOpacity).toBeLessThan(0.8)
+  await page.screenshot({ path: path.join(screenshotDir, "rc8-dark-trace-on-1366.png"), fullPage: false })
+
+  await page.getByTestId("topbar-toggle-theme").click()
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light")
+  await page.getByTestId("model-original-trace").click()
+  await expect(page.getByTestId("current-model")).toContainText("Original TRACE")
+  await page.getByTestId("model-cat-trace-frozen-v2").click()
+  await expect(page.getByTestId("current-model")).toContainText("CAT-TRACE Frozen V2")
+  await page.getByTestId("advanced-export-validation").click()
+  await expect(page.getByTestId("architecture-export-preview")).toContainText("# CAT-TRACE Frozen V2")
+  await page.getByTestId("save-view-state").click()
+  await expect(page.getByTestId("architecture-action-status")).toContainText("saved")
+  await page.getByTestId("model-original-trace").click()
+  await page.getByTestId("restore-view-state").click()
+  await expect(page.getByTestId("current-model")).toContainText("CAT-TRACE Frozen V2")
+  await page.reload()
+  await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
+  await assertNoLegacyStartup(page)
 })

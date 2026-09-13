@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0-rc.8 - Light Trace Contrast Patch
+
+- Applied a final narrow Light-theme contrast patch for 1366px CAT-TRACE Architecture Overview with trace enabled, keeping muted relation lines and surrounding context readable without flattening active trace hierarchy.
+- Added explicit light-theme overrides for muted + selected/trace edge overlap so active relation labels are not double-dimmed by muted group opacity.
+- Added RC.8 static, browser, and public smoke coverage while preserving scientific fixtures, trace algorithm, session contract, projections, Full-model controls, Lineage, Evidence, and dark-theme weight.
+
 ## 2.0.0-rc.7 - Release Polish Accessibility And Disclosure
 
 - Hardened keyboard-first skip links, compact topbar accessible names, and approximately 40px top action targets for 1366px desktop review.

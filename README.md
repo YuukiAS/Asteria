@@ -2,11 +2,11 @@
 
 Asteria 2.0 is the active Web product shell for inspecting canonical statistical-model architecture maps. The current build focuses on Original TRACE and CAT-TRACE Frozen V2, with first-level Architecture, Lineage, and Evidence views backed by the same typed semantic graph.
 
-Current app version: `2.0.0-rc.7`.
+Current app version: `2.0.0-rc.8`.
 
 ## Product State
 
-`2.0.0-rc.7` keeps the retired Asteria 1.x live Canvas / Toolbar / Inspector / Story startup flow out of the active app and applies narrow release polish over RC.6: reliable keyboard-first skip links, light-theme trace readability at 1366px, controlled Advanced / Export & validation disclosure, visible top Export feedback, compact topbar accessible names and hit targets, Full model Zoom/Fit/pan reading controls, cleaner Project/View/Model spacing, and clearer active relation labels. Opening Asteria goes directly to:
+`2.0.0-rc.8` keeps the retired Asteria 1.x live Canvas / Toolbar / Inspector / Story startup flow out of the active app and applies the final narrow Light-theme trace contrast patch over RC.7: at 1366px, CAT-TRACE Architecture Overview keeps muted relation context readable while selected/upstream/downstream trace paths remain clearly stronger. Opening Asteria goes directly to:
 
 - Project: `CAT-TRACE`
 - View: `Architecture`
@@ -15,7 +15,7 @@ Current app version: `2.0.0-rc.7`.
 
 Architecture provides the formal `Original TRACE` / `CAT-TRACE Frozen V2` model selector and an `Overview` / `Full model` detail control. Selection drives the inspector; trace highlighting only appears after `Show trace` is activated. Lineage and Evidence are direct first-level views. Save/Restore stores only the Asteria 2.0 view session state, not the retired shared/local 1.x canvas workspace.
 
-After RC.7, the next acceptance step is `GPT_WORK_TARGETED_REAUDIT_W01_W05_W06`, not manual final acceptance or stable release.
+After RC.8, the next acceptance step is `GPT_WORK_TARGETED_REAUDIT_W05_W06`, not manual final acceptance or stable release.
 
 ## Legacy Compatibility
 
@@ -78,14 +78,15 @@ npm run test:architecture-rc4
 npm run test:architecture-rc5
 npm run test:architecture-rc6
 npm run test:architecture-rc7
+npm run test:architecture-rc8
 npm run test:regression
 npm run test:browser
 ```
 
-Public acceptance smoke after a pushed RC.7 commit:
+Public acceptance smoke after a pushed RC.8 commit:
 
 ```bash
-npm run smoke:public-rc7
+npm run smoke:public-rc8
 ```
 
 ## Repository Map

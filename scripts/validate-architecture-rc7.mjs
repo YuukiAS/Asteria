@@ -39,8 +39,8 @@ try {
   const panelSource = await read("src/components/ArchitectureReferencePanel.tsx")
   const styleSource = await read("src/styles/index.css")
 
-  assert(packageJson.version === "2.0.0-rc.7", "package.json must declare 2.0.0-rc.7.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.7"'), "App shell must display 2.0.0-rc.7.")
+  assert(packageJson.version === "2.0.0-rc.8", "package.json must declare 2.0.0-rc.8.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.8"'), "App shell must display 2.0.0-rc.8.")
 
   assert(appSource.indexOf('<nav className="asteria-skip-links"') < appSource.indexOf("<AsteriaV2TopBar"), "Skip links must be the first page-level tab stops before the topbar.")
   assert(appSource.includes('href="#asteria-canvas"') && appSource.includes('href="#asteria-inspector"'), "Skip links must target canvas and inspector anchors.")
@@ -62,7 +62,7 @@ try {
 
   assert(styleSource.includes("grid-cols-[72px_minmax(0,1fr)]"), "Context helper must use explicit label/value spacing.")
   assert(styleSource.includes("[data-theme=\"light\"] .architecture-map-node-muted") && styleSource.includes("[data-theme=\"light\"] .architecture-map-edge-muted"), "Light trace muted context must have dedicated readable styling.")
-  assert(styleSource.includes("[data-theme=\"light\"] .architecture-map-edge-trace text") && styleSource.includes("stroke-width: 0.48px"), "Selected/trace relation labels must have light-theme halo/readability styling.")
+  assert(styleSource.includes("[data-theme=\"light\"] .architecture-map-edge-trace text") && styleSource.includes("stroke-width: 0.52px"), "Selected/trace relation labels must have light-theme halo/readability styling.")
 
   for (const forbidden of ["Choose a starting version", "Use shared version", "New from scratch"]) {
     assert(!appSource.includes(forbidden) && !workspaceSource.includes(forbidden) && !panelSource.includes(forbidden), `Active 2.0 UI must not expose legacy startup string: ${forbidden}.`)
@@ -99,7 +99,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.7",
+          version: "2.0.0-rc.8",
           skipLinks: "first-tab-ready",
           exportDisclosure: "controlled",
           fullModelControls: "zoom-fit-pan",

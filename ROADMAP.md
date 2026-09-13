@@ -1,7 +1,7 @@
 # Asteria Product Roadmap
 
 更新时间：2026-09-13
-状态：Asteria 2.0 Web 已完成 G00–G06、RC.3 acceptance hardening、RC.4 legacy UI archive、RC.5 black-box repair、RC.6 architecture readability / trace truth repair 与 RC.7 accessibility/disclosure release polish 到 `2.0.0-rc.7`。下一步是 `GPT_WORK_TARGETED_REAUDIT_W01_W05_W06`；未发布 `2.0.0` stable。
+状态：Asteria 2.0 Web 已完成 G00–G06、RC.3 acceptance hardening、RC.4 legacy UI archive、RC.5 black-box repair、RC.6 architecture readability / trace truth repair、RC.7 accessibility/disclosure release polish 与 RC.8 light trace contrast patch 到 `2.0.0-rc.8`。下一步是 `GPT_WORK_TARGETED_REAUDIT_W05_W06`；未发布 `2.0.0` stable。
 
 ## 0. 当前判断
 
@@ -23,6 +23,8 @@ G00–G06 已经完成 schema、fixtures、trace、typed relations、layers、ou
 
 `2.0.0-rc.7` 只处理 RC.6 re-audit 剩余的 W01/W05/W06 release polish：可靠 keyboard-first skip links、1366 light trace-on muted-context/readability、受控 Advanced / Export & validation disclosure、top Export 可见反馈、compact topbar accessible names 与约 40px hit targets、Full model presentation-only Zoom/Fit/pan controls、Project/View/Model label-value spacing，以及 selected/active relation-label readability。科学定义、canonical ontology、trace 算法、Evidence truth 与 session persistence contract 保持不变。
 
+`2.0.0-rc.8` 只处理 RC.7 targeted re-audit 收敛后的单一 W05/W01 重复 finding：1366×768 Light theme + CAT-TRACE Architecture Overview + trace ON 时 muted relation/context 对比不足。该补丁只调整 Light-theme presentation contrast，保留 active trace 层级、dark theme、科学 fixtures、trace 算法、session contract、projection、Full-model controls、Lineage 与 Evidence 范围。
+
 RC.4 执行入口：
 
 `prompts/tasks/asteria_v2_rc4_archive_legacy_acceptance_task.md`
@@ -38,6 +40,10 @@ RC.6 执行入口：
 RC.7 执行入口：
 
 `prompts/tasks/asteria_v2_rc7_release_polish_task.md`
+
+RC.8 执行入口：
+
+`prompts/tasks/asteria_v2_rc8_light_trace_contrast_task.md`
 
 审计依据：
 

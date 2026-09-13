@@ -883,7 +883,12 @@ body {
   [data-theme="light"] .architecture-map-node-muted {
     border-color: rgb(var(--color-strong-border));
     color: rgb(55 65 81);
-    opacity: 0.94;
+    opacity: 0.98;
+  }
+
+  [data-theme="light"] .architecture-map-node-muted small,
+  [data-theme="light"] .architecture-map-node-muted em {
+    color: rgb(75 85 99);
   }
 
   [data-theme="dark"] .architecture-map-node-muted {
@@ -1008,18 +1013,38 @@ body {
   }
 
   [data-theme="light"] .architecture-map-edge-muted {
-    opacity: 0.74;
+    opacity: 0.88;
   }
 
   [data-theme="light"] .architecture-map-edge-muted path {
-    opacity: 0.68;
+    opacity: 0.82;
+    stroke-width: 0.34;
+  }
+
+  [data-theme="light"] .architecture-map-edge-muted.architecture-map-edge-selected,
+  [data-theme="light"] .architecture-map-edge-muted.architecture-map-edge-trace {
+    opacity: 1;
+  }
+
+  [data-theme="light"] .architecture-map-edge-muted.architecture-map-edge-selected path,
+  [data-theme="light"] .architecture-map-edge-muted.architecture-map-edge-trace path {
+    opacity: 0.98;
+    stroke-width: 0.56;
+  }
+
+  [data-theme="light"] .architecture-map-edge-muted.architecture-map-edge-selected text,
+  [data-theme="light"] .architecture-map-edge-muted.architecture-map-edge-trace text {
+    opacity: 0.92;
+    fill: rgb(var(--color-foreground));
+    stroke: rgb(255 255 255);
+    stroke-width: 0.52px;
   }
 
   [data-theme="light"] .architecture-map-edge-trace text,
   [data-theme="light"] .architecture-map-edge-selected text {
-    opacity: 0.86;
+    opacity: 0.92;
     stroke: rgb(255 255 255);
-    stroke-width: 0.48px;
+    stroke-width: 0.52px;
   }
 
   .architecture-map-edges marker path {
