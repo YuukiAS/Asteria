@@ -65,8 +65,8 @@ try {
   const stylesSource = await read("src/styles/index.css")
   const activeUiSource = await readActiveUiSource()
 
-  assert(packageJson.version === "2.0.0-rc.10", "package.json must declare the current RC version.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.10"'), "App shell must display the current RC version.")
+  assert(packageJson.version === "2.0.0-rc.11", "package.json must declare the current RC version.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.11"'), "App shell must display the current RC version.")
   assert(appSource.includes("topbar-model-selector"), "A formal model selector must be in the early topbar keyboard order.")
   assert(appSource.includes("Skip to canvas") && appSource.includes("Skip to inspector"), "Keyboard skip paths must be present.")
   assert(appSource.includes('data-testid="right-panel-title"') && appSource.includes("{viewLabel(activeViewId)}"), "Right panel title must derive from active view state.")
@@ -150,7 +150,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.10",
+          version: "2.0.0-rc.11",
           mathRendering: "RenderedMath",
           clearState: "atomic",
           search: "cross-view",

@@ -2,11 +2,11 @@
 
 Asteria 2.0 is the active Web product shell for inspecting canonical statistical-model architecture maps. The current build focuses on Original TRACE and CAT-TRACE Frozen V2, with first-level Architecture, Lineage, and Evidence views backed by the same typed semantic graph.
 
-Current app version: `2.0.0-rc.10`.
+Current app version: `2.0.0-rc.11`.
 
 ## Product State
 
-`2.0.0-rc.10` keeps the retired Asteria 1.x live Canvas / Toolbar / Inspector / Story startup flow out of the active app and finishes the remaining stable-facing visual blockers: CAT Full model and Original TRACE use deterministic non-overlap presentation layouts, Lineage uses a dedicated method-provenance presentation with HTML relation chips, Evidence closure copy is entity-specific, and Advanced export content is not rendered while collapsed. Opening Asteria goes directly to:
+`2.0.0-rc.11` keeps Asteria 2.0 as the only active product shell and finishes the Architecture reader-facing blockers from the RC.10 Wave A re-audit: canonical definitions render in dedicated formula blocks, CAT Architecture cards show full scientific labels without ellipsis, and `Why it matters` explains statistical meaning rather than graph topology. Opening Asteria goes directly to:
 
 - Project: `CAT-TRACE`
 - View: `Architecture`
@@ -15,7 +15,7 @@ Current app version: `2.0.0-rc.10`.
 
 Architecture provides the formal `Original TRACE` / `CAT-TRACE Frozen V2` model selector and an `Overview` / `Full model` detail control. Selection drives the inspector; trace highlighting only appears after `Show trace` is activated. Lineage and Evidence are direct first-level views. Save/Restore stores only the Asteria 2.0 view session state, not the retired shared/local 1.x canvas workspace.
 
-After RC.10, the next acceptance step is `GPT_WORK_REAUDIT_W01_W02_W04_W05_W06`, not manual final acceptance or stable release.
+After RC.11, the next acceptance step is `GPT_WORK_RC11_WAVE_A_W01_W04_W05_W06`, not manual final acceptance or stable release.
 
 ## Legacy Compatibility
 

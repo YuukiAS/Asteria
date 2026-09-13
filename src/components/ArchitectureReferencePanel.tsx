@@ -11,7 +11,7 @@ import { traceForSymbol, type TraceDirection, type TraceMode } from "../architec
 import { useArchitectureSession } from "../architecture/session"
 import type { ArchitectureProjectV2, RelationType, SemanticLayer, StatisticalEntity, StatisticalSymbol, TypedRelation } from "../architecture/types"
 import { validateArchitectureProject } from "../architecture/validation"
-import { RenderedFormulaText, RenderedMath } from "./RenderedMath"
+import { CanonicalFormulaBlock, RenderedFormulaText, RenderedMath } from "./RenderedMath"
 
 const modelOptions: Array<{ id: CanonicalTraceProjectId; label: string }> = [
   { id: "original-trace", label: "Original TRACE" },
@@ -100,13 +100,54 @@ function modelForEntity(entityId: string): CanonicalTraceProjectId {
 
 function whyEntityMatters(project: ArchitectureProjectV2, entity?: StatisticalEntity, relations: TypedRelation[] = []) {
   if (!entity) return "Select an item to see how it participates in the model graph."
-  const incoming = relations.filter((relation) => relation.targetId === entity.id)
-  const outgoing = relations.filter((relation) => relation.sourceId === entity.id)
-  const upstreamText = incoming.length ? `${incoming.length} upstream relation${incoming.length === 1 ? "" : "s"}` : "no upstream relation in this view"
-  const downstreamText = outgoing.length ? `${outgoing.length} downstream relation${outgoing.length === 1 ? "" : "s"}` : "no downstream relation in this view"
-  const symbol = symbolForEntity(project, entity)
-  const symbolText = symbol ? ` The rendered symbol below is the reader-facing notation for this entity.` : ""
-  return `${entity.label} sits in the ${readableStatus(entity.layer)} layer with ${upstreamText} and ${downstreamText}.${symbolText}`
+  const key = entity.id.split(":").pop() || entity.id
+  const copyByKey: Record<string, string> = {
+    betaU_gh:
+      "The open-tail environmental response combines the shared vector nu, the sum-to-zero group deviation a_g, and open-tail-specific heterogeneity v^U_gh, so grouped borrowing and species-level variation remain distinct.",
+    gamma_g:
+      "This is the deterministic group intensity formed from total open-tail intensity gamma_0 and composition weight pi_g; it should not be read as an independent intercept or group slope effect.",
+    p_g:
+      "This is a fixed computational truncation, not an estimand or unknown true species count. Empty anonymous slots still carry likelihood information through the calibrated open-tail construction.",
+    alphaU_gh:
+      "The open-tail intercept is where TRACE extreme-tail calibration is preserved after grouping, using gamma_g and p_g to keep the finite-richness reading attached to the anonymous tail.",
+    Sigma_W:
+      "This residual correlation is defined only on the finite working set. Unit-diagonal normalization preserves the marginal probit interpretation while residual factors affect joint dependence.",
+    c_f:
+      "The deterministic map routes each raw feature either to a finite catalogue identity or to the catalogue-external open tail, keeping known identity analysis separate from anonymous discovery.",
+    mathcal_K:
+      "The finite catalogue records known identities available to the analysis, so catalogue occurrence and catalogue discovery are read separately from anonymous open-tail discovery.",
+    mathcal_U:
+      "The catalogue-external open tail holds anonymous features outside the finite catalogue, preserving discovery space without pretending those identities are already known.",
+    x_i:
+      "These covariates enter the probit latent score through environmental-response slopes, giving the occurrence probability its sample-specific ecological interpretation.",
+    zU_igh:
+      "This latent probit score combines the open-tail intercept and covariate-weighted open-tail slope before thresholding into the observed open-tail occurrence.",
+    yU_igh:
+      "This occurrence indicator is the thresholded reading of the open-tail latent score, with index order i,g,h separating sample, biological group, and anonymous tail slot.",
+    beta_j:
+      "Original TRACE treats each species response vector as drawn from a shared response superpopulation, preserving the marginal probit environmental-response interpretation.",
+    alpha_j:
+      "Original TRACE calibrates the species intercept through gamma and the truncation p, keeping expected richness finite as the open response list grows.",
+    z_ij:
+      "Original TRACE reads occurrence through a latent probit score that adds the species intercept, covariate-weighted response vector, and residual noise before thresholding.",
+    marginal_probability:
+      "With unit marginal residual variance, this probability is the one-dimensional probit mean implied by the latent score.",
+    richness_target:
+      "The richness target is the finite expectation protected by TRACE tail calibration rather than a raw count of rendered graph connections.",
+    richness_targets:
+      "These targets separate group-specific open-tail richness, total open-tail richness, finite-catalogue discovery, and future discovery readings.",
+    Psi:
+      "This covariance controls heterogeneity in environmental responses across species while leaving the unit-variance probit mean interpretation intact.",
+    nu:
+      "The shared response vector is the common environmental-response component, not a global intercept.",
+    a_g:
+      "The group deviation shifts environmental response by biological group under a sum-to-zero constraint, making group borrowing explicit without replacing nu.",
+  }
+  if (copyByKey[key]) return copyByKey[key]
+  if (project.project.id.includes("original-trace")) {
+    return entity.description || "This Original TRACE object contributes to the latent probit occurrence model and its calibrated open-dimensional richness reading."
+  }
+  return entity.description || "This CAT-TRACE object contributes to the catalogue-aware probit architecture and its separation of known identities from open-tail discovery."
 }
 
 function evidenceWhyEntityMatters(entity?: StatisticalEntity, relations: TypedRelation[] = []) {
@@ -484,11 +525,11 @@ export function ArchitectureReferencePanel() {
               </div>
               <div>
                 <span>Why it matters</span>
-                <p>{whyEntityMatters(project, selectedEntity, relatedRelations(project, selectedEntity?.id || ""))}</p>
+                <p data-testid="selected-why-it-matters">{whyEntityMatters(project, selectedEntity, relatedRelations(project, selectedEntity?.id || ""))}</p>
               </div>
               <div>
                 <span>Canonical definition</span>
-                <p><RenderedFormulaText source={selectedEntity?.definition || selectedEntity?.description} fallback={selectedEntity?.label || "canonical definition"} testId="selected-definition-math" /></p>
+                <CanonicalFormulaBlock source={selectedEntity?.definition || selectedEntity?.description} fallback={selectedEntity?.label || "canonical definition"} testId="selected-definition-math" />
               </div>
             </div>
             <div className="architecture-relation-list" data-testid="selected-relation-context" aria-label="Direct relations">
@@ -753,7 +794,7 @@ function MultiViewPanel({
               <dt>Status</dt>
               <dd data-testid="researcher-status">{researcherStatus(selectedEntity, relations)}</dd>
               <dt>Definition</dt>
-              <dd><RenderedFormulaText source={selectedEntity.definition || "contextual graph entity"} fallback={selectedEntity.label} /></dd>
+              <dd><RenderedFormulaText source={selectedEntity.definition || "research graph item"} fallback={selectedEntity.label} /></dd>
               <dt>Variant</dt>
               <dd>{selectedEntity.variantNote || "CAT-TRACE Frozen V2 applicability"}</dd>
               <dt>Limits</dt>

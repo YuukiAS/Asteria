@@ -508,12 +508,16 @@ body {
     @apply rounded-md border border-border bg-app/60 px-2 py-2;
   }
 
-  .architecture-inspector-priority span {
+  .architecture-inspector-priority > div > span {
     @apply block text-[10px] font-semibold uppercase tracking-wide text-muted;
   }
 
   .architecture-inspector-priority p {
     @apply mt-1 leading-5 text-secondary;
+  }
+
+  .architecture-inspector-priority .canonical-formula-block {
+    margin-top: 0.35rem;
   }
 
   .architecture-advanced-metadata {
@@ -953,7 +957,12 @@ body {
   }
 
   .architecture-map-node small {
-    @apply line-clamp-2 text-[11px] leading-4 text-secondary;
+    @apply block text-[11px] leading-4 text-secondary;
+    display: block;
+    overflow: visible;
+    overflow-wrap: normal;
+    text-overflow: clip;
+    white-space: normal;
   }
 
   .architecture-map-node em {
@@ -1209,10 +1218,47 @@ body {
     @apply inline-flex max-w-full items-center overflow-x-auto rounded border border-border bg-panel/70 px-2 py-1 text-foreground;
   }
 
+  .canonical-formula-block {
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .canonical-formula-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 1px solid rgb(var(--color-border));
+    border-radius: 6px;
+    background: rgb(var(--color-panel) / 0.74);
+    padding: 0.45rem 0.55rem;
+    scrollbar-width: thin;
+  }
+
+  .canonical-formula-math {
+    color: rgb(var(--color-foreground));
+    font-size: 0.94rem;
+  }
+
+  .canonical-formula-fallback {
+    color: rgb(var(--color-secondary));
+    white-space: normal;
+  }
+
   .rendered-math .katex {
     max-width: 100%;
     font-size: 1em;
     line-height: 1.15;
+    white-space: nowrap;
+  }
+
+  .canonical-formula-scroll .rendered-math,
+  .canonical-formula-scroll .rendered-math .katex,
+  .canonical-formula-scroll .katex {
+    min-width: max-content;
+    max-width: none;
+    justify-content: flex-start;
+    overflow: visible;
     white-space: nowrap;
   }
 

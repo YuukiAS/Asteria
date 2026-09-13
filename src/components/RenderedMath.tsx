@@ -69,3 +69,16 @@ export function RenderedFormulaText({ source, fallback = "canonical definition",
     </span>
   )
 }
+
+export function CanonicalFormulaBlock({ source, fallback = "canonical definition", testId }: { source?: string; fallback?: string; testId?: string }) {
+  if (!source) return null
+  const latex = canonicalDefinitionLatex[source]
+  return (
+    <div className="canonical-formula-block" data-canonical-definition={source} data-has-rendered-formula={latex ? "true" : "false"} data-testid={testId}>
+      <div className="canonical-formula-scroll" role="group" aria-label={fallback}>
+        {latex ? <RenderedMath latex={latex} fallback={fallback} className="canonical-formula-math" /> : <span className="canonical-formula-fallback">{fallback}</span>}
+      </div>
+      <span className="sr-only">{source}</span>
+    </div>
+  )
+}

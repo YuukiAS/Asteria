@@ -44,31 +44,31 @@ const catTraceOverviewKeys = new Set([
 ])
 
 const catTraceOverviewSlots: Record<string, { left: number; top: number; width?: number; height?: number }> = {
-  Y_raw: { left: 8, top: 28 },
-  x_i: { left: 8, top: 66 },
-  c_f: { left: 22, top: 28 },
-  g_f: { left: 22, top: 66 },
-  mathcal_K: { left: 36, top: 20 },
-  mathcal_U: { left: 36, top: 44 },
-  mathcal_G: { left: 36, top: 70 },
-  nu: { left: 50, top: 17 },
-  zU_igh: { left: 50, top: 39 },
-  yU_igh: { left: 50, top: 62 },
-  a_g: { left: 50, top: 84 },
-  gamma0: { left: 64, top: 17 },
-  alphaU_gh: { left: 64, top: 39 },
-  betaU_gh: { left: 64, top: 62 },
-  vU_gh: { left: 64, top: 84 },
-  pi_g: { left: 78, top: 17 },
-  betaK_j: { left: 78, top: 17 },
-  p_g: { left: 78, top: 39 },
-  Sigma_W: { left: 78, top: 62 },
-  p_g_star: { left: 78, top: 84 },
-  alphaK_j: { left: 78, top: 84 },
-  gamma_g: { left: 94, top: 28, width: 96 },
-  posterior_inference: { left: 94, top: 55, width: 96 },
-  richness_targets: { left: 94, top: 78, width: 96 },
-  zero_slots: { left: 94, top: 92, width: 96 },
+  Y_raw: { left: 8, top: 28, width: 104, height: 78 },
+  x_i: { left: 8, top: 66, width: 104, height: 78 },
+  c_f: { left: 22, top: 28, width: 104, height: 78 },
+  g_f: { left: 22, top: 66, width: 104, height: 78 },
+  mathcal_K: { left: 36, top: 20, width: 104, height: 78 },
+  mathcal_U: { left: 36, top: 44, width: 104, height: 84 },
+  mathcal_G: { left: 36, top: 70, width: 104, height: 78 },
+  nu: { left: 50, top: 17, width: 104, height: 84 },
+  zU_igh: { left: 50, top: 39, width: 104, height: 78 },
+  yU_igh: { left: 50, top: 62, width: 104, height: 78 },
+  a_g: { left: 50, top: 84, width: 104, height: 78 },
+  gamma0: { left: 64, top: 17, width: 104, height: 78 },
+  alphaU_gh: { left: 64, top: 39, width: 104, height: 78 },
+  betaU_gh: { left: 64, top: 62, width: 104, height: 78 },
+  vU_gh: { left: 64, top: 84, width: 104, height: 78 },
+  pi_g: { left: 78, top: 17, width: 104, height: 78 },
+  betaK_j: { left: 78, top: 17, width: 104, height: 78 },
+  p_g: { left: 78, top: 39, width: 104, height: 78 },
+  Sigma_W: { left: 78, top: 62, width: 104, height: 84 },
+  p_g_star: { left: 78, top: 84, width: 104, height: 78 },
+  alphaK_j: { left: 78, top: 84, width: 104, height: 78 },
+  gamma_g: { left: 94, top: 28, width: 104, height: 78 },
+  posterior_inference: { left: 94, top: 55, width: 104, height: 84 },
+  richness_targets: { left: 94, top: 78, width: 104, height: 84 },
+  zero_slots: { left: 94, top: 92, width: 104, height: 78 },
 }
 
 function clampPercent(value: number) {
@@ -146,8 +146,8 @@ function evidenceSlots(entityId: string) {
 }
 
 function packFullArchitectureNodes(project: ArchitectureProjectV2, nodes: ProjectionLayoutNode[]) {
-  const columns = [8, 22, 36, 50, 64, 78, 90]
-  const rows = [8, 24, 40, 56, 72, 88]
+  const columns = [7, 19, 31, 43, 55, 67, 79, 91]
+  const rows = [10, 28, 46, 64, 82]
   const laneBuckets = new Map<number, ProjectionLayoutNode[]>()
   nodes.forEach((node) => {
     const lane = architectureLane(project.entities[node.entityId]?.layer)
@@ -167,7 +167,7 @@ function packFullArchitectureNodes(project: ArchitectureProjectV2, nodes: Projec
     leftPercent: columns[index % columns.length],
     topPercent: rows[Math.floor(index / columns.length)] || 90,
     width: 82,
-    height: 46,
+    height: 72,
   }))
 }
 
@@ -303,7 +303,7 @@ export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: st
       leftPercent: slot?.left ?? clampPercent(normalize(node.projection.position.x, minX, maxX, 10, 88)),
       topPercent: slot?.top ?? clampPercent(normalize(node.projection.position.y, minY, maxY, 14, 86)),
       width: slot?.width ?? (isStableCatOverview ? 104 : node.projection.size?.width || 176),
-      height: slot?.height ?? (isStableCatOverview ? 66 : node.projection.size?.height || 78),
+      height: slot?.height ?? (isStableCatOverview ? 78 : node.projection.size?.height || 78),
     }
   })
 

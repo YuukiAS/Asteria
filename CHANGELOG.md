@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0-rc.11 - Reader-facing Architecture Finish
+
+- Added a dedicated canonical formula block in the Architecture inspector so core TRACE and CAT-TRACE definitions render as continuous KaTeX math with local horizontal scrolling instead of fragmented metadata text.
+- Removed Architecture card label clamping/ellipsis and adjusted presentation geometry so CAT Overview and Full model cards can show stable-facing scientific labels fully.
+- Replaced Architecture `Why it matters` graph-topology fallback copy with item-specific statistical explanations for core Original TRACE and CAT-TRACE objects.
+- Added RC.11 focused static/browser/public smoke coverage for formula fragmentation, raw visible canonical definitions, card label clipping, node/edge collisions, Lineage/Evidence smoke, and session basics.
+
 ## 2.0.0-rc.10 - Final Visual Finish
 
 - Rebuilt Lineage as a dedicated method-provenance presentation with aligned source cards, one TRACE visual connector carrying `Extends` and `Preserves` chips, distinct target-side ports, compact HTML relation chips, and preserved typed relation metadata.

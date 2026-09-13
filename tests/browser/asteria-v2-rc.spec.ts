@@ -3,7 +3,7 @@ import fs from "node:fs/promises"
 import path from "node:path"
 
 const screenshotDir = process.env.ASTERIA_BROWSER_QA_DIR || "/tmp/asteria-browser-qa"
-const acceptanceDir = process.env.ASTERIA_ACCEPTANCE_SCREENSHOT_DIR || path.resolve("results/asteria_v2_rc10_acceptance/screenshots")
+const acceptanceDir = process.env.ASTERIA_ACCEPTANCE_SCREENSHOT_DIR || path.resolve("results/asteria_v2_rc11_reader_finish/screenshots")
 
 function relationIdSelector(relationId: string) {
   return `[data-relation-id="${relationId}"]`
@@ -78,6 +78,87 @@ async function assertNoPrimaryTextClipping(page: Page) {
       .filter((item) => item.horizontalClip || item.escapesCard),
   )
   expect(failures).toEqual([])
+}
+
+async function assertNoScientificLabelClipping(page: Page) {
+  const failures = await page.locator(".architecture-map-node small").evaluateAll((elements) =>
+    elements
+      .map((element) => {
+        const parent = element.closest(".architecture-map-node")
+        const style = window.getComputedStyle(element)
+        const clamp = style.getPropertyValue("-webkit-line-clamp")
+        return {
+          id: parent?.getAttribute("data-entity-id") || element.textContent?.trim() || "",
+          label: element.textContent?.trim() || "",
+          verticalClip: element.scrollHeight > element.clientHeight + 2,
+          clamped: Boolean(clamp && clamp !== "none" && clamp !== "unset" && clamp !== "initial"),
+          ellipsis: style.textOverflow === "ellipsis",
+        }
+      })
+      .filter((item) => item.verticalClip || item.clamped || item.ellipsis),
+  )
+  expect(failures).toEqual([])
+}
+
+async function assertCanonicalFormulaHealthy(page: Page, screenshotName?: string) {
+  const block = page.getByTestId("selected-definition-math")
+  await block.scrollIntoViewIfNeeded()
+  await expect(block).toHaveAttribute("data-has-rendered-formula", "true")
+  await expect(block.locator(".katex")).toBeVisible()
+  const metrics = await block.evaluate((element) => {
+    const katex = element.querySelector<HTMLElement>(".katex")
+    const visibleKatex = element.querySelector<HTMLElement>(".katex-html") || katex
+    const scroller = element.querySelector<HTMLElement>(".canonical-formula-scroll")
+    const inspector = document.querySelector<HTMLElement>("[data-testid='architecture-reference-panel']")
+    const blockRect = element.getBoundingClientRect()
+    const katexRect = visibleKatex?.getBoundingClientRect()
+    const scrollerRect = scroller?.getBoundingClientRect()
+    return {
+      blockWidth: blockRect.width,
+      katexHeight: katexRect?.height || 0,
+      katexWidth: katexRect?.width || 0,
+      scrollerWidth: scrollerRect?.width || 0,
+      mathWhiteSpace: visibleKatex ? window.getComputedStyle(visibleKatex).whiteSpace : "",
+      blockOverflow: window.getComputedStyle(element).overflow,
+      scrollerOverflowX: scroller ? window.getComputedStyle(scroller).overflowX : "",
+      inspectorOverflow: inspector ? inspector.scrollWidth > inspector.clientWidth + 2 : false,
+      visibleRawText: (() => {
+        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT)
+        const chunks: string[] = []
+        let node = walker.nextNode()
+        while (node) {
+          const parent = node.parentElement
+          const text = node.textContent || ""
+          if (parent && text.trim() && !parent.closest(".sr-only")) {
+            const rect = parent.getBoundingClientRect()
+            const style = window.getComputedStyle(parent)
+            if (rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none") chunks.push(text)
+          }
+          node = walker.nextNode()
+        }
+        return chunks.join(" ")
+      })(),
+    }
+  })
+  expect(metrics.katexHeight, "formula should remain a single horizontal math box").toBeGreaterThan(10)
+  expect(metrics.katexHeight, "formula should not fragment into vertical glyph stacks").toBeLessThanOrEqual(46)
+  expect(metrics.mathWhiteSpace).toBe("nowrap")
+  expect(metrics.blockOverflow).toBe("hidden")
+  expect(metrics.scrollerOverflowX).toMatch(/auto|scroll/)
+  expect(metrics.inspectorOverflow).toBe(false)
+  expect(metrics.visibleRawText).not.toMatch(/beta\^U_gh|gamma_0\*pi_g|alpha\^U_gh|z_ij =|beta_j ~|D_W\^\{-?1\/2\}|mathcal /)
+  if (screenshotName) await page.screenshot({ path: path.join("results/asteria_v2_rc11_reader_finish/screenshots", screenshotName), fullPage: false })
+}
+
+async function selectArchitectureSymbol(page: Page, symbolKey: string, model: "cat-trace-frozen-v2" | "original-trace" = "cat-trace-frozen-v2") {
+  const symbolButton = page.getByTestId(`symbol-${symbolKey}`)
+  if ((await symbolButton.count()) > 0) {
+    await symbolButton.scrollIntoViewIfNeeded()
+    await symbolButton.click()
+    return
+  }
+  const node = page.getByTestId(`projection-node-entity-${model}-${symbolKey}`)
+  await node.click()
 }
 
 async function assertNoEdgeLabelNodeCollision(page: Page) {
@@ -155,7 +236,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/")
   await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
   await expect(page.getByTestId("asteria-v2-topbar")).toBeVisible()
-  await expect(page.getByText("2.0.0-rc.10")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.11")).toBeVisible()
   await expect(page.getByTestId("current-project")).toContainText("Project")
   await expect(page.getByTestId("current-project")).toContainText("CAT-TRACE")
   await expect(page.getByTestId("current-view")).toContainText("Architecture")
@@ -776,4 +857,107 @@ test("RC10 final visual finish validates Full model, Original TRACE, Lineage chi
   await page.getByTestId("view-lineage").click()
   await page.getByTestId("restore-view-state").click()
   await expect(page.getByTestId("current-view")).toContainText("Evidence")
+})
+
+test("RC11 reader-facing Architecture finish keeps formulas, labels, and why copy readable", async ({ page }) => {
+  test.setTimeout(120_000)
+  const rc11Dir = path.resolve("results/asteria_v2_rc11_reader_finish/screenshots")
+  await fs.mkdir(rc11Dir, { recursive: true })
+
+  for (const viewport of [
+    { width: 1366, height: 768, theme: "light", detail: "overview" },
+    { width: 1536, height: 864, theme: "dark", detail: "overview" },
+  ] as const) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    const htmlTheme = await page.locator("html").getAttribute("data-theme")
+    if (htmlTheme !== viewport.theme) await page.getByTestId("topbar-toggle-theme").click()
+    await expect(page.locator("html")).toHaveAttribute("data-theme", viewport.theme)
+    await page.getByTestId("model-cat-trace-frozen-v2").click()
+    await page.getByTestId("detail-overview").click()
+    await assertNoNodeOverlap(page, 8)
+    await assertNoPrimaryTextClipping(page)
+    await assertNoScientificLabelClipping(page)
+    await assertNoEdgeLabelNodeCollision(page)
+    for (const label of ["Catalogue-external open tail", "Richness and discovery targets"]) {
+      await expect(page.locator(".architecture-map-node small", { hasText: label })).toBeVisible()
+    }
+    await page.screenshot({ path: path.join(rc11Dir, `rc11-cat-overview-${viewport.theme}-${viewport.width}.png`), fullPage: false })
+  }
+
+  await page.setViewportSize({ width: 1366, height: 768 })
+  await page.getByTestId("model-cat-trace-frozen-v2").click()
+  await page.getByTestId("detail-overview").click()
+  for (const [symbol, expected, file] of [
+    ["betaU_gh", "open-tail environmental response combines", "rc11-beta-definition.png"],
+    ["gamma_g", "deterministic group intensity", "rc11-gamma-definition.png"],
+    ["alphaU_gh", "TRACE extreme-tail calibration", "rc11-alphaU-definition.png"],
+    ["Sigma_W", "finite working set", "rc11-sigmaW-definition.png"],
+    ["c_f", "routes each raw feature", undefined],
+    ["mathcal_K", "finite catalogue records known identities", undefined],
+    ["zU_igh", "latent probit score combines", undefined],
+    ["yU_igh", "thresholded reading of the open-tail latent score", undefined],
+  ] as const) {
+    await selectArchitectureSymbol(page, symbol)
+    await expect(page.getByTestId("selected-why-it-matters")).toContainText(expected)
+    await assertCanonicalFormulaHealthy(page, file)
+  }
+  for (const [symbol, expected] of [
+    ["p_g", "fixed computational truncation"],
+    ["mathcal_U", "catalogue-external open tail holds anonymous"],
+    ["x_i", "covariates enter the probit latent score"],
+  ] as const) {
+    await selectArchitectureSymbol(page, symbol)
+    await expect(page.getByTestId("selected-why-it-matters")).toContainText(expected)
+  }
+
+  await page.getByTestId("detail-full-model").click()
+  await assertNoNodeOverlap(page, 8)
+  await assertNoPrimaryTextClipping(page)
+  await assertNoScientificLabelClipping(page)
+  await assertNoEdgeLabelNodeCollision(page)
+  for (const label of [
+    "Shared environmental-response vector",
+    "Catalogue-external open tail",
+    "Group composition weight",
+    "Response heterogeneity covariance",
+    "Richness and discovery targets",
+  ]) {
+    await expect(page.locator(".architecture-map-node small", { hasText: label })).toBeVisible()
+  }
+  await page.screenshot({ path: path.join(rc11Dir, "rc11-cat-full-1366.png"), fullPage: false })
+
+  await page.setViewportSize({ width: 1536, height: 864 })
+  await assertNoNodeOverlap(page, 8)
+  await assertNoPrimaryTextClipping(page)
+  await assertNoScientificLabelClipping(page)
+  await assertNoEdgeLabelNodeCollision(page)
+  await page.screenshot({ path: path.join(rc11Dir, "rc11-cat-full-1536.png"), fullPage: false })
+
+  await page.getByTestId("model-original-trace").click()
+  await page.getByTestId("detail-overview").click()
+  for (const [symbol, expected, file] of [
+    ["z_ij", "latent probit score", "rc11-original-trace-definition.png"],
+    ["beta_j", "shared response superpopulation", undefined],
+    ["alpha_j", "calibrates the species intercept", undefined],
+  ] as const) {
+    await selectArchitectureSymbol(page, symbol, "original-trace")
+    await expect(page.getByTestId("selected-why-it-matters")).toContainText(expected)
+    await assertCanonicalFormulaHealthy(page, file)
+  }
+  await assertNoNodeOverlap(page, 8)
+  await assertNoPrimaryTextClipping(page)
+  await assertNoScientificLabelClipping(page)
+  await assertNoEdgeLabelNodeCollision(page)
+
+  const whyTexts = await page.getByTestId("selected-why-it-matters").evaluateAll((elements) => elements.map((element) => (element as HTMLElement).innerText))
+  expect(whyTexts.join("\n")).not.toMatch(/\d+\s+upstream relations?|\d+\s+downstream relations?|sits in the .* layer|contextual graph entity/i)
+
+  await page.getByTestId("view-lineage").click()
+  await assertLineagePresentationGeometry(page)
+  await page.getByTestId("view-evidence").click()
+  await expect(page.getByTestId("central-evidence-canvas")).toContainText("Open-tail response decomposition is explicit")
+  await page.getByTestId("view-architecture").click()
+  await expect(page.getByTestId("advanced-export-validation")).toHaveAttribute("aria-expanded", "false")
+  await page.getByTestId("save-view-state").click()
+  await expect(page.getByTestId("architecture-action-status")).toContainText("saved")
 })
