@@ -136,11 +136,17 @@ Round 2 finding: resize return remained aligned, 1366 trace cards stayed inside 
 
 ## Public Gate
 
-PUBLIC_ACCEPTANCE_URL_REFRESHED = PENDING_UNTIL_COMMIT_PUSH
-PUBLIC_ROOT_CHECK = PENDING_UNTIL_COMMIT_PUSH
-PUBLIC_STATUS_CHECK = PENDING_UNTIL_COMMIT_PUSH
-PUBLIC_BROWSER_SMOKE = PENDING_UNTIL_COMMIT_PUSH
-PUBLIC_VERSION = PENDING_UNTIL_COMMIT_PUSH
+PUBLIC_ACCEPTANCE_URL_REFRESHED = YES
+PUBLIC_ROOT_CHECK = PASS
+PUBLIC_STATUS_CHECK = PASS
+PUBLIC_BROWSER_SMOKE = PASS
+PUBLIC_VERSION = 2.0.0-rc.14
+
+Public smoke evidence after fixed-URL refresh:
+
+- `curl -sS --max-time 20 https://asteria.httpwwwcardiacnexus-ukb.com/api/asteria/status` = PASS.
+- `curl -sS --max-time 20 -D - https://asteria.httpwwwcardiacnexus-ukb.com/` = HTTP 200.
+- `npm run smoke:public-rc14` = PASS, `observedVersion = 2.0.0-rc.14`, `lineageEndpointErrorMax = 0.00811767578125`.
 
 ## Next
 

@@ -43,6 +43,24 @@ async function architectureSafeBounds(page, safeInset = 8) {
 }
 
 async function lineageMetrics(page) {
+  await page.evaluate(async () => {
+    await document.fonts?.ready
+    let previous = ""
+    let stableFrames = 0
+    for (let index = 0; index < 30 && stableFrames < 4; index += 1) {
+      await new Promise((resolve) => requestAnimationFrame(() => resolve()))
+      const presentation = document.querySelector('[data-testid="lineage-presentation"]')
+      const rect = presentation?.getBoundingClientRect()
+      const target = document.querySelector('[data-testid="lineage-target-card"]')?.getBoundingClientRect()
+      const signature = rect && target ? `${rect.left.toFixed(2)}:${rect.width.toFixed(2)}:${target.left.toFixed(2)}:${target.width.toFixed(2)}` : ""
+      if (signature === previous) {
+        stableFrames += 1
+      } else {
+        previous = signature
+        stableFrames = 0
+      }
+    }
+  })
   return page.evaluate(() => {
     const target = document.querySelector('[data-testid="lineage-target-card"]')
     const presentation = document.querySelector('[data-testid="lineage-presentation"]')
