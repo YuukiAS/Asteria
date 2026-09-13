@@ -3,7 +3,7 @@
 日期：2026-09-13  
 固定验收入口：`https://asteria.httpwwwcardiacnexus-ukb.com/`  
 当前产品版本：`2.0.0-rc.8`  
-当前验收阶段：`GPT_WORK_TARGETED_REAUDIT_W05_W06`
+当前验收阶段：`USER_FINAL_HUMAN_ACCEPTANCE_READY`
 
 ## 目的
 
@@ -71,99 +71,78 @@ responsive / keyboard / accessibility            -> W05
 any release repair                                -> W06
 ```
 
-Carry-forward PASS 必须满足：
+## 当前状态：RC.8 GPT Work gate 已通过
 
-1. consolidated triage 明确记录；
-2. repair task 明确限制 scope；
-3. Codex result 返回 `REVIEWER_SCOPE_EXPANDED` / touched surfaces；
-4. 若实际越界，必须把对应 reviewer 加回。
-
-## 当前状态：RC.8 完成，进入最终 targeted re-audit
-
-RC.7 targeted re-audit 汇总：
+最终 gate report：
 
 ```text
-docs/operations/blackbox-audit/reports/RC7_TARGETED_REAUDIT_CONSOLIDATED_REPORT_2026-09-13.md
+docs/operations/blackbox-audit/reports/RC8_FINAL_BLACKBOX_GATE_2026-09-13.md
 ```
 
-RC.8 task / review：
+Fresh RC.8 targeted re-audit：
 
 ```text
-prompts/tasks/asteria_v2_rc8_light_trace_contrast_task.md
-prompts/tasks/asteria_v2_rc8_light_trace_contrast_review.md
+W05 = PASS, P0/P1/P2/P3 = 0, RC8_LIGHT_TRACE_FINDING_CLOSED = YES
+W06 = PASS, P0/P1/P2/P3 = 0, RC8_RELEASE_REGRESSION_CLEAN = YES
 ```
 
-RC.8 result：
+有效 carry-forward：
 
 ```text
-results/asteria_v2_rc8_light_trace_contrast/result.md
+W01 = PASS from RC.7
+W02 = PASS from RC.6
+W03 = PASS from RC.6
+W04 = PASS from RC.6
 ```
 
-RC.8 报告明确：
+RC.8 scope guard：
 
 ```text
 REVIEWER_SCOPE_EXPANDED = NO
 SCIENTIFIC_FIXTURES_CHANGED = NO
 TRACE_ALGORITHM_CHANGED = NO
 SESSION_CONTRACT_CHANGED = NO
-DARK_THEME_UNCHANGED = YES
 ```
 
-因此 carry-forward：
+因此当前结论：
 
 ```text
-W01 PASS from RC.7
-W02 PASS from RC.6
-W03 PASS from RC.6
-W04 PASS from RC.6
+GPT_WORK_GATE = PASS
+P0 = 0
+P1 = 0
+UNRESOLVED_MUST_FIX_P2 = 0
+FINAL_HUMAN_ACCEPTANCE = READY
 ```
 
-当前只需要 fresh targeted re-audit：
+现在停止 GPT Work 与自动 polish。除非用户人工验收发现具体 blocker，不要创建 RC.9。
+
+## 用户最终验收
+
+使用：
 
 ```text
-W05 + W06
+docs/operations/acceptance/ASTERIA_2_0_FINAL_HUMAN_ACCEPTANCE_2026-09-13.md
 ```
 
-计划：
+固定入口：
 
 ```text
-docs/operations/blackbox-audit/RC8_TARGETED_REAUDIT_PLAN_2026-09-13.md
+https://asteria.httpwwwcardiacnexus-ukb.com/
 ```
 
-Ready-to-paste prompts：
+若用户明确：
 
 ```text
-docs/operations/blackbox-audit/prompts/rc8/W05_RESPONSIVE_ACCESSIBILITY_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/rc8/W06_RELEASE_REDTEAM_WORK_PROMPT.md
+FINAL_HUMAN_ACCEPTANCE = PASS
 ```
 
-## RC.8 targeted gate
-
-W05/W06 必须：
+再执行：
 
 ```text
-AUDIT_RESULT = PASS
-BROWSER_BLOCKER = NONE
-BLACK_BOX_CONTEXT_CONTAMINATED = NO
-P0_COUNT = 0
-P1_COUNT = 0
+prompts/tasks/asteria_v2_release_task.md
 ```
 
-并由 ChatGPT triage 确认：
-
-```text
-RC8_LIGHT_TRACE_FINDING_CLOSED = YES
-RC8_RELEASE_REGRESSION_CLEAN = YES
-unresolved must-fix P2 = 0
-```
-
-如果满足，则所有 reviewer coverage 由 fresh + carry-forward 共同满足，下一步直接进入：
-
-```text
-USER_FINAL_HUMAN_ACCEPTANCE
-```
-
-到该节点后停止自动 polish。除非用户最终验收发现具体问题，否则不要自行创建 RC.9。
+将 RC.8 晋升为 `2.0.0` stable。未取得明确人工 PASS 前，不得自动发布 stable。
 
 ## 历史审计
 
@@ -171,6 +150,7 @@ USER_FINAL_HUMAN_ACCEPTANCE
 - RC.5：`reports/RC5_REAUDIT_CONSOLIDATED_REPORT_2026-09-12.md`
 - RC.6：`reports/RC6_REAUDIT_CONSOLIDATED_REPORT_2026-09-13.md`
 - RC.7：`reports/RC7_TARGETED_REAUDIT_CONSOLIDATED_REPORT_2026-09-13.md`
+- RC.8 final gate：`reports/RC8_FINAL_BLACKBOX_GATE_2026-09-13.md`
 
 ## Severity
 
@@ -179,4 +159,4 @@ USER_FINAL_HUMAN_ACCEPTANCE
 - `P2`：重要、有 workaround，但明显降低科研工具价值。
 - `P3`：不阻塞使用的 polish。
 
-当前 gate：**只跑 RC.8 W05/W06；两者 PASS 且 unresolved must-fix P2=0 后，进入用户人工最终验收。**
+当前 gate：**GPT Work 已通过；等待用户最终集中人工验收。**
