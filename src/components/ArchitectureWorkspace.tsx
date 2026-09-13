@@ -155,6 +155,19 @@ function useElementSize<T extends HTMLElement>(fallback: PresentationSize) {
   return [setElement, size] as const
 }
 
+function RelationLabelGroup({ labels, x, y, sourceId }: { labels: readonly string[]; x: number; y: number; sourceId: string }) {
+  return (
+    <span className="lineage-relation-label-group" style={{ left: `${x}px`, top: `${y}px` }} data-lineage-label-group="true" data-lineage-chip="true" data-source-id={sourceId} data-label-count={labels.length}>
+      {labels.map((label, index) => (
+        <span key={`${sourceId}:${label}`} className="lineage-relation-chip-part">
+          {index > 0 ? <span className="lineage-relation-divider" aria-hidden="true">|</span> : null}
+          <span>{label}</span>
+        </span>
+      ))}
+    </span>
+  )
+}
+
 function LineagePresentation({
   project,
   selectedEntityId,
@@ -219,13 +232,9 @@ function LineagePresentation({
         ))}
       </div>
       <div className="lineage-presentation-chip-layer" aria-label="Lineage relations">
-        {provenanceLayout.sources.flatMap((card) =>
-          card.chipsLayout.map((chip) => (
-            <span key={`${card.id}:${chip.label}`} className="lineage-relation-chip" style={{ left: `${chip.x}px`, top: `${chip.y}px` }} data-lineage-chip="true" data-source-id={card.id}>
-              {chip.label}
-            </span>
-          )),
-        )}
+        {provenanceLayout.sources.map((card) => (
+          <RelationLabelGroup key={`${card.id}:relations`} labels={card.labelGroup.labels} x={card.labelGroup.x} y={card.labelGroup.y} sourceId={card.id} />
+        ))}
       </div>
       <button
         type="button"
@@ -418,8 +427,8 @@ export function ArchitectureWorkspace() {
             >
               <svg className="architecture-map-edges" viewBox={`0 0 ${layout.canvas.width} ${layout.canvas.height}`} preserveAspectRatio="none" role="img" aria-label="Projected semantic relations">
                 <defs>
-                  <marker id="architecture-edge-arrow" markerUnits="userSpaceOnUse" markerWidth="0.95" markerHeight="0.95" refX="0.86" refY="0.475" orient="auto">
-                    <path d="M0,0 L0.95,0.475 L0,0.95 z" />
+                  <marker id="architecture-edge-arrow" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" refX="7.25" refY="4" orient="auto">
+                    <path d="M0,0 L8,4 L0,8 z" />
                   </marker>
                 </defs>
                 {layout.edges.map((edge) => (
@@ -515,6 +524,9 @@ function ProjectedEdge({
       data-source-port-y={edge.sourceY.toFixed(2)}
       data-target-port-x={edge.targetX.toFixed(2)}
       data-target-port-y={edge.targetY.toFixed(2)}
+      data-route-grammar={edge.grammar}
+      data-route-bend-count={edge.bendCount}
+      data-route-score={edge.routeScore.toFixed(2)}
     >
       <path d={edge.path} markerEnd="url(#architecture-edge-arrow)" />
       {showLabel ? <text x={edge.labelX} y={edge.labelY} data-edge-label="true">{label}</text> : null}

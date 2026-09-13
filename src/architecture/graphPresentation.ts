@@ -15,18 +15,27 @@ export type BoundaryPort = {
   side: "left" | "right" | "top" | "bottom"
 }
 
+export type RoutePoint = { x: number; y: number }
+
+export type ScientificRouteGrammar = "soft-cubic" | "rounded-orthogonal"
+
 export type RoutedPath = {
   path: string
   sourcePort: BoundaryPort
   targetPort: BoundaryPort
   labelX: number
   labelY: number
+  points: RoutePoint[]
+  grammar: ScientificRouteGrammar
+  bendCount: number
+  routeScore: number
 }
 
 type RouteCandidate = {
-  points: Array<{ x: number; y: number }>
-  labelX: number
-  labelY: number
+  points: RoutePoint[]
+  sourcePortPenalty?: number
+  targetPortPenalty?: number
+  fallbackPenalty?: number
 }
 
 export type ProvenanceSource = {
@@ -43,7 +52,7 @@ export type ProvenanceLayoutItem = ProvenanceSource & {
   path: string
   sourcePort: BoundaryPort
   targetPort: BoundaryPort
-  chipsLayout: Array<{ label: string; x: number; y: number }>
+  labelGroup: ProvenanceLabelGroup
 }
 
 export type ProvenanceLayout = {
@@ -53,7 +62,25 @@ export type ProvenanceLayout = {
   target: GraphRect
 }
 
+export type ProvenanceLabelGroup = {
+  labels: readonly string[]
+  x: number
+  y: number
+  normalX: number
+  normalY: number
+  tangentX: number
+  tangentY: number
+}
+
 export const architectureLaneOrder: SemanticLayer[] = ["observation", "measurement", "latent", "parameterization", "inference", "target"]
+
+const routeCornerRadius = 12
+const relationLabelOffset = 10
+const bendPenalty = 72
+const backwardPenalty = 9
+const detourPenalty = 0.85
+const proximityPenalty = 7.5
+const portPenalty = 8
 
 export function architectureLane(layer?: SemanticLayer) {
   const lanes: Record<SemanticLayer, number> = {
@@ -117,20 +144,278 @@ function candidateHitsObstacle(candidate: RouteCandidate, obstacles: GraphRect[]
   return false
 }
 
-function polylinePath(points: Array<{ x: number; y: number }>) {
-  const [first, ...rest] = points
-  return [`M ${first.x.toFixed(2)} ${first.y.toFixed(2)}`, ...rest.map((point) => `L ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)].join(" ")
+function formatNumber(value: number) {
+  return Number(value.toFixed(2))
 }
 
-function simplifyPolyline(points: Array<{ x: number; y: number }>) {
-  return points.filter((point, index) => {
+function formatPoint(point: RoutePoint) {
+  return `${point.x.toFixed(2)} ${point.y.toFixed(2)}`
+}
+
+function simplifyPolyline(points: RoutePoint[]) {
+  const deduped = points.filter((point, index) => {
     const previous = points[index - 1]
-    const next = points[index + 1]
+    return !previous || Math.hypot(point.x - previous.x, point.y - previous.y) > 0.01
+  })
+  return deduped.filter((point, index) => {
+    const previous = deduped[index - 1]
+    const next = deduped[index + 1]
     if (!previous || !next) return true
     const sameX = Math.abs(previous.x - point.x) < 0.01 && Math.abs(point.x - next.x) < 0.01
     const sameY = Math.abs(previous.y - point.y) < 0.01 && Math.abs(point.y - next.y) < 0.01
     return !sameX && !sameY
   })
+}
+
+function polylineLength(points: RoutePoint[]) {
+  let length = 0
+  for (let index = 0; index < points.length - 1; index += 1) length += Math.hypot(points[index + 1].x - points[index].x, points[index + 1].y - points[index].y)
+  return length
+}
+
+function bendCount(points: RoutePoint[]) {
+  let bends = 0
+  for (let index = 1; index < points.length - 1; index += 1) {
+    const a = points[index - 1]
+    const b = points[index]
+    const c = points[index + 1]
+    const dx1 = Math.sign(formatNumber(b.x - a.x))
+    const dy1 = Math.sign(formatNumber(b.y - a.y))
+    const dx2 = Math.sign(formatNumber(c.x - b.x))
+    const dy2 = Math.sign(formatNumber(c.y - b.y))
+    if (dx1 !== dx2 || dy1 !== dy2) bends += 1
+  }
+  return bends
+}
+
+function cubicPoint(start: RoutePoint, controlA: RoutePoint, controlB: RoutePoint, end: RoutePoint, t: number): RoutePoint {
+  const u = 1 - t
+  return {
+    x: u ** 3 * start.x + 3 * u ** 2 * t * controlA.x + 3 * u * t ** 2 * controlB.x + t ** 3 * end.x,
+    y: u ** 3 * start.y + 3 * u ** 2 * t * controlA.y + 3 * u * t ** 2 * controlB.y + t ** 3 * end.y,
+  }
+}
+
+function cubicSamples(start: RoutePoint, controlA: RoutePoint, controlB: RoutePoint, end: RoutePoint, steps = 32) {
+  return Array.from({ length: steps + 1 }, (_, index) => cubicPoint(start, controlA, controlB, end, index / steps))
+}
+
+function softCubicControls(sourcePort: BoundaryPort, targetPort: BoundaryPort) {
+  const dx = targetPort.x - sourcePort.x
+  const dy = targetPort.y - sourcePort.y
+  const horizontal = Math.abs(dx) >= Math.abs(dy) * 0.72
+  if (horizontal) {
+    const direction = dx >= 0 ? 1 : -1
+    const controlOffset = clamp(Math.abs(dx) * 0.44, 38, 148)
+    const verticalBend = Math.abs(dy) < 10 ? clamp(Math.abs(dx) * 0.035, 6, 16) : 0
+    return {
+      controlA: { x: sourcePort.x + direction * controlOffset, y: sourcePort.y + verticalBend },
+      controlB: { x: targetPort.x - direction * controlOffset, y: targetPort.y - verticalBend },
+    }
+  }
+  const direction = dy >= 0 ? 1 : -1
+  const controlOffset = clamp(Math.abs(dy) * 0.42, 34, 118)
+  return {
+    controlA: { x: sourcePort.x, y: sourcePort.y + direction * controlOffset },
+    controlB: { x: targetPort.x, y: targetPort.y - direction * controlOffset },
+  }
+}
+
+function softCubicHitsObstacle(sourcePort: BoundaryPort, targetPort: BoundaryPort, obstacles: GraphRect[]) {
+  return softCubicObstacleHitCount(sourcePort, targetPort, obstacles) > 0
+}
+
+function softCubicObstacleHitCount(sourcePort: BoundaryPort, targetPort: BoundaryPort, obstacles: GraphRect[]) {
+  const { controlA, controlB } = softCubicControls(sourcePort, targetPort)
+  const samples = cubicSamples(sourcePort, controlA, controlB, targetPort, 34)
+  return obstacles.filter((obstacle) => candidateHitsObstacle({ points: samples }, [obstacle])).length
+}
+
+function renderSoftCubicRoute(sourcePort: BoundaryPort, targetPort: BoundaryPort) {
+  const { controlA, controlB } = softCubicControls(sourcePort, targetPort)
+  return `M ${formatPoint(sourcePort)} C ${formatPoint(controlA)}, ${formatPoint(controlB)}, ${formatPoint(targetPort)}`
+}
+
+function smoothPolylinePath(points: RoutePoint[]) {
+  const simplified = simplifyPolyline(points)
+  const [first] = simplified
+  if (!first) return ""
+  if (simplified.length <= 2) return renderSoftCubicRoute(simplified[0] as BoundaryPort, simplified[simplified.length - 1] as BoundaryPort)
+  const commands = [`M ${formatPoint(first)}`]
+  for (let index = 0; index < simplified.length - 1; index += 1) {
+    const previous = simplified[index - 1] || simplified[index]
+    const current = simplified[index]
+    const next = simplified[index + 1]
+    const after = simplified[index + 2] || next
+    const controlA = { x: current.x + (next.x - previous.x) / 6, y: current.y + (next.y - previous.y) / 6 }
+    const controlB = { x: next.x - (after.x - current.x) / 6, y: next.y - (after.y - current.y) / 6 }
+    commands.push(`C ${formatPoint(controlA)}, ${formatPoint(controlB)}, ${formatPoint(next)}`)
+  }
+  return commands.join(" ")
+}
+
+export function roundedPolylinePath(points: RoutePoint[], radius = routeCornerRadius) {
+  const simplified = simplifyPolyline(points)
+  const [first, ...rest] = simplified
+  if (!first) return ""
+  if (simplified.length <= 2) return [`M ${formatPoint(first)}`, ...rest.map((point) => `L ${formatPoint(point)}`)].join(" ")
+  const commands = [`M ${formatPoint(first)}`]
+  for (let index = 1; index < simplified.length - 1; index += 1) {
+    const previous = simplified[index - 1]
+    const current = simplified[index]
+    const next = simplified[index + 1]
+    const incomingLength = Math.hypot(current.x - previous.x, current.y - previous.y)
+    const outgoingLength = Math.hypot(next.x - current.x, next.y - current.y)
+    const corner = Math.min(radius, incomingLength / 2, outgoingLength / 2)
+    if (corner <= 0.5) {
+      commands.push(`L ${formatPoint(current)}`)
+      continue
+    }
+    const before = {
+      x: current.x - ((current.x - previous.x) / incomingLength) * corner,
+      y: current.y - ((current.y - previous.y) / incomingLength) * corner,
+    }
+    const after = {
+      x: current.x + ((next.x - current.x) / outgoingLength) * corner,
+      y: current.y + ((next.y - current.y) / outgoingLength) * corner,
+    }
+    commands.push(`L ${formatPoint(before)}`, `Q ${formatPoint(current)} ${formatPoint(after)}`)
+  }
+  commands.push(`L ${formatPoint(simplified[simplified.length - 1])}`)
+  return commands.join(" ")
+}
+
+function renderScientificRoute(points: RoutePoint[], grammar: ScientificRouteGrammar, sourcePort: BoundaryPort, targetPort: BoundaryPort) {
+  if (grammar === "soft-cubic") return renderSoftCubicRoute(sourcePort, targetPort)
+  return roundedPolylinePath(points, routeCornerRadius)
+}
+
+function pointToSegmentDistance(point: RoutePoint, a: RoutePoint, b: RoutePoint) {
+  const lengthSquared = (b.x - a.x) ** 2 + (b.y - a.y) ** 2
+  if (lengthSquared === 0) return Math.hypot(point.x - a.x, point.y - a.y)
+  const t = clamp(((point.x - a.x) * (b.x - a.x) + (point.y - a.y) * (b.y - a.y)) / lengthSquared, 0, 1)
+  const projection = { x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y) }
+  return Math.hypot(point.x - projection.x, point.y - projection.y)
+}
+
+function pointRectDistance(point: RoutePoint, rect: GraphRect) {
+  const dx = Math.max(rectLeft(rect) - point.x, 0, point.x - rectRight(rect))
+  const dy = Math.max(rectTop(rect) - point.y, 0, point.y - rectBottom(rect))
+  return Math.hypot(dx, dy)
+}
+
+function segmentRectDistance(a: RoutePoint, b: RoutePoint, rect: GraphRect) {
+  const samples = Math.max(4, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 34))
+  let best = Infinity
+  for (let index = 0; index <= samples; index += 1) {
+    const t = index / samples
+    best = Math.min(best, pointRectDistance({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }, rect))
+  }
+  for (const corner of [
+    { x: rectLeft(rect), y: rectTop(rect) },
+    { x: rectRight(rect), y: rectTop(rect) },
+    { x: rectRight(rect), y: rectBottom(rect) },
+    { x: rectLeft(rect), y: rectBottom(rect) },
+  ]) {
+    best = Math.min(best, pointToSegmentDistance(corner, a, b))
+  }
+  return best
+}
+
+function proximityScore(points: RoutePoint[], obstacles: GraphRect[]) {
+  let score = 0
+  for (let pointIndex = 0; pointIndex < points.length - 1; pointIndex += 1) {
+    for (const obstacle of obstacles) {
+      const distance = segmentRectDistance(points[pointIndex], points[pointIndex + 1], obstacle)
+      if (distance < 34) score += (34 - distance) * proximityPenalty
+    }
+  }
+  return score
+}
+
+export function scoreRouteCandidate(candidate: RouteCandidate, sourcePort: BoundaryPort, targetPort: BoundaryPort, obstacles: GraphRect[]) {
+  const points = simplifyPolyline(candidate.points)
+  const length = polylineLength(points)
+  const directLength = Math.hypot(targetPort.x - sourcePort.x, targetPort.y - sourcePort.y)
+  const direction = targetPort.x >= sourcePort.x ? 1 : -1
+  const backwardXDistance = points.slice(0, -1).reduce((total, point, index) => {
+    const next = points[index + 1]
+    const dx = next.x - point.x
+    return total + Math.max(0, -dx * direction)
+  }, 0)
+  const minCorridorY = Math.min(sourcePort.y, targetPort.y) - 46
+  const maxCorridorY = Math.max(sourcePort.y, targetPort.y) + 46
+  const outsideCorridor = points.reduce((total, point) => total + Math.max(0, minCorridorY - point.y, point.y - maxCorridorY), 0)
+  return (
+    length +
+    bendCount(points) * bendPenalty +
+    backwardXDistance * backwardPenalty +
+    Math.max(0, length - directLength) * detourPenalty +
+    outsideCorridor * detourPenalty +
+    proximityScore(points, obstacles) +
+    (candidate.sourcePortPenalty || 0) * portPenalty +
+    (candidate.targetPortPenalty || 0) * portPenalty +
+    (candidate.fallbackPenalty || 0)
+  )
+}
+
+function labelPointForRoute(points: RoutePoint[], grammar: ScientificRouteGrammar, sourcePort: BoundaryPort, targetPort: BoundaryPort) {
+  const label = pathPointAndNormalAt(points, grammar, sourcePort, targetPort, 0.5)
+  return {
+    x: formatNumber(label.x + label.normalX * relationLabelOffset),
+    y: formatNumber(label.y + label.normalY * relationLabelOffset),
+  }
+}
+
+export function pathPointAndNormalAt(points: RoutePoint[], grammar: ScientificRouteGrammar, sourcePort: BoundaryPort, targetPort: BoundaryPort, fraction = 0.5) {
+  const samples =
+    grammar === "soft-cubic"
+      ? (() => {
+          const { controlA, controlB } = softCubicControls(sourcePort, targetPort)
+          return cubicSamples(sourcePort, controlA, controlB, targetPort, 48)
+        })()
+      : samplePolyline(points, 48)
+  const targetDistance = polylineLength(samples) * clamp(fraction, 0, 1)
+  let walked = 0
+  for (let index = 0; index < samples.length - 1; index += 1) {
+    const current = samples[index]
+    const next = samples[index + 1]
+    const segmentLength = Math.hypot(next.x - current.x, next.y - current.y)
+    if (walked + segmentLength >= targetDistance) {
+      const t = segmentLength ? (targetDistance - walked) / segmentLength : 0
+      const x = current.x + (next.x - current.x) * t
+      const y = current.y + (next.y - current.y) * t
+      const tangentLength = Math.hypot(next.x - current.x, next.y - current.y) || 1
+      const tangentX = (next.x - current.x) / tangentLength
+      const tangentY = (next.y - current.y) / tangentLength
+      return { x, y, tangentX, tangentY, normalX: -tangentY, normalY: tangentX }
+    }
+    walked += segmentLength
+  }
+  const last = samples[samples.length - 1] || targetPort
+  return { x: last.x, y: last.y, tangentX: 1, tangentY: 0, normalX: 0, normalY: 1 }
+}
+
+function samplePolyline(points: RoutePoint[], samples = 48) {
+  const length = polylineLength(points)
+  if (!length) return points
+  const sampled: RoutePoint[] = []
+  for (let index = 0; index <= samples; index += 1) {
+    const distance = (length * index) / samples
+    let walked = 0
+    for (let pointIndex = 0; pointIndex < points.length - 1; pointIndex += 1) {
+      const current = points[pointIndex]
+      const next = points[pointIndex + 1]
+      const segmentLength = Math.hypot(next.x - current.x, next.y - current.y)
+      if (walked + segmentLength >= distance || pointIndex === points.length - 2) {
+        const t = segmentLength ? clamp((distance - walked) / segmentLength, 0, 1) : 0
+        sampled.push({ x: current.x + (next.x - current.x) * t, y: current.y + (next.y - current.y) * t })
+        break
+      }
+      walked += segmentLength
+    }
+  }
+  return sampled
 }
 
 function routeOnObstacleGrid(sourcePort: BoundaryPort, targetPort: BoundaryPort, source: GraphRect, target: GraphRect, obstacles: GraphRect[]): RouteCandidate | null {
@@ -162,14 +447,40 @@ function routeOnObstacleGrid(sourcePort: BoundaryPort, targetPort: BoundaryPort,
     return obstacles.some((obstacle) => rectContainsPoint(obstacle, { x, y }, 6))
   }
   const isClearSegment = (a: { x: number; y: number }, b: { x: number; y: number }) => !obstacles.some((obstacle) => segmentHitsRect(a, b, obstacle, 6))
-  const queue = [startKey]
-  const visited = new Set([startKey])
+  type Direction = "h+" | "h-" | "v+" | "v-" | "start"
+  const directionBetween = (a: RoutePoint, b: RoutePoint): Direction => {
+    if (Math.abs(b.x - a.x) >= Math.abs(b.y - a.y)) return b.x >= a.x ? "h+" : "h-"
+    return b.y >= a.y ? "v+" : "v-"
+  }
+  const stateKey = (pointKey: string, direction: Direction) => `${pointKey}|${direction}`
+  const statePointKey = (state: string) => state.split("|")[0]
+  const stateDirection = (state: string) => state.split("|")[1] as Direction
+  const direction = targetPort.x >= sourcePort.x ? 1 : -1
+  const startState = stateKey(startKey, "start")
+  const distances = new Map<string, number>([[startState, 0]])
   const previous = new Map<string, string>()
+  const queue = [startState]
+  const visited = new Set<string>()
+  let bestEndState: string | null = null
 
-  for (let cursor = 0; cursor < queue.length; cursor += 1) {
-    const currentKey = queue[cursor]
-    if (currentKey === endKey) break
+  for (let guard = 0; queue.length && guard < 5000; guard += 1) {
+    queue.sort((a, b) => {
+      const pointA = parse(statePointKey(a))
+      const pointB = parse(statePointKey(b))
+      const heuristicA = Math.abs(pointA.x - targetPort.x) + Math.abs(pointA.y - targetPort.y)
+      const heuristicB = Math.abs(pointB.x - targetPort.x) + Math.abs(pointB.y - targetPort.y)
+      return (distances.get(a) || Infinity) + heuristicA * 0.55 - ((distances.get(b) || Infinity) + heuristicB * 0.55)
+    })
+    const currentState = queue.shift() || startState
+    if (visited.has(currentState)) continue
+    visited.add(currentState)
+    const currentKey = statePointKey(currentState)
+    if (currentKey === endKey) {
+      bestEndState = currentState
+      break
+    }
     const current = parse(currentKey)
+    const currentDirection = stateDirection(currentState)
     const xIndex = xs.indexOf(current.x)
     const yIndex = ys.indexOf(current.y)
     const neighbors = [
@@ -178,28 +489,33 @@ function routeOnObstacleGrid(sourcePort: BoundaryPort, targetPort: BoundaryPort,
       yIndex > 0 ? { x: current.x, y: ys[yIndex - 1] } : null,
       yIndex < ys.length - 1 ? { x: current.x, y: ys[yIndex + 1] } : null,
     ].filter(Boolean) as Array<{ x: number; y: number }>
-    neighbors
-      .sort((a, b) => Math.abs(a.x - targetPort.x) + Math.abs(a.y - targetPort.y) - (Math.abs(b.x - targetPort.x) + Math.abs(b.y - targetPort.y)))
-      .forEach((neighbor) => {
-        const neighborKey = key(neighbor.x, neighbor.y)
-        if (visited.has(neighborKey) || blocked(neighbor.x, neighbor.y) || !isClearSegment(current, neighbor)) return
-        visited.add(neighborKey)
-        previous.set(neighborKey, currentKey)
-        queue.push(neighborKey)
-      })
+    neighbors.forEach((neighbor) => {
+      const neighborKey = key(neighbor.x, neighbor.y)
+      if (blocked(neighbor.x, neighbor.y) || !isClearSegment(current, neighbor)) return
+      const nextDirection = directionBetween(current, neighbor)
+      const nextState = stateKey(neighborKey, nextDirection)
+      const segmentLength = Math.hypot(neighbor.x - current.x, neighbor.y - current.y)
+      const bendCost = currentDirection !== "start" && currentDirection !== nextDirection ? bendPenalty : 0
+      const backwardCost = Math.max(0, -(neighbor.x - current.x) * direction) * backwardPenalty
+      const corridorCost = Math.abs(neighbor.y - (sourcePort.y + (targetPort.y - sourcePort.y) * 0.5)) * 0.06
+      const nextDistance = (distances.get(currentState) || 0) + segmentLength + bendCost + backwardCost + corridorCost
+      if (nextDistance >= (distances.get(nextState) || Infinity)) return
+      distances.set(nextState, nextDistance)
+      previous.set(nextState, currentState)
+      queue.push(nextState)
+    })
   }
 
-  if (!visited.has(endKey)) return null
-  const points: Array<{ x: number; y: number }> = [targetPort]
-  let cursor = endKey
-  while (cursor !== startKey) {
-    cursor = previous.get(cursor) || startKey
-    points.push(parse(cursor))
+  if (!bestEndState) return null
+  const points: RoutePoint[] = [targetPort]
+  let cursor = bestEndState
+  while (statePointKey(cursor) !== startKey) {
+    cursor = previous.get(cursor) || startState
+    points.push(parse(statePointKey(cursor)))
   }
   points.reverse()
   const simplified = simplifyPolyline(points)
-  const middle = simplified[Math.floor(simplified.length / 2)] || targetPort
-  return { points: simplified, labelX: middle.x + 8, labelY: middle.y - 8 }
+  return { points: simplified, fallbackPenalty: 180 }
 }
 
 function horizontalCorridors(obstacles: GraphRect[], preferredY: number) {
@@ -254,7 +570,7 @@ export function boundaryPort(source: GraphRect, target: GraphRect, options: { ro
   const sameLane = Math.abs(dx) < source.width * 0.55
   const pad = Math.min(16, Math.max(8, source.height * 0.16))
 
-  if (sameLane && Math.abs(dy) > source.height * 0.6) {
+  if (sameLane && Math.abs(dy) > source.height * 4) {
     const side = dy >= 0 ? "bottom" : "top"
     const x = clamp(source.x + distributedOffset(portIndex, portCount, source.width * 0.54), rectLeft(source) + pad, rectRight(source) - pad)
     return { x, y: side === "bottom" ? rectBottom(source) : rectTop(source), side }
@@ -278,19 +594,41 @@ export function routeBoundaryEdge(source: GraphRect, target: GraphRect, options:
   })
 
   const obstacles = (options.obstacles || []).filter((obstacle) => obstacle.id !== source.id && obstacle.id !== target.id)
-  const sameLane = Math.abs(source.x - target.x) < Math.max(source.width, target.width)
   const direction = targetPort.x >= sourcePort.x ? 1 : -1
-  const laneGap = Math.max(32, Math.min(68, Math.abs(targetPort.x - sourcePort.x) * 0.45))
   const preferredY = sourcePort.y + (targetPort.y - sourcePort.y) * 0.5
   const preferredX = sourcePort.x + (targetPort.x - sourcePort.x) * 0.5
   const candidates: RouteCandidate[] = []
+
+  const softHitCount = softCubicObstacleHitCount(sourcePort, targetPort, obstacles)
+  const directDistance = Math.hypot(targetPort.x - sourcePort.x, targetPort.y - sourcePort.y)
+  const denseStackLocalFlow =
+    softHitCount <= 2 &&
+    directDistance < 340 &&
+    Math.abs(targetPort.x - sourcePort.x) < Math.max(source.width, target.width) * 1.35 &&
+    Math.abs(targetPort.y - sourcePort.y) < Math.max(source.height, target.height) * 3.2
+
+  if (softHitCount === 0 || denseStackLocalFlow) {
+    const points = [sourcePort, targetPort]
+    const label = labelPointForRoute(points, "soft-cubic", sourcePort, targetPort)
+    return {
+      path: renderScientificRoute(points, "soft-cubic", sourcePort, targetPort),
+      sourcePort,
+      targetPort,
+      labelX: label.x,
+      labelY: label.y,
+      points,
+      grammar: "soft-cubic",
+      bendCount: 0,
+      routeScore: scoreRouteCandidate({ points }, sourcePort, targetPort, obstacles),
+    }
+  }
 
   if (sourcePort.side === "left" || sourcePort.side === "right" || targetPort.side === "left" || targetPort.side === "right") {
     horizontalCorridors(obstacles, preferredY).forEach((corridorY) => {
       candidates.push({
         points: [sourcePort, { x: sourcePort.x, y: corridorY }, { x: targetPort.x, y: corridorY }, targetPort],
-        labelX: sourcePort.x + (targetPort.x - sourcePort.x) * 0.52,
-        labelY: corridorY - 7,
+        sourcePortPenalty: Math.abs(corridorY - sourcePort.y) / 48,
+        targetPortPenalty: Math.abs(corridorY - targetPort.y) / 48,
       })
     })
     const minLeft = Math.min(rectLeft(source), rectLeft(target), ...obstacles.map((obstacle) => rectLeft(obstacle)))
@@ -298,8 +636,9 @@ export function routeBoundaryEdge(source: GraphRect, target: GraphRect, options:
     ;[minLeft - 44, maxRight + 44].forEach((corridorX) => {
       candidates.push({
         points: [sourcePort, { x: corridorX, y: sourcePort.y }, { x: corridorX, y: targetPort.y }, targetPort],
-        labelX: corridorX,
-        labelY: preferredY,
+        sourcePortPenalty: Math.abs(corridorX - sourcePort.x) / 62,
+        targetPortPenalty: Math.abs(corridorX - targetPort.x) / 62,
+        fallbackPenalty: 45,
       })
     })
   }
@@ -307,54 +646,79 @@ export function routeBoundaryEdge(source: GraphRect, target: GraphRect, options:
   verticalCorridors(obstacles, preferredX).forEach((corridorX) => {
     candidates.push({
       points: [sourcePort, { x: corridorX, y: sourcePort.y }, { x: corridorX, y: targetPort.y }, targetPort],
-      labelX: corridorX + 7,
-      labelY: sourcePort.y + (targetPort.y - sourcePort.y) * 0.5,
+      sourcePortPenalty: Math.abs(corridorX - sourcePort.x) / 48,
+      targetPortPenalty: Math.abs(corridorX - targetPort.x) / 48,
     })
   })
   const minTop = Math.min(rectTop(source), rectTop(target), ...obstacles.map((obstacle) => rectTop(obstacle)))
   const maxBottom = Math.max(rectBottom(source), rectBottom(target), ...obstacles.map((obstacle) => rectBottom(obstacle)))
   ;[minTop - 44, maxBottom + 44].forEach((corridorY) => {
+    const localExitX = sourcePort.x + direction * clamp(Math.abs(targetPort.x - sourcePort.x) * 0.24, 44, 58)
+    const localEntryX = targetPort.x - direction * clamp(Math.abs(targetPort.x - sourcePort.x) * 0.24, 44, 58)
     candidates.push({
       points: [sourcePort, { x: sourcePort.x, y: corridorY }, { x: targetPort.x, y: corridorY }, targetPort],
-      labelX: preferredX,
-      labelY: corridorY,
+      sourcePortPenalty: Math.abs(corridorY - sourcePort.y) / 62,
+      targetPortPenalty: Math.abs(corridorY - targetPort.y) / 62,
+      fallbackPenalty: 45,
+    })
+    candidates.push({
+      points: [sourcePort, { x: localExitX, y: sourcePort.y }, { x: localExitX, y: corridorY }, { x: targetPort.x, y: corridorY }, targetPort],
+      sourcePortPenalty: Math.abs(localExitX - sourcePort.x) / 54 + Math.abs(corridorY - sourcePort.y) / 70,
+      targetPortPenalty: Math.abs(corridorY - targetPort.y) / 70,
+      fallbackPenalty: 24,
+    })
+    candidates.push({
+      points: [sourcePort, { x: sourcePort.x, y: corridorY }, { x: localEntryX, y: corridorY }, { x: localEntryX, y: targetPort.y }, targetPort],
+      sourcePortPenalty: Math.abs(corridorY - sourcePort.y) / 70,
+      targetPortPenalty: Math.abs(localEntryX - targetPort.x) / 54 + Math.abs(corridorY - targetPort.y) / 70,
+      fallbackPenalty: 24,
+    })
+    candidates.push({
+      points: [sourcePort, { x: localExitX, y: sourcePort.y }, { x: localExitX, y: corridorY }, { x: localEntryX, y: corridorY }, { x: localEntryX, y: targetPort.y }, targetPort],
+      sourcePortPenalty: Math.abs(localExitX - sourcePort.x) / 54 + Math.abs(corridorY - sourcePort.y) / 78,
+      targetPortPenalty: Math.abs(localEntryX - targetPort.x) / 54 + Math.abs(corridorY - targetPort.y) / 78,
+      fallbackPenalty: 18,
     })
   })
 
-  const selected = candidates.find((candidate) => !candidateHitsObstacle(candidate, obstacles))
-  if (selected) {
-    return {
-      path: polylinePath(selected.points),
-      sourcePort,
-      targetPort,
-      labelX: Number(selected.labelX.toFixed(2)),
-      labelY: Number(selected.labelY.toFixed(2)),
-    }
-  }
-
   const gridRoute = routeOnObstacleGrid(sourcePort, targetPort, source, target, obstacles)
-  if (gridRoute) {
+  if (gridRoute) candidates.push(gridRoute)
+
+  const selected = candidates
+    .map((candidate) => ({ ...candidate, points: simplifyPolyline(candidate.points), score: scoreRouteCandidate(candidate, sourcePort, targetPort, obstacles) }))
+    .filter((candidate) => candidate.points.length >= 2 && !candidateHitsObstacle(candidate, obstacles))
+    .sort((a, b) => a.score - b.score)[0]
+
+  if (selected) {
+    const selectedBendCount = bendCount(selected.points)
+    const grammar: ScientificRouteGrammar = selectedBendCount > 4 ? "soft-cubic" : "rounded-orthogonal"
+    const label = labelPointForRoute(selected.points, grammar, sourcePort, targetPort)
     return {
-      path: polylinePath(gridRoute.points),
+      path: selectedBendCount > 4 ? smoothPolylinePath(selected.points) : renderScientificRoute(selected.points, "rounded-orthogonal", sourcePort, targetPort),
       sourcePort,
       targetPort,
-      labelX: Number(gridRoute.labelX.toFixed(2)),
-      labelY: Number(gridRoute.labelY.toFixed(2)),
+      labelX: label.x,
+      labelY: label.y,
+      points: selected.points,
+      grammar,
+      bendCount: grammar === "soft-cubic" ? 0 : selectedBendCount,
+      routeScore: formatNumber(selected.score),
     }
   }
 
-  const midX = sameLane ? Math.max(rectRight(source), rectRight(target)) + laneGap : sourcePort.x + (targetPort.x - sourcePort.x) * 0.5
-  const roundedMidX = Number(midX.toFixed(2))
-  const labelX = sameLane ? roundedMidX + 10 * direction : sourcePort.x + (targetPort.x - sourcePort.x) * 0.44
-  const labelY = sourcePort.y + (targetPort.y - sourcePort.y) * 0.48
-  const path = `M ${sourcePort.x.toFixed(2)} ${sourcePort.y.toFixed(2)} C ${roundedMidX.toFixed(2)} ${sourcePort.y.toFixed(2)}, ${roundedMidX.toFixed(2)} ${targetPort.y.toFixed(2)}, ${targetPort.x.toFixed(2)} ${targetPort.y.toFixed(2)}`
+  const fallbackPoints = simplifyPolyline([sourcePort, { x: sourcePort.x + direction * 42, y: sourcePort.y }, { x: targetPort.x - direction * 42, y: targetPort.y }, targetPort])
+  const label = labelPointForRoute(fallbackPoints, "soft-cubic", sourcePort, targetPort)
 
   return {
-    path,
+    path: renderScientificRoute(fallbackPoints, "soft-cubic", sourcePort, targetPort),
     sourcePort,
     targetPort,
-    labelX: Number(labelX.toFixed(2)),
-    labelY: Number(labelY.toFixed(2)),
+    labelX: label.x,
+    labelY: label.y,
+    points: fallbackPoints,
+    grammar: "soft-cubic",
+    bendCount: 0,
+    routeScore: scoreRouteCandidate({ points: fallbackPoints, fallbackPenalty: 320 }, sourcePort, targetPort, obstacles),
   }
 }
 
@@ -433,25 +797,19 @@ export function layoutProvenanceFlow(sources: readonly ProvenanceSource[], optio
     const sourcePort: BoundaryPort = { x: rect.x + rect.width / 2, y: rect.y, side: "right" }
     const targetY = target.y - target.height / 2 + ((index + 1) / (sources.length + 1)) * target.height
     const targetPort: BoundaryPort = { x: target.x - target.width / 2, y: targetY, side: "left" }
-    const midX = sourcePort.x + (targetPort.x - sourcePort.x) * 0.56
-    const path = `M ${sourcePort.x.toFixed(2)} ${sourcePort.y.toFixed(2)} C ${midX.toFixed(2)} ${sourcePort.y.toFixed(2)}, ${midX.toFixed(2)} ${targetPort.y.toFixed(2)}, ${targetPort.x.toFixed(2)} ${targetPort.y.toFixed(2)}`
-    const cubicPoint = (t: number) => {
-      const u = 1 - t
-      return {
-        x: u ** 3 * sourcePort.x + 3 * u ** 2 * t * midX + 3 * u * t ** 2 * midX + t ** 3 * targetPort.x,
-        y: u ** 3 * sourcePort.y + 3 * u ** 2 * t * sourcePort.y + 3 * u * t ** 2 * targetPort.y + t ** 3 * targetPort.y,
-      }
+    const points = [sourcePort, targetPort]
+    const anchor = pathPointAndNormalAt(points, "soft-cubic", sourcePort, targetPort, 0.5)
+    const normalDirection = anchor.y < target.y ? -1 : 1
+    const labelGroup: ProvenanceLabelGroup = {
+      labels: source.chips,
+      x: formatNumber(anchor.x + anchor.normalX * relationLabelOffset * normalDirection),
+      y: formatNumber(anchor.y + anchor.normalY * relationLabelOffset * normalDirection),
+      normalX: formatNumber(anchor.normalX * normalDirection),
+      normalY: formatNumber(anchor.normalY * normalDirection),
+      tangentX: formatNumber(anchor.tangentX),
+      tangentY: formatNumber(anchor.tangentY),
     }
-    const chipsLayout = source.chips.map((label, chipIndex) => {
-      const offset = chipIndex - (source.chips.length - 1) / 2
-      const point = cubicPoint(0.42 + offset * 0.34)
-      return {
-        label,
-        x: point.x,
-        y: point.y + offset * 32,
-      }
-    })
-    return { ...source, rect, path, sourcePort, targetPort, chipsLayout }
+    return { ...source, rect, path: renderSoftCubicRoute(sourcePort, targetPort), sourcePort, targetPort, labelGroup }
   })
 
   return { width, height, sources: items, target }

@@ -703,7 +703,6 @@ export function ArchitectureReferencePanel() {
       ) : (
         <MultiViewPanel
           viewId={activeViewId}
-          entities={viewEntities}
           selectedEntity={currentViewSelection}
           relations={currentRelations}
           closureWarnings={closureWarnings}
@@ -737,7 +736,6 @@ export function ArchitectureReferencePanel() {
 
 function MultiViewPanel({
   viewId,
-  entities,
   selectedEntity,
   relations,
   closureWarnings,
@@ -747,7 +745,6 @@ function MultiViewPanel({
   onOpenEvidence,
 }: {
   viewId: MultiViewId
-  entities: StatisticalEntity[]
   selectedEntity?: StatisticalEntity
   relations: TypedRelation[]
   closureWarnings: ReturnType<typeof evidenceClosureWarnings>
@@ -759,19 +756,6 @@ function MultiViewPanel({
   const isEvidence = viewId === multiViewIds.evidence
   return (
     <>
-      <div className={`research-view-canvas research-view-canvas-${isEvidence ? "evidence" : "lineage"}`} data-testid={`${isEvidence ? "evidence" : "lineage"}-canvas`}>
-        {entities.map((entity) => {
-          const selected = selectedEntity?.id === entity.id
-          return (
-            <button key={entity.id} type="button" className={`research-view-node research-view-node-${entity.kind} ${selected ? "research-view-node-selected" : ""}`} onClick={() => onSelectEntity(entity.id)} data-testid={`entity-${entity.id.split(":").pop() || entity.id}`}>
-              <span>{entity.kind.replace(/_/g, " ")}</span>
-              <strong>{entity.label}</strong>
-              <small>{entity.role}</small>
-            </button>
-          )
-        })}
-      </div>
-
       <section className="panel-section">
         <div className="section-title">{inspectorTitle(selectedEntity, isEvidence ? "Claim" : "Method")}</div>
         {selectedEntity ? (

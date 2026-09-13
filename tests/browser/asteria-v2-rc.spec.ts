@@ -202,9 +202,9 @@ async function assertNoSelectorOverlap(page: Page, selector: string, gap = 0) {
 }
 
 async function assertNoRelationChipCardCollision(page: Page) {
-  const chips = await visibleRects(page, "[data-lineage-chip='true']")
+  const chips = await visibleRects(page, "[data-lineage-label-group='true']")
   const cards = await visibleRects(page, ".lineage-presentation-card")
-  expect(chips.length).toBe(5)
+  expect(chips.length).toBe(4)
   for (const chip of chips) {
     for (const card of cards) {
       expect(overlaps(chip, card, 4), `${chip.id} relation chip collides with ${card.id}`).toBe(false)
@@ -217,7 +217,7 @@ async function assertLineagePresentationGeometry(page: Page) {
   await expect(page.locator("[data-lineage-connector]")).toHaveCount(4)
   await expect(page.locator("[data-edge-label='true']")).toHaveCount(0)
   await assertNoSelectorOverlap(page, ".lineage-presentation-card", 10)
-  await assertNoSelectorOverlap(page, "[data-lineage-chip='true']", 6)
+  await assertNoSelectorOverlap(page, "[data-lineage-label-group='true']", 6)
   await assertNoRelationChipCardCollision(page)
   const metrics = await lineageRoutingMetrics(page)
   expect(metrics.connectorTouchTarget).toBe(true)
@@ -325,7 +325,7 @@ async function lineageRoutingMetrics(page: Page) {
       if (gap < 12) portCollapseCount += 1
     }
     const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y)
-    const chipDistances = [...document.querySelectorAll<HTMLElement>("[data-lineage-chip='true']")].map((chip) => {
+    const chipDistances = [...document.querySelectorAll<HTMLElement>("[data-lineage-label-group='true']")].map((chip) => {
       const sourceId = chip.dataset.sourceId || ""
       const path = document.querySelector<SVGPathElement>(`[data-lineage-connector][data-source-id="${CSS.escape(sourceId)}"]`)
       const chipRect = chip.getBoundingClientRect()
@@ -392,7 +392,7 @@ async function renderGenericProvenanceFixture(page: Page, sourceCount: 3 | 4 | 6
         .map((source: any) => `<div class="lineage-presentation-card lineage-presentation-source-card" data-lineage-card="source" data-entity-id="${source.id}" style="left:${source.rect.x}px;top:${source.rect.y}px;width:${source.rect.width}px;min-height:${source.rect.height}px"><strong>${source.label}</strong><span>${source.copy}</span></div>`)
         .join("")
       const chips = layout.sources
-        .flatMap((source: any) => source.chipsLayout.map((chip: any) => `<span class="lineage-relation-chip" data-lineage-chip="true" data-source-id="${source.id}" style="left:${chip.x}px;top:${chip.y}px">${chip.label}</span>`))
+        .map((source: any) => `<span class="lineage-relation-label-group" data-lineage-label-group="true" data-lineage-chip="true" data-source-id="${source.id}" data-label-count="${source.labelGroup.labels.length}" style="left:${source.labelGroup.x}px;top:${source.labelGroup.y}px">${source.labelGroup.labels.join(" | ")}</span>`)
         .join("")
       const target = `<div class="lineage-presentation-card lineage-presentation-target-card" data-testid="lineage-target-card" data-lineage-card="target" data-entity-id="target" style="left:${layout.target.x}px;top:${layout.target.y}px;width:${layout.target.width}px;min-height:${layout.target.height}px"><strong>Generic target</strong><span>${sourceCount} sources</span></div>`
       return { html: `<svg class="lineage-presentation-connectors" viewBox="0 0 ${layout.width} ${layout.height}" aria-hidden="true">${paths}</svg><div class="lineage-presentation-sources">${sources}</div><div class="lineage-presentation-chip-layer">${chips}</div>${target}`, height: layout.height }
@@ -409,7 +409,7 @@ async function renderGenericProvenanceFixture(page: Page, sourceCount: 3 | 4 | 6
     .lineage-presentation-card { position: absolute; display: grid; align-content: center; gap: 4px; transform: translate(-50%, -50%); border: 1px solid #64748b; border-radius: 6px; background: #1e293b; color: #e5edf7; padding: 10px 14px; text-align: left; box-sizing: border-box; }
     .lineage-presentation-card strong { font-size: 13px; line-height: 18px; }
     .lineage-presentation-card span { font-size: 11px; color: #cbd5e1; }
-    .lineage-relation-chip { position: absolute; transform: translate(-50%, -50%); border: 1px solid #475569; border-radius: 999px; background: #162033; color: #cbd5e1; padding: 4px 8px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+    .lineage-relation-label-group { position: absolute; transform: translate(-50%, -50%); border: 1px solid #475569; border-radius: 7px; background: #162033; color: #cbd5e1; padding: 4px 8px; font-size: 10px; font-weight: 700; white-space: nowrap; }
   </style></head><body><div class="fixture-stage"><div class="lineage-presentation" data-testid="lineage-presentation">${body.html}</div></div></body></html>`)
 }
 
@@ -475,7 +475,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/")
   await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
   await expect(page.getByTestId("asteria-v2-topbar")).toBeVisible()
-  await expect(page.getByText("2.0.0-rc.14")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.15")).toBeVisible()
   await expect(page.getByTestId("current-project")).toContainText("Project")
   await expect(page.getByTestId("current-project")).toContainText("CAT-TRACE")
   await expect(page.getByTestId("current-view")).toContainText("Architecture")
@@ -725,7 +725,7 @@ test("RC7 acceptance covers direct 2.0 entry, selectors, views, trace-edge truth
   await expect(page.locator(relationIdSelector("relation:lineage:trace-cat"))).toHaveAttribute("data-relation-type", "extends")
   await expect(page.locator(relationIdSelector("relation:lineage:trace-preserve"))).toHaveAttribute("data-relation-type", "preserves")
   await expect(page.locator("[data-lineage-connector]")).toHaveCount(4)
-  await expect(page.locator("[data-lineage-chip='true']")).toHaveCount(5)
+  await expect(page.locator("[data-lineage-label-group='true']")).toHaveCount(4)
   await page.screenshot({ path: path.join(acceptanceDir, "lineage-dark.png"), fullPage: false })
 
   await page.getByTestId("view-evidence").click()
@@ -976,8 +976,9 @@ test("RC9 human visual acceptance repairs Architecture geometry, labels, math co
 
   await page.getByTestId("view-lineage").click()
   await assertLineagePresentationGeometry(page)
-  const lineageChips = await page.locator("[data-lineage-chip='true']").evaluateAll((elements) => elements.map((element) => element.textContent?.trim() || ""))
-  expect(lineageChips).toEqual(expect.arrayContaining(["Ecological hierarchy", "Extends", "Preserves", "Scalable probit", "Factor shrinkage"]))
+  const lineageGroups = await page.locator("[data-lineage-label-group='true']").evaluateAll((elements) => elements.map((element) => element.textContent?.trim() || ""))
+  expect(lineageGroups).toEqual(expect.arrayContaining(["Ecological hierarchy", "Scalable probit", "Factor shrinkage"]))
+  expect(lineageGroups.some((label) => label.includes("Extends") && label.includes("Preserves"))).toBe(true)
   await page.screenshot({ path: path.join(screenshotDir, "rc10-lineage-visual.png"), fullPage: false })
 
   await page.getByTestId("view-evidence").click()
@@ -1224,8 +1225,10 @@ test("RC12 edge and arrow presentation uses stable restrained visual weights", a
   expect(vectorEffect).toBe("non-scaling-stroke")
   const marker = page.locator("#architecture-edge-arrow")
   await expect(marker).toHaveAttribute("markerUnits", "userSpaceOnUse")
-  expect(Number(await marker.getAttribute("markerWidth"))).toBeLessThanOrEqual(1.1)
-  expect(Number(await marker.getAttribute("markerHeight"))).toBeLessThanOrEqual(1.1)
+  expect(Number(await marker.getAttribute("markerWidth"))).toBeGreaterThanOrEqual(6)
+  expect(Number(await marker.getAttribute("markerWidth"))).toBeLessThanOrEqual(8)
+  expect(Number(await marker.getAttribute("markerHeight"))).toBeGreaterThanOrEqual(6)
+  expect(Number(await marker.getAttribute("markerHeight"))).toBeLessThanOrEqual(8)
   await assertNoNodeOverlap(page, 8)
   await assertNoPrimaryTextClipping(page)
   await page.screenshot({ path: path.join(screenshotDir, "rc12-architecture-selected-1536.png"), fullPage: false })
@@ -1251,14 +1254,15 @@ test("RC12 edge and arrow presentation uses stable restrained visual weights", a
   expect(lineageWidth).toBeGreaterThanOrEqual(1.4)
   expect(lineageWidth).toBeLessThanOrEqual(1.9)
   await expect(page.locator("#lineage-presentation-arrow")).toHaveAttribute("markerUnits", "userSpaceOnUse")
+  expect(Number(await page.locator("#lineage-presentation-arrow").getAttribute("markerWidth"))).toBeLessThanOrEqual(9)
   await assertLineagePresentationGeometry(page)
   await page.screenshot({ path: path.join(screenshotDir, "rc12-lineage-1536.png"), fullPage: false })
 
   await page.getByTestId("view-evidence").click()
   await expect(page.getByTestId("central-evidence-canvas")).toBeVisible()
   const evidenceActiveWidth = await computedStrokeWidth(page, ".architecture-map-edge-selected path")
-  expect(evidenceActiveWidth).toBeGreaterThanOrEqual(1.7)
-  expect(evidenceActiveWidth).toBeLessThanOrEqual(2.1)
+  expect(evidenceActiveWidth).toBeGreaterThanOrEqual(1.55)
+  expect(evidenceActiveWidth).toBeLessThanOrEqual(1.8)
   await assertNoNodeOverlap(page, 8)
   await page.screenshot({ path: path.join(screenshotDir, "rc12-evidence-1536.png"), fullPage: false })
 
@@ -1384,7 +1388,7 @@ test("RC13 generic graph fixture validates lane layout, fan-in ports, and proven
       { id: "s6", label: "Sixth source", copy: "Negative control", chips: ["Constrains"], relationIds: ["r7"], relationType: "constrains" },
     ])
     const sourceRects = provenance.sources.map((source: any) => source.rect)
-    const provenanceChipCollision = provenance.sources.flatMap((source: any) => source.chipsLayout).filter((chip: any) => sourceRects.some((source: Rect) => Math.abs(chip.x - source.x) < source.width / 2 + 4 && Math.abs(chip.y - source.y) < source.height / 2 + 4)).length
+    const provenanceChipCollision = provenance.sources.map((source: any) => source.labelGroup).filter((group: any) => sourceRects.some((source: Rect) => Math.abs(group.x - source.x) < source.width / 2 + 4 && Math.abs(group.y - source.y) < source.height / 2 + 4)).length
     const provenanceFloatingArrowhead = provenance.sources.filter((source: any) => Math.abs(source.targetPort.x - (provenance.target.x - provenance.target.width / 2)) > 1 || source.targetPort.y < provenance.target.y - provenance.target.height / 2 || source.targetPort.y > provenance.target.y + provenance.target.height / 2).length
     return {
       nodeOverlap,
@@ -1477,4 +1481,166 @@ test("RC14 responsive coordinate space keeps Lineage endpoints and Architecture 
   }
   expect(genericEndpointErrorMax).toBeLessThanOrEqual(3)
   expect(genericPortCollapseCount).toBe(0)
+})
+
+async function rc15RouteGrammarMetrics(page: Page) {
+  await waitForProjectionGeometrySettled(page)
+  return page.evaluate(() => {
+    const routes = [...document.querySelectorAll<SVGGElement>(".architecture-map-edge")].map((group) => {
+      const path = group.querySelector<SVGPathElement>("path")
+      const d = path?.getAttribute("d") || ""
+      return {
+        id: group.dataset.relationId || "",
+        grammar: group.dataset.routeGrammar || "",
+        bendCount: Number(group.dataset.routeBendCount || "0"),
+        hasCubic: d.includes(" C "),
+        hasRoundedCorner: d.includes(" Q "),
+      }
+    })
+    return {
+      edgeCount: routes.length,
+      softCubicCount: routes.filter((route) => route.grammar === "soft-cubic" && route.hasCubic).length,
+      roundedOrthogonalCount: routes.filter((route) => route.grammar === "rounded-orthogonal" && route.hasRoundedCorner).length,
+      rawDominantOrthogonalCount: routes.filter((route) => route.grammar === "rounded-orthogonal" && route.bendCount > 0 && !route.hasRoundedCorner).length,
+      excessiveDetourCount: routes.filter((route) => route.bendCount > 4).length,
+      excessiveRouteIds: routes.filter((route) => route.bendCount > 4).map((route) => `${route.id}:${route.bendCount}:${route.grammar}`),
+    }
+  })
+}
+
+async function inspectNonArchitectureInspectorIa(page: Page) {
+  return page.evaluate(() => {
+    const inspector = document.querySelector<HTMLElement>('[data-testid="architecture-reference-panel"]')
+    const search = document.querySelector<HTMLElement>(".architecture-search-row")
+    const primary = document.querySelector<HTMLElement>('[data-testid="claim-inspector"], [data-testid="method-inspector"]')
+    const primarySection = primary?.closest("section") as HTMLElement | null
+    const tiny = [...document.querySelectorAll<HTMLElement>("[data-testid='architecture-reference-panel'] section, [data-testid='architecture-reference-panel'] div")].filter((element) => {
+      const rect = element.getBoundingClientRect()
+      return rect.height >= 10 && rect.height <= 30 && element.scrollHeight > element.clientHeight + 2
+    })
+    const nested = [...document.querySelectorAll<HTMLElement>("[data-testid='architecture-reference-panel'] *")].filter((element) => {
+      if (element === inspector) return false
+      const style = window.getComputedStyle(element)
+      return /(auto|scroll)/.test(style.overflowY) && element.scrollHeight > element.clientHeight + 2 && element.getBoundingClientRect().height > 0
+    })
+    const searchRect = search?.getBoundingClientRect()
+    const primaryRect = primarySection?.getBoundingClientRect() || primary?.getBoundingClientRect()
+    return {
+      tinySectionCount: tiny.length,
+      nestedVerticalScrollbarCount: nested.length,
+      primaryAfterSearchGapPx: searchRect && primaryRect ? Math.round(primaryRect.top - searchRect.bottom) : Infinity,
+      primaryFirstScreenVisible: Boolean(primaryRect && primaryRect.top < window.innerHeight && primaryRect.bottom > 0),
+      duplicateMiniCanvasCount: document.querySelectorAll(".research-view-canvas").length,
+    }
+  })
+}
+
+async function renderGenericRouteFixture(page: Page) {
+  await page.goto("/")
+  const data = await page.evaluate(async () => {
+    const presentation = (await import("/src/architecture/graphPresentation.ts")) as any
+    const nodes = [
+      { id: "source", x: 96, y: 80, width: 120, height: 72 },
+      { id: "mid", x: 360, y: 220, width: 138, height: 76 },
+      { id: "target", x: 690, y: 80, width: 134, height: 72 },
+      { id: "obstacle", x: 360, y: 300, width: 170, height: 86 },
+      { id: "target-lower", x: 690, y: 300, width: 142, height: 72 },
+    ]
+    const rect = (id: string) => nodes.find((node) => node.id === id)
+    const simple = presentation.routeBoundaryEdge(rect("source"), rect("target"), { obstacles: nodes })
+    const obstacle = presentation.routeBoundaryEdge(rect("source"), rect("target-lower"), { obstacles: nodes })
+    return { simple, obstacle, nodes }
+  })
+  await page.setContent(`<!doctype html><html><body><svg viewBox="0 0 820 460">
+    <path d="${data.simple.path}" data-route-grammar="${data.simple.grammar}" data-route-bend-count="${data.simple.bendCount}" />
+    <path d="${data.obstacle.path}" data-route-grammar="${data.obstacle.grammar}" data-route-bend-count="${data.obstacle.bendCount}" />
+    </svg></body></html>`)
+  const metrics = await page.evaluate(() => {
+    const paths = [...document.querySelectorAll<SVGPathElement>("path")].map((path) => ({
+      grammar: path.dataset.routeGrammar || "",
+      bendCount: Number(path.dataset.routeBendCount || "0"),
+      d: path.getAttribute("d") || "",
+    }))
+    return {
+      simpleSoft: paths.some((path) => path.grammar === "soft-cubic" && path.d.includes(" C ")),
+      obstacleRounded: paths.some((path) => path.grammar === "rounded-orthogonal" && path.d.includes(" Q ")),
+      rawDominantOrthogonalCount: paths.filter((path) => path.grammar === "rounded-orthogonal" && path.bendCount > 0 && !path.d.includes(" Q ")).length,
+    }
+  })
+  expect(metrics.simpleSoft).toBe(true)
+  expect(metrics.obstacleRounded).toBe(true)
+  expect(metrics.rawDominantOrthogonalCount).toBe(0)
+}
+
+test("RC15 canonical scientific graph visual system validates route grammar, label groups, Evidence, and inspector IA", async ({ page }) => {
+  await fs.mkdir(screenshotDir, { recursive: true })
+  await page.setViewportSize({ width: 1366, height: 768 })
+  if ((await page.locator("html").getAttribute("data-theme")) !== "light") await page.getByTestId("topbar-toggle-theme").click()
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light")
+  await expect(page.getByText("2.0.0-rc.15")).toBeVisible()
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-view", "view:architecture")
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-model", "cat-trace-frozen-v2")
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-detail-level", "overview")
+
+  await page.getByTestId("symbol-betaU_gh").click()
+  await page.getByTestId("enable-trace").click()
+  await page.getByTestId("trace-mode").selectOption("recursive")
+  await page.getByTestId("trace-direction").selectOption("both")
+  let routes = await rc15RouteGrammarMetrics(page)
+  expect(routes.edgeCount).toBeGreaterThan(0)
+  expect(routes.softCubicCount).toBeGreaterThan(0)
+  expect(routes.rawDominantOrthogonalCount).toBe(0)
+  expect(routes.excessiveDetourCount).toBe(0)
+  await assertNoNodeOverlap(page, 8)
+  await assertNoEdgeLabelNodeCollision(page)
+  await page.screenshot({ path: path.join(screenshotDir, "rc15-architecture-trace-light-1366.png"), fullPage: false })
+
+  await page.setViewportSize({ width: 1536, height: 864 })
+  await page.getByTestId("detail-full-model").click()
+  routes = await rc15RouteGrammarMetrics(page)
+  expect(routes.rawDominantOrthogonalCount).toBe(0)
+  expect(routes.excessiveDetourCount).toBe(0)
+  await assertNoNodeOverlap(page, 8)
+  await page.screenshot({ path: path.join(screenshotDir, "rc15-architecture-full-1536.png"), fullPage: false })
+
+  await page.getByTestId("detail-overview").click()
+  await page.getByTestId("model-original-trace").click()
+  routes = await rc15RouteGrammarMetrics(page)
+  expect(routes.rawDominantOrthogonalCount).toBe(0)
+  expect(routes.excessiveDetourCount).toBe(0)
+  await page.screenshot({ path: path.join(screenshotDir, "rc15-original-trace-1536.png"), fullPage: false })
+
+  await page.getByTestId("model-cat-trace-frozen-v2").click()
+  await page.getByTestId("view-lineage").click()
+  await assertLineagePresentationGeometry(page)
+  await expect(page.locator("[data-lineage-label-group='true']")).toHaveCount(4)
+  const groups = await page.locator("[data-lineage-label-group='true']").evaluateAll((elements) => elements.map((element) => ({ sourceId: element.getAttribute("data-source-id"), labelCount: element.getAttribute("data-label-count"), text: element.textContent || "" })))
+  expect(groups.find((group) => group.sourceId === "entity:lineage:trace")).toMatchObject({ labelCount: "2" })
+  expect(groups.some((group) => group.sourceId === "entity:lineage:trace" && group.text.includes("Extends") && group.text.includes("Preserves"))).toBe(true)
+  await page.screenshot({ path: path.join(screenshotDir, "rc15-lineage-groups-1536.png"), fullPage: false })
+
+  await page.getByTestId("view-evidence").click()
+  routes = await rc15RouteGrammarMetrics(page)
+  expect(routes.rawDominantOrthogonalCount).toBe(0)
+  expect(routes.excessiveDetourCount).toBe(0)
+  await assertNoNodeOverlap(page, 8)
+  await assertNoEdgeLabelNodeCollision(page)
+  const inspector = await inspectNonArchitectureInspectorIa(page)
+  expect(inspector.duplicateMiniCanvasCount).toBe(0)
+  expect(inspector.tinySectionCount).toBe(0)
+  expect(inspector.nestedVerticalScrollbarCount).toBe(0)
+  expect(inspector.primaryAfterSearchGapPx).toBeLessThanOrEqual(20)
+  expect(inspector.primaryFirstScreenVisible).toBe(true)
+  await page.screenshot({ path: path.join(screenshotDir, "rc15-evidence-inspector-1536.png"), fullPage: false })
+
+  await renderGenericRouteFixture(page)
+  for (const sourceCount of [3, 4, 6] as const) {
+    await page.setViewportSize({ width: 1160, height: 740 })
+    await renderGenericProvenanceFixture(page, sourceCount, 920)
+    const metrics = await lineageRoutingMetrics(page)
+    expect(metrics.connectorCount).toBe(sourceCount)
+    expect(metrics.chipPathAssociation).toBe(true)
+    expect(metrics.portCollapseCount).toBe(0)
+    await expect(page.locator("[data-lineage-label-group='true']")).toHaveCount(sourceCount)
+  }
 })

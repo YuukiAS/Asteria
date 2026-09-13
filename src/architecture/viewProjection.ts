@@ -23,6 +23,9 @@ export type ProjectionLayoutEdge = {
   sourceY: number
   targetX: number
   targetY: number
+  grammar: string
+  bendCount: number
+  routeScore: number
 }
 
 export type ProjectionLayout = {
@@ -345,7 +348,21 @@ export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: st
       obstacles: nodeRects,
     })
     const labelOffset = pairIndex * 10
-    return [{ relation, path: routed.path, labelX: routed.labelX, labelY: routed.labelY + labelOffset, sourceX: routed.sourcePort.x, sourceY: routed.sourcePort.y, targetX: routed.targetPort.x, targetY: routed.targetPort.y }]
+    return [
+      {
+        relation,
+        path: routed.path,
+        labelX: routed.labelX,
+        labelY: routed.labelY + labelOffset,
+        sourceX: routed.sourcePort.x,
+        sourceY: routed.sourcePort.y,
+        targetX: routed.targetPort.x,
+        targetY: routed.targetPort.y,
+        grammar: routed.grammar,
+        bendCount: routed.bendCount,
+        routeScore: routed.routeScore,
+      },
+    ]
   })
 
   return {

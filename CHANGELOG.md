@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.0-rc.15 - Scientific Graph Visual System
+
+- Split graph routing into geometry, scored logical route candidates, and scientific route rendering so clear relations use restrained S-shaped cubic curves while obstacle routes render as rounded orthogonal paths.
+- Unified graph presentation tokens for Architecture, Lineage, and Evidence connector weights, arrow scale, route radius, and relation-label capsules.
+- Reworked Lineage so each visual connector owns one path-derived relation-label group, with TRACE `Extends` and `Preserves` grouped together.
+- Removed the duplicate non-Architecture mini canvas from the right inspector so Search flows directly into the primary Method/Claim Inspector under the single-scroll principle.
+- Added RC.15 focused validation and browser coverage for route grammar, generic fixtures, Lineage label grouping, Evidence routing, and inspector vertical IA.
+
 ## 2.0.0-rc.14 - Responsive Coordinate Space
 
 - Unified Lineage provenance rendering around container-driven CSS-pixel geometry so SVG connectors, source/target cards, and relation chips share the same measured coordinate space through viewport resize.

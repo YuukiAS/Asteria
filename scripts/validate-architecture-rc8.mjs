@@ -17,14 +17,17 @@ try {
   const packageJson = JSON.parse(await read("package.json"))
   const appSource = await read("src/app/App.tsx")
   const styleSource = await read("src/styles/index.css")
+  const mutedTokenMatch = styleSource.match(/--graph-edge-architecture-muted:\s*([0-9.]+)px;/)
+  const mutedTokenWidth = mutedTokenMatch ? Number.parseFloat(mutedTokenMatch[1]) : 0
 
-  assert(packageJson.version === "2.0.0-rc.14", "package.json must declare 2.0.0-rc.14.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.14"'), "App shell must display 2.0.0-rc.14.")
+  assert(packageJson.version === "2.0.0-rc.15", "package.json must declare 2.0.0-rc.15.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.15"'), "App shell must display 2.0.0-rc.15.")
 
   assert(
     styleSource.includes('[data-theme="light"] .architecture-map-edge-muted {') &&
       styleSource.includes("opacity: 0.88") &&
-      styleSource.includes("stroke-width: 1.2px"),
+      styleSource.includes("stroke-width: var(--graph-edge-architecture-muted)") &&
+      mutedTokenWidth >= 1.08,
     "Light trace muted relation context must have a dedicated readable minimum style.",
   )
   assert(
@@ -54,7 +57,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.14",
+          version: "2.0.0-rc.15",
           lightTraceContextReadability: "dedicated-css",
           activeTraceHierarchy: "overlap-protected",
           darkThemeUnchanged: true,

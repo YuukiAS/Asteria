@@ -24,6 +24,20 @@
   --edge-label-text: #4b5563;
   --minimap-node: #dbeafe;
   --minimap-mask: rgba(248, 250, 252, 0.72);
+  --graph-edge-architecture-base: 1.32px;
+  --graph-edge-architecture-active: 1.86px;
+  --graph-edge-architecture-muted: 1.12px;
+  --graph-edge-lineage-base: 1.4px;
+  --graph-edge-lineage-active: 1.78px;
+  --graph-edge-evidence-base: 1.14px;
+  --graph-edge-evidence-active: 1.62px;
+  --graph-arrow-size: 7px;
+  --graph-route-corner-radius: 12px;
+  --graph-relation-label-offset: 10px;
+  --graph-relation-label-radius: 7px;
+  --graph-relation-label-bg: rgb(var(--color-panel) / 0.96);
+  --graph-relation-label-border: rgb(var(--color-border) / 0.92);
+  --graph-relation-label-shadow: 0 1px 5px rgb(15 23 42 / 0.1);
 }
 
 [data-theme="dark"] {
@@ -47,6 +61,9 @@
   --edge-label-text: #cbd5e1;
   --minimap-node: #1d4ed8;
   --minimap-mask: rgba(15, 23, 42, 0.72);
+  --graph-relation-label-bg: rgb(var(--color-panel) / 0.94);
+  --graph-relation-label-border: rgb(var(--color-strong-border) / 0.82);
+  --graph-relation-label-shadow: 0 1px 8px rgb(2 6 23 / 0.26);
   color-scheme: dark;
 }
 
@@ -681,7 +698,7 @@ body {
     fill: none;
     stroke: rgb(14 165 233);
     stroke-linecap: round;
-    stroke-width: 1.5px;
+    stroke-width: var(--graph-edge-lineage-base);
     vector-effect: non-scaling-stroke;
     opacity: 0.76;
     transition:
@@ -696,7 +713,7 @@ body {
   }
 
   .lineage-presentation-connector-active {
-    stroke-width: 1.85px;
+    stroke-width: var(--graph-edge-lineage-active);
     opacity: 0.96;
   }
 
@@ -747,10 +764,22 @@ body {
     @apply pointer-events-none absolute inset-0 z-30;
   }
 
-  .lineage-relation-chip {
-    @apply absolute rounded-full border border-border bg-panel/95 px-2 py-1 text-[10px] font-semibold leading-none text-secondary shadow-sm;
+  .lineage-relation-label-group {
+    @apply absolute inline-flex items-center gap-1 border px-1.5 py-1 text-[10px] font-semibold leading-none text-secondary;
     transform: translate(-50%, -50%);
+    border-color: var(--graph-relation-label-border);
+    border-radius: var(--graph-relation-label-radius);
+    background: var(--graph-relation-label-bg);
+    box-shadow: var(--graph-relation-label-shadow);
     white-space: nowrap;
+  }
+
+  .lineage-relation-chip-part {
+    @apply inline-flex items-center gap-1 rounded border border-border/80 bg-app/70 px-1.5 py-0.5;
+  }
+
+  .lineage-relation-divider {
+    @apply text-muted;
   }
 
   .research-view-node {
@@ -1051,6 +1080,17 @@ body {
     text-align: left;
   }
 
+  .architecture-workspace-research-canvas .architecture-map-edge path {
+    stroke-width: var(--graph-edge-evidence-base);
+    opacity: 0.68;
+  }
+
+  .architecture-workspace-research-canvas .architecture-map-edge-trace path,
+  .architecture-workspace-research-canvas .architecture-map-edge-selected path {
+    stroke-width: var(--graph-edge-evidence-active);
+    opacity: 0.88;
+  }
+
   .architecture-map-node-claim {
     @apply border-sky-400/70;
   }
@@ -1080,7 +1120,7 @@ body {
   .architecture-map-edge path {
     fill: none;
     stroke: rgb(var(--color-accent));
-    stroke-width: 1.35px;
+    stroke-width: var(--graph-edge-architecture-base);
     stroke-linecap: round;
     stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
@@ -1133,7 +1173,7 @@ body {
 
   .architecture-map-edge-trace path,
   .architecture-map-edge-selected path {
-    stroke-width: 1.9px;
+    stroke-width: var(--graph-edge-architecture-active);
     opacity: 0.96;
     filter: drop-shadow(0 0 1px rgb(var(--color-accent) / 0.32));
   }
@@ -1160,7 +1200,7 @@ body {
 
   .architecture-map-edge-muted path {
     opacity: 0.62;
-    stroke-width: 1.15px;
+    stroke-width: var(--graph-edge-architecture-muted);
   }
 
   [data-theme="light"] .architecture-map-edge-muted {
@@ -1169,7 +1209,7 @@ body {
 
   [data-theme="light"] .architecture-map-edge-muted path {
     opacity: 0.82;
-    stroke-width: 1.2px;
+    stroke-width: var(--graph-edge-architecture-muted);
   }
 
   [data-theme="light"] .architecture-map-edge-muted.architecture-map-edge-selected,
@@ -1180,7 +1220,7 @@ body {
   [data-theme="light"] .architecture-map-edge-muted.architecture-map-edge-selected path,
   [data-theme="light"] .architecture-map-edge-muted.architecture-map-edge-trace path {
     opacity: 0.98;
-    stroke-width: 1.9px;
+    stroke-width: var(--graph-edge-architecture-active);
   }
 
   [data-theme="light"] .architecture-map-edge-muted.architecture-map-edge-selected text,

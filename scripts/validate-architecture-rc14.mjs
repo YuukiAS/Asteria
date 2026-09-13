@@ -40,8 +40,8 @@ try {
   const styleSource = await read("src/styles/index.css")
   const browserSource = await read("tests/browser/asteria-v2-rc.spec.ts")
 
-  assert(packageJson.version === "2.0.0-rc.14", "package.json must declare 2.0.0-rc.14.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.14"'), "App shell must display 2.0.0-rc.14.")
+  assert(packageJson.version === "2.0.0-rc.15", "package.json must declare 2.0.0-rc.15.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.15"'), "App shell must display 2.0.0-rc.15.")
   assert(packageJson.scripts["test:architecture-rc14"] === 'node scripts/validate-architecture-rc14.mjs && playwright test --grep "RC14"', "package.json must expose RC.14 focused validation.")
   assert(packageJson.scripts["test:regression"].includes("test:architecture-rc14"), "Cumulative regression must include RC.14.")
 
@@ -70,7 +70,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.14",
+          version: "2.0.0-rc.15",
           coordinateSpaceStrategy: "CONTAINER_DRIVEN",
           lineageRenderedEndpointRegression: true,
           architectureSafeBoundsRegression: true,
