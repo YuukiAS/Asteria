@@ -98,6 +98,41 @@ docs/operations/development/DEVELOPER_VISUAL_SELF_QA_CONTRACT.md
 
 目标是先在开发阶段消灭明显问题，减少用户启动 GPT Work 和人工验收的次数。
 
+## Example 是诊断 fixture，不是 hardcode 目标
+
+当用户、ChatGPT、GPT Work 或 browser regression 用 CAT-TRACE、Original TRACE、Lineage、Evidence 或其它 fixture 暴露 UI/graph 问题时，默认把该 fixture 当作**诊断样例**，而不是只把该样例修到截图好看。
+
+必须先判断问题属于哪一层通用机制，例如：
+
+- graph layout / lane packing；
+- card sizing / text measurement；
+- edge routing / boundary ports / arrowheads；
+- selected / active / muted visual hierarchy；
+- relation-chip placement；
+- math rendering container；
+- responsive scale / fit / virtual canvas；
+- copy presentation policy。
+
+然后优先修底层通用机制。
+
+禁止为了单个 fixture 通过验收而新增大量按 entity id / label / dataset name 判断的视觉分支、单点坐标补丁或只针对一张 screenshot 的 magic numbers，除非该位置本身就是明确、长期冻结的产品设计规范。
+
+如果确实需要 model-specific presentation hints：
+
+1. hints 必须通过通用 presentation metadata / layout interface 表达；
+2. renderer/layout engine 必须仍然能够处理其它 model/fixture；
+3. 至少增加一个不同结构的 fixture/stress case 验证底层机制没有只对当前 example 生效。
+
+视觉任务 result 必须明确写：
+
+```text
+GENERIC_FIX = PASS | FAIL
+EXAMPLE_SPECIFIC_HARDCODE_ADDED = YES | NO
+GENERIC_REGRESSION_FIXTURE = <path/test or NONE>
+```
+
+若核心问题只被 example-specific patch 掩盖，不能报告 COMPLETE。
+
 ## 失败处理
 
 如果任务无法安全完成，Codex 应停止扩大范围，并在 result 中说明：
