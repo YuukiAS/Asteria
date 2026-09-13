@@ -1,14 +1,15 @@
 # Asteria 2.0 GPT Work Black-box Audit
 
-日期：2026-09-12  
-当前固定验收入口：`https://asteria.httpwwwcardiacnexus-ukb.com/`
-当前目标版本：`2.0.0-rc.6`
+日期：2026-09-13  
+固定验收入口：`https://asteria.httpwwwcardiacnexus-ukb.com/`
+当前产品版本：`2.0.0-rc.6`  
+下一目标版本：`2.0.0-rc.7`
 
 ## 目的
 
-Asteria 在 stable 前必须先经过独立 GPT Work 黑箱验收，再进入用户人工验收。自动 regression / Playwright 只能证明实现没有明显技术回归，不能替代真实产品级验收。
+Asteria 在 stable 前必须先经过独立 GPT Work 黑箱验收，再进入用户人工验收。自动 regression / Playwright 不能替代真实产品级验收。
 
-多个互相独立的 GPT Work reviewer 从不同角度直接操作固定公网产品。本 campaign 不修改产品，不读实现源码，不读数据库，不调用内部 API，不使用 DevTools/console/network panel，不根据代码猜 bug。所有结论必须来自普通用户在页面上实际看到、点击、切换、输入和导出的结果。
+所有结论必须来自普通用户通过真实网站 UI 实际看到、点击、切换、输入和导出的结果。
 
 ## Canonical Browser Contract
 
@@ -18,39 +19,29 @@ Asteria 在 stable 前必须先经过独立 GPT Work 黑箱验收，再进入用
 docs/operations/blackbox-audit/UI_BLACKBOX_BROWSER_CONTRACT.md
 ```
 
-最终发给任何 GPT Work 的 prompt 必须**逐字 inline 该文件当前全文**。Work 不需要、也不得访问 repo 来读取 Browser contract。只给文件路径、摘要或“请遵守该文件”不合规。
-
-核心原则：
+最终发给任何 GPT Work 的 prompt 必须逐字 inline 当前全文。核心规则：
 
 ```text
 可以自动操作页面；
 不能绕过页面。
 ```
 
-首选 ChatGPT Work built-in / in-app Browser；如果它没有稳定接口、无法附着或反复控制失败，允许 Playwright / playwright-core / Puppeteer / Chrome / Edge / Chromium / Browser helper / 临时 browser profile / Node/Python helper 等真实浏览器 UI fallback。fallback 本身不算 contamination。
+## Reviewer scopes
 
-只有 in-app Browser 与合理真实-browser fallback 都无法继续真实 consumer UI 时，才允许 `BLOCKED_BY_BROWSER_ENVIRONMENT`。
-
-## 并行 reviewer
-
-- `W01` Visual / scientific-product design：版式、数学可读性、graph visual grammar、accepted concept fidelity。
-- `W02` Statistical semantics：Original TRACE / CAT-TRACE 的可见科学语义、符号、关系、模型切换与 Evidence 边界。
-- `W03` Interaction / state coherence：model/view/trace/layer/search/export/theme/save-restore 的状态一致性。
-- `W04` First-time researcher UX：不看说明书时是否能理解产品、导航、术语和核心价值。
-- `W05` Responsive / accessibility：1536×864、1366×768、zoom/keyboard/scroll/contrast 等可用性。
-- `W06` Release red-team：通过正常用户操作故意寻找 stale state、空白、错配、失效按钮、重复切换后的异常，并给 release gate 判断。
-
-六个 reviewer 应彼此独立运行，避免前一个 reviewer 的结论污染后一个 reviewer。
+- `W01` Visual / scientific-product design：布局、数学可读性、graph visual grammar、theme、accepted concept fidelity。
+- `W02` Statistical semantics：Original TRACE / CAT-TRACE scientific truth、symbol/relations、Evidence truth boundary。
+- `W03` Interaction / state coherence：model/view/trace/layer/search/export/theme/save-restore state truth。
+- `W04` First-time researcher UX：首次理解、信息层级、researcher-facing language。
+- `W05` Responsive / accessibility：1366/1536、keyboard/focus/contrast/scroll/hit target。
+- `W06` Release red-team：正常用户 stress、恢复能力、stale/double-active/blank/失效 disclosure 等。
 
 ## Acceptance Gate：先 Work，后人工
-
-Asteria 的 release/RC 验收顺序固定为：
 
 ```text
 Codex implementation / repair
   -> automated regression + browser QA
   -> refresh fixed public URL
-  -> GPT Work black-box campaign
+  -> GPT Work black-box audit
   -> ChatGPT consolidated triage
   -> 如有 FAIL/BLOCKED 或 unresolved must-fix P2，继续 repair
   -> 所有 designated reviewer PASS
@@ -59,101 +50,106 @@ Codex implementation / repair
   -> stable release
 ```
 
-**在 GPT Work gate 通过前，不再要求用户人工打开页面验收。** 先让独立 Work 找出明显问题，避免用户重复浪费时间。
+GPT Work gate 通过前，不要求用户人工打开页面。
 
-“All reviewer PASS” 是硬 gate。PASS 可以带少量 P2/P3，但 consolidated triage 必须把每个 P2 明确归类为 `must-fix` 或 `accepted/deferred`；只要还有 unresolved must-fix P2，就不能进入人工验收。
+## Dynamic reviewer selection：问题变少后缩减 Work 数量
 
-若 repair 广泛影响 math/layout/theme/state/search/inspector/accessibility 等多个 surface，应重跑完整 W01–W06 campaign。只有窄修复才允许只重跑受影响 reviewer + W06。
+不要机械地每个 RC 都跑 W01–W06 六轮。
 
-## 当前状态：RC.6 已完成，进入 full re-audit
+### Full campaign
 
-RC.4 初轮黑箱汇总：
+只有以下情况使用完整 W01–W06：
 
-```text
-docs/operations/blackbox-audit/reports/RC4_CONSOLIDATED_REPORT_2026-09-12.md
-```
+- broad architecture / ontology / scientific semantics 改动；
+- 同时修改 math/layout/theme/state/search/inspector/accessibility 等多个 surface；
+- 上一轮没有可靠 PASS baseline；
+- consolidated triage 明确要求重建完整 baseline。
 
-RC.5 re-audit 汇总：
+### Targeted campaign
 
-```text
-docs/operations/blackbox-audit/reports/RC5_REAUDIT_CONSOLIDATED_REPORT_2026-09-12.md
-```
+如果 repair 范围窄，ChatGPT 必须只选择**受影响 reviewer + W06**。
 
-RC.6 repair task：
-
-```text
-prompts/tasks/asteria_v2_rc6_blackbox_repair_task.md
-```
-
-RC.6 review：
+推荐映射：
 
 ```text
-prompts/tasks/asteria_v2_rc6_blackbox_repair_review.md
+visual / layout / theme / graph grammar           -> W01
+scientific semantics / ontology / evidence truth -> W02
+trace / state / session / search coherence       -> W03
+learnability / copy / first-use IA                -> W04
+responsive / keyboard / accessibility            -> W05
+any release repair                                -> W06
 ```
 
-当前 review 状态：`GO -> GPT_WORK_BLACKBOX_REAUDIT`。
+### Carry-forward PASS
 
-RC.6 已完成并刷新固定公网 URL。当前产品主要新增/修复包括：
+上一 RC 的 reviewer PASS 可以 carry forward 到下一 RC，但必须同时满足：
 
-- Architecture `Overview | Full model` progressive disclosure；
-- selection 与 active trace 解耦，默认/Reset 后 trace OFF；
-- recursive trace root-relative direction semantics；
-- `c(f)=empty -> 𝒰` canonical relation；
-- indexed quantity metadata；
-- Evidence Pending / object-type inspector；
-- Semantic Diff 提升与 Advanced/debug 分离；
-- light/dense readability 与 researcher-facing wording。
+1. 本轮 repair 没有触碰其核心 scope；
+2. consolidated report 明确记录 carry-forward；
+3. Codex result 返回 touched surfaces / `REVIEWER_SCOPE_EXPANDED`；
+4. 如果实现实际越界，立即把对应 reviewer 加回 re-audit。
 
-现在必须重新跑完整 W01–W06，重新建立 fresh black-box baseline。
+这样既保持 gate 严格，又避免问题已经收敛后继续浪费 6 个 Work。
 
-具体计划：
+## 当前状态：RC.6 re-audit -> RC.7 targeted repair
+
+RC.6 re-audit 汇总：
 
 ```text
-docs/operations/blackbox-audit/RC6_GPT_WORK_REAUDIT_PLAN_2026-09-12.md
+docs/operations/blackbox-audit/reports/RC6_REAUDIT_CONSOLIDATED_REPORT_2026-09-13.md
 ```
 
-Campaign index：
+结论：
+
+- W01 PASS
+- W02 PASS
+- W03 PASS
+- W04 PASS
+- W05 FAIL
+- W06 FAIL
+
+剩余 blocker 已收敛到：
+
+- skip-link keyboard reliability；
+- 1366 light trace readability；
+- Advanced / Export & validation disclosure；
+- compact topbar accessible names / hit target；
+- Full model local reading controls；
+- 少量 label/value spacing 与 active relation-label polish。
+
+下一张唯一 repair task：
 
 ```text
-docs/operations/blackbox-audit/ASTERIA_RC6_GPT_WORK_CAMPAIGN.md
+prompts/tasks/asteria_v2_rc7_release_polish_task.md
 ```
 
-## 当前 Ready-to-Paste Work prompts
-
-RC.6 的六份 fresh prompt 位于：
+RC.7 完成后 targeted fresh re-audit：
 
 ```text
-docs/operations/blackbox-audit/prompts/rc6/W01_VISUAL_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/rc6/W02_SEMANTICS_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/rc6/W03_STATE_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/rc6/W04_FIRST_TIME_UX_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/rc6/W05_RESPONSIVE_ACCESSIBILITY_WORK_PROMPT.md
-docs/operations/blackbox-audit/prompts/rc6/W06_RELEASE_REDTEAM_WORK_PROMPT.md
+W01 + W05 + W06
 ```
 
-每份都 expected version = `2.0.0-rc.6`，并完整 inline 当前 Browser contract。
+Carry-forward：
 
-旧 `docs/operations/blackbox-audit/prompts/` 根目录下的 W01–W06 属于 RC.5 历史 baseline；不要再用于 RC.6。
+```text
+W02 PASS from RC.6
+W03 PASS from RC.6
+W04 PASS from RC.6
+```
 
-## 使用方式
+如果 RC.7 result 标记 `REVIEWER_SCOPE_EXPANDED = YES`，ChatGPT 根据 touched surfaces 把对应 reviewer 加回。
 
-1. 每个 GPT Work 新开独立任务。
-2. 直接复制对应 RC.6 ready-to-paste prompt 全文。
-3. 不需要把 repo source 提供给 Work；Work 不应读取 Asteria repo。
-4. Work 最终必须按 `AUDIT_RESULT_CONTRACT.md` 返回 `BROWSER_MODE`、`BLACK_BOX_CONTEXT_CONTAMINATED`、`BROWSER_BLOCKER`、P0–P3 与 release recommendation。
-5. 六份报告完成后一起交回 ChatGPT 做 consolidated triage；不要让某一个 Work 自行修改 Asteria。
+## 历史审计
 
-## Reference 边界
-
-视觉 reviewer 可以把 `docs/design/accepted-concepts/` 下 A/B/C/D/E1/E2 作为设计 reference，但 concept image 不是数学、citation 或 result-status 真值。
-
-科学 reviewer 的 expected invariants 必须直接 inline 到 W02 prompt；不要让 Work 为获取 expected behavior 去读取 repo。
+- RC.4：`reports/RC4_CONSOLIDATED_REPORT_2026-09-12.md`
+- RC.5：`reports/RC5_REAUDIT_CONSOLIDATED_REPORT_2026-09-12.md`
+- RC.6：`reports/RC6_REAUDIT_CONSOLIDATED_REPORT_2026-09-13.md`
 
 ## Severity
 
 - `P0`：数据损坏、安全/隐私严重问题、产品完全不可用。
-- `P1`：核心 Architecture/Lineage/Evidence 流程不可完成、科学含义明显错误、模型切换或状态真值错误、严重可读性问题使核心模型无法理解。
-- `P2`：重要但有 workaround 的交互、视觉、术语、布局、状态反馈问题。
-- `P3`：不阻塞使用的 polish / consistency / minor accessibility 问题。
+- `P1`：核心流程/科学真值/状态真值/关键可读性失败。
+- `P2`：重要、有 workaround，但明显降低科研工具价值。
+- `P3`：不阻塞使用的 polish。
 
-当前 gate：**现在运行 RC.6 W01–W06；全部 PASS 且 unresolved must-fix P2=0 后，才进入用户人工最终验收。**
+当前 gate：**先完成 RC.7；随后只跑 W01/W05/W06。三者 PASS、carry-forward 仍有效且 unresolved must-fix P2=0 后，才进入用户人工最终验收。**
