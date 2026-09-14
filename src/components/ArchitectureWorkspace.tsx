@@ -158,9 +158,8 @@ function useElementSize<T extends HTMLElement>(fallback: PresentationSize) {
 function RelationLabelGroup({ labels, x, y, sourceId }: { labels: readonly string[]; x: number; y: number; sourceId: string }) {
   return (
     <span className="lineage-relation-label-group" style={{ left: `${x}px`, top: `${y}px` }} data-lineage-label-group="true" data-lineage-chip="true" data-source-id={sourceId} data-label-count={labels.length}>
-      {labels.map((label, index) => (
+      {labels.map((label) => (
         <span key={`${sourceId}:${label}`} className="lineage-relation-chip-part">
-          {index > 0 ? <span className="lineage-relation-divider" aria-hidden="true">|</span> : null}
           <span>{label}</span>
         </span>
       ))}
@@ -192,8 +191,8 @@ function LineagePresentation({
     >
       <svg className="lineage-presentation-connectors" viewBox={`0 0 ${provenanceLayout.width} ${provenanceLayout.height}`} aria-hidden="true">
         <defs>
-          <marker id="lineage-presentation-arrow" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="8.2" refY="4.5" orient="auto">
-            <path d="M0,0 L9,4.5 L0,9 z" />
+          <marker id="lineage-presentation-arrow" markerUnits="userSpaceOnUse" markerWidth="7" markerHeight="7" refX="6.2" refY="3.5" orient="auto">
+            <path d="M0.7,0.7 L6.1,3.5 L0.7,6.3" />
           </marker>
         </defs>
         {provenanceLayout.sources.map((card) => (
@@ -427,8 +426,8 @@ export function ArchitectureWorkspace() {
             >
               <svg className="architecture-map-edges" viewBox={`0 0 ${layout.canvas.width} ${layout.canvas.height}`} preserveAspectRatio="none" role="img" aria-label="Projected semantic relations">
                 <defs>
-                  <marker id="architecture-edge-arrow" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" refX="7.25" refY="4" orient="auto">
-                    <path d="M0,0 L8,4 L0,8 z" />
+                  <marker id="architecture-edge-arrow" markerUnits="userSpaceOnUse" markerWidth="7" markerHeight="7" refX="6.2" refY="3.5" orient="auto">
+                    <path d="M0.7,0.7 L6.1,3.5 L0.7,6.3" />
                   </marker>
                 </defs>
                 {layout.edges.map((edge) => (
@@ -469,7 +468,7 @@ export function ArchitectureWorkspace() {
                   >
                     <span className="architecture-map-node-primary" data-node-primary="true">{isArchitecture && symbol ? <RenderedMath latex={symbol.latex} fallback={entity.label} className="architecture-node-math" /> : entity.label}</span>
                     <small>{isArchitecture ? entity.label : entity.role}</small>
-                    {diffStatus ? <em>{diffStatus.replace(/_/g, " ")}</em> : null}
+                    {diffStatus && detailLevel !== "overview" ? <em>{diffStatus.replace(/_/g, " ")}</em> : null}
                   </button>
                 )
               })}
@@ -477,13 +476,15 @@ export function ArchitectureWorkspace() {
           )}
         </div>
 
-        <footer className="architecture-workspace-footer">
-          <div>
-            <Layers3 size={14} />
-            {isArchitecture ? `${detailLevel === "overview" ? "Overview" : "Full model"} / ${traceEnabled ? `${traceMode} ${traceDirection} trace` : "trace off"} / ${focusedLayer === "all" ? "all layers" : focusedLayer}` : isLineage ? "Extends / preserves / borrows / computational inspiration" : "Theory / implementation / datasets / limitation / pending"}
-          </div>
-          <div>{isArchitecture ? `${layout.nodes.length} visible nodes / ${diff.items.length} model changes` : isLineage ? "Lineage relation legend" : "Evidence relation legend"}</div>
-        </footer>
+        {isArchitecture ? (
+          <footer className="architecture-workspace-footer">
+            <div>
+              <Layers3 size={14} />
+              {`${detailLevel === "overview" ? "Overview" : "Full model"} / ${traceEnabled ? `${traceMode} ${traceDirection} trace` : "trace off"} / ${focusedLayer === "all" ? "all layers" : focusedLayer}`}
+            </div>
+            <div>{`${layout.nodes.length} visible nodes / ${diff.items.length} model changes`}</div>
+          </footer>
+        ) : null}
       </section>
     </main>
   )

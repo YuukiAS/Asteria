@@ -9,7 +9,7 @@ import { AppErrorBoundary } from "../components/AppErrorBoundary"
 import { ArchitectureReferencePanel } from "../components/ArchitectureReferencePanel"
 import { ArchitectureWorkspace } from "../components/ArchitectureWorkspace"
 
-const appVersion = "2.0.0-rc.15"
+const appVersion = "2.0.0-rc.16"
 const sidebarWidthKey = "asteria-v2-sidebar-width"
 const sidebarCollapsedKey = "asteria-v2-sidebar-collapsed"
 const minSidebarWidth = 300

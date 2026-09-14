@@ -58,7 +58,7 @@ try {
   })
   await page.goto(publicUrl, { waitUntil: "networkidle", timeout: 30_000 })
   await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
-  await expect(page.getByText("2.0.0-rc.15")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.16")).toBeVisible()
   await expect(page.getByTestId("current-project")).toContainText("CAT-TRACE")
   await expect(page.getByTestId("current-view")).toContainText("Architecture")
   await expect(page.getByTestId("current-model")).toContainText("CAT-TRACE Frozen V2")
@@ -86,7 +86,7 @@ try {
 
   const filteredIssues = consoleIssues.filter((issue) => !issue.includes("Failed to load resource: the server responded with a status of 404"))
   expect(filteredIssues).toEqual([])
-  console.log(JSON.stringify({ status: "public-smoke-pass", publicUrl, observedVersion: "2.0.0-rc.15", viewport: "1366x768", fullEdgeCount }, null, 2))
+  console.log(JSON.stringify({ status: "public-smoke-pass", publicUrl, observedVersion: "2.0.0-rc.16", viewport: "1366x768", fullEdgeCount }, null, 2))
 } finally {
   await browser.close()
 }

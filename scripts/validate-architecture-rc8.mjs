@@ -20,8 +20,8 @@ try {
   const mutedTokenMatch = styleSource.match(/--graph-edge-architecture-muted:\s*([0-9.]+)px;/)
   const mutedTokenWidth = mutedTokenMatch ? Number.parseFloat(mutedTokenMatch[1]) : 0
 
-  assert(packageJson.version === "2.0.0-rc.15", "package.json must declare 2.0.0-rc.15.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.15"'), "App shell must display 2.0.0-rc.15.")
+  assert(packageJson.version === "2.0.0-rc.16", "package.json must declare 2.0.0-rc.16.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.16"'), "App shell must display 2.0.0-rc.16.")
 
   assert(
     styleSource.includes('[data-theme="light"] .architecture-map-edge-muted {') &&
@@ -57,7 +57,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.15",
+          version: "2.0.0-rc.16",
           lightTraceContextReadability: "dedicated-css",
           activeTraceHierarchy: "overlap-protected",
           darkThemeUnchanged: true,

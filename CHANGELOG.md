@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.0-rc.16 - Connector Contact Finish
+
+- Finished the graph connector contact system so Architecture, Evidence, and Lineage routes keep terminal stubs perpendicular to card sides and avoid non-terminal card-border hugging.
+- Added generic route penalties for edge-edge crossings, source/target card clearance, terminal angle, and unnecessary region changes while preserving the canonical TRACE/CAT-TRACE scientific fixtures.
+- Replaced filled SVG triangle arrowheads with a shared open-chevron marker across Architecture and Lineage without increasing selected/trace marker size.
+- Removed stale stable-facing footer/legend placeholders from Lineage and Evidence, and kept Lineage multi-relation labels as adjacent relation capsules without literal separators.
+- Added RC.16 static, browser, public-smoke, and developer screenshot self-QA coverage for connector contact, crossing avoidance, label association, and footer/legend cleanup.
+
 ## 2.0.0-rc.15 - Scientific Graph Visual System
 
 - Split graph routing into geometry, scored logical route candidates, and scientific route rendering so clear relations use restrained S-shaped cubic curves while obstacle routes render as rounded orthogonal paths.

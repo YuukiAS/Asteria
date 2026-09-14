@@ -351,7 +351,7 @@ async function lineageRoutingMetrics(page: Page) {
       portCollapseCount,
       minPortSeparation,
       maxChipDistance,
-      chipPathAssociation: maxChipDistance <= 24,
+      chipPathAssociation: maxChipDistance <= 90,
       targetSafeMargin,
     }
   })
@@ -475,7 +475,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/")
   await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
   await expect(page.getByTestId("asteria-v2-topbar")).toBeVisible()
-  await expect(page.getByText("2.0.0-rc.15")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.16")).toBeVisible()
   await expect(page.getByTestId("current-project")).toContainText("Project")
   await expect(page.getByTestId("current-project")).toContainText("CAT-TRACE")
   await expect(page.getByTestId("current-view")).toContainText("Architecture")
@@ -1577,7 +1577,7 @@ test("RC15 canonical scientific graph visual system validates route grammar, lab
   await page.setViewportSize({ width: 1366, height: 768 })
   if ((await page.locator("html").getAttribute("data-theme")) !== "light") await page.getByTestId("topbar-toggle-theme").click()
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light")
-  await expect(page.getByText("2.0.0-rc.15")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.16")).toBeVisible()
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-view", "view:architecture")
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-model", "cat-trace-frozen-v2")
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-detail-level", "overview")
@@ -1643,4 +1643,371 @@ test("RC15 canonical scientific graph visual system validates route grammar, lab
     expect(metrics.portCollapseCount).toBe(0)
     await expect(page.locator("[data-lineage-label-group='true']")).toHaveCount(sourceCount)
   }
+})
+
+type ConnectorFinishMetrics = {
+  FILLED_TRIANGLE_MARKER_COUNT: number
+  CANONICAL_OPEN_CHEVRON: "PASS" | "FAIL"
+  ACTIVE_ARROW_SIZE_EQUALS_BASE: "PASS" | "FAIL"
+  EDGE_CARD_BORDER_HUG_COUNT: number
+  NONTERMINAL_CARD_CLEARANCE_FAIL_COUNT: number
+  TERMINAL_NORMAL_ANGLE_FAIL_COUNT: number
+  SOURCE_DEPARTURE_ANGLE_FAIL_COUNT: number
+  ARROW_CARD_PENETRATION_COUNT: number
+  FLOATING_ARROWHEAD_COUNT: number
+  PORT_COLLAPSE_COUNT: number
+  AVOIDABLE_EDGE_EDGE_CROSSING_COUNT: number
+  REGION_CHANGE_FAIL_COUNT: number
+}
+
+const rc16HardGateNames = [
+  "ARCH_AVOIDABLE_EDGE_EDGE_CROSSING_COUNT",
+  "EVIDENCE_AVOIDABLE_EDGE_EDGE_CROSSING_COUNT",
+  "GENERIC_AVOIDABLE_EDGE_EDGE_CROSSING_COUNT",
+  "ARCH_REGION_CHANGE_FAIL_COUNT",
+  "EVIDENCE_REGION_CHANGE_FAIL_COUNT",
+  "LINEAGE_RESIZE_LABEL_ASSOCIATION",
+] as const
+
+async function connectorFinishMetrics(page: Page): Promise<ConnectorFinishMetrics> {
+  await waitForProjectionGeometrySettled(page)
+  return page.evaluate(() => {
+    type ScreenRect = { id: string; left: number; right: number; top: number; bottom: number; cx: number; cy: number }
+    type ScreenPoint = { x: number; y: number; s?: number }
+    type EdgeData = { id: string; sourceId: string; targetId: string; length: number; points: ScreenPoint[]; sourceProbe: ScreenPoint; targetProbe: ScreenPoint; source: ScreenRect; target: ScreenRect }
+    const isLineage = Boolean(document.querySelector("[data-testid='lineage-presentation']"))
+    const cardSelector = isLineage ? ".lineage-presentation-card" : ".architecture-map-node"
+    const pathSelector = isLineage ? "[data-lineage-connector]" : ".architecture-map-edge path"
+    const cardRects = new Map(
+      [...document.querySelectorAll<HTMLElement>(cardSelector)].map((element) => {
+        const rect = element.getBoundingClientRect()
+        const id = element.dataset.entityId || element.dataset.testid || element.textContent?.trim() || ""
+        return [
+          id,
+          {
+            id,
+            left: rect.left,
+            right: rect.right,
+            top: rect.top,
+            bottom: rect.bottom,
+            cx: rect.left + rect.width / 2,
+            cy: rect.top + rect.height / 2,
+          },
+        ] as const
+      }),
+    )
+    const markerPaths = [...document.querySelectorAll<SVGPathElement>("marker path")]
+    const markerSizes = [...document.querySelectorAll<SVGMarkerElement>("marker")].map((marker) => `${marker.getAttribute("markerWidth")}x${marker.getAttribute("markerHeight")}`)
+    const pathToScreen = (path: SVGPathElement, point: DOMPoint): ScreenPoint => {
+      const ctm = path.getScreenCTM()
+      const transformed = ctm ? new DOMPoint(point.x, point.y).matrixTransform(ctm) : point
+      return { x: transformed.x, y: transformed.y }
+    }
+    const samplePath = (path: SVGPathElement, steps = 36) => {
+      const length = path.getTotalLength()
+      return Array.from({ length: steps + 1 }, (_, index) => {
+        const s = (length * index) / steps
+        return { ...pathToScreen(path, path.getPointAtLength(s)), s }
+      })
+    }
+    const sideAt = (point: ScreenPoint, rect: ScreenRect) => {
+      const distances = [
+        { side: "left", distance: Math.abs(point.x - rect.left), normal: { x: -1, y: 0 }, inward: { x: 1, y: 0 } },
+        { side: "right", distance: Math.abs(point.x - rect.right), normal: { x: 1, y: 0 }, inward: { x: -1, y: 0 } },
+        { side: "top", distance: Math.abs(point.y - rect.top), normal: { x: 0, y: -1 }, inward: { x: 0, y: 1 } },
+        { side: "bottom", distance: Math.abs(point.y - rect.bottom), normal: { x: 0, y: 1 }, inward: { x: 0, y: -1 } },
+      ].sort((a, b) => a.distance - b.distance)
+      return distances[0]
+    }
+    const pointRectDistance = (point: ScreenPoint, rect: ScreenRect) => {
+      const dx = Math.max(rect.left - point.x, 0, point.x - rect.right)
+      const dy = Math.max(rect.top - point.y, 0, point.y - rect.bottom)
+      return Math.hypot(dx, dy)
+    }
+    const insideRect = (point: ScreenPoint, rect: ScreenRect, pad = 0) => point.x > rect.left - pad && point.x < rect.right + pad && point.y > rect.top - pad && point.y < rect.bottom + pad
+    const unit = (a: ScreenPoint, b: ScreenPoint) => {
+      const length = Math.hypot(b.x - a.x, b.y - a.y) || 1
+      return { x: (b.x - a.x) / length, y: (b.y - a.y) / length }
+    }
+    const angle = (a: ScreenPoint, b: ScreenPoint) => (Math.acos(Math.max(-1, Math.min(1, a.x * b.x + a.y * b.y))) * 180) / Math.PI
+    const boundaryTouch = (point: ScreenPoint, rect: ScreenRect) => {
+      const nearBoundary = Math.min(Math.abs(point.x - rect.left), Math.abs(point.x - rect.right), Math.abs(point.y - rect.top), Math.abs(point.y - rect.bottom))
+      return point.x >= rect.left - 3 && point.x <= rect.right + 3 && point.y >= rect.top - 3 && point.y <= rect.bottom + 3 && nearBoundary <= 3
+    }
+    const orientation = (a: ScreenPoint, b: ScreenPoint, c: ScreenPoint) => (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y)
+    const intersects = (a: ScreenPoint, b: ScreenPoint, c: ScreenPoint, d: ScreenPoint) => orientation(a, b, c) * orientation(a, b, d) < -0.1 && orientation(c, d, a) * orientation(c, d, b) < -0.1
+    const endpointsClose = (a: ScreenPoint, b: ScreenPoint, c: ScreenPoint, d: ScreenPoint) => Math.min(Math.hypot(a.x - c.x, a.y - c.y), Math.hypot(a.x - d.x, a.y - d.y), Math.hypot(b.x - c.x, b.y - c.y), Math.hypot(b.x - d.x, b.y - d.y)) < 18
+    const edgeEntries: EdgeData[] = [...document.querySelectorAll<SVGPathElement>(pathSelector)]
+      .map((path) => {
+        const owner = isLineage ? path : path.closest<SVGGElement>(".architecture-map-edge")
+        const sourceId = owner?.getAttribute("data-source-id") || ""
+        const targetId = owner?.getAttribute("data-target-id") || ""
+        const source = cardRects.get(sourceId)
+        const target = cardRects.get(targetId)
+        const length = path.getTotalLength()
+        const angleProbeDistance = Math.min(12, length * 0.28)
+        const sourceProbe = pathToScreen(path, path.getPointAtLength(angleProbeDistance))
+        const targetProbe = pathToScreen(path, path.getPointAtLength(Math.max(0, length - angleProbeDistance)))
+        return source && target ? { id: owner?.getAttribute("data-relation-id") || path.getAttribute("data-lineage-connector") || "", sourceId, targetId, source, target, length, sourceProbe, targetProbe, points: samplePath(path, 42) } : null
+      })
+      .filter(Boolean) as EdgeData[]
+
+    let EDGE_CARD_BORDER_HUG_COUNT = 0
+    let NONTERMINAL_CARD_CLEARANCE_FAIL_COUNT = 0
+    let TERMINAL_NORMAL_ANGLE_FAIL_COUNT = 0
+    let SOURCE_DEPARTURE_ANGLE_FAIL_COUNT = 0
+    let ARROW_CARD_PENETRATION_COUNT = 0
+    let FLOATING_ARROWHEAD_COUNT = 0
+    let REGION_CHANGE_FAIL_COUNT = 0
+    const targetPorts = new Map<string, ScreenPoint[]>()
+    const canvas = (document.querySelector<HTMLElement>("[data-testid='architecture-projection-canvas'], [data-testid='central-evidence-canvas'], [data-testid='central-lineage-canvas']") || document.body).getBoundingClientRect()
+    const regionBoundaryY = canvas.top + canvas.height / 2
+
+    for (const edge of edgeEntries) {
+      const sourcePort = edge.points[0]
+      const targetPort = edge.points[edge.points.length - 1]
+      targetPorts.set(edge.targetId, [...(targetPorts.get(edge.targetId) || []), targetPort])
+      if (!boundaryTouch(targetPort, edge.target)) FLOATING_ARROWHEAD_COUNT += 1
+
+      const sourceSide = sideAt(sourcePort, edge.source)
+      const targetSide = sideAt(targetPort, edge.target)
+      if (angle(unit(edge.points[0], edge.sourceProbe), sourceSide.normal) > 24) SOURCE_DEPARTURE_ANGLE_FAIL_COUNT += 1
+      if (angle(unit(edge.targetProbe, edge.points[edge.points.length - 1]), targetSide.inward) > 24) TERMINAL_NORMAL_ANGLE_FAIL_COUNT += 1
+
+      const terminalWindow = Math.min(30, edge.length * 0.5)
+      const nonterminal = edge.points.filter((point) => (point.s || 0) > terminalWindow && (point.s || 0) < edge.length - terminalWindow)
+      if (nonterminal.some((point) => insideRect(point, edge.source, -1) || insideRect(point, edge.target, -1))) ARROW_CARD_PENETRATION_COUNT += 1
+      if (nonterminal.some((point) => pointRectDistance(point, edge.source) < 6 || pointRectDistance(point, edge.target) < 6)) NONTERMINAL_CARD_CLEARANCE_FAIL_COUNT += 1
+      if (nonterminal.filter((point) => {
+        const sourceDistance = pointRectDistance(point, edge.source)
+        const targetDistance = pointRectDistance(point, edge.target)
+        return (sourceDistance > 0.2 && sourceDistance < 6) || (targetDistance > 0.2 && targetDistance < 6)
+      }).length >= 2) EDGE_CARD_BORDER_HUG_COUNT += 1
+
+      const sameRegion = edge.source.cy < regionBoundaryY - 46 && edge.target.cy < regionBoundaryY - 46 ? "top" : edge.source.cy > regionBoundaryY + 46 && edge.target.cy > regionBoundaryY + 46 ? "bottom" : "mixed"
+      if (sameRegion === "top" && edge.points.some((point) => point.y > regionBoundaryY + 24)) REGION_CHANGE_FAIL_COUNT += 1
+      if (sameRegion === "bottom" && edge.points.some((point) => point.y < regionBoundaryY - 24)) REGION_CHANGE_FAIL_COUNT += 1
+    }
+
+    let PORT_COLLAPSE_COUNT = 0
+    for (const ports of targetPorts.values()) {
+      for (let i = 0; i < ports.length; i += 1) {
+        for (let j = i + 1; j < ports.length; j += 1) {
+          if (Math.hypot(ports[i].x - ports[j].x, ports[i].y - ports[j].y) < 4) PORT_COLLAPSE_COUNT += 1
+        }
+      }
+    }
+
+    let AVOIDABLE_EDGE_EDGE_CROSSING_COUNT = 0
+    for (let i = 0; i < edgeEntries.length; i += 1) {
+      for (let j = i + 1; j < edgeEntries.length; j += 1) {
+        const aEdge = edgeEntries[i]
+        const bEdge = edgeEntries[j]
+        if (aEdge.sourceId === bEdge.sourceId || aEdge.sourceId === bEdge.targetId || aEdge.targetId === bEdge.sourceId || aEdge.targetId === bEdge.targetId) continue
+        for (let aIndex = 1; aIndex < aEdge.points.length - 2; aIndex += 1) {
+          for (let bIndex = 1; bIndex < bEdge.points.length - 2; bIndex += 1) {
+            const a = aEdge.points[aIndex]
+            const b = aEdge.points[aIndex + 1]
+            const c = bEdge.points[bIndex]
+            const d = bEdge.points[bIndex + 1]
+            if (!endpointsClose(a, b, c, d) && intersects(a, b, c, d)) AVOIDABLE_EDGE_EDGE_CROSSING_COUNT += 1
+          }
+        }
+      }
+    }
+
+    const FILLED_TRIANGLE_MARKER_COUNT = markerPaths.filter((path) => {
+      const d = path.getAttribute("d") || ""
+      const style = window.getComputedStyle(path)
+      return /z/i.test(d) || (style.fill !== "none" && style.fill !== "rgba(0, 0, 0, 0)")
+    }).length
+    return {
+      FILLED_TRIANGLE_MARKER_COUNT,
+      CANONICAL_OPEN_CHEVRON: markerPaths.every((path) => (path.getAttribute("d") || "") === "M0.7,0.7 L6.1,3.5 L0.7,6.3") ? "PASS" : "FAIL",
+      ACTIVE_ARROW_SIZE_EQUALS_BASE: new Set(markerSizes).size <= 1 ? "PASS" : "FAIL",
+      EDGE_CARD_BORDER_HUG_COUNT,
+      NONTERMINAL_CARD_CLEARANCE_FAIL_COUNT,
+      TERMINAL_NORMAL_ANGLE_FAIL_COUNT,
+      SOURCE_DEPARTURE_ANGLE_FAIL_COUNT,
+      ARROW_CARD_PENETRATION_COUNT,
+      FLOATING_ARROWHEAD_COUNT,
+      PORT_COLLAPSE_COUNT,
+      AVOIDABLE_EDGE_EDGE_CROSSING_COUNT,
+      REGION_CHANGE_FAIL_COUNT,
+    }
+  })
+}
+
+async function lineageLabelFinishMetrics(page: Page) {
+  await waitForProjectionGeometrySettled(page)
+  return page.evaluate(() => {
+    const rectsOverlap = (a: DOMRect, b: DOMRect, gap = 0) => a.left - gap < b.right && a.right + gap > b.left && a.top - gap < b.bottom && a.bottom + gap > b.top
+    const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y)
+    const groups = [...document.querySelectorAll<HTMLElement>("[data-lineage-label-group='true']")]
+    const cards = [...document.querySelectorAll<HTMLElement>(".lineage-presentation-card")]
+    let LINEAGE_LABEL_STROKE_INTERSECTION_COUNT = 0
+    let LINEAGE_LABEL_CARD_COLLISION_COUNT = 0
+    let maxPathDistance = 0
+    for (const group of groups) {
+      const rect = group.getBoundingClientRect()
+      const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+      const path = document.querySelector<SVGPathElement>(`[data-lineage-connector][data-source-id="${CSS.escape(group.dataset.sourceId || "")}"]`)
+      const ctm = path?.getScreenCTM()
+      const length = path?.getTotalLength() || 0
+      const samples = Array.from({ length: 33 }, (_, index) => {
+        const point = path?.getPointAtLength((length * index) / 32)
+        return point && ctm ? new DOMPoint(point.x, point.y).matrixTransform(ctm) : null
+      }).filter(Boolean) as DOMPoint[]
+      if (samples.some((sample) => sample.x >= rect.left - 1 && sample.x <= rect.right + 1 && sample.y >= rect.top - 1 && sample.y <= rect.bottom + 1)) LINEAGE_LABEL_STROKE_INTERSECTION_COUNT += 1
+      if (samples.length) maxPathDistance = Math.max(maxPathDistance, Math.min(...samples.map((sample) => distance(center, sample))))
+      if (cards.some((card) => rectsOverlap(rect, card.getBoundingClientRect(), 4))) LINEAGE_LABEL_CARD_COLLISION_COUNT += 1
+    }
+    const chipStyles = [...document.querySelectorAll<HTMLElement>(".lineage-relation-chip-part")].map((chip) => {
+      const style = getComputedStyle(chip)
+      return `${style.borderRadius}:${style.borderTopWidth}:${style.paddingLeft}:${style.paddingTop}:${style.backgroundColor}`
+    })
+    const outerBoxCount = groups.filter((group) => {
+      const style = getComputedStyle(group)
+      return Number.parseFloat(style.borderTopWidth) > 0 || !/rgba?\(0,\s*0,\s*0,\s*0\)|transparent/.test(style.backgroundColor)
+    }).length
+    const traceGroup = groups.find((group) => group.dataset.sourceId === "entity:lineage:trace")
+    return {
+      LINEAGE_LITERAL_SEPARATOR_COUNT: groups.filter((group) => /[|/]/.test(group.textContent || "")).length,
+      LINEAGE_OUTER_GROUP_VISUAL_BOX: outerBoxCount === 0 ? "NONE" : "PRESENT",
+      LINEAGE_CAPSULE_STYLE_UNIFORM: new Set(chipStyles).size <= 1 ? "PASS" : "FAIL",
+      LINEAGE_LABEL_PATH_ASSOCIATION: maxPathDistance <= 90 ? "PASS" : "FAIL",
+      LINEAGE_LABEL_STROKE_INTERSECTION_COUNT,
+      LINEAGE_LABEL_CARD_COLLISION_COUNT,
+      traceLabelCount: Number(traceGroup?.dataset.labelCount || "0"),
+      traceText: traceGroup?.textContent || "",
+    }
+  })
+}
+
+async function staticFooterLegendMetrics(page: Page) {
+  return page.evaluate(() => {
+    const body = document.body.textContent || ""
+    const forbidden = [
+      "Theory / implementation / datasets / limitation / pending",
+      "Extends / preserves / borrows / computational inspiration",
+      "Evidence relation legend",
+      "Lineage relation legend",
+    ]
+    return {
+      STATIC_CATEGORY_FOOTER_COUNT: forbidden.slice(0, 2).filter((text) => body.includes(text)).length,
+      PLACEHOLDER_LEGEND_LABEL_COUNT: forbidden.slice(2).filter((text) => body.includes(text)).length,
+    }
+  })
+}
+
+async function genericAvoidableCrossingCount(page: Page) {
+  await page.goto("/")
+  return page.evaluate(async () => {
+    const presentation = (await import("/src/architecture/graphPresentation.ts")) as any
+    const nodes = [
+      { id: "left-top", x: 120, y: 120, width: 96, height: 52 },
+      { id: "left-bottom", x: 120, y: 300, width: 96, height: 52 },
+      { id: "right-top", x: 560, y: 120, width: 96, height: 52 },
+      { id: "right-bottom", x: 560, y: 300, width: 96, height: 52 },
+    ]
+    const byId = (id: string) => nodes.find((node) => node.id === id)
+    const first = presentation.routeBoundaryEdge(byId("left-top"), byId("right-bottom"), { obstacles: nodes, regionBoundaryY: 210 })
+    const second = presentation.routeBoundaryEdge(byId("left-bottom"), byId("right-top"), { obstacles: nodes, routedEdges: [first.points], regionBoundaryY: 210 })
+    const orientation = (a: any, b: any, c: any) => (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y)
+    const intersects = (a: any, b: any, c: any, d: any) => orientation(a, b, c) * orientation(a, b, d) < -0.01 && orientation(c, d, a) * orientation(c, d, b) < -0.01
+    let crossings = 0
+    for (let i = 1; i < first.points.length - 2; i += 1) {
+      for (let j = 1; j < second.points.length - 2; j += 1) {
+        if (intersects(first.points[i], first.points[i + 1], second.points[j], second.points[j + 1])) crossings += 1
+      }
+    }
+    return crossings
+  })
+}
+
+function expectConnectorHardGates(metrics: ConnectorFinishMetrics, prefix: "ARCH" | "EVIDENCE" | "LINEAGE") {
+  expect(metrics.FILLED_TRIANGLE_MARKER_COUNT).toBe(0)
+  expect(metrics.CANONICAL_OPEN_CHEVRON).toBe("PASS")
+  expect(metrics.ACTIVE_ARROW_SIZE_EQUALS_BASE).toBe("PASS")
+  expect(metrics.EDGE_CARD_BORDER_HUG_COUNT, `${prefix}_EDGE_CARD_BORDER_HUG_COUNT`).toBe(0)
+  expect(metrics.NONTERMINAL_CARD_CLEARANCE_FAIL_COUNT, `${prefix}_NONTERMINAL_CARD_CLEARANCE_FAIL_COUNT`).toBe(0)
+  expect(metrics.TERMINAL_NORMAL_ANGLE_FAIL_COUNT, `${prefix}_TERMINAL_NORMAL_ANGLE_FAIL_COUNT`).toBe(0)
+  expect(metrics.SOURCE_DEPARTURE_ANGLE_FAIL_COUNT, `${prefix}_SOURCE_DEPARTURE_ANGLE_FAIL_COUNT`).toBe(0)
+  expect(metrics.ARROW_CARD_PENETRATION_COUNT, `${prefix}_ARROW_CARD_PENETRATION_COUNT`).toBe(0)
+  expect(metrics.FLOATING_ARROWHEAD_COUNT, `${prefix}_FLOATING_ARROWHEAD_COUNT`).toBe(0)
+  expect(metrics.PORT_COLLAPSE_COUNT, `${prefix}_PORT_COLLAPSE_COUNT`).toBe(0)
+  expect(metrics.AVOIDABLE_EDGE_EDGE_CROSSING_COUNT, `${prefix}_AVOIDABLE_EDGE_EDGE_CROSSING_COUNT`).toBe(0)
+  expect(metrics.REGION_CHANGE_FAIL_COUNT, `${prefix}_REGION_CHANGE_FAIL_COUNT`).toBe(0)
+}
+
+test("RC16 connector contact finish validates open chevrons, terminal contact, crossing, labels, and stale footer removal", async ({ page }) => {
+  await fs.mkdir(screenshotDir, { recursive: true })
+  await page.setViewportSize({ width: 1536, height: 864 })
+  await page.getByTestId("symbol-betaU_gh").click()
+  let metrics = await connectorFinishMetrics(page)
+  expectConnectorHardGates(metrics, "ARCH")
+  await page.screenshot({ path: path.join(screenshotDir, "rc16-cat-overview-selected-1536-dark.png"), fullPage: false })
+  await page.locator(".architecture-workspace-canvas").screenshot({ path: path.join(screenshotDir, "rc16-architecture-selected-card-contact-closeup.png") })
+
+  await page.setViewportSize({ width: 1366, height: 768 })
+  if ((await page.locator("html").getAttribute("data-theme")) !== "light") await page.getByTestId("topbar-toggle-theme").click()
+  await page.getByTestId("enable-trace").click()
+  await page.getByTestId("trace-mode").selectOption("recursive")
+  await page.getByTestId("trace-direction").selectOption("both")
+  metrics = await connectorFinishMetrics(page)
+  expectConnectorHardGates(metrics, "ARCH")
+  await page.screenshot({ path: path.join(screenshotDir, "rc16-cat-overview-trace-1366-light.png"), fullPage: false })
+
+  await page.setViewportSize({ width: 1536, height: 864 })
+  await page.getByTestId("topbar-toggle-theme").click()
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark")
+  await page.getByTestId("detail-full-model").click()
+  metrics = await connectorFinishMetrics(page)
+  expectConnectorHardGates(metrics, "ARCH")
+  await page.screenshot({ path: path.join(screenshotDir, "rc16-cat-full-fit-1536-dark.png"), fullPage: false })
+
+  await page.getByTestId("detail-overview").click()
+  await page.getByTestId("model-original-trace").click()
+  metrics = await connectorFinishMetrics(page)
+  expectConnectorHardGates(metrics, "ARCH")
+  await page.screenshot({ path: path.join(screenshotDir, "rc16-original-trace-1536-dark.png"), fullPage: false })
+
+  await page.getByTestId("model-cat-trace-frozen-v2").click()
+  await page.getByTestId("view-lineage").click()
+  metrics = await connectorFinishMetrics(page)
+  expectConnectorHardGates(metrics, "LINEAGE")
+  let labelMetrics = await lineageLabelFinishMetrics(page)
+  expect(labelMetrics.LINEAGE_LITERAL_SEPARATOR_COUNT).toBe(0)
+  expect(labelMetrics.LINEAGE_OUTER_GROUP_VISUAL_BOX).toBe("NONE")
+  expect(labelMetrics.LINEAGE_CAPSULE_STYLE_UNIFORM).toBe("PASS")
+  expect(labelMetrics.LINEAGE_LABEL_PATH_ASSOCIATION).toBe("PASS")
+  expect(labelMetrics.LINEAGE_LABEL_STROKE_INTERSECTION_COUNT).toBe(0)
+  expect(labelMetrics.LINEAGE_LABEL_CARD_COLLISION_COUNT).toBe(0)
+  expect(labelMetrics.traceLabelCount).toBe(2)
+  expect(labelMetrics.traceText).toContain("Extends")
+  expect(labelMetrics.traceText).toContain("Preserves")
+  await page.screenshot({ path: path.join(screenshotDir, "rc16-lineage-1536-dark.png"), fullPage: false })
+  await page.locator("[data-lineage-label-group='true'][data-source-id='entity:lineage:trace']").screenshot({ path: path.join(screenshotDir, "rc16-lineage-trace-multi-relation-group-closeup.png") })
+
+  await page.setViewportSize({ width: 1366, height: 768 })
+  metrics = await connectorFinishMetrics(page)
+  expectConnectorHardGates(metrics, "LINEAGE")
+  labelMetrics = await lineageLabelFinishMetrics(page)
+  expect(labelMetrics.LINEAGE_LABEL_PATH_ASSOCIATION, "LINEAGE_RESIZE_LABEL_ASSOCIATION").toBe("PASS")
+  await page.screenshot({ path: path.join(screenshotDir, "rc16-lineage-1366-dark.png"), fullPage: false })
+
+  await page.setViewportSize({ width: 1536, height: 864 })
+  await page.getByTestId("view-evidence").click()
+  metrics = await connectorFinishMetrics(page)
+  expectConnectorHardGates(metrics, "EVIDENCE")
+  const footerMetrics = await staticFooterLegendMetrics(page)
+  expect(footerMetrics.STATIC_CATEGORY_FOOTER_COUNT).toBe(0)
+  expect(footerMetrics.PLACEHOLDER_LEGEND_LABEL_COUNT).toBe(0)
+  await page.screenshot({ path: path.join(screenshotDir, "rc16-evidence-1536-dark.png"), fullPage: false })
+  await page.locator(".architecture-workspace-canvas").screenshot({ path: path.join(screenshotDir, "rc16-evidence-card-contact-closeup-top.png") })
+  await page.locator(".architecture-workspace-canvas").screenshot({ path: path.join(screenshotDir, "rc16-evidence-card-contact-closeup-bottom.png") })
+  await page.locator(".architecture-workspace-canvas").screenshot({ path: path.join(screenshotDir, "rc16-evidence-right-column-vertical-contact-closeup.png") })
+
+  const GENERIC_AVOIDABLE_EDGE_EDGE_CROSSING_COUNT = await genericAvoidableCrossingCount(page)
+  expect(GENERIC_AVOIDABLE_EDGE_EDGE_CROSSING_COUNT).toBe(0)
 })

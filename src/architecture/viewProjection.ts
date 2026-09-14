@@ -69,30 +69,30 @@ const catTraceOverviewKeys = new Set([
 
 const catTraceOverviewSlots: Record<string, { left: number; top: number; width?: number; height?: number }> = {
   Y_raw: { left: 8, top: 28, width: 104, height: 78 },
-  x_i: { left: 8, top: 66, width: 104, height: 78 },
-  c_f: { left: 22, top: 28, width: 104, height: 78 },
-  g_f: { left: 22, top: 66, width: 104, height: 78 },
-  mathcal_K: { left: 36, top: 20, width: 104, height: 78 },
-  mathcal_U: { left: 36, top: 44, width: 104, height: 84 },
-  mathcal_G: { left: 36, top: 70, width: 104, height: 78 },
-  nu: { left: 50, top: 17, width: 104, height: 84 },
-  zU_igh: { left: 50, top: 39, width: 104, height: 78 },
-  yU_igh: { left: 50, top: 62, width: 104, height: 78 },
-  a_g: { left: 50, top: 84, width: 104, height: 78 },
-  gamma0: { left: 64, top: 17, width: 104, height: 78 },
-  alphaU_gh: { left: 64, top: 39, width: 104, height: 78 },
-  betaU_gh: { left: 64, top: 62, width: 104, height: 78 },
-  vU_gh: { left: 64, top: 84, width: 104, height: 78 },
-  pi_g: { left: 78, top: 17, width: 104, height: 78 },
-  betaK_j: { left: 78, top: 17, width: 104, height: 78 },
-  p_g: { left: 78, top: 39, width: 104, height: 78 },
-  Sigma_W: { left: 78, top: 62, width: 104, height: 84 },
-  p_g_star: { left: 78, top: 84, width: 104, height: 78 },
-  alphaK_j: { left: 78, top: 84, width: 104, height: 78 },
-  gamma_g: { left: 94, top: 28, width: 104, height: 78 },
-  posterior_inference: { left: 94, top: 55, width: 104, height: 84 },
-  richness_targets: { left: 94, top: 78, width: 104, height: 84 },
-  zero_slots: { left: 94, top: 92, width: 104, height: 78 },
+  x_i: { left: 8, top: 66, width: 104, height: 82 },
+  c_f: { left: 24, top: 28, width: 104, height: 92 },
+  g_f: { left: 24, top: 66, width: 104, height: 78 },
+  mathcal_K: { left: 40, top: 20, width: 104, height: 90 },
+  mathcal_U: { left: 40, top: 44, width: 104, height: 86 },
+  mathcal_G: { left: 40, top: 70, width: 104, height: 90 },
+  nu: { left: 56, top: 17, width: 104, height: 118 },
+  zU_igh: { left: 56, top: 40, width: 104, height: 82 },
+  yU_igh: { left: 56, top: 63, width: 104, height: 82 },
+  a_g: { left: 56, top: 87, width: 104, height: 106 },
+  gamma0: { left: 72, top: 17, width: 104, height: 78 },
+  alphaU_gh: { left: 72, top: 39, width: 104, height: 104 },
+  betaU_gh: { left: 72, top: 63, width: 104, height: 104 },
+  vU_gh: { left: 72, top: 86, width: 104, height: 82 },
+  pi_g: { left: 56, top: -12, width: 104, height: 64 },
+  betaK_j: { left: 77, top: 3, width: 104, height: 64 },
+  p_g: { left: 88, top: 40, width: 104, height: 76 },
+  Sigma_W: { left: 88, top: 73, width: 104, height: 56 },
+  p_g_star: { left: 88, top: 84, width: 104, height: 78 },
+  alphaK_j: { left: 88, top: 84, width: 104, height: 78 },
+  gamma_g: { left: 96, top: 20, width: 104, height: 76 },
+  posterior_inference: { left: 96, top: 57, width: 104, height: 84 },
+  richness_targets: { left: 96, top: 120, width: 104, height: 84 },
+  zero_slots: { left: 96, top: 92, width: 104, height: 78 },
 }
 
 function normalize(value: number, min: number, max: number, low: number, high: number) {
@@ -176,7 +176,7 @@ function clampNodeToCanvas<T extends ProjectionLayoutNode>(node: T, canvas: { wi
 }
 
 function packFullArchitectureNodes(project: ArchitectureProjectV2, nodes: ProjectionLayoutNode[]) {
-  const layout = layoutArchitectureLanes(nodes, (node) => project.entities[node.entityId]?.layer, { width: presentationCanvas.width, minHeight: presentationCanvas.height })
+  const layout = layoutArchitectureLanes(nodes, (node) => project.entities[node.entityId]?.layer, { width: presentationCanvas.width, minHeight: presentationCanvas.height, nodeWidth: 80, nodeHeight: 72 })
   return {
     nodes: layout.nodes.map((node) => ({
       ...node,
@@ -331,7 +331,19 @@ export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: st
       outgoingRelations.set(relation.sourceId, [...(outgoingRelations.get(relation.sourceId) || []), relation])
     })
 
-  const edges = Object.values(project.relations).filter((relation) => projectedEntityIds.has(relation.sourceId) && projectedEntityIds.has(relation.targetId)).flatMap((relation) => {
+  const routedEdgePoints: Array<Array<{ x: number; y: number }>> = []
+  const regionBoundaryY = canvas.height / 2
+  const visibleRelations = Object.values(project.relations)
+    .filter((relation) => projectedEntityIds.has(relation.sourceId) && projectedEntityIds.has(relation.targetId))
+    .sort((a, b) => {
+      const targetCompare = a.targetId.localeCompare(b.targetId)
+      if (targetCompare) return targetCompare
+      const sourceCompare = a.sourceId.localeCompare(b.sourceId)
+      if (sourceCompare) return sourceCompare
+      return a.id.localeCompare(b.id)
+    })
+
+  const edges = visibleRelations.flatMap((relation) => {
     const source = nodeByEntityId.get(relation.sourceId)
     const target = nodeByEntityId.get(relation.targetId)
     if (!source || !target) return []
@@ -346,7 +358,10 @@ export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: st
       sourcePortIndex: Math.max(0, sourceRelations.findIndex((candidate) => candidate.id === relation.id)),
       sourcePortCount: sourceRelations.length,
       obstacles: nodeRects,
+      routedEdges: routedEdgePoints,
+      regionBoundaryY,
     })
+    routedEdgePoints.push(routed.points)
     const labelOffset = pairIndex * 10
     return [
       {

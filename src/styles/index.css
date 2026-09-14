@@ -718,8 +718,12 @@ body {
   }
 
   .lineage-presentation-connectors marker path {
-    fill: context-stroke;
-    stroke: none;
+    fill: none;
+    stroke: context-stroke;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.15px;
+    vector-effect: non-scaling-stroke;
     opacity: 0.86;
   }
 
@@ -765,21 +769,17 @@ body {
   }
 
   .lineage-relation-label-group {
-    @apply absolute inline-flex items-center gap-1 border px-1.5 py-1 text-[10px] font-semibold leading-none text-secondary;
+    @apply absolute inline-flex items-center gap-1.5 text-[10px] font-semibold leading-none text-secondary;
     transform: translate(-50%, -50%);
-    border-color: var(--graph-relation-label-border);
-    border-radius: var(--graph-relation-label-radius);
-    background: var(--graph-relation-label-bg);
-    box-shadow: var(--graph-relation-label-shadow);
     white-space: nowrap;
   }
 
   .lineage-relation-chip-part {
-    @apply inline-flex items-center gap-1 rounded border border-border/80 bg-app/70 px-1.5 py-0.5;
-  }
-
-  .lineage-relation-divider {
-    @apply text-muted;
+    @apply inline-flex items-center rounded border px-1.5 py-1;
+    border-color: var(--graph-relation-label-border);
+    border-radius: var(--graph-relation-label-radius);
+    background: var(--graph-relation-label-bg);
+    box-shadow: var(--graph-relation-label-shadow);
   }
 
   .research-view-node {
@@ -970,7 +970,7 @@ body {
   }
 
   .architecture-map-node {
-    @apply absolute z-20 grid min-h-[76px] w-32 -translate-x-1/2 -translate-y-1/2 content-center gap-1 rounded-md border border-strongBorder bg-panel/95 px-2.5 py-2 text-center text-secondary shadow-sm;
+    @apply absolute z-20 grid min-h-[76px] w-32 -translate-x-1/2 -translate-y-1/2 content-center gap-0.5 rounded-md border border-strongBorder bg-panel/95 px-2.5 py-1.5 text-center text-secondary shadow-sm;
     transition:
       opacity 140ms ease,
       border-color 140ms ease,
@@ -992,7 +992,7 @@ body {
   }
 
   .architecture-map-node small {
-    @apply block text-[11px] leading-4 text-secondary;
+    @apply block text-[10px] leading-[13px] text-secondary;
     display: block;
     overflow: visible;
     overflow-wrap: normal;
@@ -1001,7 +1001,7 @@ body {
   }
 
   .architecture-map-node em {
-    @apply mt-1 justify-self-center rounded border border-border bg-app/70 px-1.5 py-0.5 text-[9px] not-italic uppercase leading-none tracking-normal text-muted;
+    @apply mt-0.5 justify-self-center rounded border border-border bg-app/70 px-1.5 py-0.5 text-[8px] not-italic uppercase leading-none tracking-normal text-muted;
   }
 
   .architecture-map-node-full,
@@ -1239,8 +1239,12 @@ body {
   }
 
   .architecture-map-edges marker path {
-    fill: context-stroke;
-    stroke: none;
+    fill: none;
+    stroke: context-stroke;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.15px;
+    vector-effect: non-scaling-stroke;
     opacity: 0.76;
   }
 
