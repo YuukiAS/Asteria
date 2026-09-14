@@ -63,13 +63,39 @@ Evidence selected/support    1.55–1.80px
 
 active/base 视觉比例通常不超过约 1.45；禁止“荧光笔式”粗边。
 
-### 2.3 Arrowhead
+### 2.3 Arrowhead / connector terminal
 
-- arrowhead 必须小于 card 文本视觉权重；
-- 推荐 6–8 CSS px 视觉尺寸；
-- arrow tip 必须触达 target border；
-- 多条 fan-in relation 的 arrowhead 必须分离，不形成蓝色粗结；
-- arrowhead 不因 viewport/viewBox 非均匀缩放改变视觉比例。
+Asteria stable-facing graph 的 canonical arrowhead 是**细的 open chevron**，不是实心三角。
+
+默认规范：
+
+```text
+shape: open chevron / V-shaped terminal
+visual size: 5.5–7 CSS px
+fill: none
+stroke: context-stroke
+stroke-linecap: round
+stroke-linejoin: round
+vector-effect: non-scaling-stroke
+```
+
+推荐 SVG 形状可类似：
+
+```text
+M 0 0 L 6 3 L 0 6
+```
+
+具体坐标可按 renderer 调整，但视觉必须保持小、细、圆润。
+
+硬规则：
+
+- 当前 Architecture / Lineage / Evidence 不使用 filled-triangle marker；
+- active/selected 状态不得放大 arrowhead，只改变 edge stroke / opacity / color；
+- arrow tip 必须触达 target border，且不能伸入 card body；
+- 多条 fan-in relation 的 terminal 必须分离，不形成蓝色粗结；
+- ordinary arrowhead 比 active edge 更弱，不抢 card 焦点；
+- arrowhead 不因 viewport/viewBox 非均匀缩放改变视觉比例；
+- 不允许一个 view 使用实心三角、另一个 view 使用另一种箭头造成品牌不一致。
 
 ### 2.4 Color
 
@@ -137,6 +163,13 @@ score = path_length
 - label 使用统一 `relation capsule` 样式，不直接裸 SVG text 压在线上；
 - capsule 与对应 route 有明确空间归属。
 
+### 3.6 Architecture arrow hierarchy
+
+- ordinary edge 使用 canonical open-chevron terminal，opacity 应低于 path 主体或相当；
+- active/trace edge 保持同尺寸 arrowhead，不做“更大箭头”强调；
+- selected card 的 border/fill 是第一视觉焦点，箭头只负责方向；
+- dense fan-in 时允许 ordinary context arrowhead 更淡，但不能完全丢失方向。
+
 ---
 
 ## 4. Lineage visual grammar
@@ -155,7 +188,8 @@ Lineage 是 **method provenance figure**，不是 generic graph。视觉目标�
 - 每个 source-target pair 只画 1 条 visual connector；
 - 多 typed relations 通过一个 relation-label group 表达，不重复画平行线；
 - connector 使用柔和 cubic curve；不同 target ports 分离；
-- 不允许 floating arrowhead。
+- 不允许 floating arrowhead；
+- terminal 使用 canonical open chevron，不使用 filled triangle。
 
 ### 4.3 Relation label group
 
@@ -163,20 +197,40 @@ Lineage 所有 relation 文案必须使用**同一种格式**：
 
 - 每条 visual connector 只有一个 `relation-label-group`；
 - group 锚定于该 connector 的 arc-length 45–55% 位置；
-- group 沿 path normal 偏移 8–12px；
-- 单 relation：一个 capsule；
-- 多 relation（例如 TRACE：Extends + Preserves）：在同一个 group 中并排/紧凑堆叠两个 chips；
-- group 有统一背景、border、font、padding、shadow；
-- 禁止一个 chip 贴线、另一个 chip 游离在别处；
+- group 沿 path normal 偏移 8–12px，默认选择 screen-up / visually open 的一侧；
+- 若该侧与 card/chip 冲突，允许翻到 path 另一侧，但 placement policy 必须一致；
+- label group 与对应 path 的最近视觉距离建议 6–12px；
 - viewport resize 后 label group 必须跟随 path，而不是固定 left/top 百分比。
+
+单 relation：
+
+```text
+[ Ecological hierarchy ]
+```
+
+多 relation：
+
+```text
+[ Extends ]  [ Preserves ]
+```
+
+硬规则：
+
+- 多 relation 使用**同一 group 内的 peer capsules**，中间只留 4–6px gap；
+- 禁止使用 literal `|`、`/`、竖线或其它文本 separator；
+- 禁止“外层大 capsule + 内层小 capsule”的双层边框/嵌套 pill；group 自身只负责定位，不再额外画 outer border/background；
+- 每个 chip 使用同一 radius、border、padding、font、shadow；
+- 同一 view 中 single-relation 和 multi-relation 的 capsule 视觉完全一致；
+- relation group 不得直接压在线上，connector 应从 group 下方/旁边视觉穿过而不与文字相交；
+- 不允许一个 chip 贴线、另一个 chip 游离在别处。
 
 建议 display copy：
 
 ```text
-HMSC   -> Ecological hierarchy
-TRACE  -> Extends | Preserves
-bigMVP -> Scalable probit
-MGP    -> Factor shrinkage
+HMSC   -> [ Ecological hierarchy ]
+TRACE  -> [ Extends ] [ Preserves ]
+bigMVP -> [ Scalable probit ]
+MGP    -> [ Factor shrinkage ]
 ```
 
 完整 typed relation 留 inspector。
@@ -200,7 +254,8 @@ Evidence 是 **claim-centered evidence map**。目标是让用户先看 claim，
 - simple relation 优先 soft curve 或 rounded orthogonal；
 - 禁止电路图式大段直角长线；
 - 不在画布上显示长 relation sentence；
-- support/pending/limitation 真值可通过色彩 + inspector/status 表达。
+- support/pending/limitation 真值可通过色彩 + inspector/status 表达；
+- direction terminal 同样使用 canonical open chevron；普通 Evidence edge 的 arrowhead 应比 Architecture 更克制。
 
 ### 5.3 Copy
 
@@ -261,56 +316,19 @@ Session / export
 
 ---
 
-## 8. Responsive rules
+## 8. Stable visual anti-patterns
 
-Required acceptance sizes：
+以下任一项在 stable-facing screenshot 中出现，都视为视觉规范失败：
 
-```text
-1536×864
-1366×768
-```
+- filled triangular arrowhead 抢视觉；
+- 同一 view 的 arrowhead 形状/大小不一致；
+- relation group 使用 literal `|` / `/` separator；
+- outer capsule 中再嵌套 inner capsules；
+- relation label 直接压在 connector stroke 上；
+- selected/active edge 比 selected card 更抢眼；
+- connector terminal 悬空或钻入 target card body；
+- Lineage single-relation 与 multi-relation 使用不同 label grammar；
+- Evidence/Architecture 为了强调 active relation 放大 arrowhead；
+- 只因为 automated bbox/endpoint test PASS 就忽略一眼可见的 connector/label 粗糙感。
 
-在 inspector open 状态：
-
-- canvas content box 必须作为 layout input；
-- card safe margin >= 20px；Lineage target right safe margin >= 48px；
-- resize 1536 -> 1366 -> 1536 后 connectors、chips、ports 必须重新对齐；
-- 无 page-level horizontal overflow；
-- primary scientific cards 不 clip。
-
----
-
-## 9. Automated + visual acceptance
-
-自动测试至少直接测：
-
-```text
-NODE_OVERLAP_COUNT = 0
-EDGE_CARD_INTERSECTION_COUNT = 0
-FLOATING_ARROWHEAD_COUNT = 0
-TARGET_PORT_COLLAPSE_COUNT = 0
-PRIMARY_TEXT_CLIPPED_COUNT = 0
-INSPECTOR_TINY_SECTION_COUNT = 0
-NESTED_VERTICAL_SCROLLBAR_COUNT = 0
-```
-
-但数字 PASS 不能替代截图 review。Developer self-QA 必须至少两轮，并逐张判断：
-
-- 是否像 scientific atlas；
-- 是否出现 electrical-wiring / auto-layout graph 感；
-- relation labels 是否统一 attach；
-- inspector 是否干净；
-- selected scientific object 是否永远是第一视觉焦点。
-
-## 10. Stable gate
-
-任何一个核心 view 若出现以下任一项，stable-facing visual gate = FAIL：
-
-- hard 90° wiring 成为主视觉；
-- floating arrowhead；
-- relation labels 格式不统一或与 path 失联；
-- card clipping/overlap；
-- inspector tiny clipped section / nested scrollbar；
-- raw/broken math；
-- generic AI/debug copy；
-- selected node 不再是第一视觉焦点。
+Developer self-QA 与 W01 必须对这些 anti-pattern 做 screenshot-level judgement，不能只检查 DOM 属性。
