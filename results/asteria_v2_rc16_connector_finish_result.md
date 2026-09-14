@@ -24,6 +24,7 @@ REVIEWER_SCOPE_EXPANDED = NO
 - Changed Lineage multi-relation labels from literal separators to adjacent capsule parts.
 - Removed stable-facing static footer/placeholder legend text from Lineage and Evidence.
 - Applied minimal CAT overview clearance slot tuning for right-column context nodes.
+- Synchronized Evidence card logical heights with rendered text height so connector endpoints terminate on the visible card boundary.
 
 ## Hard Gates
 
@@ -107,9 +108,9 @@ Performance:
 - bench:architecture-g05 entityCount = 2200
 - bench:architecture-g05 relationCount = 6200
 - bench:architecture-g05 visibleProjectionCount = 260
-- bench:architecture-g05 indexAverageMs = 2.366
-- bench:architecture-g05 traceAverageMs = 2.536
-- bench:architecture-g05 layerFocusAverageMs = 3.542
+- bench:architecture-g05 indexAverageMs = 2.348
+- bench:architecture-g05 traceAverageMs = 2.414
+- bench:architecture-g05 layerFocusAverageMs = 3.406
 
 Note:
 

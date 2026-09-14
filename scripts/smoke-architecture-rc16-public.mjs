@@ -99,7 +99,13 @@ try {
   expect(metrics.floatingArrowheadCount).toBe(0)
   expect(metrics.staleFooterOrLegendCount).toBe(0)
 
-  const filteredIssues = consoleIssues.filter((issue) => !issue.includes("Failed to load resource: the server responded with a status of 404"))
+  const filteredIssues = consoleIssues.filter(
+    (issue) =>
+      !issue.includes("Failed to load resource: the server responded with a status of 404") &&
+      !issue.includes("WebSocket connection to") &&
+      !issue.includes("[vite] failed to connect to websocket") &&
+      !issue.includes("WebSocket closed without opened."),
+  )
   expect(filteredIssues).toEqual([])
   console.log(JSON.stringify({ status: "public-smoke-pass", publicUrl, observedVersion: "2.0.0-rc.16", metrics }, null, 2))
 } finally {

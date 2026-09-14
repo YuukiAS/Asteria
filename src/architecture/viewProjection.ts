@@ -135,15 +135,15 @@ function originalTraceSlots(key: string) {
 function evidenceSlots(entityId: string) {
   const slots: Record<string, { left: number; top: number; width?: number; height?: number }> = {
     "entity:evidence:proof:trace-reference": { left: 14, top: 14, width: 150, height: 66 },
-    "entity:evidence:claim:tail-calibration": { left: 38, top: 14, width: 154, height: 68 },
+    "entity:evidence:claim:tail-calibration": { left: 38, top: 14, width: 154, height: 78 },
     "entity:evidence:data:finland": { left: 62, top: 14, width: 150, height: 66 },
     "entity:evidence:limitation:real-data": { left: 86, top: 32, width: 150, height: 66 },
     "entity:evidence:data:malagasy": { left: 14, top: 50, width: 150, height: 66 },
-    "entity:evidence:claim:open-tail-response": { left: 38, top: 50, width: 154, height: 68 },
+    "entity:evidence:claim:open-tail-response": { left: 38, top: 50, width: 154, height: 94 },
     "entity:evidence:claim:marked-discovery": { left: 86, top: 56, width: 150, height: 66 },
-    "entity:evidence:implementation:fixtures": { left: 14, top: 84, width: 150, height: 66 },
+    "entity:evidence:implementation:fixtures": { left: 14, top: 84, width: 150, height: 78 },
     "entity:evidence:claim:zero-slots": { left: 38, top: 84, width: 154, height: 68 },
-    "entity:evidence:stress:g05": { left: 62, top: 84, width: 150, height: 66 },
+    "entity:evidence:stress:g05": { left: 62, top: 84, width: 150, height: 78 },
     "entity:evidence:data:swa-plants": { left: 86, top: 84, width: 150, height: 66 },
   }
   return slots[entityId]
