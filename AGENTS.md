@@ -56,18 +56,10 @@ This project uses the `prompts/` handoff protocol for file-based handoff between
 ## GPT Work / UI Black-Box Browser Contract
 
 - Asteria 的 GPT Work / Cloud Browser / UI 黑箱审计只有一个 Browser 合规真值源：`docs/operations/blackbox-audit/UI_BLACKBOX_BROWSER_CONTRACT.md`。
-- ChatGPT 每次制定、更新、拆分、重跑或交付任何 Asteria GPT Work 黑箱 prompt 前，必须先读取该文件，并把**该文件当前全文逐字 inline 到最终发给 GPT Work 的 prompt**。只写文件路径、摘要或“请遵守该文件”不合规。
-- GPT Work 不需要、也不得访问 Asteria repo 来读取 Browser contract。最终 prompt 必须自包含。
-- 不允许 persona/campaign prompt 维护第二套互相矛盾的 Browser 规则。角色专属规则只能补充审计目标，不得收窄或推翻 canonical contract。
-- Browser 策略：优先 Work built-in / in-app Browser；若没有稳定接口、无法附着或反复控制失败，允许真实浏览器 UI automation fallback，包括 Browser helper/plugin、Playwright/playwright-core、Puppeteer、Chrome、Edge、Chromium、独立临时 browser profile、Node/Python helper script。
-- fallback 本身不构成黑箱污染。只要判断来自真实网站正常渲染、普通用户可见/可操作的 UI，允许 navigation/click/fill/select/check/keyboard/scroll/refresh/Back/Forward/screenshot，以及用 visible text、role、label、value、checked、disabled、href、select options、当前路径和 accessibility tree/index 定位真实控件。
+- ChatGPT 每次制定、更新、拆分、重跑或交付任何 Asteria GPT Work 黑箱 prompt 前，必须先读取该文件；只要该文件仍是项目 contract，就必须把**该文件当前全文逐字 inline 到最终发给 GPT Work 的 prompt**。只写文件路径、摘要或“请遵守该文件”不合规。
 - 核心规则始终是：`可以自动操作页面；不能绕过页面。`
-- 禁止源码、GitHub、数据库、Supabase 管理/直接查询、私有 API、direct HTTP API 代替页面流程、DevTools、Network/Console、内部 framework state、hidden application state、localStorage/sessionStorage/IndexedDB/cookie 中普通 UI 不展示的信息、DOM/state mutation、直接调用内部 JS function 或绕过 validation。
-- Browser timeout/handle lost/accessibility timeout 首先视为测试工具问题；必须重新观察真实页面，只有页面本身确实异常时才能记产品 P1/P2/P3。
-- 只有 Work 已经读取普通用户无法看到的内部实现信息，并可能影响判断时，才设置 `BLACK_BOX_CONTEXT_CONTAMINATED = YES`；Playwright / Chrome / selector / accessibility 本身不算 contamination。
-- 只有 in-app Browser 无法工作、合理真实-browser fallback 也无法工作、且任何真实浏览器都无法继续 consumer UI 时，才允许 `BLOCKED_BY_BROWSER_ENVIRONMENT`。
-- 任何没有 inline 完整 canonical Browser contract 的所谓 `ready-to-paste GPT Work prompt` 都不算 ready-to-paste。
-- GPT Work 结果必须按 `docs/operations/blackbox-audit/AUDIT_RESULT_CONTRACT.md` 返回 `BROWSER_MODE = IN_APP | UI_AUTOMATION_FALLBACK | MIXED_UI`、`BLACK_BOX_CONTEXT_CONTAMINATED = YES | NO` 和 `BROWSER_BLOCKER = NONE | BLOCKED_BY_BROWSER_ENVIRONMENT`。
+- Browser fallback、timeout、contamination、result-field mechanics 由 canonical Browser contract 负责，不在 root 维护第二份规则。
+- Developer visual self-QA、scientific graph / trace 规则和 generic-fix 入口继续从 `prompts/AGENT_RULES.md` 读取。
 
 ## Acceptance Gate: GPT Work Before Human Review
 
@@ -97,18 +89,14 @@ Codex implementation / repair
 - For every bug fix, prepare a corresponding regression script by adding or updating an `npm run test:*` command and a focused script under `scripts/` whenever feasible. The script must directly exercise the reported failure mode and assert that the bug does not recur; generic smoke checks are not enough. Do not treat code edits alone, manual clicking alone, or a passing build alone as sufficient regression coverage.
 - Keep a cumulative regression entry point such as `npm run test:regression` current. Before every future version commit, run the new/changed fix-specific script and the cumulative regression script so older fixed issues are rechecked. If a scripted check is genuinely infeasible, document the exception, reason, and manual verification evidence in the matching `results/*_result.md` file before committing.
 
-## Dev Server
+## Dev / Runtime Operations
 
-- The default dev server command is `npm run dev`; the project script pins Vite to `vite --host 127.0.0.1`.
-- The default URL is `http://127.0.0.1:5173/`.
-- Always run dev-server commands from the repository root so Vite resolves the local `package.json` and `vite.config.ts` correctly. If launching through a wrapper, background runner, or sandboxed environment, make the working directory explicit before running `npm run dev`.
-- Before starting the server, check whether that URL or port 5173 already has a usable Vite server. If the page is reachable, do not start a duplicate server.
-- If 5173 is occupied but unusable, report the state first. If a temporary fallback port is needed, use `npm run dev -- --host 127.0.0.1 --port 5174`.
-- Do not reinstall dependencies just to start the server. Only run an install command when dependencies are actually missing and the user approves it.
-- If startup fails with a Vite temp-file or permission error, first retry `npm run dev` in a normal foreground terminal session from the repo root. Treat this as a way to distinguish a project problem from a constrained environment that blocks Vite from writing temporary config files.
-- When starting the server in the background, hide the window and write logs to a temporary log file inside the repo, such as `.codex/vite-dev.log`, to avoid repeated startup attempts from multiple threads.
-- If the user asks for the server to remain available after the conversation ends, do not rely on a sandbox-started background process; the sandbox may clean up child processes after the command exits. Request approval to start a hidden background process outside the sandbox, then wait a few seconds and confirm `http://127.0.0.1:5173/` still returns HTTP 200.
-- On Windows, if the `npm run dev` background wrapper does not stay alive reliably, start Vite's Node entry directly as an equivalent fallback: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5173`. Still write logs to `.codex/vite-dev.log` and use `netstat -ano` to confirm 5173 is `LISTENING`.
+- Development server, shared runtime, fixed tunnel, background connector,
+  Windows fallback and status-check mechanics are owned by
+  `docs/operations/development/RUNTIME_OPERATIONS.md`.
+- Root invariant: do not start duplicate servers, do not reinstall dependencies
+  merely to start a server, and do not substitute a temporary public URL for the
+  fixed Asteria entry point unless the user explicitly asks.
 
 ## Git push standing authorization
 
