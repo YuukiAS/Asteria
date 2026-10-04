@@ -1,6 +1,6 @@
 # TODO — 模型架构优先
 
-更新日期：2026-09-08
+更新日期：2026-09-15
 状态：长期产品方向与后续设计任务。本文档不授权直接大规模改代码；实现前仍需拆成独立 task、完成结构评审与兼容性计划。
 
 Asteria 当前已经具备可编辑画布、类型化模块、符号条目、模型版本、叙事提纲与 Markdown 导出。下一阶段不应继续把更多研究内容无差别塞进同一张无限画布，也不应把 Asteria 做成 PPT 编辑器。最重要的产品转向是：
@@ -599,3 +599,27 @@ Asteria 转型是否成功，不以“新增多少模块”衡量，而看用户
 第一期校核只提醒未定义符号、作用域/索引冲突、派生量重复赋先验、数据来源和假设未说明等作者可以修复的问题，不为补齐图而编造数值先验或宣称数学/因果识别已获证明。方法谱系/研究证据、语义差异、自动论文解析、完整代码绑定与 AI 自动建图继续后置，不与首期模型阅读闭环并行扩张。
 
 本轮仅完成文档与 TODO 补充，以上功能没有因勾选计划而被标为实现。
+
+
+---
+
+## 18. 远期：GitHub / Code Trace / Implementation Graph
+
+已记录独立设计 TODO：
+
+[GitHub / Code Trace / Implementation Graph](docs/notes/2026-09-15_asteria_github_code_trace_todo.md)
+
+方向不是把 Asteria 做成 IDE，而是在现有 scientific semantic graph 之外增加 implementation graph 与 binding layer，使一个统计符号/对象可以追溯到具体 repository / commit / file / function / variable / test，并进一步查看局部 function-call / read-write / test coverage / change-impact 路径。
+
+当前只冻结以下原则，不冻结具体协议：
+
+- scientific graph 与 implementation graph 分层，代码实现不能自动改写 scientific truth；
+- GitHub 初期以 read-only integration 为主，并始终绑定明确 commit/ref；
+- code binding 不只存 file + line number，应预留 qualified symbol、structural/AST anchor、fingerprint 与 stale/broken 状态；
+- 可探索一个轻量、versioned、可选的 `.asteria/implementation-map.json`，只记录高价值 semantic anchors，不要求维护完整 call graph；
+- static analysis / code index、显式 binding hints、agent-assisted inference 与 human confirmation 应混合使用；
+- Codex 未来只在统计算法/科学实现发生实质变化时产生轻量 implementation handoff，普通 UI/文档 commit 不强制；
+- Asteria ingestion 后必须自行验证 handoff 中的 path / symbol / tests，并把 inferred binding 与 human-confirmed binding 区分；
+- 最终优先作为 Inspector 的 `Implementation / Code Trace` 扩展，是否增加第四个顶层 View 等真实使用后再决定。
+
+该方向**不属于当前 2.0 stable blocker，也不授权立即实现**。未来应先基于 CAT-TRACE 的真实 implementation commit 做一次 design spike，再决定 manifest schema、语言解析器、GitHub connector、call-graph 精度和 Codex handoff protocol。
