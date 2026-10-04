@@ -81,6 +81,30 @@ async function inspectorTopSmokeMetrics(page) {
   })
 }
 
+async function waitForInspectorTopSmokeReady(page) {
+  await page.waitForFunction(
+    () => {
+      const inspector = document.querySelector('[data-testid="architecture-reference-panel"]')
+      const helper = document.querySelector('[data-testid="project-view-model-helper"]')
+      const viewHelp = document.querySelector('[data-testid="active-view-help"]')
+      if (!inspector || !helper || !viewHelp) return false
+      const inspectorRect = inspector.getBoundingClientRect()
+      const helperRect = helper.getBoundingClientRect()
+      const viewHelpRect = viewHelp.getBoundingClientRect()
+      return (
+        inspector.scrollTop <= 1 &&
+        helperRect.top >= inspectorRect.top - 1 &&
+        helperRect.bottom <= inspectorRect.bottom + 1 &&
+        viewHelpRect.top >= inspectorRect.top - 1 &&
+        viewHelpRect.bottom <= inspectorRect.bottom + 1 &&
+        (viewHelp.textContent || "").includes("Architecture answers how each statistical symbol depends")
+      )
+    },
+    undefined,
+    { timeout: 5_000 },
+  )
+}
+
 const browser = await chromium.launch()
 const page = await browser.newPage({ viewport: { width: 1366, height: 768 } })
 const consoleIssues = []
@@ -99,6 +123,7 @@ try {
   await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
   await expect(page.getByText("2.0.0-rc.17")).toBeVisible()
   await page.getByTestId("symbol-betaU_gh").click()
+  await waitForInspectorTopSmokeReady(page)
   const inspector = await inspectorTopSmokeMetrics(page)
   expect(inspector.scrollTop).toBeLessThanOrEqual(1)
   expect(inspector.headingFullyVisible).toBe(true)

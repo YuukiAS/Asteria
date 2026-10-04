@@ -25,8 +25,8 @@ CAT_TRACE_C04_STATUS = C04-REF v0.1.2 IMPLEMENTED_AND_TESTED_WITH_FORMAL_COMBINE
 CAT_TRACE_C03_STATUS = BLOCKED_BY_GAP_01_AND_GAP_04
 CAT_TRACE_ZERO_SLOT_STATUS = ZERO_SLOT_BLOCKER_CLOSED_NO
 CAT_TRACE_FIRST_REAL_MANIFEST_SCOPE = C01 high-value functions; C02 synthetic contract functions; selected C04 reference functions/tests; C03/GAP-01/GAP-04 blocker status objects
-PUBLIC_ACCEPTANCE_URL_REFRESHED = RECORDED_IN_FINAL_RESPONSE_AFTER_COMMIT
-PUBLIC_BROWSER_SMOKE = RECORDED_IN_FINAL_RESPONSE_AFTER_COMMIT
+PUBLIC_ACCEPTANCE_URL_REFRESHED = YES
+PUBLIC_BROWSER_SMOKE = PASS
 NEXT_ACTION = GPT_WORK_TARGETED_ACCEPTANCE
 ```
 
@@ -168,7 +168,17 @@ test:browser = 16 passed
 bench:architecture-g05 = entityCount 2200, relationCount 6200, visibleProjectionCount 260, indexAverageMs 2.862, traceAverageMs 3.058, layerFocusAverageMs 4.415
 ```
 
-Public fixed URL verification is performed after the version commit/push because the task requires the committed candidate to be the published acceptance target. The final response records the post-commit public root/status/smoke result.
+Public fixed URL verification after the version commit/push:
+
+```text
+public_root = HTTP 200
+public_status = PASS
+npm run smoke:public-rc17 = PASS
+observed_public_version = 2.0.0-rc.17
+inspector_scrollTop = 0
+floatingArrowheadCount = 0
+staleFooterOrLegendCount = 0
+```
 
 ## Stop State
 
