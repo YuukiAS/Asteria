@@ -160,6 +160,19 @@ GENERIC_REGRESSION_FIXTURE = <path/test or NONE>
 
 若核心问题只被 example-specific patch 掩盖，不能报告 COMPLETE。
 
+## GPT Work handoff packaging
+
+当 task 授权 Codex 准备 GPT Work / Cloud Browser 验收 handoff 时：
+
+- 最终用户操作入口必须是**一个** parent prompt 文件，优先放在 `prompts/reviewers/`；
+- 结果中必须只返回一个 `GPT_WORK_PROMPT_PATH` 作为用户下一步；
+- 不得要求用户分别复制/启动多个 reviewer prompt；
+- 多 reviewer scope 应写入 parent prompt，由同一个 GPT Work 在内部并行（若支持）或串行独立阶段执行；
+- per-reviewer prompt 可以作为内部中间产物，但不得成为多个用户 action；
+- parent prompt 必须自包含，并满足 `AGENTS.md` / `prompts/CHATGPT_RULES.md` 对 Browser contract inline 的要求。
+
+目标是把审计编排成本留在仓库/agent 侧，而不是转嫁给用户。
+
 ## 失败处理
 
 如果任务无法安全完成，Codex 应停止扩大范围，并在 result 中说明：
