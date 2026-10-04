@@ -428,3 +428,107 @@ STATIC_CATEGORY_FOOTER_COUNT = 0
 ```
 
 这些指标不能替代截图审美判断，但任何一个非零都不能报 visual COMPLETE。
+---
+
+## 10. 2026-10-04 amendment — Quiet connector system（优先于前文 always-arrow / inline-label 建议）
+
+RC.17 人工截图证明：即使 endpoint、clearance、routing metrics 全部 PASS，**大量 terminal arrowheads 和漂在线上的 relation text 本身仍然会让 scientific map 像自动 graph engine**。因此 stable-facing graph 改用以下更克制的系统。若本节与前文 arrow / relation-label 建议冲突，以本节为准。
+
+### 10.1 Cards first, connectors second
+
+视觉优先级固定为：
+
+```text
+selected card > ordinary cards > active trace connector > ordinary connector > background grid
+```
+
+Connector 只负责结构，不负责承载 prose。
+
+### 10.2 Default canvas is arrow-sparse
+
+**Architecture / trace OFF**
+
+- ordinary connectors：无 arrowhead；
+- selection 只改变 selected card + Inspector；
+- selection 不改变 visible entity set、node geometry、edge routing 或 connector emphasis；
+- canvas 上不显示 inline relation text。
+
+**Architecture / trace ON**
+
+- 仅 active trace edges 显示一个小型 target arrowhead；
+- ordinary/muted context edges 无 arrowhead；
+- active arrow 采用单一 tiny stealth terminal，约 4.5–5.5 CSS px；不得使用 7px open-chevron 形成一排 `>`；
+- upstream/downstream 继续由 dash/solid + Inspector legend 表达；
+- relation name 不直接写在线上。
+
+**Lineage**
+
+- default canvas 完全无 arrowhead；left→right provenance 由 source/target column 结构表达；
+- canvas 完全无 floating relation chips / edge labels；
+- relation summary 放进 source card secondary text / compact in-card metadata；完整 typed relation 留 Method Inspector；
+- source selection 可以只增强对应 connector，但仍不需要 inline edge text；如确需 direction cue，只允许该一条 selected connector 使用 tiny stealth terminal。
+
+**Evidence**
+
+- ordinary connectors 无 arrowhead、无 inline relation text；
+- support / pending / limitation 的差异由 node kind/status + restrained stroke style 表达，不仅靠颜色；
+- selection 只增强 incident edges。默认不因 selected claim 在多条 edge 上铺满箭头；方向语义可在 Inspector 中读取。
+
+### 10.3 Edge text policy
+
+Stable canvas 的目标：
+
+```text
+INLINE_EDGE_LABEL_COUNT = 0
+FLOATING_RELATION_CHIP_COUNT = 0
+```
+
+Architecture relation type、Lineage typed relation、Evidence evidence-status relation 都进入 Inspector / card metadata，而不是压在线上。
+
+### 10.4 Arrow terminal policy
+
+当 explicit trace/focus 确实需要方向 cue 时：
+
+- 使用 tiny stealth triangle 或 Frontend Design 同等克制的单一 terminal；
+- 最长视觉尺寸约 4.5–5.5 CSS px；
+- 只在 active edge 出现；
+- marker size 不因 stroke、zoom、viewBox 改变；
+- tip 单点接触 target border；
+- 同一 target 的 active fan-in ports 分开；
+- 不允许 context edges 同时显示 arrowhead。
+
+### 10.5 Full model is a readable exploration surface, not a miniature poster
+
+Overview 负责“一屏读懂”。Full model 负责“完整探索”。
+
+因此：
+
+- 不允许 `Fit` 把 37 个 nodes 压成不可读缩略图；
+- 如果完整 graph 在当前 viewport 的 true-fit scale 低于最小可读 scale，UI 不应假装 Fit 全部是合格阅读状态；
+- 优先使用 `Reset / Center` 到 readable scale（建议 >= 0.9），通过 pan/zoom 探索完整 graph；
+- 若保留 `Fit all`，必须明确是 overview/navigation 辅助，不能作为默认可读状态，也不能把 primary text 缩到 < 9.5 CSS px；
+- Full model layout/transform 必须基于实际 rendered node bounds + actual canvas dimensions，水平居中并合理利用可用宽度。
+
+### 10.6 Selection invariant
+
+当 UI 明示 `Trace off` / “Selection only controls the inspector” 时：
+
+```text
+visible entity set before selection == visible entity set after selection
+shared node max position delta <= 1 CSS px
+edge geometry unchanged
+```
+
+需要 reveal context 时必须由 explicit Trace/Focus 行为触发，不能由普通 selection 偷偷触发。
+
+### 10.7 Stable screenshot hard fails
+
+以下任何一项出现在 default stable screenshot，直接 visual FAIL：
+
+- ordinary context edge 带 arrowhead；
+- 同一 node 周围出现一排 `>` / triangle terminals；
+- relation word/chip 漂在 connector 中间；
+- Lineage source card 已有关系摘要，同时 edge 上再次重复同一关系词；
+- selection 在 trace OFF 改变 visible node count；
+- Full model reset/fit 把主文字缩成肉眼困难的小字同时保留大面积空白。
+
