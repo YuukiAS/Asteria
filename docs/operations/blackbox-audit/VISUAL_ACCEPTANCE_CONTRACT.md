@@ -127,3 +127,25 @@ EVIDENCE_VISUAL_GRAMMAR = PASS
 ```
 
 任何一项未知或失败，都不能再次声明 `FINAL_HUMAN_ACCEPTANCE = READY`。
+## 10. Quiet connector acceptance gate（2026-10-04）
+
+RC.17 人工截图暴露出一个此前 W01 漏检的系统性问题：即使 bbox/collision/endpoint 都通过，default canvas 上大量 arrowheads、line-attached chips 和漂浮 relation words 仍会明显降低成品质量。
+
+以后 W01 对 stable-facing default state 必须额外检查：
+
+```text
+ARCH_TRACE_OFF_ORDINARY_ARROWHEAD_COUNT = 0
+ARCH_TRACE_OFF_INLINE_EDGE_LABEL_COUNT = 0
+LINEAGE_FLOATING_EDGE_LABEL_COUNT = 0
+LINEAGE_DEFAULT_ARROWHEAD_COUNT = 0
+EVIDENCE_FLOATING_EDGE_LABEL_COUNT = 0
+EVIDENCE_DEFAULT_ORDINARY_ARROWHEAD_COUNT = 0
+```
+
+Architecture 只有 explicit trace/focus active edges 可以显示小型 direction terminal；Lineage relation summary 应进入 source card / Inspector；Evidence direction/status 应由 card type/status、stroke grammar 和 Inspector 表达。
+
+W01 不能因为 `NO_EDGE_LABEL_CARD_COLLISION = PASS` 就忽略 edge label 本身不该存在。只要 default view 一眼仍出现“很多箭头 / 线上文字 / 自动 graph engine 感”，应视为核心 visual P2 并 FAIL。
+
+同时：当 UI 显示 `Trace off` 且写明 selection 只控制 Inspector 时，W01 必须记录 selection sequence 的 visible node count 与共享 node position；任何 selection-only visible-set 变化或 >1 CSS px shared-node 位移都 FAIL。
+
+Full model 不能以把所有内容缩成不可读 miniature 作为 `Fit` 的成功定义。Primary symbol/title 的 rendered readable size、content horizontal utilization 和真实 node bounds 必须参与验收。
