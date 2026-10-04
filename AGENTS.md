@@ -61,6 +61,14 @@ This project uses the `prompts/` handoff protocol for file-based handoff between
 - Browser fallback、timeout、contamination、result-field mechanics 由 canonical Browser contract 负责，不在 root 维护第二份规则。
 - Developer visual self-QA、scientific graph / trace 规则和 generic-fix 入口继续从 `prompts/AGENT_RULES.md` 读取。
 
+## Single GPT Work Handoff
+
+- 每一轮需要 GPT Work / Cloud Browser 独立验收时，**用户侧只能有一个 canonical、可点击、可直接复制的 prompt 文件**。不得要求用户分别打开或启动 W01/W05/W06 等多个 prompt。
+- 多 reviewer 仍可作为同一个 parent prompt 内部的独立审查 lane。若当前 Work 支持独立并行子任务，互不依赖的 reviewer 应在同一个 Work 内并行；若不支持，则在同一个 Work 内按独立阶段串行执行。是否并行/串行由 reviewer 依赖关系决定，不由用户手动编排。
+- Parent prompt 必须自包含，并按本仓库规则 inline 当前完整 Browser contract。内部 reviewer 文件可以保留为设计/归档材料，但**不得作为多个用户动作交付**。
+- Parent reviewer 最终负责去重 findings、统一 severity、给出一个总结果和一个 re-review scope。用户只需复制一次 prompt、运行一次 Work、返回一次结果。
+- 若当前验收只有一个 reviewer scope，仍然交付一个 parent/single prompt，不额外制造 campaign 文件集合给用户操作。
+
 ## Acceptance Gate: GPT Work Before Human Review
 
 Asteria 的 release / RC 验收顺序固定为：
