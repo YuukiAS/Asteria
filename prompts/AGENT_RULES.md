@@ -160,6 +160,32 @@ GENERIC_REGRESSION_FIXTURE = <path/test or NONE>
 
 若核心问题只被 example-specific patch 掩盖，不能报告 COMPLETE。
 
+## UI screenshot handoff 是完成条件
+
+所有用户可见 UI task 除了遵守 Developer Visual Self-QA，还必须生成并提交：
+
+```text
+results/<task_key>/VISUAL_REVIEW_PACK.md
+```
+
+该 pack 必须：
+
+- 指向 exact final candidate；
+- 用 Markdown 直接嵌入 fresh screenshots，用户点开一个文件即可看；
+- 每张图写明 view / model / viewport / theme / interaction state；
+- 对交互类 bug 同时放 before/after 或 stable-sequence 证据；
+- 记录 producer 对每张截图实际观察到的现象，不得只写 `generated`；
+- 不用旧 RC 截图冒充当前候选。
+
+UI task result 必须返回：
+
+```text
+VISUAL_REVIEW_PACK = <path>
+SELF_VISUAL_QA = PASS | FAIL
+```
+
+没有 screenshot pack 或没有实际视觉复核时，UI task 不得 `COMPLETE`。
+
 ## GPT Work handoff packaging
 
 当 task 授权 Codex 准备 GPT Work / Cloud Browser 验收 handoff 时：
