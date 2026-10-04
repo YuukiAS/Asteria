@@ -1,7 +1,7 @@
 {
   "name": "asteria",
   "private": true,
-  "version": "2.0.0-rc.16",
+  "version": "2.0.0-rc.17",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -14,6 +14,7 @@
     "test:legacy-roundtrip": "node scripts/validate-legacy-v1-roundtrip.mjs",
     "test:architecture-kernel": "node scripts/validate-architecture-kernel.mjs",
     "test:canonical-trace": "node scripts/validate-canonical-trace-fixtures.mjs",
+    "test:cat-trace-bridge": "node scripts/validate-cat-trace-bridge.mjs",
     "test:architecture-g03": "node scripts/validate-architecture-g03.mjs",
     "test:architecture-g04": "node scripts/validate-architecture-g04.mjs",
     "test:architecture-g05": "node scripts/validate-architecture-g05.mjs",
@@ -32,6 +33,7 @@
     "test:architecture-rc14": "node scripts/validate-architecture-rc14.mjs && playwright test --grep \"RC14\"",
     "test:architecture-rc15": "node scripts/validate-architecture-rc15.mjs && playwright test --grep \"RC15\"",
     "test:architecture-rc16": "node scripts/validate-architecture-rc16.mjs && playwright test --grep \"RC16\"",
+    "test:architecture-rc17": "node scripts/validate-architecture-rc17.mjs && playwright test --grep \"RC17\"",
     "smoke:public-rc4": "node scripts/smoke-architecture-rc4-public.mjs",
     "smoke:public-rc5": "node scripts/smoke-architecture-rc5-public.mjs",
     "smoke:public-rc6": "node scripts/smoke-architecture-rc6-public.mjs",
@@ -45,13 +47,14 @@
     "smoke:public-rc14": "node scripts/smoke-architecture-rc14-public.mjs",
     "smoke:public-rc15": "node scripts/smoke-architecture-rc15-public.mjs",
     "smoke:public-rc16": "node scripts/smoke-architecture-rc16-public.mjs",
+    "smoke:public-rc17": "node scripts/smoke-architecture-rc17-public.mjs",
     "test:browser": "playwright test",
     "test:e2e": "npm run test:browser",
     "bench:v1-baseline": "node scripts/benchmark-v1-baseline.mjs",
     "bench:architecture-kernel": "node scripts/benchmark-architecture-kernel.mjs",
     "bench:architecture-g03": "node scripts/benchmark-architecture-g03.mjs",
     "bench:architecture-g05": "node scripts/benchmark-architecture-g05.mjs",
-    "test:regression": "npm run test:legacy-roundtrip && npm run test:architecture-kernel && npm run test:canonical-trace && npm run test:architecture-g03 && npm run test:architecture-g04 && npm run test:architecture-g05 && npm run test:architecture-g06 && npm run test:architecture-rc3 && npm run test:architecture-rc4 && npm run test:architecture-rc5 && npm run test:architecture-rc6 && npm run test:architecture-rc7 && npm run test:architecture-rc8 && npm run test:architecture-rc9 && npm run test:architecture-rc10 && npm run test:architecture-rc11 && npm run test:architecture-rc12 && npm run test:architecture-rc13 && npm run test:architecture-rc14 && npm run test:architecture-rc15 && npm run test:architecture-rc16 && npm run test:shared-server"
+    "test:regression": "npm run test:legacy-roundtrip && npm run test:architecture-kernel && npm run test:canonical-trace && npm run test:cat-trace-bridge && npm run test:architecture-g03 && npm run test:architecture-g04 && npm run test:architecture-g05 && npm run test:architecture-g06 && npm run test:architecture-rc3 && npm run test:architecture-rc4 && npm run test:architecture-rc5 && npm run test:architecture-rc6 && npm run test:architecture-rc7 && npm run test:architecture-rc8 && npm run test:architecture-rc9 && npm run test:architecture-rc10 && npm run test:architecture-rc11 && npm run test:architecture-rc12 && npm run test:architecture-rc13 && npm run test:architecture-rc14 && npm run test:architecture-rc15 && npm run test:architecture-rc16 && npm run test:architecture-rc17 && npm run test:shared-server"
   },
   "dependencies": {
     "@tiptap/core": "^2.26.4",

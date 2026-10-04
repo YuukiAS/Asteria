@@ -292,8 +292,6 @@ export function ArchitectureReferencePanel() {
   } = useArchitectureSession()
   const [collapsedOutlineLayers, setCollapsedOutlineLayers] = useState<string[]>([])
   const [exportExpanded, setExportExpanded] = useState(false)
-  const panelTopRef = useRef<HTMLDivElement>(null)
-  const didMountRef = useRef(false)
   const exportToggleRef = useRef<HTMLButtonElement>(null)
   const exportPreviewRef = useRef<HTMLPreElement>(null)
   const symbolList = useMemo(() => Object.values(project.symbols), [project])
@@ -326,15 +324,16 @@ export function ArchitectureReferencePanel() {
     [activeViewId, searchProject, searchQuery, searchScope],
   )
   const hasSearchQuery = Boolean(searchQuery.trim())
+  const panelScrollRef = useRef<HTMLElement>(null)
+  const resetPanelScroll = useCallback(() => {
+    window.requestAnimationFrame(() => {
+      panelScrollRef.current?.scrollTo({ top: 0, left: 0 })
+    })
+  }, [])
 
   useEffect(() => {
-    if (!didMountRef.current) {
-      didMountRef.current = true
-      return
-    }
-    if (document.activeElement === document.body) return
-    panelTopRef.current?.scrollIntoView({ block: "start" })
-  }, [activeViewId, selectedEntityId, selectedSymbolId])
+    resetPanelScroll()
+  }, [activeViewId, resetPanelScroll, selectedEntityId, selectedSymbolId])
 
   const openExportTools = useCallback(() => {
     setExportExpanded(true)
@@ -352,10 +351,12 @@ export function ArchitectureReferencePanel() {
 
   const switchModel = (next: CanonicalTraceProjectId) => {
     setModelId(next)
+    resetPanelScroll()
   }
 
   const switchResearchView = (viewId: MultiViewId, entityId?: string) => {
     setActiveViewId(viewId, entityId || defaultViewSelection[viewId])
+    resetPanelScroll()
   }
 
   const openSearchResult = (entity: StatisticalEntity) => {
@@ -364,8 +365,8 @@ export function ArchitectureReferencePanel() {
   }
 
   return (
-    <aside className="inspector architecture-reference-panel" data-testid="architecture-reference-panel">
-      <div className="inspector-heading" ref={panelTopRef}>
+    <aside className="inspector architecture-reference-panel" data-testid="architecture-reference-panel" ref={panelScrollRef}>
+      <div className="inspector-heading">
         <div>
           <h2>Asteria 2.0</h2>
           <p>Explore TRACE and CAT-TRACE as readable model structure, method lineage, and evidence state.</p>
@@ -485,7 +486,10 @@ export function ArchitectureReferencePanel() {
                   className={`architecture-symbol-node ${isSelected ? "architecture-symbol-node-selected" : ""} ${isUpstream ? "architecture-symbol-node-upstream" : ""} ${isDownstream ? "architecture-symbol-node-downstream" : ""} ${
                     traceEnabled && selectedSymbol && !isSelected && !isInTrace ? "architecture-symbol-node-dimmed" : ""
                   }`}
-                  onClick={() => setSelectedSymbolId(symbol.id)}
+                  onClick={() => {
+                    setSelectedSymbolId(symbol.id)
+                    resetPanelScroll()
+                  }}
                   title={symbol.meaning}
                   data-testid={`symbol-${symbol.id.split(":").pop() || symbol.id}`}
                 >
@@ -539,7 +543,10 @@ export function ArchitectureReferencePanel() {
                 .map((relation) => {
                   const peer = relationPeer(project, relation, selectedEntity?.id || "")
                   return (
-                    <button key={relation.id} type="button" className={`architecture-relation-row architecture-relation-${relationTone(relation.type)}`} onClick={() => peer?.symbolIds?.[0] && setSelectedSymbolId(peer.symbolIds[0])}>
+                    <button key={relation.id} type="button" className={`architecture-relation-row architecture-relation-${relationTone(relation.type)}`} onClick={() => {
+                      if (peer?.symbolIds?.[0]) setSelectedSymbolId(peer.symbolIds[0])
+                      resetPanelScroll()
+                    }}>
                       <span>{relation.type.replace(/_/g, " ")}</span>
                       <strong>{relation.label || relation.type}</strong>
                       <small>{peer?.label || "missing peer"}</small>
@@ -634,7 +641,10 @@ export function ArchitectureReferencePanel() {
                           const entity = project.entities[entityId]
                           const symbolId = entity?.symbolIds?.find((id) => project.symbols[id])
                           return (
-                            <button key={entityId} type="button" className={`architecture-outline-row ${entityId === selectedEntity?.id ? "architecture-outline-row-active" : ""}`} onClick={() => symbolId && setSelectedSymbolId(symbolId)}>
+                            <button key={entityId} type="button" className={`architecture-outline-row ${entityId === selectedEntity?.id ? "architecture-outline-row-active" : ""}`} onClick={() => {
+                              if (symbolId) setSelectedSymbolId(symbolId)
+                              resetPanelScroll()
+                            }}>
                               <LocateFixed size={12} />
                               {entity?.label || entityId}
                             </button>

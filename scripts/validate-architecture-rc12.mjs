@@ -46,8 +46,8 @@ try {
   const lineageBaseEdgeCssPx = cssPxToken(styleSource, "--graph-edge-lineage-base")
   const lineageActiveEdgeCssPx = cssPxToken(styleSource, "--graph-edge-lineage-active")
 
-  assert(packageJson.version === "2.0.0-rc.16", "package.json must declare 2.0.0-rc.16.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.16"'), "App shell must display 2.0.0-rc.16.")
+  assert(packageJson.version === "2.0.0-rc.17", "package.json must declare 2.0.0-rc.17.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.17"'), "App shell must display 2.0.0-rc.17.")
   assert(packageJson.scripts["test:architecture-rc12"] === 'node scripts/validate-architecture-rc12.mjs && playwright test --grep "RC12"', "package.json must expose RC.12 focused validation.")
   assert(packageJson.scripts["test:regression"].includes("test:architecture-rc12"), "Cumulative regression must include RC.12.")
 
@@ -89,7 +89,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.16",
+          version: "2.0.0-rc.17",
           edgeStrokeSystem: "css-px-non-scaling-stroke",
           architectureBaseEdgeCssPx,
           architectureActiveEdgeCssPx,

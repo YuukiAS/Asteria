@@ -30,7 +30,7 @@ try {
     window.localStorage.setItem("asteria-theme", "dark")
   })
   await page.goto(baseUrl, { waitUntil: "networkidle" })
-  await expect(page.getByText("2.0.0-rc.16")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.17")).toBeVisible()
   await page.getByTestId("symbol-betaU_gh").click()
   await settle(page)
   await capture(page, "cat-overview-selected-1536-dark")

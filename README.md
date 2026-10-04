@@ -2,11 +2,11 @@
 
 Asteria 2.0 is the active Web product shell for inspecting canonical statistical-model architecture maps. The current build focuses on Original TRACE and CAT-TRACE Frozen V2, with first-level Architecture, Lineage, and Evidence views backed by the same typed semantic graph.
 
-Current app version: `2.0.0-rc.16`.
+Current app version: `2.0.0-rc.17`.
 
 ## Product State
 
-`2.0.0-rc.16` keeps Asteria 2.0 as the only active product shell and finishes the connector contact system: Architecture, Evidence, and Lineage connectors use open-chevron arrowheads, leave/enter card sides through short perpendicular terminal stubs, avoid non-terminal card-border hugging, and keep Lineage multi-relation labels grouped as adjacent capsules without literal separators. Opening Asteria goes directly to:
+`2.0.0-rc.17` keeps Asteria 2.0 as the only active product shell, preserves the RC.16 connector contact system, and fixes the right Inspector top-context reset so product context and view-help copy remain fully visible after selection and view switches. Opening Asteria goes directly to:
 
 - Project: `CAT-TRACE`
 - View: `Architecture`
@@ -15,7 +15,9 @@ Current app version: `2.0.0-rc.16`.
 
 Architecture provides the formal `Original TRACE` / `CAT-TRACE Frozen V2` model selector and an `Overview` / `Full model` detail control. Selection drives the inspector; trace highlighting only appears after `Show trace` is activated. Lineage and Evidence are direct first-level views. Save/Restore stores only the Asteria 2.0 view session state, not the retired shared/local 1.x canvas workspace.
 
-After RC.16, the next acceptance step is `CHATGPT_REVIEW_DEVELOPER_SCREENSHOTS`, not manual final acceptance, GPT Work launch, or stable release.
+The first CAT-TRACE repository bridge is now specified as a read-only B0/B1/B2 contract. Asteria includes only the bridge schema, validator, and synthetic pinned-commit fixture; live GitHub ingestion, call-graph analysis, and any scientific-truth update remain outside this RC.
+
+After RC.17, the next acceptance step is targeted GPT Work acceptance, not manual final acceptance or stable release.
 
 ## Legacy Compatibility
 
@@ -69,6 +71,7 @@ npm run build
 npm run test:legacy-roundtrip
 npm run test:architecture-kernel
 npm run test:canonical-trace
+npm run test:cat-trace-bridge
 npm run test:architecture-g03
 npm run test:architecture-g04
 npm run test:architecture-g05
@@ -85,14 +88,17 @@ npm run test:architecture-rc11
 npm run test:architecture-rc12
 npm run test:architecture-rc13
 npm run test:architecture-rc14
+npm run test:architecture-rc15
+npm run test:architecture-rc16
+npm run test:architecture-rc17
 npm run test:regression
 npm run test:browser
 ```
 
-Public acceptance smoke after a pushed RC.14 commit:
+Public acceptance smoke after a pushed RC.17 commit:
 
 ```bash
-npm run smoke:public-rc14
+npm run smoke:public-rc17
 ```
 
 ## Repository Map

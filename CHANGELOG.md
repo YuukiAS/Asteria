@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0-rc.17 - Frontend Convergence And Bridge Readiness
+
+- Fixed the right Inspector top-context reset so selecting symbols and switching Architecture / Lineage / Evidence no longer clips the product context and view-help copy under the app chrome.
+- Added RC.17 static, browser, and public-smoke coverage for the Inspector top stack visibility regression.
+- Added the CAT-TRACE Repository Bridge V0.1 design plus Asteria-side schema, validator, and synthetic read-only bridge fixture.
+- Keeps RC.16 connector-contact visual system behavior intact; this is still a release candidate, not the `2.0.0` stable release.
+
 ## 2.0.0-rc.16 - Connector Contact Finish
 
 - Finished the graph connector contact system so Architecture, Evidence, and Lineage routes keep terminal stubs perpendicular to card sides and avoid non-terminal card-border hugging.

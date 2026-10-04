@@ -475,7 +475,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/")
   await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
   await expect(page.getByTestId("asteria-v2-topbar")).toBeVisible()
-  await expect(page.getByText("2.0.0-rc.16")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.17")).toBeVisible()
   await expect(page.getByTestId("current-project")).toContainText("Project")
   await expect(page.getByTestId("current-project")).toContainText("CAT-TRACE")
   await expect(page.getByTestId("current-view")).toContainText("Architecture")
@@ -1535,6 +1535,28 @@ async function inspectNonArchitectureInspectorIa(page: Page) {
   })
 }
 
+async function inspectorTopStackMetrics(page: Page) {
+  return page.evaluate(() => {
+    const inspector = document.querySelector<HTMLElement>('[data-testid="architecture-reference-panel"]')
+    const heading = inspector?.querySelector<HTMLElement>(".inspector-heading")
+    const helper = document.querySelector<HTMLElement>('[data-testid="project-view-model-helper"]')
+    const viewHelp = document.querySelector<HTMLElement>('[data-testid="active-view-help"]')
+    const fullyVisibleInsideInspector = (element?: HTMLElement | null) => {
+      if (!inspector || !element) return false
+      const inspectorRect = inspector.getBoundingClientRect()
+      const rect = element.getBoundingClientRect()
+      return rect.top >= inspectorRect.top - 1 && rect.bottom <= inspectorRect.bottom + 1
+    }
+    return {
+      scrollTop: inspector?.scrollTop || 0,
+      headingFullyVisible: fullyVisibleInsideInspector(heading),
+      helperFullyVisible: fullyVisibleInsideInspector(helper),
+      viewHelpFullyVisible: fullyVisibleInsideInspector(viewHelp),
+      viewHelpText: viewHelp?.textContent || "",
+    }
+  })
+}
+
 async function renderGenericRouteFixture(page: Page) {
   await page.goto("/")
   const data = await page.evaluate(async () => {
@@ -1577,7 +1599,7 @@ test("RC15 canonical scientific graph visual system validates route grammar, lab
   await page.setViewportSize({ width: 1366, height: 768 })
   if ((await page.locator("html").getAttribute("data-theme")) !== "light") await page.getByTestId("topbar-toggle-theme").click()
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light")
-  await expect(page.getByText("2.0.0-rc.16")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.17")).toBeVisible()
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-view", "view:architecture")
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-model", "cat-trace-frozen-v2")
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-detail-level", "overview")
@@ -2010,4 +2032,37 @@ test("RC16 connector contact finish validates open chevrons, terminal contact, c
 
   const GENERIC_AVOIDABLE_EDGE_EDGE_CROSSING_COUNT = await genericAvoidableCrossingCount(page)
   expect(GENERIC_AVOIDABLE_EDGE_EDGE_CROSSING_COUNT).toBe(0)
+})
+
+test("RC17 inspector top context stays visible after selection and view changes", async ({ page }) => {
+  await fs.mkdir(screenshotDir, { recursive: true })
+  await page.setViewportSize({ width: 1366, height: 768 })
+  if ((await page.locator("html").getAttribute("data-theme")) !== "light") await page.getByTestId("topbar-toggle-theme").click()
+  await expect(page.getByText("2.0.0-rc.17")).toBeVisible()
+
+  await page.getByTestId("symbol-betaU_gh").click()
+  let metrics = await inspectorTopStackMetrics(page)
+  expect(metrics.scrollTop).toBeLessThanOrEqual(1)
+  expect(metrics.headingFullyVisible).toBe(true)
+  expect(metrics.helperFullyVisible).toBe(true)
+  expect(metrics.viewHelpFullyVisible).toBe(true)
+  expect(metrics.viewHelpText).toBe("Architecture answers how each statistical symbol depends on data, latent variables, parameters, and targets.")
+  await page.screenshot({ path: path.join(screenshotDir, "rc17-inspector-top-architecture-1366-light.png"), fullPage: false })
+
+  await page.getByTestId("view-lineage").click()
+  metrics = await inspectorTopStackMetrics(page)
+  expect(metrics.scrollTop).toBeLessThanOrEqual(1)
+  expect(metrics.headingFullyVisible).toBe(true)
+  expect(metrics.helperFullyVisible).toBe(true)
+  expect(metrics.viewHelpFullyVisible).toBe(true)
+  expect(metrics.viewHelpText).toBe("Lineage answers where CAT-TRACE inherits, preserves, or adapts method ideas.")
+
+  await page.getByTestId("view-evidence").click()
+  metrics = await inspectorTopStackMetrics(page)
+  expect(metrics.scrollTop).toBeLessThanOrEqual(1)
+  expect(metrics.headingFullyVisible).toBe(true)
+  expect(metrics.helperFullyVisible).toBe(true)
+  expect(metrics.viewHelpFullyVisible).toBe(true)
+  expect(metrics.viewHelpText).toBe("Evidence answers which claims are supported, pending, or limited before real-data closure.")
+  await page.screenshot({ path: path.join(screenshotDir, "rc17-inspector-top-evidence-1366-light.png"), fullPage: false })
 })
