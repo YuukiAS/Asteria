@@ -182,3 +182,22 @@ GPT Work 不负责第一次发现：
 - developer self-QA 未 PASS 前，不生成新的 GPT Work campaign；
 - 修复范围很窄时，优先让 Codex 自审完成，再只跑最少必要 reviewer；
 - 不要求用户手工打开页面替 Codex 做第一轮设计检查。
+## 9. Quiet connector / screenshot admission（2026-10-04）
+
+在交付任何 Architecture / Lineage / Evidence 修改前，必须额外检查：
+
+- default Architecture trace OFF 是否完全没有 ordinary arrowheads；
+- Lineage default 是否没有任何 floating relation chip / edge text；
+- Evidence default 是否没有一排 ordinary arrowheads；
+- Architecture explicit trace ON 时是否只有 active trace edges 带 tiny direction terminal；
+- 同一个 target 周围是否仍出现多枚拥挤 terminal；
+- selection-only sequence 是否保持 visible node set 和 geometry 恒定；
+- Full model 的默认/reset 状态是否保持 primary symbol/title 可读，而不是为了“全塞进一屏”缩成 miniature。
+
+外部 GPT Work admission 前至少产出一个可点击：
+
+```text
+results/<task_key>/VISUAL_REVIEW_PACK.md
+```
+
+并在 pack 中直接嵌入 final screenshots。若 producer 自己看到任何“箭头很多、文字漂在线上、像 graph engine 自动生成、Full model 小得读不了”的现象，必须继续修，不能进入 GPT Work。
