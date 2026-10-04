@@ -91,6 +91,22 @@ Codex implementation / repair
 - 一次 repair 如果广泛影响 math/layout/theme/state/search/inspector/accessibility 等多个 surface，应重跑完整 campaign。只有窄修复才可以由 consolidated triage 明确指定只重跑受影响 reviewer + release red-team。
 - 用户人工验收是 GPT Work 全部通过后的最终产品判断，不是替代黑箱 QA 的步骤。
 
+## Frontend / Bridge Toolchain Alignment
+
+- 在任何 substantial Frontend Design / Web UI convergence、Bridge handoff、reviewed workflow 或 release-candidate repair 开始前，先通过已安装的 **AI Skills Maintainer** 正常入口发现并对齐当前机器的正式 release 状态；不要凭旧项目文档猜插件/Bridge 版本。
+- Frontend 工作必须确认当前正式安装的 `web-development` / **Frontend Design** normal entry 可用；Bridge/Handoff 工作必须确认正式分发的 `ai-bridge` / Bridge Kit 可用，并以 formal release/release ref 为权威，不把较新的 source candidate `main` 自动当成 production。
+- 对齐后运行 Bridge 的 project validation。若 canonical managed Bridge block / Lite scaffold 已过期，使用 Bridge Kit 的正常 project install/init/validate 路径更新 managed content，同时保留 Asteria 自有规则。
+- 如果同步改变了当前 session 已加载的 Frontend Design / AI Skills / Bridge runtime，并且无法证明当前 Codex session 已加载新版本，则在修改产品代码前停止，要求**新 Codex session 继续同一 task 文件**；不得在 stale plugin session 中继续 UI 设计。
+- 版本发现、更新与安装由 AI Skills Maintainer / Bridge Kit 正常入口负责；Asteria task 不自行复制 plugin source 或重实现 Bridge installer。
+
+## Mandatory UI Screenshot Handoff
+
+- 任何修改用户可见 UI/graph/inspector/motion/responsive surface 的 Codex task，最终交付必须包含一个**单一、可点击的 screenshot review pack**，默认：
+  `results/<task_key>/VISUAL_REVIEW_PACK.md`。
+- pack 必须引用并展示 exact final candidate 的 fresh screenshots，不得只列目录名；至少覆盖 task 要求的主视图、关键交互前后状态和 required viewport。
+- Codex 最终结果必须返回 `VISUAL_REVIEW_PACK = <repo-relative path>`。没有 pack，不得报告 UI task `COMPLETE` / `READY_FOR_GPT_WORK` / `READY_FOR_USER_ACCEPTANCE`。
+- 生成截图不等于通过；截图必须经过 Frontend Design producer self-QA。明显视觉缺陷必须先修，不能把 GPT Work 或用户当第一轮视觉 reviewer。
+
 ## Verification And Regression Coverage
 
 - Every code fix must include or update relevant automated validation or regression coverage before it is considered complete. Run the matching checks before committing. If automated coverage is not feasible for a fix, document the reason and any manual verification performed in the result file.
