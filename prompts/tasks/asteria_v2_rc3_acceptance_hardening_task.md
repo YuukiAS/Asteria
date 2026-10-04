@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_rc3_acceptance_hardening
+task_id: asteria_v2_rc3_acceptance_hardening
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Harden Asteria 2.0 RC2 into a genuinely acceptance-ready RC3
 created_at: 2026-09-11
 allow_code_change: true

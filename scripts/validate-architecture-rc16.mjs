@@ -39,8 +39,8 @@ try {
   const styleSource = await read("src/styles/index.css")
   const browserSource = await read("tests/browser/asteria-v2-rc.spec.ts")
 
-  assert(packageJson.version === "2.0.0-rc.17", "package.json must declare 2.0.0-rc.17.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.17"'), "App shell must display 2.0.0-rc.17.")
+  assert(packageJson.version === "2.0.0-rc.18", "package.json must declare 2.0.0-rc.18.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.18"'), "App shell must display 2.0.0-rc.18.")
   assert(packageJson.scripts["test:architecture-rc16"] === 'node scripts/validate-architecture-rc16.mjs && playwright test --grep "RC16"', "package.json must expose RC.16 focused validation.")
   assert(packageJson.scripts["test:regression"].includes("test:architecture-rc16"), "Cumulative regression must include RC.16.")
 
@@ -67,10 +67,10 @@ try {
   assert(!graphSource.includes("targetStub as BoundaryPort"), "Stub routing must not rely on a fake BoundaryPort cast.")
   assert(!graphSource.includes("cat-trace") && !graphSource.includes("betaU_gh") && !graphSource.includes("South-West Australia"), "Generic route helper must not hardcode CAT-TRACE or diagnostic fixture names.")
 
-  assert(workspaceSource.includes('markerWidth="7"') && workspaceSource.includes('markerHeight="7"'), "Architecture and Lineage markers must share compact fixed marker dimensions.")
-  assert(workspaceSource.includes('d="M0.7,0.7 L6.1,3.5 L0.7,6.3"'), "Markers must use the canonical open chevron path.")
+  assert(workspaceSource.includes('markerWidth="5.2"') && workspaceSource.includes('markerHeight="5.2"'), "Explicit trace terminals must use tiny fixed marker dimensions.")
+  assert(workspaceSource.includes('d="M0.8,0.8 L4.8,2.6 L0.8,4.4"'), "Explicit trace terminals must use the quiet connector chevron path.")
   assert(styleSource.includes(".architecture-map-edges marker path") && styleSource.includes("fill: none") && styleSource.includes("stroke: context-stroke"), "Architecture marker CSS must render an open stroked chevron.")
-  assert(styleSource.includes(".lineage-presentation-connectors marker path") && styleSource.includes("fill: none") && styleSource.includes("stroke: context-stroke"), "Lineage marker CSS must render an open stroked chevron.")
+  assert(!workspaceSource.includes("lineage-presentation-arrow"), "Quiet Lineage must not define a default marker.")
   assert(!styleSource.includes(".lineage-relation-divider"), "Lineage relation labels must not use literal visual separators.")
   assert(!workspaceSource.includes("lineage-relation-divider"), "Lineage relation labels must not render literal separator spans.")
 
@@ -106,7 +106,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.17",
+          version: "2.0.0-rc.18",
           connectorFinishRouteScoring: true,
           canonicalOpenChevron: true,
           staleFooterLegendRemoved: true,

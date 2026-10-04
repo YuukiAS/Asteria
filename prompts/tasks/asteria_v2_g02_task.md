@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_g02
+task_id: asteria_v2_g02
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Build original TRACE and CAT-TRACE reference workspaces with Symbol Trace
 created_at: 2026-09-09
 allow_code_change: true

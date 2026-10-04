@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_g05_browser_unblock
+task_id: asteria_v2_g05_browser_unblock
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Bootstrap browser QA and resume Asteria 2.0 Web RC
 created_at: 2026-09-10
 allow_code_change: true

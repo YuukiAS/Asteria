@@ -1,5 +1,10 @@
 ---
 id: asteria_v1_1
+task_id: asteria_v1_1
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Lightweight block types, optional status, emoji markers, and edge styling
 created_at: 2026-06-30
 allow_code_change: true

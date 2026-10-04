@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_g06
+task_id: asteria_v2_g06
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Build Architecture, Lineage, and Evidence multi-view final Web RC
 created_at: 2026-09-09
 allow_code_change: true

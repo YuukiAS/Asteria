@@ -40,8 +40,8 @@ try {
   const styleSource = await read("src/styles/index.css")
   const browserSource = await read("tests/browser/asteria-v2-rc.spec.ts")
 
-  assert(packageJson.version === "2.0.0-rc.17", "package.json must declare 2.0.0-rc.17.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.17"'), "App shell must display 2.0.0-rc.17.")
+  assert(packageJson.version === "2.0.0-rc.18", "package.json must declare 2.0.0-rc.18.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.18"'), "App shell must display 2.0.0-rc.18.")
   assert(packageJson.scripts["test:architecture-rc15"] === 'node scripts/validate-architecture-rc15.mjs && playwright test --grep "RC15"', "package.json must expose RC.15 focused validation.")
   assert(packageJson.scripts["test:regression"].includes("test:architecture-rc15"), "Cumulative regression must include RC.15.")
 
@@ -64,12 +64,13 @@ try {
   assert(graphSource.includes("export function scoreRouteCandidate") && graphSource.includes("backwardXDistance") && graphSource.includes("proximityScore"), "Route candidates must be scored by generic geometry costs.")
   assert(!graphSource.includes("polylinePath("), "RC.15 must not directly render obstacle polylines as the final SVG path.")
   assert(graphSource.includes("softCubicHitsObstacle") && graphSource.includes('"soft-cubic"') && graphSource.includes('"rounded-orthogonal"'), "Simple and obstacle route grammars must both be present.")
-  assert(graphSource.includes("labelGroup: ProvenanceLabelGroup") && graphSource.includes("pathPointAndNormalAt") && graphSource.includes("relationLabelOffset"), "Provenance labels must be path-derived groups.")
+  assert(graphSource.includes("labelGroup: ProvenanceLabelGroup") && graphSource.includes("pathPointAndNormalAt") && graphSource.includes("relationLabelOffset"), "Provenance relation metadata must remain available to generic layout.")
   assert(!graphSource.includes("chipsLayout"), "Provenance layout must not keep scattered per-chip anchors.")
   assert(!graphSource.includes("cat-trace") && !graphSource.includes("betaU_gh") && !graphSource.includes("gamma_g"), "Graph presentation helper must not hardcode CAT-TRACE examples.")
 
-  assert(workspaceSource.includes("function RelationLabelGroup"), "Lineage must render a reusable relation label group component.")
-  assert(workspaceSource.includes("data-lineage-label-group=\"true\"") && workspaceSource.includes("data-label-count={labels.length}"), "Lineage must expose relation label group metadata for regression.")
+  assert(!workspaceSource.includes("function RelationLabelGroup"), "Quiet Lineage must not render floating relation label groups.")
+  assert(!workspaceSource.includes("data-lineage-label-group=\"true\""), "Quiet Lineage must keep typed relation truth off the connector field.")
+  assert(workspaceSource.includes('data-lineage-arrow-visible="false"'), "Quiet Lineage must expose that default connectors have no arrows.")
   assert(!workspaceSource.includes("card.chipsLayout"), "Lineage UI must not render separate chip anchors from the old layout.")
   assert(workspaceSource.includes("data-route-grammar") && workspaceSource.includes("data-route-bend-count") && workspaceSource.includes("data-route-score"), "Projected edges must expose route grammar metadata for RC.15 browser regression.")
 
@@ -77,7 +78,7 @@ try {
   assert(inspectorSource.indexOf("architecture-search-row") < inspectorSource.indexOf("<MultiViewPanel"), "Search must precede the non-Architecture primary inspector.")
 
   assert(browserSource.includes('test("RC15 canonical scientific graph visual system'), "Browser regression must include RC.15 visual-system coverage.")
-  assert(browserSource.includes("data-lineage-label-group") && browserSource.includes("inspectNonArchitectureInspectorIa"), "Browser regression must validate Lineage label groups and inspector IA.")
+  assert(browserSource.includes("data-lineage-arrow-visible") && browserSource.includes("inspectNonArchitectureInspectorIa"), "Browser regression must validate Quiet Lineage connectors and inspector IA.")
   assert(browserSource.includes("renderGenericRouteFixture") && browserSource.includes("renderGenericProvenanceFixture"), "Browser regression must include generic route and provenance fixtures.")
 
   const protectedChanges = changedProtectedTruthFiles()
@@ -88,7 +89,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.17",
+          version: "2.0.0-rc.18",
           routeGrammar: "SOFT_CUBIC_AND_ROUNDED_ORTHOGONAL",
           candidateScoring: true,
           lineageRelationLabelGroups: true,

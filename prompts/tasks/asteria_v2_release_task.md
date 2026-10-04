@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_release
+task_id: asteria_v2_release
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Promote human-accepted Asteria 2.0 RC.8 to stable
 created_at: 2026-09-13
 allow_code_change: true

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0-rc.18 - Quiet Graph Convergence
+
+- Reworked Architecture / Lineage / Evidence connector presentation into the Quiet Connector system: trace-off Architecture and ordinary Evidence connectors no longer render default arrowheads or inline relation text, and Lineage no longer shows floating relation chips on the canvas.
+- Fixed trace-off Architecture selection so ordinary selection only updates the selected card and Inspector while keeping the visible node set, node geometry, edge routes, and connector emphasis stable.
+- Reframed Full model as a readable exploration surface with actual-canvas lane packing, readable reset scale, and pan/zoom rather than squeezing all nodes into a miniature fit-all view.
+- Added RC.18 focused static/browser/public smoke coverage for quiet connector counts, trace-off selection stability, and Full-model readable reset while preserving scientific truth, trace algorithm, session contract, and CAT-TRACE bridge contracts.
+
 ## 2.0.0-rc.17 - Frontend Convergence And Bridge Readiness
 
 - Fixed the right Inspector top-context reset so selecting symbols and switching Architecture / Lineage / Evidence no longer clips the product context and view-help copy under the app chrome.

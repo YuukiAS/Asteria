@@ -1011,7 +1011,7 @@ body {
 
   .architecture-map-node-full span,
   .architecture-map-node-original span {
-    @apply text-[9px] leading-4;
+    @apply text-[10px] leading-4;
   }
 
   .architecture-map-node-full small,

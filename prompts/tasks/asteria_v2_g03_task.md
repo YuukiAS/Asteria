@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_g03
+task_id: asteria_v2_g03
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Add typed relations, layers, recursive trace, and architecture outline
 created_at: 2026-09-09
 allow_code_change: true

@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_rc13_graph_presentation_foundation
+task_id: asteria_v2_rc13_graph_presentation_foundation
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Generic graph presentation foundation for Architecture and provenance connectors
 created_at: 2026-09-13
 allow_code_change: true

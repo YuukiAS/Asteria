@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_g07
+task_id: asteria_v2_g07
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Prototype a lightweight desktop Asteria platform
 created_at: 2026-09-08
 allow_code_change: true

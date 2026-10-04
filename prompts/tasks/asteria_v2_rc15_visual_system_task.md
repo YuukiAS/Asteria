@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_rc15_visual_system
+task_id: asteria_v2_rc15_visual_system
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Implement canonical scientific graph visual system across Architecture Lineage Evidence and Inspector
 created_at: 2026-09-14
 allow_code_change: true

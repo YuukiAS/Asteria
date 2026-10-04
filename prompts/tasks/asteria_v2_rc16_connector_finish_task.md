@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_rc16_connector_finish
+task_id: asteria_v2_rc16_connector_finish
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Canonical connector terminals, card contact, crossing and footer finish
 created_at: 2026-09-14
 allow_code_change: true

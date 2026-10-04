@@ -75,7 +75,7 @@ try {
   })
   await page.goto(publicUrl, { waitUntil: "networkidle", timeout: 30_000 })
   await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
-  await expect(page.getByText("2.0.0-rc.17")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.18")).toBeVisible()
   await page.getByTestId("symbol-betaU_gh").click()
   await page.getByTestId("enable-trace").click()
   let metrics = await connectorSmokeMetrics(page)
@@ -107,7 +107,7 @@ try {
       !issue.includes("WebSocket closed without opened."),
   )
   expect(filteredIssues).toEqual([])
-  console.log(JSON.stringify({ status: "public-smoke-pass", publicUrl, observedVersion: "2.0.0-rc.17", metrics }, null, 2))
+  console.log(JSON.stringify({ status: "public-smoke-pass", publicUrl, observedVersion: "2.0.0-rc.18", metrics }, null, 2))
 } finally {
   await browser.close()
 }

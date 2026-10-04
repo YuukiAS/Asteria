@@ -37,8 +37,8 @@ try {
   const panelSource = await read("src/components/ArchitectureReferencePanel.tsx")
   const browserSource = await read("tests/browser/asteria-v2-rc.spec.ts")
 
-  assert(packageJson.version === "2.0.0-rc.17", "package.json must declare 2.0.0-rc.17.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.17"'), "App shell must display 2.0.0-rc.17.")
+  assert(packageJson.version === "2.0.0-rc.18", "package.json must declare 2.0.0-rc.18.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.18"'), "App shell must display 2.0.0-rc.18.")
   assert(packageJson.scripts["test:architecture-rc17"] === 'node scripts/validate-architecture-rc17.mjs && playwright test --grep "RC17"', "package.json must expose RC.17 focused validation.")
   assert(packageJson.scripts["test:regression"].includes("test:architecture-rc17"), "Cumulative regression must include RC.17.")
   assert(packageJson.scripts["smoke:public-rc17"] === "node scripts/smoke-architecture-rc17-public.mjs", "package.json must expose RC.17 public smoke.")
@@ -67,7 +67,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.17",
+          version: "2.0.0-rc.18",
           inspectorTopReset: true,
           browserRegression: "RC17 inspector top context",
           protectedTruthFileChanges: protectedChanges.length,

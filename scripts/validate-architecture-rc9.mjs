@@ -41,8 +41,8 @@ try {
   const multiViewSource = await read("src/architecture/fixtures/multiViewTraceProject.ts")
   const styleSource = await read("src/styles/index.css")
 
-  assert(packageJson.version === "2.0.0-rc.17", "package.json must declare 2.0.0-rc.17.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.17"'), "App shell must display 2.0.0-rc.17.")
+  assert(packageJson.version === "2.0.0-rc.18", "package.json must declare 2.0.0-rc.18.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.18"'), "App shell must display 2.0.0-rc.18.")
   assert(packageJson.scripts["test:architecture-rc9"] === "node scripts/validate-architecture-rc9.mjs", "package.json must expose test:architecture-rc9.")
   assert(packageJson.scripts["test:regression"].includes("test:architecture-rc9"), "Cumulative regression must include RC.9.")
 
@@ -87,7 +87,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.17",
+          version: "2.0.0-rc.18",
           stableOverviewGeometry: true,
           compactRelationLabels: true,
           renderedSemanticDiffMath: true,

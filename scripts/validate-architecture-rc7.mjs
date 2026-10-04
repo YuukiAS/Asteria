@@ -33,8 +33,8 @@ try {
   const panelSource = await read("src/components/ArchitectureReferencePanel.tsx")
   const styleSource = await read("src/styles/index.css")
 
-  assert(packageJson.version === "2.0.0-rc.17", "package.json must declare 2.0.0-rc.17.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.17"'), "App shell must display 2.0.0-rc.17.")
+  assert(packageJson.version === "2.0.0-rc.18", "package.json must declare 2.0.0-rc.18.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.18"'), "App shell must display 2.0.0-rc.18.")
 
   assert(appSource.indexOf('<nav className="asteria-skip-links"') < appSource.indexOf("<AsteriaV2TopBar"), "Skip links must be the first page-level tab stops before the topbar.")
   assert(appSource.includes('href="#asteria-canvas"') && appSource.includes('href="#asteria-inspector"'), "Skip links must target canvas and inspector anchors.")
@@ -50,7 +50,7 @@ try {
   assert(panelSource.includes("exportExpanded ? (") && panelSource.includes('data-testid="advanced-export-validation-region"') && panelSource.includes(") : null"), "Export/schema details must not render into the main path while closed.")
 
   assert(workspaceSource.includes("full-model-reading-controls"), "Full model must expose reading controls.")
-  assert(workspaceSource.includes("Zoom out") && workspaceSource.includes("Fit") && workspaceSource.includes("Zoom in"), "Full model controls must include Zoom out, Fit, and Zoom in.")
+  assert(workspaceSource.includes("Zoom out") && workspaceSource.includes("Reset full model") && workspaceSource.includes("Zoom in"), "Full model controls must include Zoom out, Reset, and Zoom in.")
   assert(workspaceSource.includes("setReadingPan") && workspaceSource.includes("onPointerMove={moveCanvasPan}"), "Full model must provide pointer-drag pan behavior.")
   assert(workspaceSource.includes("data-reading-zoom") && workspaceSource.includes("--projection-zoom"), "Reading controls must apply presentation-only transform state.")
 
@@ -90,10 +90,10 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.17",
+          version: "2.0.0-rc.18",
           skipLinks: "first-tab-ready",
           exportDisclosure: "controlled",
-          fullModelControls: "zoom-fit-pan",
+          fullModelControls: "zoom-reset-pan",
           preservedTraceTruth: true,
         },
         null,

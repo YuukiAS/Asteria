@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_g01
+task_id: asteria_v2_g01
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Build Asteria 2.0 semantic kernel and v1 migration
 created_at: 2026-09-08
 allow_code_change: true

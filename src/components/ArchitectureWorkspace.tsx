@@ -104,10 +104,6 @@ function compactRelationLabel(type: RelationType, label?: string) {
   return conciseByPhrase[fallback] || byType[type] || fallback.split(/\s+/).slice(0, 3).join(" ")
 }
 
-function architectureAllowsInlineLabel(type: RelationType) {
-  return ["generates", "targets"].includes(type)
-}
-
 const lineageCards = [
   { id: "entity:lineage:hmsc", label: "HMSC framework", copy: "Ecological hierarchy", chips: ["Ecological hierarchy"], relationIds: ["relation:lineage:hmsc-cat"], relationType: "borrows_interpretation_from" },
   { id: "entity:lineage:trace", label: "TRACE / Infinite JSDM", copy: "Open-tail foundation", chips: ["Extends", "Preserves"], relationIds: ["relation:lineage:trace-cat", "relation:lineage:trace-preserve"], relationType: "extends preserves" },
@@ -155,18 +151,6 @@ function useElementSize<T extends HTMLElement>(fallback: PresentationSize) {
   return [setElement, size] as const
 }
 
-function RelationLabelGroup({ labels, x, y, sourceId }: { labels: readonly string[]; x: number; y: number; sourceId: string }) {
-  return (
-    <span className="lineage-relation-label-group" style={{ left: `${x}px`, top: `${y}px` }} data-lineage-label-group="true" data-lineage-chip="true" data-source-id={sourceId} data-label-count={labels.length}>
-      {labels.map((label) => (
-        <span key={`${sourceId}:${label}`} className="lineage-relation-chip-part">
-          <span>{label}</span>
-        </span>
-      ))}
-    </span>
-  )
-}
-
 function LineagePresentation({
   project,
   selectedEntityId,
@@ -190,18 +174,13 @@ function LineagePresentation({
       style={{ "--provenance-width": `${provenanceLayout.width}px`, "--provenance-height": `${provenanceLayout.height}px` } as CSSProperties}
     >
       <svg className="lineage-presentation-connectors" viewBox={`0 0 ${provenanceLayout.width} ${provenanceLayout.height}`} aria-hidden="true">
-        <defs>
-          <marker id="lineage-presentation-arrow" markerUnits="userSpaceOnUse" markerWidth="7" markerHeight="7" refX="6.2" refY="3.5" orient="auto">
-            <path d="M0.7,0.7 L6.1,3.5 L0.7,6.3" />
-          </marker>
-        </defs>
         {provenanceLayout.sources.map((card) => (
           <path
             key={card.id}
             className={`lineage-presentation-connector ${card.id === selectedEntityId || targetId === selectedEntityId ? "lineage-presentation-connector-active" : ""}`}
             d={card.path}
-            markerEnd="url(#lineage-presentation-arrow)"
             data-lineage-connector={card.id}
+            data-lineage-arrow-visible="false"
             data-source-id={card.id}
             data-target-id={targetId}
             data-relation-ids={card.relationIds.join(" ")}
@@ -228,11 +207,6 @@ function LineagePresentation({
             <strong>{card.label}</strong>
             <span>{card.copy}</span>
           </button>
-        ))}
-      </div>
-      <div className="lineage-presentation-chip-layer" aria-label="Lineage relations">
-        {provenanceLayout.sources.map((card) => (
-          <RelationLabelGroup key={`${card.id}:relations`} labels={card.labelGroup.labels} x={card.labelGroup.x} y={card.labelGroup.y} sourceId={card.id} />
         ))}
       </div>
       <button
@@ -378,9 +352,9 @@ export function ArchitectureWorkspace() {
               <Minus size={14} />
               <span>Zoom out</span>
             </button>
-            <button type="button" className="toolbar-button" onClick={fitReadingView} aria-label="Fit full model" title="Fit">
+            <button type="button" className="toolbar-button" onClick={fitReadingView} aria-label="Reset full model" title="Readable reset">
               <Maximize2 size={14} />
-              <span>Fit</span>
+              <span>Reset</span>
             </button>
             <button type="button" className="toolbar-button" onClick={() => zoomReadingView("in")} aria-label="Zoom in full model" title="Zoom in">
               <Plus size={14} />
@@ -426,8 +400,8 @@ export function ArchitectureWorkspace() {
             >
               <svg className="architecture-map-edges" viewBox={`0 0 ${layout.canvas.width} ${layout.canvas.height}`} preserveAspectRatio="none" role="img" aria-label="Projected semantic relations">
                 <defs>
-                  <marker id="architecture-edge-arrow" markerUnits="userSpaceOnUse" markerWidth="7" markerHeight="7" refX="6.2" refY="3.5" orient="auto">
-                    <path d="M0.7,0.7 L6.1,3.5 L0.7,6.3" />
+                  <marker id="architecture-edge-arrow" markerUnits="userSpaceOnUse" markerWidth="5.2" markerHeight="5.2" refX="4.8" refY="2.6" orient="auto">
+                    <path d="M0.8,0.8 L4.8,2.6 L0.8,4.4" />
                   </marker>
                 </defs>
                 {layout.edges.map((edge) => (
@@ -506,12 +480,15 @@ function ProjectedEdge({
   hasTraceSelection: boolean
 }) {
   const isConnectedToSelection = edge.relation.sourceId === selectedEntityId || edge.relation.targetId === selectedEntityId
+  const isArchitectureView = activeViewId === multiViewIds.architecture
+  const isSelectedEdge = !isArchitectureView && isConnectedToSelection
   const isDimmed = activeViewId === multiViewIds.architecture ? hasTraceSelection && !isTraceEdge : selectedEntityId && !isConnectedToSelection
-  const showLabel = activeViewId === multiViewIds.architecture ? architectureAllowsInlineLabel(edge.relation.type) && (isTraceEdge || (hasTraceSelection && isConnectedToSelection)) : activeViewId === multiViewIds.lineage
+  const showLabel = false
+  const showDirectionTerminal = isArchitectureView && hasTraceSelection && isTraceEdge
   const label = compactRelationLabel(edge.relation.type, edge.relation.label)
   return (
     <g
-      className={`architecture-map-edge architecture-map-edge-${relationTone(edge.relation.type)} ${showLabel ? "architecture-map-edge-labeled" : ""} ${isTraceEdge ? "architecture-map-edge-trace" : ""} ${isConnectedToSelection ? "architecture-map-edge-selected" : ""} ${isDimmed ? "architecture-map-edge-muted" : ""}`}
+      className={`architecture-map-edge architecture-map-edge-${relationTone(edge.relation.type)} ${showLabel ? "architecture-map-edge-labeled" : ""} ${isTraceEdge ? "architecture-map-edge-trace" : ""} ${isSelectedEdge ? "architecture-map-edge-selected" : ""} ${isDimmed ? "architecture-map-edge-muted" : ""}`}
       data-testid={`semantic-edge-${safeDomId(edge.relation.id)}`}
       data-relation-id={edge.relation.id}
       data-relation-type={edge.relation.type}
@@ -521,6 +498,7 @@ function ProjectedEdge({
       data-trace-active={isTraceEdge ? "true" : "false"}
       data-trace-role={traceRole}
       data-edge-label-visible={showLabel ? "true" : "false"}
+      data-edge-arrow-visible={showDirectionTerminal ? "true" : "false"}
       data-source-port-x={edge.sourceX.toFixed(2)}
       data-source-port-y={edge.sourceY.toFixed(2)}
       data-target-port-x={edge.targetX.toFixed(2)}
@@ -529,7 +507,7 @@ function ProjectedEdge({
       data-route-bend-count={edge.bendCount}
       data-route-score={edge.routeScore.toFixed(2)}
     >
-      <path d={edge.path} markerEnd="url(#architecture-edge-arrow)" />
+      <path d={edge.path} markerEnd={showDirectionTerminal ? "url(#architecture-edge-arrow)" : undefined} />
       {showLabel ? <text x={edge.labelX} y={edge.labelY} data-edge-label="true">{label}</text> : null}
     </g>
   )

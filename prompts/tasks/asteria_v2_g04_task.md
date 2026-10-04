@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_g04
+task_id: asteria_v2_g04
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Add export, structural validation, and original TRACE to CAT-TRACE semantic diff
 created_at: 2026-09-09
 allow_code_change: true

@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_rc14_responsive_coordinate_space
+task_id: asteria_v2_rc14_responsive_coordinate_space
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Unify responsive graph coordinate space for Lineage endpoints and Architecture safe bounds
 created_at: 2026-09-13
 allow_code_change: true

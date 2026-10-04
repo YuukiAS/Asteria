@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_rc6_blackbox_repair
+task_id: asteria_v2_rc6_blackbox_repair
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Repair RC.5 re-audit findings and make Architecture readable/trustworthy
 created_at: 2026-09-12
 allow_code_change: true

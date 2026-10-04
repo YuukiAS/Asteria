@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_rc7_release_polish
+task_id: asteria_v2_rc7_release_polish
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Targeted RC.7 release polish for accessibility, light trace readability, disclosure, and Full-model reading controls
 created_at: 2026-09-13
 allow_code_change: true

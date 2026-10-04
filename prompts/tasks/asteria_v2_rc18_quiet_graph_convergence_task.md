@@ -1,5 +1,6 @@
 ---
 task_key: "asteria--rc18-quiet-graph-convergence"
+task_id: asteria_v2_rc18_quiet_graph_convergence
 project: "Asteria"
 status: "READY"
 task_type: "execution"

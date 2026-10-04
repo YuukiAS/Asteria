@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_frontend_convergence_cat_trace_bridge_readiness
+task_id: asteria_v2_frontend_convergence_cat_trace_bridge_readiness
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Frontend Design convergence and CAT-TRACE bridge readiness
 created_at: 2026-10-04
 allow_code_change: true

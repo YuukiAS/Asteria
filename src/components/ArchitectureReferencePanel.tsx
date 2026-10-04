@@ -1,5 +1,5 @@
 import { Download, FileJson2, GitBranch, Link2, LocateFixed, Network, Play, RotateCcw, Search, ShieldCheck } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { canonicalTraceProjects, type CanonicalTraceProjectId } from "../architecture/fixtures/canonicalTraceFixtures"
 import { catTraceMultiViewProject, evidenceClosureWarnings, multiViewIds, projectedEntities, searchCanonicalEntities, type MultiViewId } from "../architecture/fixtures/multiViewTraceProject"
 import { exportArchitectureJsonV2, exportArchitectureMarkdown } from "../architecture/export"
@@ -326,12 +326,13 @@ export function ArchitectureReferencePanel() {
   const hasSearchQuery = Boolean(searchQuery.trim())
   const panelScrollRef = useRef<HTMLElement>(null)
   const resetPanelScroll = useCallback(() => {
+    panelScrollRef.current?.scrollTo({ top: 0, left: 0 })
     window.requestAnimationFrame(() => {
       panelScrollRef.current?.scrollTo({ top: 0, left: 0 })
     })
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     resetPanelScroll()
   }, [activeViewId, resetPanelScroll, selectedEntityId, selectedSymbolId])
 

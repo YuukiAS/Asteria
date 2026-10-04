@@ -175,8 +175,9 @@ function clampNodeToCanvas<T extends ProjectionLayoutNode>(node: T, canvas: { wi
   }
 }
 
-function packFullArchitectureNodes(project: ArchitectureProjectV2, nodes: ProjectionLayoutNode[]) {
-  const layout = layoutArchitectureLanes(nodes, (node) => project.entities[node.entityId]?.layer, { width: presentationCanvas.width, minHeight: presentationCanvas.height, nodeWidth: 80, nodeHeight: 72 })
+function packFullArchitectureNodes(project: ArchitectureProjectV2, nodes: ProjectionLayoutNode[], actualCanvas: { width: number; height: number }) {
+  const readableWidth = Math.max(actualCanvas.width, Math.min(1600, actualCanvas.width * 1.55))
+  const layout = layoutArchitectureLanes(nodes, (node) => project.entities[node.entityId]?.layer, { width: readableWidth, minHeight: actualCanvas.height, nodeWidth: 112, nodeHeight: 76 })
   return {
     nodes: layout.nodes.map((node) => ({
       ...node,
@@ -249,7 +250,6 @@ function selectDisplayEntityIds(project: ArchitectureProjectV2, viewId: string, 
     })
   }
 
-  revealDirectContext(options.selectedEntityId)
   options.traceEntityIds?.forEach((entityId) => revealDirectContext(entityId))
   return base.filter((entityId) => visible.has(entityId))
 }
@@ -304,7 +304,7 @@ export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: st
   })
 
   if (view.kind === "architecture" && options.detailLevel === "full") {
-    const fullLayout = packFullArchitectureNodes(project, nodes)
+    const fullLayout = packFullArchitectureNodes(project, nodes, actualCanvas)
     nodes = fullLayout.nodes
     canvas = fullLayout.canvas
   } else if (view.kind === "architecture" && project.project.id.includes("original-trace")) {
@@ -387,7 +387,7 @@ export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: st
     viewport: {
       x: view.kind === "architecture" && options.detailLevel === "full" ? 0 : view.viewport?.x || 0,
       y: view.viewport?.y || 0,
-      zoom: view.kind === "architecture" && options.detailLevel === "full" ? Math.min(0.82, presentationCanvas.height / canvas.height) : options.canvasWidth || options.canvasHeight ? 1 : view.viewport?.zoom || 1,
+      zoom: view.kind === "architecture" && options.detailLevel === "full" ? 1 : options.canvasWidth || options.canvasHeight ? 1 : view.viewport?.zoom || 1,
     },
     canvas,
   }

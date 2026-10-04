@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_rc10_visual_finish
+task_id: asteria_v2_rc10_visual_finish
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Final broad visual finish for Full model, Original TRACE, Lineage/Evidence, math/copy, and disclosure
 created_at: 2026-09-13
 allow_code_change: true

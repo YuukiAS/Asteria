@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_rc11_reader_finish
+task_id: asteria_v2_rc11_reader_finish
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Final reader-facing Architecture repair for canonical math, card labels, and scientific Why-it-matters copy
 created_at: 2026-09-13
 allow_code_change: true

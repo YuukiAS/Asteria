@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_rc5_blackbox_repair
+task_id: asteria_v2_rc5_blackbox_repair
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Repair RC.4 black-box findings before final human acceptance
 created_at: 2026-09-12
 allow_code_change: true

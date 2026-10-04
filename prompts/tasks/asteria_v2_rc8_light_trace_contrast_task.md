@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_rc8_light_trace_contrast
+task_id: asteria_v2_rc8_light_trace_contrast
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Final narrow RC.8 patch for 1366 Light trace-context readability
 created_at: 2026-09-13
 allow_code_change: true

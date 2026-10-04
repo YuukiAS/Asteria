@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_core_autonomous
+task_id: asteria_v2_core_autonomous
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Autonomously deliver Asteria 1.0 freeze through Asteria 2.0 final Web RC
 created_at: 2026-09-09
 allow_code_change: true

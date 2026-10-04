@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_rc4_archive_legacy_acceptance
+task_id: asteria_v2_rc4_archive_legacy_acceptance
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Make Asteria 2.0 the only active product shell and archive Asteria 1.x UI
 created_at: 2026-09-12
 allow_code_change: true

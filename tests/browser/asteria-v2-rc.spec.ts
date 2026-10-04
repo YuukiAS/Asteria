@@ -204,7 +204,7 @@ async function assertNoSelectorOverlap(page: Page, selector: string, gap = 0) {
 async function assertNoRelationChipCardCollision(page: Page) {
   const chips = await visibleRects(page, "[data-lineage-label-group='true']")
   const cards = await visibleRects(page, ".lineage-presentation-card")
-  expect(chips.length).toBe(4)
+  expect(chips.length).toBe(0)
   for (const chip of chips) {
     for (const card of cards) {
       expect(overlaps(chip, card, 4), `${chip.id} relation chip collides with ${card.id}`).toBe(false)
@@ -218,13 +218,15 @@ async function assertLineagePresentationGeometry(page: Page) {
   await expect(page.locator("[data-edge-label='true']")).toHaveCount(0)
   await assertNoSelectorOverlap(page, ".lineage-presentation-card", 10)
   await assertNoSelectorOverlap(page, "[data-lineage-label-group='true']", 6)
+  await expect(page.locator("[data-lineage-label-group='true']")).toHaveCount(0)
+  await expect(page.locator("[data-lineage-arrow-visible='true']")).toHaveCount(0)
   await assertNoRelationChipCardCollision(page)
   const metrics = await lineageRoutingMetrics(page)
   expect(metrics.connectorTouchTarget).toBe(true)
   expect(metrics.endpointErrorMax).toBeLessThanOrEqual(3)
   expect(metrics.floatingArrowheadCount).toBe(0)
   expect(metrics.portCollapseCount).toBe(0)
-  expect(metrics.chipPathAssociation).toBe(true)
+  expect(metrics.chipPathAssociation).toBe(false)
   const target = await page.getByTestId("lineage-target-card").boundingBox()
   const canvas = await page.getByTestId("central-lineage-canvas").boundingBox()
   expect(target).not.toBeNull()
@@ -475,7 +477,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/")
   await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
   await expect(page.getByTestId("asteria-v2-topbar")).toBeVisible()
-  await expect(page.getByText("2.0.0-rc.17")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.18")).toBeVisible()
   await expect(page.getByTestId("current-project")).toContainText("Project")
   await expect(page.getByTestId("current-project")).toContainText("CAT-TRACE")
   await expect(page.getByTestId("current-view")).toContainText("Architecture")
@@ -725,7 +727,9 @@ test("RC7 acceptance covers direct 2.0 entry, selectors, views, trace-edge truth
   await expect(page.locator(relationIdSelector("relation:lineage:trace-cat"))).toHaveAttribute("data-relation-type", "extends")
   await expect(page.locator(relationIdSelector("relation:lineage:trace-preserve"))).toHaveAttribute("data-relation-type", "preserves")
   await expect(page.locator("[data-lineage-connector]")).toHaveCount(4)
-  await expect(page.locator("[data-lineage-label-group='true']")).toHaveCount(4)
+  await expect(page.locator("[data-lineage-label-group='true']")).toHaveCount(0)
+  await expect(page.locator("[data-lineage-arrow-visible='true']")).toHaveCount(0)
+  await expect(page.locator(".lineage-presentation-metadata [data-relation-id]")).toHaveCount(5)
   await page.screenshot({ path: path.join(acceptanceDir, "lineage-dark.png"), fullPage: false })
 
   await page.getByTestId("view-evidence").click()
@@ -842,7 +846,7 @@ test("RC7 polish covers compact actions, controlled export disclosure, light tra
   await page.mouse.up()
   await expect(canvas).not.toHaveAttribute("data-reading-pan-x", "0")
   await page.screenshot({ path: path.join(screenshotDir, "rc7-full-model-zoom-pan.png"), fullPage: false })
-  await page.getByRole("button", { name: "Fit full model" }).click()
+  await page.getByRole("button", { name: "Reset full model" }).click()
   await expect(canvas).toHaveAttribute("data-reading-zoom", "1.00")
   await expect(canvas).toHaveAttribute("data-reading-pan-x", "0")
   await expect(canvas).toHaveAttribute("data-reading-pan-y", "0")
@@ -877,16 +881,12 @@ test("RC8 light trace contrast keeps muted context readable without flattening a
   expect(mutedPathOpacity).toBeGreaterThanOrEqual(0.8)
   expect(mutedPathWidth).toBeGreaterThanOrEqual(0.3)
 
-  const selectedMutedEdge = page.locator(".architecture-map-edge-muted.architecture-map-edge-selected").first()
-  await expect(selectedMutedEdge).toBeVisible()
-  const selectedMutedGroupOpacity = await selectedMutedEdge.evaluate((element) => Number.parseFloat(getComputedStyle(element).opacity))
-  const selectedMutedPathWidth = await selectedMutedEdge.locator("path").evaluate((element) => Number.parseFloat(getComputedStyle(element).strokeWidth))
-  expect(selectedMutedGroupOpacity).toBe(1)
+  await expect(page.locator(".architecture-map-edge-muted.architecture-map-edge-selected")).toHaveCount(0)
 
   const activeTraceEdge = page.locator('[data-trace-active="true"]').first()
   const activeTracePathWidth = await activeTraceEdge.locator("path").evaluate((element) => Number.parseFloat(getComputedStyle(element).strokeWidth))
   expect(activeTracePathWidth).toBeGreaterThan(mutedPathWidth)
-  expect(selectedMutedPathWidth).toBeGreaterThan(mutedPathWidth)
+  await expect(page.locator('[data-trace-active="true"][data-edge-arrow-visible="true"]')).not.toHaveCount(0)
   const activeTraceLabel = activeTraceEdge.locator("text")
   if ((await activeTraceLabel.count()) > 0) {
     const activeTraceLabelOpacity = await activeTraceLabel.first().evaluate((element) => Number.parseFloat(getComputedStyle(element).opacity))
@@ -956,9 +956,7 @@ test("RC9 human visual acceptance repairs Architecture geometry, labels, math co
   const nodeTransitionProps = await page.locator(".architecture-map-node").first().evaluate((element) => getComputedStyle(element).transitionProperty)
   expect(nodeTransitionProps).not.toMatch(/all|left|top|transform|width|height/)
   await expect(page.locator("[data-edge-label-visible='false'] text")).toHaveCount(0)
-  await expect(page.locator("[data-edge-label='true']").first()).toBeVisible()
-  const visibleEdgeLabels = await page.locator("[data-edge-label='true']").evaluateAll((elements) => elements.map((element) => element.textContent?.trim() || ""))
-  expect(visibleEdgeLabels.every((label) => !label.includes("_") && label.length <= 18)).toBe(true)
+  await expect(page.locator("[data-edge-label='true']")).toHaveCount(0)
   await page.screenshot({ path: path.join(screenshotDir, "rc10-architecture-visual-1366.png"), fullPage: false })
 
   const diffText = await page.getByTestId("semantic-diff").evaluate((element) => element.innerText)
@@ -976,9 +974,11 @@ test("RC9 human visual acceptance repairs Architecture geometry, labels, math co
 
   await page.getByTestId("view-lineage").click()
   await assertLineagePresentationGeometry(page)
-  const lineageGroups = await page.locator("[data-lineage-label-group='true']").evaluateAll((elements) => elements.map((element) => element.textContent?.trim() || ""))
-  expect(lineageGroups).toEqual(expect.arrayContaining(["Ecological hierarchy", "Scalable probit", "Factor shrinkage"]))
-  expect(lineageGroups.some((label) => label.includes("Extends") && label.includes("Preserves"))).toBe(true)
+  await expect(page.getByTestId("lineage-card-entity-lineage-hmsc")).toContainText("Ecological hierarchy")
+  await expect(page.getByTestId("lineage-card-entity-lineage-bigmvp")).toContainText("Scalable probit computation")
+  await expect(page.getByTestId("lineage-card-entity-lineage-mgp")).toContainText("Factor shrinkage")
+  const lineageMetadata = await page.locator(".lineage-presentation-metadata [data-relation-id]").evaluateAll((elements) => elements.map((element) => element.getAttribute("data-relation-type") || ""))
+  expect(lineageMetadata).toEqual(expect.arrayContaining(["extends", "preserves"]))
   await page.screenshot({ path: path.join(screenshotDir, "rc10-lineage-visual.png"), fullPage: false })
 
   await page.getByTestId("view-evidence").click()
@@ -1001,6 +1001,7 @@ test("RC10 final visual finish validates Full model, Original TRACE, Lineage chi
     await page.setViewportSize(viewport)
     await page.getByTestId("model-cat-trace-frozen-v2").click()
     await page.getByTestId("detail-full-model").click()
+    await page.getByRole("button", { name: "Reset full model" }).click()
     await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-detail-level", "full")
     await assertNoNodeOverlap(page, 8)
     await assertNoPrimaryTextClipping(page)
@@ -1152,6 +1153,7 @@ test("RC11 reader-facing Architecture finish keeps formulas, labels, and why cop
   }
 
   await page.getByTestId("detail-full-model").click()
+  await page.getByRole("button", { name: "Reset full model" }).click()
   await assertNoNodeOverlap(page, 8)
   await assertNoPrimaryTextClipping(page)
   await assertNoScientificLabelClipping(page)
@@ -1214,21 +1216,19 @@ test("RC12 edge and arrow presentation uses stable restrained visual weights", a
   await selectArchitectureSymbol(page, "betaU_gh")
 
   const archBaseWidth = await computedStrokeWidth(page, ".architecture-map-edge:not(.architecture-map-edge-selected):not(.architecture-map-edge-trace):not(.architecture-map-edge-muted) path")
-  const archSelectedWidth = await computedStrokeWidth(page, ".architecture-map-edge-selected path")
   expect(archBaseWidth).toBeGreaterThanOrEqual(1.2)
   expect(archBaseWidth).toBeLessThanOrEqual(1.6)
-  expect(archSelectedWidth).toBeGreaterThanOrEqual(1.8)
-  expect(archSelectedWidth).toBeLessThanOrEqual(2.1)
-  expect(archSelectedWidth / archBaseWidth).toBeLessThanOrEqual(1.7)
+  await expect(page.locator(".architecture-map-edge-selected")).toHaveCount(0)
+  await expect(page.locator('[data-edge-arrow-visible="true"]')).toHaveCount(0)
 
   const vectorEffect = await page.locator(".architecture-map-edge path").first().evaluate((element) => getComputedStyle(element).vectorEffect)
   expect(vectorEffect).toBe("non-scaling-stroke")
   const marker = page.locator("#architecture-edge-arrow")
   await expect(marker).toHaveAttribute("markerUnits", "userSpaceOnUse")
-  expect(Number(await marker.getAttribute("markerWidth"))).toBeGreaterThanOrEqual(6)
-  expect(Number(await marker.getAttribute("markerWidth"))).toBeLessThanOrEqual(8)
-  expect(Number(await marker.getAttribute("markerHeight"))).toBeGreaterThanOrEqual(6)
-  expect(Number(await marker.getAttribute("markerHeight"))).toBeLessThanOrEqual(8)
+  expect(Number(await marker.getAttribute("markerWidth"))).toBeGreaterThanOrEqual(4.5)
+  expect(Number(await marker.getAttribute("markerWidth"))).toBeLessThanOrEqual(5.5)
+  expect(Number(await marker.getAttribute("markerHeight"))).toBeGreaterThanOrEqual(4.5)
+  expect(Number(await marker.getAttribute("markerHeight"))).toBeLessThanOrEqual(5.5)
   await assertNoNodeOverlap(page, 8)
   await assertNoPrimaryTextClipping(page)
   await page.screenshot({ path: path.join(screenshotDir, "rc12-architecture-selected-1536.png"), fullPage: false })
@@ -1245,6 +1245,7 @@ test("RC12 edge and arrow presentation uses stable restrained visual weights", a
   expect(archMutedWidth).toBeGreaterThanOrEqual(1.0)
   expect(archMutedWidth).toBeLessThanOrEqual(1.3)
   expect(archTraceWidth / archBaseWidth).toBeLessThanOrEqual(1.7)
+  expect(await page.locator('[data-edge-arrow-visible="true"]').count()).toBe(await page.locator('[data-trace-active="true"]').count())
   await assertNoEdgeLabelNodeCollision(page)
   await page.screenshot({ path: path.join(screenshotDir, "rc12-architecture-trace-light-1366.png"), fullPage: false })
 
@@ -1253,8 +1254,8 @@ test("RC12 edge and arrow presentation uses stable restrained visual weights", a
   const lineageWidth = await computedStrokeWidth(page, "[data-lineage-connector]")
   expect(lineageWidth).toBeGreaterThanOrEqual(1.4)
   expect(lineageWidth).toBeLessThanOrEqual(1.9)
-  await expect(page.locator("#lineage-presentation-arrow")).toHaveAttribute("markerUnits", "userSpaceOnUse")
-  expect(Number(await page.locator("#lineage-presentation-arrow").getAttribute("markerWidth"))).toBeLessThanOrEqual(9)
+  await expect(page.locator("#lineage-presentation-arrow")).toHaveCount(0)
+  await expect(page.locator("[data-lineage-label-group='true']")).toHaveCount(0)
   await assertLineagePresentationGeometry(page)
   await page.screenshot({ path: path.join(screenshotDir, "rc12-lineage-1536.png"), fullPage: false })
 
@@ -1599,7 +1600,7 @@ test("RC15 canonical scientific graph visual system validates route grammar, lab
   await page.setViewportSize({ width: 1366, height: 768 })
   if ((await page.locator("html").getAttribute("data-theme")) !== "light") await page.getByTestId("topbar-toggle-theme").click()
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light")
-  await expect(page.getByText("2.0.0-rc.17")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.18")).toBeVisible()
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-view", "view:architecture")
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-model", "cat-trace-frozen-v2")
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-detail-level", "overview")
@@ -1635,10 +1636,11 @@ test("RC15 canonical scientific graph visual system validates route grammar, lab
   await page.getByTestId("model-cat-trace-frozen-v2").click()
   await page.getByTestId("view-lineage").click()
   await assertLineagePresentationGeometry(page)
-  await expect(page.locator("[data-lineage-label-group='true']")).toHaveCount(4)
-  const groups = await page.locator("[data-lineage-label-group='true']").evaluateAll((elements) => elements.map((element) => ({ sourceId: element.getAttribute("data-source-id"), labelCount: element.getAttribute("data-label-count"), text: element.textContent || "" })))
-  expect(groups.find((group) => group.sourceId === "entity:lineage:trace")).toMatchObject({ labelCount: "2" })
-  expect(groups.some((group) => group.sourceId === "entity:lineage:trace" && group.text.includes("Extends") && group.text.includes("Preserves"))).toBe(true)
+  await expect(page.locator("[data-lineage-label-group='true']")).toHaveCount(0)
+  await expect(page.locator("[data-lineage-arrow-visible='true']")).toHaveCount(0)
+  const lineageMetadata = await page.locator(".lineage-presentation-metadata [data-relation-id]").evaluateAll((elements) => elements.map((element) => ({ relationId: element.getAttribute("data-relation-id"), sourceId: element.getAttribute("data-source-id"), relationType: element.getAttribute("data-relation-type") })))
+  expect(lineageMetadata.some((item) => item.relationId === "relation:lineage:trace-cat" && item.relationType === "extends")).toBe(true)
+  expect(lineageMetadata.some((item) => item.relationId === "relation:lineage:trace-preserve" && item.relationType === "preserves")).toBe(true)
   await page.screenshot({ path: path.join(screenshotDir, "rc15-lineage-groups-1536.png"), fullPage: false })
 
   await page.getByTestId("view-evidence").click()
@@ -1845,7 +1847,7 @@ async function connectorFinishMetrics(page: Page): Promise<ConnectorFinishMetric
     }).length
     return {
       FILLED_TRIANGLE_MARKER_COUNT,
-      CANONICAL_OPEN_CHEVRON: markerPaths.every((path) => (path.getAttribute("d") || "") === "M0.7,0.7 L6.1,3.5 L0.7,6.3") ? "PASS" : "FAIL",
+      CANONICAL_OPEN_CHEVRON: markerPaths.every((path) => ["M0.7,0.7 L6.1,3.5 L0.7,6.3", "M0.8,0.8 L4.8,2.6 L0.8,4.4"].includes(path.getAttribute("d") || "")) ? "PASS" : "FAIL",
       ACTIVE_ARROW_SIZE_EQUALS_BASE: new Set(markerSizes).size <= 1 ? "PASS" : "FAIL",
       EDGE_CARD_BORDER_HUG_COUNT,
       NONTERMINAL_CARD_CLEARANCE_FAIL_COUNT,
@@ -2005,17 +2007,15 @@ test("RC16 connector contact finish validates open chevrons, terminal contact, c
   expect(labelMetrics.LINEAGE_LABEL_PATH_ASSOCIATION).toBe("PASS")
   expect(labelMetrics.LINEAGE_LABEL_STROKE_INTERSECTION_COUNT).toBe(0)
   expect(labelMetrics.LINEAGE_LABEL_CARD_COLLISION_COUNT).toBe(0)
-  expect(labelMetrics.traceLabelCount).toBe(2)
-  expect(labelMetrics.traceText).toContain("Extends")
-  expect(labelMetrics.traceText).toContain("Preserves")
+  expect(labelMetrics.traceLabelCount).toBe(0)
+  expect(labelMetrics.traceText).toBe("")
   await page.screenshot({ path: path.join(screenshotDir, "rc16-lineage-1536-dark.png"), fullPage: false })
-  await page.locator("[data-lineage-label-group='true'][data-source-id='entity:lineage:trace']").screenshot({ path: path.join(screenshotDir, "rc16-lineage-trace-multi-relation-group-closeup.png") })
 
   await page.setViewportSize({ width: 1366, height: 768 })
   metrics = await connectorFinishMetrics(page)
   expectConnectorHardGates(metrics, "LINEAGE")
   labelMetrics = await lineageLabelFinishMetrics(page)
-  expect(labelMetrics.LINEAGE_LABEL_PATH_ASSOCIATION, "LINEAGE_RESIZE_LABEL_ASSOCIATION").toBe("PASS")
+  expect(labelMetrics.LINEAGE_LABEL_CARD_COLLISION_COUNT, "LINEAGE_RESIZE_LABEL_ASSOCIATION").toBe(0)
   await page.screenshot({ path: path.join(screenshotDir, "rc16-lineage-1366-dark.png"), fullPage: false })
 
   await page.setViewportSize({ width: 1536, height: 864 })
@@ -2038,7 +2038,7 @@ test("RC17 inspector top context stays visible after selection and view changes"
   await fs.mkdir(screenshotDir, { recursive: true })
   await page.setViewportSize({ width: 1366, height: 768 })
   if ((await page.locator("html").getAttribute("data-theme")) !== "light") await page.getByTestId("topbar-toggle-theme").click()
-  await expect(page.getByText("2.0.0-rc.17")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.18")).toBeVisible()
 
   await page.getByTestId("symbol-betaU_gh").click()
   let metrics = await inspectorTopStackMetrics(page)
@@ -2065,4 +2065,135 @@ test("RC17 inspector top context stays visible after selection and view changes"
   expect(metrics.viewHelpFullyVisible).toBe(true)
   expect(metrics.viewHelpText).toBe("Evidence answers which claims are supported, pending, or limited before real-data closure.")
   await page.screenshot({ path: path.join(screenshotDir, "rc17-inspector-top-evidence-1366-light.png"), fullPage: false })
+})
+
+test("RC18 quiet graph convergence keeps selection stable, connectors quiet, and Full model readable", async ({ page }) => {
+  await fs.mkdir(screenshotDir, { recursive: true })
+  await page.setViewportSize({ width: 1366, height: 768 })
+  if ((await page.locator("html").getAttribute("data-theme")) !== "light") await page.getByTestId("topbar-toggle-theme").click()
+  await expect(page.getByText("2.0.0-rc.18")).toBeVisible()
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-trace-enabled", "false")
+
+  const edgePathSignature = () => page.locator(".architecture-map-edge path").evaluateAll((paths) => paths.map((path) => path.getAttribute("d") || ""))
+  const baselineNodeCount = Number(await page.getByTestId("architecture-projection-canvas").getAttribute("data-projected-entity-count"))
+  const baselineCenters = await nodeCenters(page)
+  const baselinePaths = await edgePathSignature()
+  const visibleNodeCounts = [baselineNodeCount]
+  let maxSharedDelta = 0
+  let edgePathChangeCount = 0
+
+  for (const entityId of ["yU_igh", "gamma_g", "betaU_gh", "c_f"]) {
+    await page.getByTestId(`projection-node-entity-cat-trace-frozen-v2-${entityId}`).click()
+    await waitForProjectionGeometrySettled(page)
+    visibleNodeCounts.push(Number(await page.getByTestId("architecture-projection-canvas").getAttribute("data-projected-entity-count")))
+    const currentCenters = await nodeCenters(page)
+    for (const [id, before] of baselineCenters) {
+      const after = currentCenters.get(id)
+      if (!after) continue
+      maxSharedDelta = Math.max(maxSharedDelta, Math.hypot(before.cx - after.cx, before.cy - after.cy))
+    }
+    const currentPaths = await edgePathSignature()
+    edgePathChangeCount = Math.max(edgePathChangeCount, currentPaths.filter((path, index) => path !== baselinePaths[index]).length + Math.abs(currentPaths.length - baselinePaths.length))
+  }
+
+  const TRACE_OFF_VISIBLE_NODE_COUNT_STABLE = new Set(visibleNodeCounts).size === 1 ? "PASS" : "FAIL"
+  const TRACE_OFF_SHARED_NODE_MAX_DELTA_PX = Number(maxSharedDelta.toFixed(2))
+  const TRACE_OFF_EDGE_PATH_CHANGE_COUNT = edgePathChangeCount
+  const TRACE_OFF_ORDINARY_ARROWHEAD_COUNT = await page.locator('[data-edge-arrow-visible="true"]').count()
+  const TRACE_OFF_INLINE_EDGE_LABEL_COUNT = await page.locator("[data-edge-label='true']").count()
+  const TRACE_OFF_SELECTION_EDGE_EMPHASIS_COUNT = await page.locator(".architecture-map-edge-selected").count()
+  expect(TRACE_OFF_VISIBLE_NODE_COUNT_STABLE).toBe("PASS")
+  expect(TRACE_OFF_SHARED_NODE_MAX_DELTA_PX).toBeLessThanOrEqual(1)
+  expect(TRACE_OFF_EDGE_PATH_CHANGE_COUNT).toBe(0)
+  expect(TRACE_OFF_ORDINARY_ARROWHEAD_COUNT).toBe(0)
+  expect(TRACE_OFF_INLINE_EDGE_LABEL_COUNT).toBe(0)
+  expect(TRACE_OFF_SELECTION_EDGE_EMPHASIS_COUNT).toBe(0)
+
+  await page.getByTestId("enable-trace").click()
+  await page.getByTestId("trace-mode").selectOption("recursive")
+  await page.getByTestId("trace-direction").selectOption("both")
+  await waitForProjectionGeometrySettled(page)
+  const TRACE_ON_ACTIVE_ARROWHEAD_COUNT = await page.locator('.architecture-map-edge[data-trace-active="true"][data-edge-arrow-visible="true"]').count()
+  const activeTraceEdgeCount = await page.locator('.architecture-map-edge[data-trace-active="true"]').count()
+  const TRACE_ON_CONTEXT_ARROWHEAD_COUNT = await page.locator('.architecture-map-edge[data-trace-active="false"][data-edge-arrow-visible="true"]').count()
+  expect(TRACE_ON_ACTIVE_ARROWHEAD_COUNT).toBe(activeTraceEdgeCount)
+  expect(TRACE_ON_CONTEXT_ARROWHEAD_COUNT).toBe(0)
+
+  await page.getByTestId("enable-trace").click()
+  await page.getByTestId("detail-full-model").click()
+  await page.getByRole("button", { name: "Reset full model" }).click()
+  await waitForProjectionGeometrySettled(page)
+  const fullMetrics = await page.locator(".architecture-projection-layer").evaluate((layer) => {
+    const nodes = [...document.querySelectorAll<HTMLElement>(".architecture-map-node")]
+    const primary = [...document.querySelectorAll<HTMLElement>(".architecture-map-node-primary, .architecture-map-node .rendered-math")]
+    const projectionWidth = layer.getBoundingClientRect().width
+    const modelXs = nodes.map((node) => {
+      const x = Number(node.dataset.nodeX || "0")
+      const width = Number(node.dataset.nodeWidth || node.getBoundingClientRect().width)
+      return { left: x - width / 2, right: x + width / 2 }
+    })
+    const minX = Math.min(...modelXs.map((node) => node.left))
+    const maxX = Math.max(...modelXs.map((node) => node.right))
+    let overlapCount = 0
+    const rects = nodes.map((node) => node.getBoundingClientRect())
+    for (let i = 0; i < rects.length; i += 1) {
+      for (let j = i + 1; j < rects.length; j += 1) {
+        if (rects[i].left < rects[j].right && rects[i].right > rects[j].left && rects[i].top < rects[j].bottom && rects[i].bottom > rects[j].top) overlapCount += 1
+      }
+    }
+    const primaryTextMin = Math.min(...primary.map((element) => Number.parseFloat(getComputedStyle(element).fontSize || "0")).filter(Boolean))
+    const clippedCount = primary.filter((element) => {
+      const parent = element.closest<HTMLElement>(".architecture-map-node")
+      const rect = element.getBoundingClientRect()
+      const parentRect = parent?.getBoundingClientRect()
+      return element.scrollWidth > element.clientWidth + 2 || (parentRect ? rect.left < parentRect.left - 1 || rect.right > parentRect.right + 1 || rect.top < parentRect.top - 1 || rect.bottom > parentRect.bottom + 1 : false)
+    }).length
+    return {
+      FULL_MODEL_PRIMARY_TEXT_MIN_CSS_PX: Number(primaryTextMin.toFixed(2)),
+      FULL_MODEL_HORIZONTAL_UTILIZATION: Number(((maxX - minX) / projectionWidth).toFixed(2)),
+      FULL_MODEL_NODE_OVERLAP_COUNT: overlapCount,
+      FULL_MODEL_PRIMARY_TEXT_CLIPPED_COUNT: clippedCount,
+    }
+  })
+  expect(fullMetrics.FULL_MODEL_PRIMARY_TEXT_MIN_CSS_PX).toBeGreaterThanOrEqual(9.5)
+  expect(fullMetrics.FULL_MODEL_HORIZONTAL_UTILIZATION).toBeGreaterThanOrEqual(0.78)
+  expect(fullMetrics.FULL_MODEL_NODE_OVERLAP_COUNT).toBe(0)
+  expect(fullMetrics.FULL_MODEL_PRIMARY_TEXT_CLIPPED_COUNT).toBe(0)
+
+  await page.getByTestId("view-lineage").click()
+  await expect(page.getByTestId("lineage-presentation")).toBeVisible()
+  const LINEAGE_DEFAULT_ARROWHEAD_COUNT = await page.locator('[data-lineage-arrow-visible="true"], [data-lineage-connector][marker-end]').count()
+  const LINEAGE_FLOATING_EDGE_LABEL_COUNT = await page.locator("[data-lineage-label-group='true'], .lineage-relation-chip-part").count()
+  expect(LINEAGE_DEFAULT_ARROWHEAD_COUNT).toBe(0)
+  expect(LINEAGE_FLOATING_EDGE_LABEL_COUNT).toBe(0)
+
+  await page.getByTestId("view-evidence").click()
+  await expect(page.getByTestId("central-evidence-canvas")).toBeVisible()
+  const EVIDENCE_DEFAULT_ORDINARY_ARROWHEAD_COUNT = await page.locator('[data-edge-arrow-visible="true"]').count()
+  const EVIDENCE_FLOATING_EDGE_LABEL_COUNT = await page.locator("[data-edge-label='true']").count()
+  expect(EVIDENCE_DEFAULT_ORDINARY_ARROWHEAD_COUNT).toBe(0)
+  expect(EVIDENCE_FLOATING_EDGE_LABEL_COUNT).toBe(0)
+
+  console.log(
+    JSON.stringify(
+      {
+        TRACE_OFF_VISIBLE_NODE_COUNT_STABLE,
+        TRACE_OFF_VISIBLE_NODE_COUNT_SEQUENCE: visibleNodeCounts,
+        TRACE_OFF_SHARED_NODE_MAX_DELTA_PX,
+        TRACE_OFF_EDGE_PATH_CHANGE_COUNT,
+        TRACE_OFF_ORDINARY_ARROWHEAD_COUNT,
+        TRACE_OFF_INLINE_EDGE_LABEL_COUNT,
+        TRACE_OFF_SELECTION_EDGE_EMPHASIS_COUNT,
+        TRACE_ON_CONTEXT_ARROWHEAD_COUNT,
+        TRACE_ON_ACTIVE_ARROWHEAD_COUNT,
+        LINEAGE_DEFAULT_ARROWHEAD_COUNT,
+        LINEAGE_FLOATING_EDGE_LABEL_COUNT,
+        EVIDENCE_DEFAULT_ORDINARY_ARROWHEAD_COUNT,
+        EVIDENCE_FLOATING_EDGE_LABEL_COUNT,
+        ...fullMetrics,
+      },
+      null,
+      2,
+    ),
+  )
 })

@@ -48,7 +48,7 @@ try {
   await expect(page.getByTestId("full-model-reading-controls")).toBeVisible()
   await page.getByRole("button", { name: "Zoom in full model" }).click()
   await expect(page.getByTestId("architecture-projection-canvas")).toHaveAttribute("data-reading-zoom", "1.18")
-  await page.getByRole("button", { name: "Fit full model" }).click()
+  await page.getByRole("button", { name: "Reset full model" }).click()
   await expect(page.getByTestId("architecture-projection-canvas")).toHaveAttribute("data-reading-zoom", "1.00")
 
   for (const forbidden of ["Choose a starting version", "Use shared version", "New from scratch"]) {

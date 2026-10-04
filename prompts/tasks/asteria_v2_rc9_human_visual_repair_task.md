@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_rc9_human_visual_repair
+task_id: asteria_v2_rc9_human_visual_repair
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Repair final human-acceptance visual blockers across Architecture, Lineage, Evidence, math rendering, and copy
 created_at: 2026-09-13
 allow_code_change: true

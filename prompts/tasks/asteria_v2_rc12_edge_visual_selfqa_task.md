@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_rc12_edge_visual_selfqa
+task_id: asteria_v2_rc12_edge_visual_selfqa
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Normalize graph edge/arrow presentation and require developer visual self-QA before any GPT Work
 created_at: 2026-09-13
 allow_code_change: true

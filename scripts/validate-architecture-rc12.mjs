@@ -46,8 +46,8 @@ try {
   const lineageBaseEdgeCssPx = cssPxToken(styleSource, "--graph-edge-lineage-base")
   const lineageActiveEdgeCssPx = cssPxToken(styleSource, "--graph-edge-lineage-active")
 
-  assert(packageJson.version === "2.0.0-rc.17", "package.json must declare 2.0.0-rc.17.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.17"'), "App shell must display 2.0.0-rc.17.")
+  assert(packageJson.version === "2.0.0-rc.18", "package.json must declare 2.0.0-rc.18.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.18"'), "App shell must display 2.0.0-rc.18.")
   assert(packageJson.scripts["test:architecture-rc12"] === 'node scripts/validate-architecture-rc12.mjs && playwright test --grep "RC12"', "package.json must expose RC.12 focused validation.")
   assert(packageJson.scripts["test:regression"].includes("test:architecture-rc12"), "Cumulative regression must include RC.12.")
 
@@ -77,8 +77,8 @@ try {
     "Lineage active connector stroke must remain below the RC.12 cap.",
   )
   assert(workspaceSource.includes('markerUnits="userSpaceOnUse"'), "SVG markers must be decoupled from selected stroke width.")
-  assert(workspaceSource.includes('markerWidth="7"') && workspaceSource.includes('markerHeight="7"'), "Architecture and Lineage arrows must use fixed compact user-space marker dimensions.")
-  assert(workspaceSource.includes('d="M0.7,0.7 L6.1,3.5 L0.7,6.3"'), "Arrowheads must use the canonical open chevron path.")
+  assert(workspaceSource.includes('markerWidth="5.2"') && workspaceSource.includes('markerHeight="5.2"'), "Explicit trace terminals must use tiny fixed user-space marker dimensions.")
+  assert(workspaceSource.includes('d="M0.8,0.8 L4.8,2.6 L0.8,4.4"'), "Explicit trace arrowheads must use the tiny quiet connector chevron path.")
   assert(styleSource.includes("fill: none") && styleSource.includes("stroke: context-stroke"), "Arrowheads must render as open chevrons that inherit the relation stroke color.")
 
   const protectedChanges = changedProtectedTruthFiles()
@@ -89,7 +89,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.17",
+          version: "2.0.0-rc.18",
           edgeStrokeSystem: "css-px-non-scaling-stroke",
           architectureBaseEdgeCssPx,
           architectureActiveEdgeCssPx,

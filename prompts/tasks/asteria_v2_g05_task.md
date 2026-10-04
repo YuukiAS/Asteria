@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_g05
+task_id: asteria_v2_g05
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Architecture performance and visual convergence RC gate
 created_at: 2026-09-09
 allow_code_change: true

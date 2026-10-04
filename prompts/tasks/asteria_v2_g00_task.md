@@ -1,5 +1,10 @@
 ---
 id: asteria_v2_g00
+task_id: asteria_v2_g00
+project: Asteria
+status: READY
+executor: Codex executor session
+risk_level: medium
 title: Freeze Asteria 1.x baseline before 2.0
 created_at: 2026-09-08
 allow_code_change: true
