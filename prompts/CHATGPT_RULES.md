@@ -43,6 +43,27 @@ ChatGPT 每次为 Asteria 制定、更新、拆分或重跑 GPT Work / Cloud Bro
 
 任何没有 inline 完整 canonical Browser contract 的所谓 `ready-to-paste GPT Work prompt` 都不算 ready-to-paste，不应交给用户运行。
 
+### 用户侧只交付一个 GPT Work prompt
+
+Reviewer scope 的多少与用户要启动多少个 Work 是两回事。Asteria 的默认规则是：
+
+1. 每轮 independent acceptance 先决定需要哪些逻辑 reviewer scope（例如 W01/W05/W06）；
+2. 然后把这些 scope 合并进**一个 parent GPT Work prompt**；
+3. 用户侧只收到一个 repo 内可点击 Markdown 文件，并只需要复制/运行一次；
+4. 如果 Work 支持相互独立的并行子任务，parent prompt 在内部并行运行互不依赖的 reviewer lanes；
+5. 如果不支持并行，则仍在同一次 Work 中串行执行各独立 lane，并在每个 lane 开始时重新观察真实页面，不得用前一 lane 的结论代替检查；
+6. parent 最后去重 findings、统一 severity、决定总 PASS/FAIL 与最小 re-review scope。
+
+禁止把 `W01_*.md`、`W05_*.md`、`W06_*.md` 等多个文件同时交给用户并要求分别启动多个 Work。此类 per-reviewer 文件如存在，只能作为内部生成材料/归档，不是用户操作入口。
+
+用户侧 canonical handoff 应使用类似：
+
+```text
+prompts/reviewers/ASTERIA_GPT_WORK_PARENT_<round>.md
+```
+
+并且该 parent 文件必须已经 inline 当前完整 `UI_BLACKBOX_BROWSER_CONTRACT.md`。ChatGPT 最终回复应优先只给这一个可点击文件，不再堆多个 reviewer 文件路径。
+
 ### Broad visual repair 还必须读取 Visual Acceptance Contract
 
 当 repair 触及 Architecture / Lineage / Evidence 的 layout、graph grammar、motion、math rendering、stable-facing copy 或 responsive visual quality 时，ChatGPT 还必须读取：
@@ -123,7 +144,7 @@ EVIDENCE_VISUAL_GRAMMAR = PASS
 
 ### Reviewer 数量必须随风险收敛
 
-不要机械地每个 RC 都跑 W01–W06 六轮。
+不要机械地每个 RC 都启用 W01–W06 六个 reviewer scope。即使需要多个 reviewer scope，用户侧仍只运行一个 parent GPT Work prompt。
 
 - broad repair / semantic or multi-surface change：重跑完整 W01–W06；
 - narrow repair：只跑受影响 reviewer + W06 release red-team；
