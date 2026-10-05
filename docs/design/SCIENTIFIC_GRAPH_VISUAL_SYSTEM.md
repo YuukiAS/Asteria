@@ -532,3 +532,92 @@ edge geometry unchanged
 - selection 在 trace OFF 改变 visible node count；
 - Full model reset/fit 把主文字缩成肉眼困难的小字同时保留大面积空白。
 
+
+
+---
+
+## 11. 2026-10-05 amendment — Layout-first scientific routing（优先于“先固定节点、再让 obstacle router 绕线”的旧思路）
+
+RC.18 证明：仅移除箭头/线上文字不能解决问题。真正的失败是 route geometry 本身仍由通用 obstacle router 生成，导致长折线、跨区绕行、蛇形曲线和不自然端口。Stable scientific diagram 必须 **layout-first**：先让节点位置产生天然可画的关系，再用简单连接器；不能依赖复杂路径规划把坏布局“绕过去”。
+
+### 11.1 Architecture = layered scientific DAG
+
+- semantic layer 固定 x-rank；
+- lane 内节点 y 顺序使用通用 crossing-minimization（barycentric / median sweeps 或等价机制），不能按 entity id 打补丁；
+- 优先移动/排序 nodes 来消除 crossing，而不是让 edge 绕半个 canvas；
+- 普通跨 lane edge 使用 monotone cubic / smooth spline；
+- edge 的 x 方向应总体单调，除明确 reverse relation 外不得 backtrack；
+- simple edge 目标：0 个硬折角、最多 1 个视觉主弯曲；
+- 只有局部 unavoidable obstacle 才允许短 local dogleg；禁止 global top/bottom corridor 绕行；
+- 非相邻 lane 的 long edge 可通过中间 lane gutter waypoints，但最终仍渲染成 smooth spline，不显示线路板式正交路径。
+
+### 11.2 Architecture relation meaning
+
+不能通过“把所有箭头和文字删掉”解决视觉问题，也不能恢复满屏 label。
+
+- default map：connector 显示结构；正常 left→right lane flow 本身表达默认方向；
+- reverse / same-lane relation 若方向无法从布局推断，可保留极小 direction cue；
+- explicit Trace：active edges 显示 tiny direction terminal + concise relation label；
+- active relation label 进入 lane gutter 的独立 label layer，不直接贴在线条上；
+- Inspector 永远保留完整 typed relation，因此 canvas label 是 presentation summary，不是唯一真值。
+
+### 11.3 Lineage = three-column provenance grammar
+
+Lineage 不使用任意 floating chips。
+
+```text
+SOURCE CARD  ->  RELATION COLUMN  ->  TARGET CARD
+```
+
+- source cards 左列；
+- relation summaries 在固定中间关系列对齐；
+- target 右列；
+- connector 从 source 到 relation group、再到 target，使用轻柔短曲线；
+- relation group 是布局元素，不是沿 path 漂浮的 annotation；
+- multi relation 例如 TRACE 用同一 row 中并列 peer chips：`[Extends] [Preserves]`；
+- 可显示一个克制的 target direction cue，但不得在 source-to-label 与 label-to-target 两段都堆 arrow；
+- 完整 typed relation 仍在 Method Inspector。
+
+### 11.4 Evidence = claim-centered components, not generic routed graph
+
+- 先按 weak component / claim anchor 分组；
+- claim 为 component 的主锚点；supporting proof/dataset/implementation 放 claim 左侧或上下邻近；limitation/pending 放右侧或下游；
+- component 内先通过 node placement 减少 crossing；
+- relation 使用直接 smooth curve；仅在局部卡片冲突时做短避障；
+- 禁止一条 relation 为避障跨越整个上/下半区再返回；
+- selected object 可以强调 incident edges；完整 relation copy 在 Inspector。
+
+### 11.5 Route quality metrics
+
+任何 stable candidate 至少记录：
+
+```text
+ROUTE_GESTALT = PASS
+AVOIDABLE_EDGE_CROSSING_COUNT = 0
+LONG_DETOUR_COUNT = 0
+NON_MONOTONE_ARCH_EDGE_COUNT = 0
+ORTHOGONAL_MULTI_BEND_EDGE_COUNT = 0
+MAX_ROUTE_TO_EUCLIDEAN_RATIO <= 1.45
+FLOATING_RELATION_LABEL_COUNT = 0
+```
+
+定义：
+
+- long detour：route length 明显超过直接几何距离且不是科学结构所需；
+- non-monotone Architecture edge：普通 left→right relation 出现明显 x backtracking；
+- orthogonal multi-bend：stable Architecture/Evidence 普通关系出现 2 个以上可见硬折角；
+- route gestalt PASS 需要模型实际查看全屏截图后判断，不可由数值自动推断。
+
+### 11.6 Full model
+
+Full model layout 同样使用 layered ordering，不再从固定 1000px canvas 出发后整体缩放。
+
+- layout width 以实际 rendered canvas 为输入；
+- intrinsic height 可以增长；
+- 默认 reset/readable scale >= 0.9；
+- Overview 负责一屏；Full model 允许 pan/zoom；
+- 如果 `Fit all` 会低于 readable scale，UI 不应把它当默认或主要动作；优先 `Reset / Center`。
+
+### 11.7 Selection invariant
+
+trace OFF 时 selection 不得进入 layout/display-set 输入。selection 只更新 selected card 与 Inspector。任何 context reveal 由 explicit Trace/Focus 控制。
