@@ -38,8 +38,8 @@ try {
   const panelSource = await read("src/components/ArchitectureReferencePanel.tsx")
   const multiViewSource = await read("src/architecture/fixtures/multiViewTraceProject.ts")
 
-  assert(packageJson.version === "2.0.0-rc.18", "package.json must declare 2.0.0-rc.18.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.18"'), "App shell must display 2.0.0-rc.18.")
+  assert(packageJson.version === "2.0.0-rc.19", "package.json must declare 2.0.0-rc.19.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.19"'), "App shell must display 2.0.0-rc.19.")
   assert(sessionSource.includes("traceEnabled") && sessionSource.includes("activeTraceSymbolId"), "Selection and active trace state must be decoupled.")
   assert(sessionSource.includes('setDetailLevelState("overview")'), "Clear/model/view changes must restore Overview detail.")
   assert(panelSource.includes("Show trace") && panelSource.includes("Trace off"), "Trace controls must expose explicit off/on affordance.")
@@ -121,7 +121,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.18",
+          version: "2.0.0-rc.19",
           overviewNodes: overview.nodes.length,
           fullNodes: full.nodes.length,
           traceDirectionTruth: "root-relative",

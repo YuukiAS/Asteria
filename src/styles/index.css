@@ -764,6 +764,14 @@ body {
     @apply text-[15px] leading-5;
   }
 
+  .lineage-presentation-relation-card {
+    @apply z-20 bg-panel/95 px-3 py-2 text-center;
+  }
+
+  .lineage-presentation-relation-card strong {
+    @apply text-[12px] leading-4;
+  }
+
   .lineage-presentation-chip-layer {
     @apply pointer-events-none absolute inset-0 z-30;
   }
@@ -1002,6 +1010,30 @@ body {
 
   .architecture-map-node em {
     @apply mt-0.5 justify-self-center rounded border border-border bg-app/70 px-1.5 py-0.5 text-[8px] not-italic uppercase leading-none tracking-normal text-muted;
+  }
+
+  .architecture-map-node-overview {
+    @apply min-h-[58px] gap-0 px-1 py-1;
+  }
+
+  .architecture-map-node-overview span {
+    @apply text-[11px] leading-[14px];
+  }
+
+  .architecture-map-node-overview .architecture-map-node-primary {
+    display: inline-flex;
+    justify-content: center;
+    justify-self: center;
+    padding-inline: 1px;
+    width: auto;
+  }
+
+  .architecture-map-node-overview small {
+    @apply text-[7.5px] leading-[9px];
+  }
+
+  .architecture-map-node-overview .rendered-math {
+    font-size: 9px;
   }
 
   .architecture-map-node-full,
@@ -1329,6 +1361,10 @@ body {
     font-weight: 700;
   }
 
+  .architecture-map-node.architecture-map-node-overview .rendered-math {
+    font-size: 9px;
+  }
+
   .architecture-map-node-full .rendered-math,
   .architecture-map-node-original .rendered-math {
     font-size: 10px;
@@ -1337,6 +1373,12 @@ body {
   .architecture-diff-math {
     display: inline-flex;
     vertical-align: -0.08em;
+  }
+
+  .architecture-prose-math {
+    display: inline-flex;
+    vertical-align: -0.08em;
+    font-weight: 650;
   }
 
   .architecture-diff-row strong,

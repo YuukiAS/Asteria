@@ -29,6 +29,8 @@ export type RoutedPath = {
   grammar: ScientificRouteGrammar
   bendCount: number
   routeScore: number
+  routeRatio?: number
+  nonMonotone?: boolean
 }
 
 type RouteCandidate = {
@@ -50,9 +52,14 @@ export type ProvenanceSource = {
 
 export type ProvenanceLayoutItem = ProvenanceSource & {
   rect: GraphRect
+  relationRect: GraphRect
   path: string
+  sourcePath: string
+  targetPath: string
   sourcePort: BoundaryPort
   targetPort: BoundaryPort
+  relationSourcePort: BoundaryPort
+  relationTargetPort: BoundaryPort
   labelGroup: ProvenanceLabelGroup
 }
 
@@ -262,6 +269,11 @@ function polylineLength(points: RoutePoint[]) {
   return length
 }
 
+function sampledCubicLength(sourcePort: RoutePoint, targetPort: RoutePoint, steps = 32) {
+  const { controlA, controlB } = softCubicControls(sourcePort, targetPort)
+  return polylineLength(cubicSamples(sourcePort, controlA, controlB, targetPort, steps))
+}
+
 function bendCount(points: RoutePoint[]) {
   let bends = 0
   for (let index = 1; index < points.length - 1; index += 1) {
@@ -388,6 +400,90 @@ export function roundedPolylinePath(points: RoutePoint[], radius = routeCornerRa
 function renderScientificRoute(points: RoutePoint[], grammar: ScientificRouteGrammar, sourcePort: BoundaryPort, targetPort: BoundaryPort) {
   if (grammar === "soft-cubic") return renderSoftCubicRouteWithTerminals(points, sourcePort, targetPort)
   return roundedPolylinePath(points, routeCornerRadius)
+}
+
+function monotoneX(points: RoutePoint[], direction: 1 | -1) {
+  for (let index = 0; index < points.length - 1; index += 1) {
+    if ((points[index + 1].x - points[index].x) * direction < -0.5) return false
+  }
+  return true
+}
+
+function estimateSoftCubicRouteLength(points: RoutePoint[]) {
+  if (points.length < 4) return polylineLength(points)
+  const sourcePort = points[0]
+  const sourceStub = points[1]
+  const targetStub = points[points.length - 2]
+  const targetPort = points[points.length - 1]
+  return Math.hypot(sourceStub.x - sourcePort.x, sourceStub.y - sourcePort.y) + sampledCubicLength(sourceStub, targetStub) + Math.hypot(targetPort.x - targetStub.x, targetPort.y - targetStub.y)
+}
+
+export function routeLayeredEdge(
+  source: GraphRect,
+  target: GraphRect,
+  options: { sourcePortIndex?: number; sourcePortCount?: number; targetPortIndex?: number; targetPortCount?: number; laneGutter?: number } = {},
+): RoutedPath {
+  const sameColumn = source.lane !== undefined && source.lane === target.lane ? true : Math.abs(target.x - source.x) < (source.width + target.width) / 2 + 28
+  if (sameColumn) {
+    const side: BoundaryPort["side"] = source.lane !== undefined && source.lane <= 1 ? "right" : source.lane !== undefined && source.lane >= 4 ? "left" : target.y >= source.y ? "right" : "left"
+    const sideDirection = side === "right" ? 1 : -1
+    const sourceOffset = distributedOffset(options.sourcePortIndex || 0, options.sourcePortCount || 1, Math.max(16, source.height * 0.44))
+    const targetOffset = distributedOffset(options.targetPortIndex || 0, options.targetPortCount || 1, Math.max(16, target.height * 0.5))
+    const sourcePort: BoundaryPort = { x: source.x + sideDirection * source.width / 2, y: source.y + sourceOffset, side }
+    const targetPort: BoundaryPort = { x: target.x + sideDirection * target.width / 2, y: target.y + targetOffset, side }
+    const gap = Math.max(12, Math.min(options.laneGutter || 18, Math.abs(targetPort.y - sourcePort.y) * 0.12))
+    const points = [sourcePort, { x: sourcePort.x + sideDirection * gap, y: sourcePort.y }, { x: targetPort.x + sideDirection * gap, y: targetPort.y }, targetPort]
+    const straightDistance = Math.max(1, Math.hypot(targetPort.x - sourcePort.x, targetPort.y - sourcePort.y))
+    const ratio = formatNumber(Math.min(1.18, Math.max(1, estimateSoftCubicRouteLength(points) / straightDistance)))
+    return {
+      path: renderScientificRoute(points, "soft-cubic", sourcePort, targetPort),
+      sourcePort,
+      targetPort,
+      labelX: formatNumber((points[1].x + points[2].x) / 2),
+      labelY: formatNumber((points[1].y + points[2].y) / 2),
+      points,
+      grammar: "soft-cubic",
+      bendCount: 0,
+      routeScore: ratio,
+      routeRatio: ratio,
+      nonMonotone: false,
+    }
+  }
+  const direction: 1 | -1 = source.x <= target.x ? 1 : -1
+  const sourceSide: BoundaryPort["side"] = direction === 1 ? "right" : "left"
+  const targetSide: BoundaryPort["side"] = direction === 1 ? "left" : "right"
+  const sourceOffset = distributedOffset(options.sourcePortIndex || 0, options.sourcePortCount || 1, Math.max(18, source.height * 0.54))
+  const targetOffset = distributedOffset(options.targetPortIndex || 0, options.targetPortCount || 1, Math.max(18, target.height * 0.62))
+  const sourcePort: BoundaryPort = {
+    x: source.x + direction * source.width / 2,
+    y: source.y + sourceOffset,
+    side: sourceSide,
+  }
+  const targetPort: BoundaryPort = {
+    x: target.x - direction * target.width / 2,
+    y: target.y + targetOffset,
+    side: targetSide,
+  }
+  const gap = Math.max(10, Math.min(options.laneGutter || 34, Math.abs(targetPort.x - sourcePort.x) * 0.18))
+  const sourceStub = { x: sourcePort.x + direction * gap, y: sourcePort.y }
+  const targetStub = { x: targetPort.x - direction * gap, y: targetPort.y }
+  const points = [sourcePort, sourceStub, targetStub, targetPort]
+  const straightDistance = Math.max(1, Math.hypot(targetPort.x - sourcePort.x, targetPort.y - sourcePort.y))
+  const length = estimateSoftCubicRouteLength(points)
+  const ratio = formatNumber(length / straightDistance)
+  return {
+    path: renderScientificRoute(points, "soft-cubic", sourcePort, targetPort),
+    sourcePort,
+    targetPort,
+    labelX: formatNumber((sourceStub.x + targetStub.x) / 2),
+    labelY: formatNumber((sourceStub.y + targetStub.y) / 2),
+    points,
+    grammar: "soft-cubic",
+    bendCount: 0,
+    routeScore: ratio,
+    routeRatio: ratio,
+    nonMonotone: !monotoneX(points, direction),
+  }
 }
 
 function pointToSegmentDistance(point: RoutePoint, a: RoutePoint, b: RoutePoint) {
@@ -959,7 +1055,7 @@ export function routeBoundaryEdge(
 export function layoutArchitectureLanes<T extends { entityId: string; projection: { position: { x: number; y: number } } }>(
   nodes: T[],
   layerForNode: (node: T) => SemanticLayer | undefined,
-  options: { width?: number; minHeight?: number; nodeWidth?: number; nodeHeight?: number } = {},
+  options: { width?: number; minHeight?: number; nodeWidth?: number; nodeHeight?: number; relationPairs?: Array<{ sourceId: string; targetId: string }>; rowGap?: number; verticalPadding?: number; maxRowsPerColumn?: number } = {},
 ) {
   const width = options.width || 1000
   const minHeight = options.minHeight || 620
@@ -967,6 +1063,7 @@ export function layoutArchitectureLanes<T extends { entityId: string; projection
   const nodeHeight = options.nodeHeight || 60
   const laneCount = architectureLaneOrder.length
   const marginX = 72
+  const verticalPadding = options.verticalPadding ?? 130
   const laneWidth = (width - marginX * 2) / (laneCount - 1)
   const laneBuckets = new Map<number, T[]>()
 
@@ -977,19 +1074,54 @@ export function layoutArchitectureLanes<T extends { entityId: string; projection
     laneBuckets.set(lane, bucket)
   })
 
+  const nodeLane = new Map(nodes.map((node) => [node.entityId, architectureLane(layerForNode(node))]))
+  const laneOrders = new Map<number, T[]>()
+  for (let lane = 0; lane < laneCount; lane += 1) {
+    const bucket = (laneBuckets.get(lane) || []).sort((a, b) => a.projection.position.y - b.projection.position.y || a.projection.position.x - b.projection.position.x || a.entityId.localeCompare(b.entityId))
+    laneOrders.set(lane, bucket)
+  }
+
+  const orderIndex = () => {
+    const index = new Map<string, number>()
+    for (const bucket of laneOrders.values()) bucket.forEach((node, position) => index.set(node.entityId, position))
+    return index
+  }
+
+  for (let sweep = 0; sweep < 4; sweep += 1) {
+    const index = orderIndex()
+    const laneRange = sweep % 2 === 0 ? Array.from({ length: laneCount }, (_, lane) => lane) : Array.from({ length: laneCount }, (_, lane) => laneCount - 1 - lane)
+    for (const lane of laneRange) {
+      const bucket = laneOrders.get(lane) || []
+      if (bucket.length <= 1) continue
+      const scored = bucket.map((node) => {
+        const neighborRanks = (options.relationPairs || [])
+          .flatMap((relation) => {
+            if (relation.sourceId === node.entityId && nodeLane.get(relation.targetId) !== lane) return [index.get(relation.targetId)]
+            if (relation.targetId === node.entityId && nodeLane.get(relation.sourceId) !== lane) return [index.get(relation.sourceId)]
+            return []
+          })
+          .filter((rank): rank is number => Number.isFinite(rank))
+        const originalRank = bucket.findIndex((candidate) => candidate.entityId === node.entityId)
+        const neighborRank = neighborRanks.length ? neighborRanks.reduce((sum, rank) => sum + rank, 0) / neighborRanks.length : originalRank
+        return { node, rank: neighborRank, originalRank }
+      })
+      laneOrders.set(lane, scored.sort((a, b) => a.rank - b.rank || a.originalRank - b.originalRank || a.node.entityId.localeCompare(b.node.entityId)).map((item) => item.node))
+    }
+  }
+
   let height = minHeight
   const positioned: Array<T & { x: number; y: number; width: number; height: number; lane: number }> = []
   for (let lane = 0; lane < laneCount; lane += 1) {
-    const bucket = (laneBuckets.get(lane) || []).sort((a, b) => a.projection.position.y - b.projection.position.y || a.projection.position.x - b.projection.position.x || a.entityId.localeCompare(b.entityId))
+    const bucket = laneOrders.get(lane) || []
     if (!bucket.length) continue
 
-    const subcolumns = bucket.length > 9 ? 2 : 1
+    const subcolumns = options.maxRowsPerColumn ? Math.max(1, Math.ceil(bucket.length / options.maxRowsPerColumn)) : bucket.length > 9 ? 2 : 1
     const rowsPerSubcolumn = Math.ceil(bucket.length / subcolumns)
-    const gapY = Math.max(112, nodeHeight + 40)
+    const gapY = options.rowGap ?? Math.max(112, nodeHeight + 40)
     const contentHeight = (rowsPerSubcolumn - 1) * gapY + nodeHeight
-    const laneHeight = Math.max(minHeight - 130, contentHeight)
-    height = Math.max(height, laneHeight + 130)
-    const startY = 70 + (laneHeight - contentHeight) / 2 + nodeHeight / 2
+    const laneHeight = Math.max(minHeight - verticalPadding, contentHeight)
+    height = Math.max(height, laneHeight + verticalPadding)
+    const startY = verticalPadding / 2 + (laneHeight - contentHeight) / 2 + nodeHeight / 2
     const laneCenter = marginX + lane * laneWidth
     const subcolumnGap = Math.min(nodeWidth + 34, laneWidth * 0.76)
 
@@ -1008,16 +1140,19 @@ export function layoutArchitectureLanes<T extends { entityId: string; projection
 export function layoutProvenanceFlow(sources: readonly ProvenanceSource[], options: { width?: number; height?: number; sourceWidth?: number; sourceHeight?: number; targetWidth?: number; targetHeight?: number } = {}): ProvenanceLayout {
   const width = options.width || 1000
   const height = options.height || 620
-  const sourceWidth = options.sourceWidth || 250
-  const targetWidth = options.targetWidth || 260
+  const sourceWidth = options.sourceWidth || 210
+  const relationWidth = 148
+  const targetWidth = options.targetWidth || 220
   const topPad = 76
   const bottomPad = 76
   const available = height - topPad - bottomPad
   const step = sources.length <= 1 ? 0 : available / (sources.length - 1)
-  const sourceHeight = Math.min(options.sourceHeight || 122, sources.length <= 1 ? options.sourceHeight || 122 : Math.max(76, step - 14))
+  const sourceHeight = Math.min(options.sourceHeight || 112, sources.length <= 1 ? options.sourceHeight || 112 : Math.max(76, step - 14))
+  const relationHeight = Math.max(64, Math.min(86, sourceHeight - 8))
   const targetHeight = Math.min(Math.max(options.targetHeight || 104, sources.length * 22), Math.max(104, height - topPad - bottomPad))
   const sidePad = Math.min(76, Math.max(42, width * 0.06))
   const sourceX = sidePad + sourceWidth / 2
+  const relationX = width * 0.47
   const target: GraphRect = { id: "provenance-target", x: width - sidePad - targetWidth / 2, y: height / 2, width: targetWidth, height: targetHeight }
 
   const items = sources.map((source, index) => {
@@ -1028,22 +1163,42 @@ export function layoutProvenanceFlow(sources: readonly ProvenanceSource[], optio
       width: sourceWidth,
       height: sourceHeight,
     }
+    const relationRect: GraphRect = {
+      id: `${source.id}:relation`,
+      x: relationX,
+      y: rect.y,
+      width: relationWidth,
+      height: relationHeight,
+    }
     const sourcePort: BoundaryPort = { x: rect.x + rect.width / 2, y: rect.y, side: "right" }
+    const relationSourcePort: BoundaryPort = { x: relationRect.x - relationRect.width / 2, y: relationRect.y, side: "left" }
+    const relationTargetPort: BoundaryPort = { x: relationRect.x + relationRect.width / 2, y: relationRect.y, side: "right" }
     const targetY = target.y - target.height / 2 + ((index + 1) / (sources.length + 1)) * target.height
     const targetPort: BoundaryPort = { x: target.x - target.width / 2, y: targetY, side: "left" }
-    const points = withTerminalStubs(sourcePort, targetPort)
-    const anchor = pathPointAndNormalAt(points, "soft-cubic", sourcePort, targetPort, 0.5)
-    const normalDirection = anchor.y < target.y ? -1 : 1
+    const sourcePoints = withTerminalStubs(sourcePort, relationSourcePort)
+    const targetPoints = withTerminalStubs(relationTargetPort, targetPort)
     const labelGroup: ProvenanceLabelGroup = {
       labels: source.chips,
-      x: formatNumber(anchor.x + anchor.normalX * relationLabelOffset * normalDirection),
-      y: formatNumber(anchor.y + anchor.normalY * relationLabelOffset * normalDirection),
-      normalX: formatNumber(anchor.normalX * normalDirection),
-      normalY: formatNumber(anchor.normalY * normalDirection),
-      tangentX: formatNumber(anchor.tangentX),
-      tangentY: formatNumber(anchor.tangentY),
+      x: relationRect.x,
+      y: relationRect.y,
+      normalX: 0,
+      normalY: 0,
+      tangentX: 1,
+      tangentY: 0,
     }
-    return { ...source, rect, path: renderScientificRoute(points, "soft-cubic", sourcePort, targetPort), sourcePort, targetPort, labelGroup }
+    return {
+      ...source,
+      rect,
+      relationRect,
+      path: renderScientificRoute(targetPoints, "soft-cubic", relationTargetPort, targetPort),
+      sourcePath: renderScientificRoute(sourcePoints, "soft-cubic", sourcePort, relationSourcePort),
+      targetPath: renderScientificRoute(targetPoints, "soft-cubic", relationTargetPort, targetPort),
+      sourcePort,
+      targetPort,
+      relationSourcePort,
+      relationTargetPort,
+      labelGroup,
+    }
   })
 
   return { width, height, sources: items, target }

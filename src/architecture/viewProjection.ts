@@ -1,6 +1,6 @@
 import type { ArchitectureProjectV2, TypedRelation, ViewProjectionNode } from "./types"
 import type { ArchitectureDetailLevel } from "./session"
-import { architectureLane, layoutArchitectureLanes, routeBoundaryEdge, type GraphRect } from "./graphPresentation"
+import { layoutArchitectureLanes, routeLayeredEdge, type GraphRect, type RoutePoint } from "./graphPresentation"
 
 export type ProjectionLayoutNode = {
   entityId: string
@@ -26,6 +26,9 @@ export type ProjectionLayoutEdge = {
   grammar: string
   bendCount: number
   routeScore: number
+  routeRatio: number
+  nonMonotone: boolean
+  points: RoutePoint[]
 }
 
 export type ProjectionLayout = {
@@ -67,34 +70,6 @@ const catTraceOverviewKeys = new Set([
   "richness_targets",
 ])
 
-const catTraceOverviewSlots: Record<string, { left: number; top: number; width?: number; height?: number }> = {
-  Y_raw: { left: 8, top: 28, width: 104, height: 78 },
-  x_i: { left: 8, top: 66, width: 104, height: 82 },
-  c_f: { left: 24, top: 28, width: 104, height: 92 },
-  g_f: { left: 24, top: 66, width: 104, height: 78 },
-  mathcal_K: { left: 40, top: 20, width: 104, height: 90 },
-  mathcal_U: { left: 40, top: 44, width: 104, height: 86 },
-  mathcal_G: { left: 40, top: 70, width: 104, height: 90 },
-  nu: { left: 56, top: 17, width: 104, height: 118 },
-  zU_igh: { left: 56, top: 40, width: 104, height: 82 },
-  yU_igh: { left: 56, top: 63, width: 104, height: 82 },
-  a_g: { left: 56, top: 87, width: 104, height: 106 },
-  gamma0: { left: 72, top: 17, width: 104, height: 78 },
-  alphaU_gh: { left: 72, top: 39, width: 104, height: 104 },
-  betaU_gh: { left: 72, top: 63, width: 104, height: 104 },
-  vU_gh: { left: 72, top: 86, width: 104, height: 82 },
-  pi_g: { left: 56, top: -12, width: 104, height: 64 },
-  betaK_j: { left: 77, top: 3, width: 104, height: 64 },
-  p_g: { left: 88, top: 40, width: 104, height: 76 },
-  Sigma_W: { left: 88, top: 73, width: 104, height: 56 },
-  p_g_star: { left: 88, top: 84, width: 104, height: 78 },
-  alphaK_j: { left: 88, top: 84, width: 104, height: 78 },
-  gamma_g: { left: 96, top: 20, width: 104, height: 76 },
-  posterior_inference: { left: 96, top: 57, width: 104, height: 84 },
-  richness_targets: { left: 96, top: 120, width: 104, height: 84 },
-  zero_slots: { left: 96, top: 92, width: 104, height: 78 },
-}
-
 function normalize(value: number, min: number, max: number, low: number, high: number) {
   if (max <= min) return (low + high) / 2
   return low + ((value - min) / (max - min)) * (high - low)
@@ -106,10 +81,6 @@ function projectionByEntity(view: ArchitectureProjectV2["views"][string]) {
     if (!projection.hidden && !entries.has(projection.entityId)) entries.set(projection.entityId, projection)
   })
   return entries
-}
-
-function isCatTraceArchitectureOverview(project: ArchitectureProjectV2, view: ArchitectureProjectV2["views"][string], options: LayoutOptions) {
-  return view.kind === "architecture" && options.detailLevel === "overview" && project.project.id.includes("cat-trace-frozen-v2")
 }
 
 function originalTraceSlots(key: string) {
@@ -130,23 +101,6 @@ function originalTraceSlots(key: string) {
     richness_target: { left: 47, top: 76, width: 140 },
   }
   return slots[key]
-}
-
-function evidenceSlots(entityId: string) {
-  const slots: Record<string, { left: number; top: number; width?: number; height?: number }> = {
-    "entity:evidence:proof:trace-reference": { left: 14, top: 14, width: 150, height: 66 },
-    "entity:evidence:claim:tail-calibration": { left: 38, top: 14, width: 154, height: 78 },
-    "entity:evidence:data:finland": { left: 62, top: 14, width: 150, height: 66 },
-    "entity:evidence:limitation:real-data": { left: 86, top: 32, width: 150, height: 66 },
-    "entity:evidence:data:malagasy": { left: 14, top: 50, width: 150, height: 66 },
-    "entity:evidence:claim:open-tail-response": { left: 38, top: 50, width: 154, height: 94 },
-    "entity:evidence:claim:marked-discovery": { left: 86, top: 56, width: 150, height: 66 },
-    "entity:evidence:implementation:fixtures": { left: 14, top: 84, width: 150, height: 78 },
-    "entity:evidence:claim:zero-slots": { left: 38, top: 84, width: 154, height: 68 },
-    "entity:evidence:stress:g05": { left: 62, top: 84, width: 150, height: 78 },
-    "entity:evidence:data:swa-plants": { left: 86, top: 84, width: 150, height: 66 },
-  }
-  return slots[entityId]
 }
 
 function clamp(value: number, low: number, high: number) {
@@ -175,9 +129,23 @@ function clampNodeToCanvas<T extends ProjectionLayoutNode>(node: T, canvas: { wi
   }
 }
 
-function packFullArchitectureNodes(project: ArchitectureProjectV2, nodes: ProjectionLayoutNode[], actualCanvas: { width: number; height: number }) {
-  const readableWidth = Math.max(actualCanvas.width, Math.min(1600, actualCanvas.width * 1.55))
-  const layout = layoutArchitectureLanes(nodes, (node) => project.entities[node.entityId]?.layer, { width: readableWidth, minHeight: actualCanvas.height, nodeWidth: 112, nodeHeight: 76 })
+function architectureRelationPairs(project: ArchitectureProjectV2, entityIds: Set<string>) {
+  return Object.values(project.relations)
+    .filter((relation) => entityIds.has(relation.sourceId) && entityIds.has(relation.targetId))
+    .map((relation) => ({ sourceId: relation.sourceId, targetId: relation.targetId }))
+}
+
+function packLayeredArchitectureNodes(project: ArchitectureProjectV2, rawNodes: Array<{ entityId: string; projection: ViewProjectionNode }>, actualCanvas: { width: number; height: number }, options: { overview?: boolean; relationPairs?: Array<{ sourceId: string; targetId: string }> } = {}) {
+  const layout = layoutArchitectureLanes(rawNodes, (node) => project.entities[node.entityId]?.layer, {
+    width: options.overview ? actualCanvas.width : Math.max(actualCanvas.width, Math.min(1600, actualCanvas.width * 1.55)),
+    minHeight: actualCanvas.height,
+    nodeWidth: options.overview ? 72 : 112,
+    nodeHeight: options.overview ? 66 : 76,
+    rowGap: options.overview ? 98 : undefined,
+    verticalPadding: options.overview ? 86 : undefined,
+    maxRowsPerColumn: options.overview ? 4 : undefined,
+    relationPairs: options.relationPairs,
+  })
   return {
     nodes: layout.nodes.map((node) => ({
       ...node,
@@ -186,6 +154,70 @@ function packFullArchitectureNodes(project: ArchitectureProjectV2, nodes: Projec
     })),
     canvas: { width: layout.width, height: layout.height },
   }
+}
+
+function packFullArchitectureNodes(project: ArchitectureProjectV2, nodes: ProjectionLayoutNode[], actualCanvas: { width: number; height: number }, relationPairs: Array<{ sourceId: string; targetId: string }> = []) {
+  const readableWidth = Math.max(actualCanvas.width, Math.min(1600, actualCanvas.width * 1.55))
+  const layout = layoutArchitectureLanes(nodes, (node) => project.entities[node.entityId]?.layer, { width: readableWidth, minHeight: actualCanvas.height, nodeWidth: 112, nodeHeight: 76, relationPairs })
+  return {
+    nodes: layout.nodes.map((node) => ({
+      ...node,
+      leftPercent: (node.x / layout.width) * 100,
+      topPercent: (node.y / layout.height) * 100,
+    })),
+    canvas: { width: layout.width, height: layout.height },
+  }
+}
+
+function spreadRows<T>(items: T[], top: number, bottom: number, preferred: (item: T, index: number) => number) {
+  if (!items.length) return []
+  const gap = items.length <= 1 ? 0 : (bottom - top) / (items.length - 1)
+  const sorted = items.map((item, index) => ({ item, preferred: preferred(item, index), index })).sort((a, b) => a.preferred - b.preferred || a.index - b.index)
+  return sorted.map((entry, index) => ({ item: entry.item, y: items.length <= 1 ? (top + bottom) / 2 : top + index * gap }))
+}
+
+function packEvidenceClaimNodes(project: ArchitectureProjectV2, nodes: ProjectionLayoutNode[], relations: TypedRelation[], canvas: { width: number; height: number }) {
+  const top = 86
+  const bottom = Math.max(top + 1, canvas.height - 86)
+  const claimNodes = nodes
+    .filter((node) => {
+      const entity = project.entities[node.entityId]
+      return entity?.kind === "claim" || entity?.kind === "theorem"
+    })
+    .sort((a, b) => {
+      const labelA = project.entities[a.entityId]?.label || a.entityId
+      const labelB = project.entities[b.entityId]?.label || b.entityId
+      return a.projection.position.y - b.projection.position.y || labelA.localeCompare(labelB) || a.entityId.localeCompare(b.entityId)
+    })
+  const claimRows = spreadRows(claimNodes, top, bottom, (node) => node.projection.position.y)
+  const claimY = new Map(claimRows.map((row) => [row.item.entityId, row.y]))
+  const incomingClaimY = (node: ProjectionLayoutNode) => {
+    const linked = relations
+      .filter((relation) => relation.sourceId === node.entityId || relation.targetId === node.entityId)
+      .map((relation) => claimY.get(relation.sourceId) ?? claimY.get(relation.targetId))
+      .filter((value): value is number => Number.isFinite(value))
+    if (!linked.length) return node.projection.position.y
+    return linked.reduce((sum, value) => sum + value, 0) / linked.length
+  }
+  const supportNodes = nodes.filter((node) => {
+    const kind = project.entities[node.entityId]?.kind
+    return kind === "proof" || kind === "implementation" || kind === "result"
+  })
+  const datasetNodes = nodes.filter((node) => project.entities[node.entityId]?.kind === "dataset")
+  const gapNodes = nodes.filter((node) => {
+    const kind = project.entities[node.entityId]?.kind
+    return kind === "limitation" || kind === "open_question"
+  })
+  const otherNodes = nodes.filter((node) => !claimNodes.includes(node) && !supportNodes.includes(node) && !datasetNodes.includes(node) && !gapNodes.includes(node))
+  const supportRows = spreadRows([...supportNodes, ...otherNodes], top, bottom, incomingClaimY)
+  const datasetRows = spreadRows([...datasetNodes, ...gapNodes], top, bottom, incomingClaimY)
+  const applyRows = (rows: Array<{ item: ProjectionLayoutNode; y: number }>, x: number, width: number, height = 72) =>
+    rows.map(({ item, y }) => ({ ...item, x, y, leftPercent: (x / canvas.width) * 100, topPercent: (y / canvas.height) * 100, width, height }))
+  return [
+    ...applyRows(supportRows, canvas.width * 0.21, 164, 74),
+    ...claimRows.map(({ item, y }) => ({ ...item, x: canvas.width * 0.5, y, leftPercent: 50, topPercent: (y / canvas.height) * 100, width: 184, height: 82 })),
+    ...applyRows(datasetRows, canvas.width * 0.79, 164, 74),
+  ]
 }
 
 function packOriginalTraceNodes(nodes: ProjectionLayoutNode[], canvas: { width: number; height: number }) {
@@ -261,9 +293,9 @@ export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: st
     return { nodes: [], edges: [], projectedEntityIds: new Set(), viewport: { x: 0, y: 0, zoom: 1 }, canvas: actualCanvas }
   }
 
-  const isStableCatOverview = isCatTraceArchitectureOverview(project, view, options)
   const displayEntityIds = selectDisplayEntityIds(project, viewId, options)
   const projectedEntityIds = new Set(displayEntityIds)
+  const relationPairs = architectureRelationPairs(project, projectedEntityIds)
   const projections = projectionByEntity(view)
   const rawNodes = displayEntityIds
     .map((entityId, index) => {
@@ -289,31 +321,31 @@ export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: st
 
   let canvas = actualCanvas
   let nodes = rawNodes.map((node) => {
-    const slot = isStableCatOverview ? catTraceOverviewSlots[entityKey(node.entityId)] : undefined
-    const leftPercent = slot?.left ?? normalize(node.projection.position.x, minX, maxX, 10, 88)
-    const topPercent = slot?.top ?? normalize(node.projection.position.y, minY, maxY, 14, 86)
+    const leftPercent = normalize(node.projection.position.x, minX, maxX, 10, 88)
+    const topPercent = normalize(node.projection.position.y, minY, maxY, 14, 86)
     return {
       ...node,
       x: (leftPercent / 100) * canvas.width,
       y: (topPercent / 100) * canvas.height,
       leftPercent,
       topPercent,
-      width: slot?.width ?? (isStableCatOverview ? 104 : node.projection.size?.width || 176),
-      height: slot?.height ?? (isStableCatOverview ? 78 : node.projection.size?.height || 78),
+      width: node.projection.size?.width || 176,
+      height: node.projection.size?.height || 78,
     }
   })
 
   if (view.kind === "architecture" && options.detailLevel === "full") {
-    const fullLayout = packFullArchitectureNodes(project, nodes, actualCanvas)
+    const fullLayout = packFullArchitectureNodes(project, nodes, actualCanvas, relationPairs)
     nodes = fullLayout.nodes
     canvas = fullLayout.canvas
+  } else if (view.kind === "architecture" && !project.project.id.includes("original-trace")) {
+    const overviewLayout = packLayeredArchitectureNodes(project, rawNodes, actualCanvas, { overview: true, relationPairs })
+    nodes = overviewLayout.nodes
+    canvas = overviewLayout.canvas
   } else if (view.kind === "architecture" && project.project.id.includes("original-trace")) {
     nodes = packOriginalTraceNodes(nodes, canvas)
   } else if (view.kind === "evidence") {
-    nodes = nodes.map((node) => {
-      const slot = evidenceSlots(node.entityId)
-      return slot ? { ...node, x: (slot.left / 100) * canvas.width, y: (slot.top / 100) * canvas.height, leftPercent: slot.left, topPercent: slot.top, width: slot.width || node.width, height: slot.height || node.height } : node
-    })
+    nodes = packEvidenceClaimNodes(project, nodes, Object.values(project.relations).filter((relation) => projectedEntityIds.has(relation.sourceId) && projectedEntityIds.has(relation.targetId)), canvas)
   }
   if (!(view.kind === "architecture" && options.detailLevel === "full")) {
     nodes = nodes.map((node) => clampNodeToCanvas(node, canvas, options.safeInset ?? defaultSafeInset))
@@ -352,15 +384,15 @@ export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: st
     pairCounts.set(pairKey, pairIndex + 1)
     const targetRelations = incomingRelations.get(relation.targetId) || [relation]
     const sourceRelations = outgoingRelations.get(relation.sourceId) || [relation]
-    const routed = routeBoundaryEdge(rectByEntityId.get(source.entityId) || nodeRect(source), rectByEntityId.get(target.entityId) || nodeRect(target), {
+    const sourceRect = rectByEntityId.get(source.entityId) || nodeRect(source)
+    const targetRect = rectByEntityId.get(target.entityId) || nodeRect(target)
+    const routeOptions = {
       targetPortIndex: Math.max(0, targetRelations.findIndex((candidate) => candidate.id === relation.id)),
       targetPortCount: targetRelations.length,
       sourcePortIndex: Math.max(0, sourceRelations.findIndex((candidate) => candidate.id === relation.id)),
       sourcePortCount: sourceRelations.length,
-      obstacles: nodeRects,
-      routedEdges: routedEdgePoints,
-      regionBoundaryY,
-    })
+    }
+    const routed = routeLayeredEdge(sourceRect, targetRect, routeOptions)
     routedEdgePoints.push(routed.points)
     const labelOffset = pairIndex * 10
     return [
@@ -376,6 +408,9 @@ export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: st
         grammar: routed.grammar,
         bendCount: routed.bendCount,
         routeScore: routed.routeScore,
+        routeRatio: routed.routeRatio ?? routed.routeScore,
+        nonMonotone: routed.nonMonotone ?? false,
+        points: routed.points,
       },
     ]
   })
@@ -385,9 +420,9 @@ export function buildProjectionLayout(project: ArchitectureProjectV2, viewId: st
     edges,
     projectedEntityIds,
     viewport: {
-      x: view.kind === "architecture" && options.detailLevel === "full" ? 0 : view.viewport?.x || 0,
-      y: view.viewport?.y || 0,
-      zoom: view.kind === "architecture" && options.detailLevel === "full" ? 1 : options.canvasWidth || options.canvasHeight ? 1 : view.viewport?.zoom || 1,
+      x: view.kind === "architecture" && (options.detailLevel === "full" || !project.project.id.includes("original-trace")) ? 0 : view.viewport?.x || 0,
+      y: view.kind === "architecture" && (options.detailLevel === "full" || !project.project.id.includes("original-trace")) ? 0 : view.viewport?.y || 0,
+      zoom: view.kind === "architecture" && (options.detailLevel === "full" || !project.project.id.includes("original-trace")) ? 1 : options.canvasWidth || options.canvasHeight ? 1 : view.viewport?.zoom || 1,
     },
     canvas,
   }

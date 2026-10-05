@@ -174,23 +174,42 @@ function LineagePresentation({
       style={{ "--provenance-width": `${provenanceLayout.width}px`, "--provenance-height": `${provenanceLayout.height}px` } as CSSProperties}
     >
       <svg className="lineage-presentation-connectors" viewBox={`0 0 ${provenanceLayout.width} ${provenanceLayout.height}`} aria-hidden="true">
-        {provenanceLayout.sources.map((card) => (
-          <path
-            key={card.id}
-            className={`lineage-presentation-connector ${card.id === selectedEntityId || targetId === selectedEntityId ? "lineage-presentation-connector-active" : ""}`}
-            d={card.path}
-            data-lineage-connector={card.id}
-            data-lineage-arrow-visible="false"
-            data-source-id={card.id}
-            data-target-id={targetId}
-            data-relation-ids={card.relationIds.join(" ")}
-            data-relation-type={card.relationType}
-            data-source-x={card.sourcePort.x.toFixed(2)}
-            data-source-y={card.sourcePort.y.toFixed(2)}
-            data-target-x={card.targetPort.x.toFixed(2)}
-            data-target-y={card.targetPort.y.toFixed(2)}
-          />
-        ))}
+        {provenanceLayout.sources.flatMap((card) => {
+          const active = card.id === selectedEntityId || targetId === selectedEntityId
+          return [
+            <path
+              key={`${card.id}:source`}
+              className={`lineage-presentation-connector ${active ? "lineage-presentation-connector-active" : ""}`}
+              d={card.sourcePath}
+              data-lineage-source-connector={card.id}
+              data-lineage-arrow-visible="false"
+              data-source-id={card.id}
+              data-target-id={card.relationRect.id}
+              data-relation-ids={card.relationIds.join(" ")}
+              data-relation-type={card.relationType}
+              data-source-x={card.sourcePort.x.toFixed(2)}
+              data-source-y={card.sourcePort.y.toFixed(2)}
+              data-target-x={card.relationSourcePort.x.toFixed(2)}
+              data-target-y={card.relationSourcePort.y.toFixed(2)}
+            />,
+            <path
+              key={`${card.id}:target`}
+              className={`lineage-presentation-connector ${active ? "lineage-presentation-connector-active" : ""}`}
+              d={card.targetPath}
+              data-lineage-connector={card.id}
+              data-lineage-arrow-visible="false"
+              data-source-id={card.relationRect.id}
+              data-target-id={targetId}
+              data-relation-source-id={card.id}
+              data-relation-ids={card.relationIds.join(" ")}
+              data-relation-type={card.relationType}
+              data-source-x={card.relationTargetPort.x.toFixed(2)}
+              data-source-y={card.relationTargetPort.y.toFixed(2)}
+              data-target-x={card.targetPort.x.toFixed(2)}
+              data-target-y={card.targetPort.y.toFixed(2)}
+            />,
+          ]
+        })}
       </svg>
       <div className="lineage-presentation-sources">
         {provenanceLayout.sources.map((card) => (
@@ -207,6 +226,20 @@ function LineagePresentation({
             <strong>{card.label}</strong>
             <span>{card.copy}</span>
           </button>
+        ))}
+        {provenanceLayout.sources.map((card) => (
+          <div
+            key={`${card.id}:relation`}
+            className="lineage-presentation-card lineage-presentation-relation-card"
+            style={{ left: `${card.relationRect.x}px`, top: `${card.relationRect.y}px`, width: `${card.relationRect.width}px`, minHeight: `${card.relationRect.height}px` }}
+            data-lineage-card="relation"
+            data-relation-source-id={card.id}
+            data-relation-ids={card.relationIds.join(" ")}
+            data-relation-type={card.relationType}
+          >
+            <strong>{card.chips.join(" / ")}</strong>
+            <span>{card.relationType.replace(/_/g, " ")}</span>
+          </div>
         ))}
       </div>
       <button
@@ -421,7 +454,7 @@ export function ArchitectureWorkspace() {
                   <button
                     key={node.projection.id}
                     type="button"
-                    className={`architecture-map-node architecture-map-node-${entity.kind} ${isArchitecture && detailLevel === "full" ? "architecture-map-node-full" : ""} ${isArchitecture && modelId === "original-trace" ? "architecture-map-node-original" : ""} ${isSelected ? "architecture-map-node-selected" : ""} ${isUpstream ? "architecture-map-node-upstream" : ""} ${isDownstream ? "architecture-map-node-downstream" : ""} ${traceEnabled && selectedSymbolId && isArchitecture && !isSelected && !isTrace ? "architecture-map-node-muted" : ""} ${diffStatus ? `architecture-map-node-diff-${diffStatus}` : ""}`}
+                    className={`architecture-map-node architecture-map-node-${entity.kind} ${isArchitecture && detailLevel === "overview" ? "architecture-map-node-overview" : ""} ${isArchitecture && detailLevel === "full" ? "architecture-map-node-full" : ""} ${isArchitecture && modelId === "original-trace" ? "architecture-map-node-original" : ""} ${isSelected ? "architecture-map-node-selected" : ""} ${isUpstream ? "architecture-map-node-upstream" : ""} ${isDownstream ? "architecture-map-node-downstream" : ""} ${traceEnabled && selectedSymbolId && isArchitecture && !isSelected && !isTrace ? "architecture-map-node-muted" : ""} ${diffStatus ? `architecture-map-node-diff-${diffStatus}` : ""}`}
                     style={{ left: `${node.x}px`, top: `${node.y}px`, width: node.width, minHeight: node.height }}
                     onClick={() => selectNode(node)}
                     data-testid={`projection-node-${safeDomId(node.entityId)}`}
@@ -506,6 +539,8 @@ function ProjectedEdge({
       data-route-grammar={edge.grammar}
       data-route-bend-count={edge.bendCount}
       data-route-score={edge.routeScore.toFixed(2)}
+      data-route-ratio={edge.routeRatio.toFixed(3)}
+      data-route-non-monotone={edge.nonMonotone ? "true" : "false"}
     >
       <path d={edge.path} markerEnd={showDirectionTerminal ? "url(#architecture-edge-arrow)" : undefined} />
       {showLabel ? <text x={edge.labelX} y={edge.labelY} data-edge-label="true">{label}</text> : null}

@@ -1,5 +1,5 @@
 import { Download, FileJson2, GitBranch, Link2, LocateFixed, Network, Play, RotateCcw, Search, ShieldCheck } from "lucide-react"
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react"
 import { canonicalTraceProjects, type CanonicalTraceProjectId } from "../architecture/fixtures/canonicalTraceFixtures"
 import { catTraceMultiViewProject, evidenceClosureWarnings, multiViewIds, projectedEntities, searchCanonicalEntities, type MultiViewId } from "../architecture/fixtures/multiViewTraceProject"
 import { exportArchitectureJsonV2, exportArchitectureMarkdown } from "../architecture/export"
@@ -245,6 +245,43 @@ function renderDiffParts(parts: SemanticDiffInlinePart[] | undefined, fallback: 
     if (part.latex) return <RenderedMath key={`${part.latex}:${index}`} latex={part.latex} fallback={part.fallback || part.text || part.latex} className="architecture-diff-math" />
     return <span key={`${part.text || "part"}:${index}`}>{part.text}</span>
   })
+}
+
+const proseMathTokens: Record<string, string> = {
+  alphaU_gh: "\\alpha^U_{gh}",
+  betaU_gh: "\\beta^U_{gh}",
+  gamma_0: "\\gamma_0",
+  gamma_g: "\\gamma_g",
+  mathcal_G: "\\mathcal{G}",
+  mathcal_K: "\\mathcal{K}",
+  mathcal_U: "\\mathcal{U}",
+  nu_g: "\\nu_g",
+  pi_g: "\\pi_g",
+  Sigma_W: "\\Sigma_W",
+  "v^U_gh": "v^U_{gh}",
+  yU_igh: "y^U_{igh}",
+  zU_igh: "z^U_{igh}",
+  a_g: "a_g",
+  p_g: "p_g",
+  "R^q": "R^q",
+  nu: "\\nu",
+}
+
+const proseMathPattern = new RegExp(`(^|[^A-Za-z0-9_^])(${Object.keys(proseMathTokens).sort((a, b) => b.length - a.length).map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})(?=$|[^A-Za-z0-9_^])`, "g")
+
+function renderReaderProse(text?: string): ReactNode {
+  if (!text) return null
+  const parts: ReactNode[] = []
+  let lastIndex = 0
+  text.replace(proseMathPattern, (match, prefix: string, token: string, offset: number) => {
+    const tokenStart = offset + prefix.length
+    if (tokenStart > lastIndex) parts.push(text.slice(lastIndex, tokenStart))
+    parts.push(<RenderedMath key={`${token}:${offset}`} latex={proseMathTokens[token]} fallback={token} className="architecture-prose-math" />)
+    lastIndex = offset + match.length
+    return match
+  })
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex))
+  return parts
 }
 
 function diffWhy(item: SemanticDiffItem) {
@@ -526,11 +563,11 @@ export function ArchitectureReferencePanel() {
             <div className="architecture-inspector-priority">
               <div>
                 <span>Meaning</span>
-                <p>{selectedSymbol?.meaning}</p>
+                <p>{renderReaderProse(selectedSymbol?.meaning)}</p>
               </div>
               <div>
                 <span>Why it matters</span>
-                <p data-testid="selected-why-it-matters">{whyEntityMatters(project, selectedEntity, relatedRelations(project, selectedEntity?.id || ""))}</p>
+                <p data-testid="selected-why-it-matters">{renderReaderProse(whyEntityMatters(project, selectedEntity, relatedRelations(project, selectedEntity?.id || "")))}</p>
               </div>
               <div>
                 <span>Canonical definition</span>
@@ -615,7 +652,7 @@ export function ArchitectureReferencePanel() {
                   <span>{diffGroup(item.status)}</span>
                   <strong>{renderDiffParts(item.labelParts, item.label)}</strong>
                   <small><b>What changed:</b> {renderDiffParts(item.afterParts || item.beforeParts, item.after || item.before || item.label)}</small>
-                  <small><b>Why it matters:</b> {diffWhy(item)}</small>
+                  <small><b>Why it matters:</b> {renderReaderProse(diffWhy(item))}</small>
                 </button>
               ))}
             </div>
@@ -778,11 +815,11 @@ function MultiViewPanel({
             <div className="architecture-inspector-priority">
               <div>
                 <span>Meaning</span>
-                <p>{selectedEntity.description}</p>
+                <p>{renderReaderProse(selectedEntity.description)}</p>
               </div>
               <div>
                 <span>Why it matters</span>
-                <p>{researchWhyEntityMatters(viewId, selectedEntity, relations)}</p>
+                <p>{renderReaderProse(researchWhyEntityMatters(viewId, selectedEntity, relations))}</p>
               </div>
             </div>
             <dl className="architecture-inspector-grid">
@@ -791,9 +828,9 @@ function MultiViewPanel({
               <dt>Definition</dt>
               <dd><RenderedFormulaText source={selectedEntity.definition || "research graph item"} fallback={selectedEntity.label} /></dd>
               <dt>Variant</dt>
-              <dd>{selectedEntity.variantNote || "CAT-TRACE Frozen V2 applicability"}</dd>
+              <dd>{renderReaderProse(selectedEntity.variantNote || "CAT-TRACE Frozen V2 applicability")}</dd>
               <dt>Limits</dt>
-              <dd>{selectedEntity.constraints?.join("; ") || "none recorded"}</dd>
+              <dd>{renderReaderProse(selectedEntity.constraints?.join("; ") || "none recorded")}</dd>
             </dl>
             <div className="architecture-relation-list" data-testid="context-relations">
               {relations.map((relation) => {

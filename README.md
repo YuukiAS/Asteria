@@ -2,11 +2,11 @@
 
 Asteria 2.0 is the active Web product shell for inspecting canonical statistical-model architecture maps. The current build focuses on Original TRACE and CAT-TRACE Frozen V2, with first-level Architecture, Lineage, and Evidence views backed by the same typed semantic graph.
 
-Current app version: `2.0.0-rc.18`.
+Current app version: `2.0.0-rc.19`.
 
 ## Product State
 
-`2.0.0-rc.18` keeps Asteria 2.0 as the only active product shell and finishes the Quiet Connector repair for Architecture, Lineage, and Evidence. Trace-off selection now controls only the selected card and Inspector, default graph canvases avoid ordinary arrowheads and floating relation text, and Full model opens as a readable exploration surface with Reset plus pan/zoom instead of an unreadable fit-all miniature. Opening Asteria goes directly to:
+`2.0.0-rc.19` keeps Asteria 2.0 as the only active product shell and replaces the graph presentation path for Architecture, Lineage, and Evidence with layout-first readable surfaces. Architecture now uses semantic lanes, stable card-side ports, and short monotone connectors; Lineage renders a clear source / relation / target provenance figure; Evidence centers claims and arranges support, datasets, and gaps around those claims. Opening Asteria goes directly to:
 
 - Project: `CAT-TRACE`
 - View: `Architecture`
@@ -17,7 +17,7 @@ Architecture provides the formal `Original TRACE` / `CAT-TRACE Frozen V2` model 
 
 The first CAT-TRACE repository bridge is now specified as a read-only B0/B1/B2 contract. Asteria includes only the bridge schema, validator, and synthetic pinned-commit fixture; live GitHub ingestion, call-graph analysis, and any scientific-truth update remain outside this RC.
 
-After RC.18, the next acceptance step is one parent GPT Work acceptance prompt, not manual final acceptance or stable release.
+After RC.19, the next acceptance step is one parent GPT Work acceptance prompt, not manual final acceptance or stable release.
 
 ## Legacy Compatibility
 
@@ -92,14 +92,15 @@ npm run test:architecture-rc15
 npm run test:architecture-rc16
 npm run test:architecture-rc17
 npm run test:architecture-rc18
+npm run test:architecture-rc19
 npm run test:regression
 npm run test:browser
 ```
 
-Public acceptance smoke after a pushed RC.18 commit:
+Public acceptance smoke after a pushed RC.19 commit:
 
 ```bash
-npm run smoke:public-rc18
+npm run smoke:public-rc19
 ```
 
 ## Repository Map

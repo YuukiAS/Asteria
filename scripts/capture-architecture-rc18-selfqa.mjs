@@ -45,7 +45,7 @@ try {
     window.localStorage.setItem("asteria-theme", "dark")
   })
   await page.goto(baseUrl, { waitUntil: "networkidle" })
-  await expect(page.getByText("2.0.0-rc.18")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.19")).toBeVisible()
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-model", "cat-trace-frozen-v2")
   await setTrace(page, false)
   await screenshot(page, "architecture-cat-overview-1536-dark-trace-off")

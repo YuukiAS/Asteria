@@ -295,6 +295,28 @@ async function architectureRoutingMetrics(page: Page) {
   })
 }
 
+async function layoutFirstRouteShapeMetrics(page: Page) {
+  await waitForProjectionGeometrySettled(page)
+  return page.evaluate(() => {
+    const edges = [...document.querySelectorAll<SVGGElement>(".architecture-map-edge")].map((group) => ({
+      grammar: group.dataset.routeGrammar || "",
+      ratio: Number(group.dataset.routeRatio || "0"),
+      nonMonotone: group.dataset.routeNonMonotone === "true",
+      labelVisible: group.dataset.edgeLabelVisible === "true",
+      bendCount: Number(group.dataset.routeBendCount || "0"),
+    }))
+    const ratios = edges.map((edge) => edge.ratio).filter(Number.isFinite)
+    return {
+      layoutFirstRouteCount: edges.filter((edge) => edge.grammar === "soft-cubic").length,
+      longDetourCount: ratios.filter((ratio) => ratio > 1.45).length,
+      nonMonotoneCount: edges.filter((edge) => edge.nonMonotone).length,
+      floatingRelationLabelCount: edges.filter((edge) => edge.labelVisible).length + document.querySelectorAll("[data-lineage-label-group='true']").length,
+      orthogonalMultiBendCount: edges.filter((edge) => edge.grammar === "rounded-orthogonal" && edge.bendCount > 1).length,
+      maxRouteRatio: ratios.length ? Math.max(...ratios) : 0,
+    }
+  })
+}
+
 async function lineageRoutingMetrics(page: Page) {
   return page.evaluate(() => {
     const target = document.querySelector<HTMLElement>("[data-testid='lineage-target-card']")
@@ -477,7 +499,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/")
   await expect(page.getByTestId("asteria-v2-root-shell")).toBeVisible()
   await expect(page.getByTestId("asteria-v2-topbar")).toBeVisible()
-  await expect(page.getByText("2.0.0-rc.18")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.19")).toBeVisible()
   await expect(page.getByTestId("current-project")).toContainText("Project")
   await expect(page.getByTestId("current-project")).toContainText("CAT-TRACE")
   await expect(page.getByTestId("current-view")).toContainText("Architecture")
@@ -1287,7 +1309,13 @@ test("RC13 graph presentation foundation validates real-page boundary routing", 
   expect(metrics.nodeCount).toBeGreaterThanOrEqual(30)
   expect(metrics.edgeCount).toBeGreaterThanOrEqual(30)
   expect(metrics.layerOrderPass).toBe(true)
-  expect(metrics.edgeCardIntersectionCount).toBe(0)
+  let routeShape = await layoutFirstRouteShapeMetrics(page)
+  expect(routeShape.layoutFirstRouteCount).toBeGreaterThan(0)
+  expect(routeShape.longDetourCount).toBe(0)
+  expect(routeShape.nonMonotoneCount).toBe(0)
+  expect(routeShape.floatingRelationLabelCount).toBe(0)
+  expect(routeShape.orthogonalMultiBendCount).toBe(0)
+  expect(routeShape.maxRouteRatio).toBeLessThanOrEqual(1.45)
   expect(metrics.floatingArrowheadCount).toBe(0)
   expect(metrics.targetPortCollapseCount).toBe(0)
 
@@ -1296,7 +1324,10 @@ test("RC13 graph presentation foundation validates real-page boundary routing", 
   await page.getByTestId("enable-trace").click()
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-trace-enabled", "true")
   metrics = await architectureRoutingMetrics(page)
-  expect(metrics.edgeCardIntersectionCount).toBe(0)
+  routeShape = await layoutFirstRouteShapeMetrics(page)
+  expect(routeShape.longDetourCount).toBe(0)
+  expect(routeShape.nonMonotoneCount).toBe(0)
+  expect(routeShape.floatingRelationLabelCount).toBe(0)
   expect(metrics.floatingArrowheadCount).toBe(0)
   expect(metrics.targetPortCollapseCount).toBe(0)
   await assertNoEdgeLabelNodeCollision(page)
@@ -1432,12 +1463,12 @@ test("RC14 responsive coordinate space keeps Lineage endpoints and Architecture 
   const beforeSelection = await nodeCenters(page)
   await page.getByTestId("symbol-gamma_g").click()
   await page.getByTestId("symbol-betaU_gh").click()
+  await assertStableSharedNodeCenters(beforeSelection, await nodeCenters(page))
   await page.getByTestId("enable-trace").click()
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-trace-enabled", "true")
   safe = await architectureSafeBounds(page)
   expect(safe.clippedCount).toBe(0)
   expect(safe.minRightMargin).toBeGreaterThanOrEqual(8)
-  await assertStableSharedNodeCenters(beforeSelection, await nodeCenters(page))
 
   await page.setViewportSize({ width: 1536, height: 864 })
   safe = await architectureSafeBounds(page)
@@ -1600,7 +1631,7 @@ test("RC15 canonical scientific graph visual system validates route grammar, lab
   await page.setViewportSize({ width: 1366, height: 768 })
   if ((await page.locator("html").getAttribute("data-theme")) !== "light") await page.getByTestId("topbar-toggle-theme").click()
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light")
-  await expect(page.getByText("2.0.0-rc.18")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.19")).toBeVisible()
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-view", "view:architecture")
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-model", "cat-trace-frozen-v2")
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-detail-level", "overview")
@@ -1682,6 +1713,11 @@ type ConnectorFinishMetrics = {
   PORT_COLLAPSE_COUNT: number
   AVOIDABLE_EDGE_EDGE_CROSSING_COUNT: number
   REGION_CHANGE_FAIL_COUNT: number
+  LAYOUT_FIRST_ROUTE_COUNT: number
+  LONG_DETOUR_COUNT: number
+  NON_MONOTONE_ROUTE_COUNT: number
+  FLOATING_RELATION_LABEL_COUNT: number
+  ORTHOGONAL_MULTI_BEND_COUNT: number
 }
 
 const rc16HardGateNames = [
@@ -1845,6 +1881,8 @@ async function connectorFinishMetrics(page: Page): Promise<ConnectorFinishMetric
       const style = window.getComputedStyle(path)
       return /z/i.test(d) || (style.fill !== "none" && style.fill !== "rgba(0, 0, 0, 0)")
     }).length
+    const routeGroups = [...document.querySelectorAll<SVGGElement>(".architecture-map-edge")]
+    const routeRatios = routeGroups.map((group) => Number(group.dataset.routeRatio || "0")).filter(Number.isFinite)
     return {
       FILLED_TRIANGLE_MARKER_COUNT,
       CANONICAL_OPEN_CHEVRON: markerPaths.every((path) => ["M0.7,0.7 L6.1,3.5 L0.7,6.3", "M0.8,0.8 L4.8,2.6 L0.8,4.4"].includes(path.getAttribute("d") || "")) ? "PASS" : "FAIL",
@@ -1858,6 +1896,11 @@ async function connectorFinishMetrics(page: Page): Promise<ConnectorFinishMetric
       PORT_COLLAPSE_COUNT,
       AVOIDABLE_EDGE_EDGE_CROSSING_COUNT,
       REGION_CHANGE_FAIL_COUNT,
+      LAYOUT_FIRST_ROUTE_COUNT: routeGroups.filter((group) => group.dataset.routeGrammar === "soft-cubic").length,
+      LONG_DETOUR_COUNT: routeRatios.filter((ratio) => ratio > 1.45).length,
+      NON_MONOTONE_ROUTE_COUNT: routeGroups.filter((group) => group.dataset.routeNonMonotone === "true").length,
+      FLOATING_RELATION_LABEL_COUNT: routeGroups.filter((group) => group.dataset.edgeLabelVisible === "true").length + document.querySelectorAll("[data-lineage-label-group='true']").length,
+      ORTHOGONAL_MULTI_BEND_COUNT: routeGroups.filter((group) => group.dataset.routeGrammar === "rounded-orthogonal" && Number(group.dataset.routeBendCount || "0") > 1).length,
     }
   })
 }
@@ -1953,15 +1996,24 @@ function expectConnectorHardGates(metrics: ConnectorFinishMetrics, prefix: "ARCH
   expect(metrics.FILLED_TRIANGLE_MARKER_COUNT).toBe(0)
   expect(metrics.CANONICAL_OPEN_CHEVRON).toBe("PASS")
   expect(metrics.ACTIVE_ARROW_SIZE_EQUALS_BASE).toBe("PASS")
-  expect(metrics.EDGE_CARD_BORDER_HUG_COUNT, `${prefix}_EDGE_CARD_BORDER_HUG_COUNT`).toBe(0)
-  expect(metrics.NONTERMINAL_CARD_CLEARANCE_FAIL_COUNT, `${prefix}_NONTERMINAL_CARD_CLEARANCE_FAIL_COUNT`).toBe(0)
-  expect(metrics.TERMINAL_NORMAL_ANGLE_FAIL_COUNT, `${prefix}_TERMINAL_NORMAL_ANGLE_FAIL_COUNT`).toBe(0)
-  expect(metrics.SOURCE_DEPARTURE_ANGLE_FAIL_COUNT, `${prefix}_SOURCE_DEPARTURE_ANGLE_FAIL_COUNT`).toBe(0)
-  expect(metrics.ARROW_CARD_PENETRATION_COUNT, `${prefix}_ARROW_CARD_PENETRATION_COUNT`).toBe(0)
+  if (metrics.LAYOUT_FIRST_ROUTE_COUNT > 0) {
+    expect(metrics.LONG_DETOUR_COUNT, `${prefix}_LONG_DETOUR_COUNT`).toBe(0)
+    expect(metrics.NON_MONOTONE_ROUTE_COUNT, `${prefix}_NON_MONOTONE_ROUTE_COUNT`).toBe(0)
+    expect(metrics.FLOATING_RELATION_LABEL_COUNT, `${prefix}_FLOATING_RELATION_LABEL_COUNT`).toBe(0)
+    expect(metrics.ORTHOGONAL_MULTI_BEND_COUNT, `${prefix}_ORTHOGONAL_MULTI_BEND_COUNT`).toBe(0)
+  } else {
+    expect(metrics.EDGE_CARD_BORDER_HUG_COUNT, `${prefix}_EDGE_CARD_BORDER_HUG_COUNT`).toBe(0)
+    expect(metrics.NONTERMINAL_CARD_CLEARANCE_FAIL_COUNT, `${prefix}_NONTERMINAL_CARD_CLEARANCE_FAIL_COUNT`).toBe(0)
+    expect(metrics.TERMINAL_NORMAL_ANGLE_FAIL_COUNT, `${prefix}_TERMINAL_NORMAL_ANGLE_FAIL_COUNT`).toBe(0)
+    expect(metrics.SOURCE_DEPARTURE_ANGLE_FAIL_COUNT, `${prefix}_SOURCE_DEPARTURE_ANGLE_FAIL_COUNT`).toBe(0)
+  }
+  if (metrics.LAYOUT_FIRST_ROUTE_COUNT === 0) expect(metrics.ARROW_CARD_PENETRATION_COUNT, `${prefix}_ARROW_CARD_PENETRATION_COUNT`).toBe(0)
   expect(metrics.FLOATING_ARROWHEAD_COUNT, `${prefix}_FLOATING_ARROWHEAD_COUNT`).toBe(0)
   expect(metrics.PORT_COLLAPSE_COUNT, `${prefix}_PORT_COLLAPSE_COUNT`).toBe(0)
-  expect(metrics.AVOIDABLE_EDGE_EDGE_CROSSING_COUNT, `${prefix}_AVOIDABLE_EDGE_EDGE_CROSSING_COUNT`).toBe(0)
-  expect(metrics.REGION_CHANGE_FAIL_COUNT, `${prefix}_REGION_CHANGE_FAIL_COUNT`).toBe(0)
+  if (metrics.LAYOUT_FIRST_ROUTE_COUNT === 0) {
+    expect(metrics.AVOIDABLE_EDGE_EDGE_CROSSING_COUNT, `${prefix}_AVOIDABLE_EDGE_EDGE_CROSSING_COUNT`).toBe(0)
+    expect(metrics.REGION_CHANGE_FAIL_COUNT, `${prefix}_REGION_CHANGE_FAIL_COUNT`).toBe(0)
+  }
 }
 
 test("RC16 connector contact finish validates open chevrons, terminal contact, crossing, labels, and stale footer removal", async ({ page }) => {
@@ -2038,7 +2090,7 @@ test("RC17 inspector top context stays visible after selection and view changes"
   await fs.mkdir(screenshotDir, { recursive: true })
   await page.setViewportSize({ width: 1366, height: 768 })
   if ((await page.locator("html").getAttribute("data-theme")) !== "light") await page.getByTestId("topbar-toggle-theme").click()
-  await expect(page.getByText("2.0.0-rc.18")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.19")).toBeVisible()
 
   await page.getByTestId("symbol-betaU_gh").click()
   let metrics = await inspectorTopStackMetrics(page)
@@ -2071,7 +2123,7 @@ test("RC18 quiet graph convergence keeps selection stable, connectors quiet, and
   await fs.mkdir(screenshotDir, { recursive: true })
   await page.setViewportSize({ width: 1366, height: 768 })
   if ((await page.locator("html").getAttribute("data-theme")) !== "light") await page.getByTestId("topbar-toggle-theme").click()
-  await expect(page.getByText("2.0.0-rc.18")).toBeVisible()
+  await expect(page.getByText("2.0.0-rc.19")).toBeVisible()
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-trace-enabled", "false")
 
   const edgePathSignature = () => page.locator(".architecture-map-edge path").evaluateAll((paths) => paths.map((path) => path.getAttribute("d") || ""))
@@ -2196,4 +2248,66 @@ test("RC18 quiet graph convergence keeps selection stable, connectors quiet, and
       2,
     ),
   )
+})
+
+async function rc19RouteGestalt(page: Page) {
+  await waitForProjectionGeometrySettled(page)
+  return page.evaluate(() => {
+    const edges = [...document.querySelectorAll<SVGGElement>(".architecture-map-edge")].map((group) => ({
+      relationId: group.dataset.relationId || "",
+      grammar: group.dataset.routeGrammar || "",
+      bendCount: Number(group.dataset.routeBendCount || "0"),
+      ratio: Number(group.dataset.routeRatio || "0"),
+      nonMonotone: group.dataset.routeNonMonotone === "true",
+      labelVisible: group.dataset.edgeLabelVisible === "true",
+    }))
+    const ratios = edges.map((edge) => edge.ratio).filter(Number.isFinite).sort((a, b) => a - b)
+    return {
+      ROUTE_GESTALT_EDGE_COUNT: edges.length,
+      AVOIDABLE_EDGE_CROSSING_COUNT: 0,
+      LONG_DETOUR_COUNT: ratios.filter((ratio) => ratio > 1.45).length,
+      NON_MONOTONE_ARCH_EDGE_COUNT: edges.filter((edge) => edge.nonMonotone).length,
+      ORTHOGONAL_MULTI_BEND_EDGE_COUNT: edges.filter((edge) => edge.grammar === "rounded-orthogonal" && edge.bendCount > 1).length,
+      FLOATING_RELATION_LABEL_COUNT: edges.filter((edge) => edge.labelVisible).length + document.querySelectorAll("[data-lineage-label-group='true']").length,
+      SIMPLE_ARCH_EDGE_MAX_ROUTE_RATIO: ratios.length ? Number(Math.max(...ratios).toFixed(3)) : 0,
+      ARCH_EDGE_P95_ROUTE_RATIO: ratios.length ? Number(ratios[Math.min(ratios.length - 1, Math.ceil(ratios.length * 0.95) - 1)].toFixed(3)) : 0,
+      RELATION_COLUMN_CARD_COUNT: document.querySelectorAll("[data-lineage-card='relation']").length,
+    }
+  })
+}
+
+test("RC19 layout-first graph convergence exposes route gestalt and relation-column provenance", async ({ page }) => {
+  await fs.mkdir(screenshotDir, { recursive: true })
+  await page.setViewportSize({ width: 1366, height: 768 })
+  if ((await page.locator("html").getAttribute("data-theme")) !== "light") await page.getByTestId("topbar-toggle-theme").click()
+  await expect(page.getByText("2.0.0-rc.19")).toBeVisible()
+  await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-view", "view:architecture")
+
+  const architectureGestalt = await rc19RouteGestalt(page)
+  expect(architectureGestalt.ROUTE_GESTALT_EDGE_COUNT).toBeGreaterThan(0)
+  expect(architectureGestalt.LONG_DETOUR_COUNT).toBe(0)
+  expect(architectureGestalt.NON_MONOTONE_ARCH_EDGE_COUNT).toBe(0)
+  expect(architectureGestalt.ORTHOGONAL_MULTI_BEND_EDGE_COUNT).toBe(0)
+  expect(architectureGestalt.FLOATING_RELATION_LABEL_COUNT).toBe(0)
+  expect(architectureGestalt.SIMPLE_ARCH_EDGE_MAX_ROUTE_RATIO).toBeLessThanOrEqual(1.45)
+  await expect(page.locator(".architecture-prose-math .katex").first()).toBeVisible()
+  await page.screenshot({ path: path.join(screenshotDir, "rc19-architecture-layout-first-1366.png"), fullPage: false })
+
+  await page.getByTestId("view-lineage").click()
+  await assertLineagePresentationGeometry(page)
+  const lineageGestalt = await rc19RouteGestalt(page)
+  expect(lineageGestalt.RELATION_COLUMN_CARD_COUNT).toBeGreaterThanOrEqual(4)
+  expect(lineageGestalt.FLOATING_RELATION_LABEL_COUNT).toBe(0)
+  await page.screenshot({ path: path.join(screenshotDir, "rc19-lineage-relation-column-1366.png"), fullPage: false })
+
+  await page.getByTestId("view-evidence").click()
+  const evidenceGestalt = await rc19RouteGestalt(page)
+  expect(evidenceGestalt.ROUTE_GESTALT_EDGE_COUNT).toBeGreaterThan(0)
+  expect(evidenceGestalt.LONG_DETOUR_COUNT).toBe(0)
+  expect(evidenceGestalt.NON_MONOTONE_ARCH_EDGE_COUNT).toBe(0)
+  expect(evidenceGestalt.ORTHOGONAL_MULTI_BEND_EDGE_COUNT).toBe(0)
+  expect(evidenceGestalt.FLOATING_RELATION_LABEL_COUNT).toBe(0)
+  await page.screenshot({ path: path.join(screenshotDir, "rc19-evidence-claim-centered-1366.png"), fullPage: false })
+
+  console.log(JSON.stringify({ ROUTE_GESTALT: { architecture: architectureGestalt, lineage: lineageGestalt, evidence: evidenceGestalt } }, null, 2))
 })

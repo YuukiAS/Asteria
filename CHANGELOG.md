@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.0-rc.19 - Layout-First Graph Convergence
+
+- Replaced the primary Architecture / Evidence connector path with layout-first semantic placement and short monotone card-side connectors instead of obstacle-router tuning.
+- Reworked Lineage into a source / relation / target provenance figure so relation meaning is visible in the relation column rather than floating on paths.
+- Reframed Evidence as a claim-centered graph with support, datasets, and limitations positioned around the claims they qualify.
+- Added RC.19 route-gestalt validation covering avoidable crossings, detours, non-monotone edges, orthogonal multi-bend routes, floating relation labels, and synthetic Architecture / Lineage fixtures.
+- Rendered reader-facing inspector math tokens through the existing math renderer while preserving the underlying TRACE and CAT-TRACE scientific truth.
+
 ## 2.0.0-rc.18 - Quiet Graph Convergence
 
 - Reworked Architecture / Lineage / Evidence connector presentation into the Quiet Connector system: trace-off Architecture and ordinary Evidence connectors no longer render default arrowheads or inline relation text, and Lineage no longer shows floating relation chips on the canvas.

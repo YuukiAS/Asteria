@@ -40,8 +40,8 @@ try {
   const projectionSource = await read("src/architecture/viewProjection.ts")
   const styleSource = await read("src/styles/index.css")
 
-  assert(packageJson.version === "2.0.0-rc.18", "package.json must declare 2.0.0-rc.18.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.18"'), "App shell must display 2.0.0-rc.18.")
+  assert(packageJson.version === "2.0.0-rc.19", "package.json must declare 2.0.0-rc.19.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.19"'), "App shell must display 2.0.0-rc.19.")
   assert(packageJson.scripts["test:architecture-rc11"] === 'node scripts/validate-architecture-rc11.mjs && playwright test --grep "RC11"', "package.json must expose RC.11 focused validation.")
   assert(packageJson.scripts["test:regression"].includes("test:architecture-rc11"), "Cumulative regression must include RC.11.")
 
@@ -84,10 +84,12 @@ try {
   assert(styleSource.includes(".canonical-formula-scroll") && styleSource.includes("overflow-x: auto"), "Canonical formulas must scroll inside the formula block only.")
   assert(styleSource.includes("min-width: max-content") && styleSource.includes("white-space: nowrap"), "Canonical formulas must preserve one horizontal math line.")
 
-  assert(projectionSource.includes("height: 78") && projectionSource.includes("height: 84"), "CAT Overview presentation geometry must reserve height for multi-line labels.")
-  assert(projectionSource.includes("width: 104") && projectionSource.includes("height: 84"), "CAT Overview presentation geometry must reserve height for stable labels without widening into adjacent columns.")
+  assert(projectionSource.includes("nodeWidth: options.overview ? 72 : 112"), "CAT Overview presentation geometry must use compact overview cards to prevent adjacent-lane overlap.")
+  assert(projectionSource.includes("nodeHeight: options.overview ? 66 : 76"), "CAT Overview presentation geometry must reserve compact overview label height.")
+  assert(styleSource.includes(".architecture-map-node-overview"), "CAT Overview must use dedicated compact node typography instead of clipping labels.")
+  assert(styleSource.includes(".architecture-map-node.architecture-map-node-overview .rendered-math"), "CAT Overview must size rendered math tokens for compact cards.")
   assert(projectionSource.includes("layoutArchitectureLanes"), "CAT Full model packing must use the shared lane layout helper.")
-  assert((await read("src/architecture/graphPresentation.ts")).includes("const gapY = Math.max(112"), "CAT Full model packing must reserve label height without widening into adjacent lanes.")
+  assert((await read("src/architecture/graphPresentation.ts")).includes("Math.max(112, nodeHeight + 40)"), "CAT Full model packing must reserve label height without widening into adjacent lanes.")
   assert(workspaceSource.includes('data-node-primary="true"'), "Architecture nodes must keep primary-text clipping hooks.")
 
   const protectedChanges = changedProtectedTruthFiles()
@@ -98,7 +100,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.18",
+          version: "2.0.0-rc.19",
           formulaBlock: "dedicated-scroll-box",
           primaryLabelClamp: "removed",
           architectureWhyCopy: "scientific-item-specific",

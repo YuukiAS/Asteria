@@ -41,17 +41,17 @@ try {
   const projectionSource = await read("src/architecture/viewProjection.ts")
   const browserSource = await read("tests/browser/asteria-v2-rc.spec.ts")
 
-  assert(packageJson.version === "2.0.0-rc.18", "package.json must declare 2.0.0-rc.18.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.18"'), "App shell must display 2.0.0-rc.18.")
+  assert(packageJson.version === "2.0.0-rc.19", "package.json must declare 2.0.0-rc.19.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.19"'), "App shell must display 2.0.0-rc.19.")
   assert(packageJson.scripts["test:architecture-rc18"] === 'node scripts/validate-architecture-rc18.mjs && playwright test --grep "RC18"', "package.json must expose RC.18 focused validation.")
   assert(packageJson.scripts["test:regression"].includes("test:architecture-rc18"), "Cumulative regression must include RC.18.")
   assert(packageJson.scripts["smoke:public-rc18"] === "node scripts/smoke-architecture-rc18-public.mjs", "package.json must expose RC.18 public smoke.")
 
   assert(!projectionSource.includes("revealDirectContext(options.selectedEntityId)"), "Trace-off ordinary selection must not reveal direct context.")
   assert(projectionSource.includes("options.traceEntityIds?.forEach((entityId) => revealDirectContext(entityId))"), "Explicit trace remains the reveal owner.")
-  assert(projectionSource.includes("packFullArchitectureNodes(project, nodes, actualCanvas)"), "Full model must use the actual measured canvas.")
+  assert(projectionSource.includes("packFullArchitectureNodes(project, nodes, actualCanvas, relationPairs)"), "Full model must use the actual measured canvas and relation-aware lane ordering.")
   assert(!projectionSource.includes("width: presentationCanvas.width, minHeight: presentationCanvas.height, nodeWidth: 80"), "Full model must not use the old fixed 1000x620 miniature packing.")
-  assert(projectionSource.includes("zoom: view.kind === \"architecture\" && options.detailLevel === \"full\" ? 1"), "Full model reset must preserve readable scale.")
+  assert(projectionSource.includes("options.detailLevel === \"full\" || !project.project.id.includes(\"original-trace\")") && projectionSource.includes("zoom: view.kind === \"architecture\""), "Full model reset must preserve readable scale.")
 
   assert(workspaceSource.includes("const showLabel = false"), "Stable canvas must not render inline edge labels.")
   assert(workspaceSource.includes("const showDirectionTerminal = isArchitectureView && hasTraceSelection && isTraceEdge"), "Only active Architecture trace edges may show direction terminals.")
@@ -81,7 +81,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.18",
+          version: "2.0.0-rc.19",
           quietConnector: true,
           fullModelReadableReset: true,
           traceOffSelectionRevealRemoved: true,

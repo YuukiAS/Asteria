@@ -94,10 +94,10 @@ try {
   const mutated = clone(cat)
   const betaProjection = Object.values(mutated.views["view:architecture"].projections).find((projection) => projection.entityId === "entity:cat-trace-frozen-v2:betaU_gh")
   assert(Boolean(betaProjection), "beta^U_gh projection must exist before mutation.")
-  const beforeLeft = catLayout.nodes.find((node) => node.entityId === "entity:cat-trace-frozen-v2:betaU_gh")?.leftPercent
-  betaProjection.position.x += 420
-  const afterLeft = buildProjectionLayout(mutated, "view:architecture").nodes.find((node) => node.entityId === "entity:cat-trace-frozen-v2:betaU_gh")?.leftPercent
-  assert(beforeLeft !== afterLeft, "Changing ArchitectureView.projections position must change rendered layout coordinates.")
+  const beforeTop = catLayout.nodes.find((node) => node.entityId === "entity:cat-trace-frozen-v2:betaU_gh")?.topPercent
+  betaProjection.position.y = -9999
+  const afterTop = buildProjectionLayout(mutated, "view:architecture").nodes.find((node) => node.entityId === "entity:cat-trace-frozen-v2:betaU_gh")?.topPercent
+  assert(beforeTop !== afterTop, "Changing ArchitectureView.projections ordering input must change layout-first rendered order.")
 
   if (!process.exitCode) {
     console.log(
@@ -110,7 +110,7 @@ try {
           catRelations: catLayout.edges.length,
           lineageRelations: lineageLayout.edges.length,
           evidenceRelations: evidenceLayout.edges.length,
-          projectionMutationChangedLayout: beforeLeft !== afterLeft,
+          projectionMutationChangedLayout: beforeTop !== afterTop,
           betaDirectRelationIds: [...betaTrace.relationIds].sort(),
         },
         null,

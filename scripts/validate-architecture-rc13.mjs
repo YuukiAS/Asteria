@@ -40,19 +40,19 @@ try {
   const styleSource = await read("src/styles/index.css")
   const browserSource = await read("tests/browser/asteria-v2-rc.spec.ts")
 
-  assert(packageJson.version === "2.0.0-rc.18", "package.json must declare 2.0.0-rc.18.")
-  assert(appSource.includes('const appVersion = "2.0.0-rc.18"'), "App shell must display 2.0.0-rc.18.")
+  assert(packageJson.version === "2.0.0-rc.19", "package.json must declare 2.0.0-rc.19.")
+  assert(appSource.includes('const appVersion = "2.0.0-rc.19"'), "App shell must display 2.0.0-rc.19.")
   assert(packageJson.scripts["test:architecture-rc13"] === 'node scripts/validate-architecture-rc13.mjs && playwright test --grep "RC13"', "package.json must expose RC.13 focused validation.")
   assert(packageJson.scripts["test:regression"].includes("test:architecture-rc13"), "Cumulative regression must include RC.13.")
 
   assert(graphSource.includes("export function layoutArchitectureLanes"), "RC.13 must centralize lane-aware architecture layout.")
   assert(graphSource.includes("export function boundaryPort"), "RC.13 must expose reusable node-boundary ports.")
-  assert(graphSource.includes("export function routeBoundaryEdge"), "RC.13 must route edges from card boundaries.")
+  assert(graphSource.includes("export function routeLayeredEdge"), "RC.13/RC.19 must route edges from card boundaries through the layered edge grammar.")
   assert(graphSource.includes("export function layoutProvenanceFlow"), "RC.13 must route provenance/Lineage connectors from measured rectangles.")
   assert(!graphSource.includes("cat-trace") && !graphSource.includes("betaU_gh") && !graphSource.includes("gamma_g"), "Graph presentation helper must stay generic and not hardcode CAT-TRACE examples.")
   assert(!projectionSource.includes("const columns = [") && !projectionSource.includes("const rows = ["), "Full model must not use the previous global row-major grid.")
   assert(projectionSource.includes("layoutArchitectureLanes"), "Full model must use the generic lane layout.")
-  assert(projectionSource.includes("routeBoundaryEdge"), "Architecture/Evidence routing must use boundary ports.")
+  assert(projectionSource.includes("routeLayeredEdge"), "Architecture/Evidence routing must use boundary ports through the layered edge grammar.")
   assert(workspaceSource.includes("data-source-port-x") && workspaceSource.includes("data-target-port-x"), "Rendered edges must expose boundary-port geometry for browser regression.")
   assert(workspaceSource.includes("data-node-width") && workspaceSource.includes("data-node-height"), "Rendered nodes must expose card dimensions for browser regression.")
   assert(workspaceSource.includes("layoutProvenanceFlow(lineageCards"), "Lineage presentation must derive connectors from the provenance layout helper.")
@@ -69,7 +69,7 @@ try {
       JSON.stringify(
         {
           status: "validated",
-          version: "2.0.0-rc.18",
+          version: "2.0.0-rc.19",
           genericGraphPresentation: true,
           exampleSpecificHardcodeAdded: false,
           protectedTruthFileChanges: protectedChanges.length,
