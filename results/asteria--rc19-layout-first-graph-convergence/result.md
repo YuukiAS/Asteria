@@ -1,8 +1,8 @@
 # Result: asteria--rc19-layout-first-graph-convergence
 
-STATUS = COMPLETE_PENDING_COMMIT
+STATUS = COMPLETE
 CURRENT_VERSION = 2.0.0-rc.19
-FINAL_COMMIT = PENDING_COMMIT
+FINAL_COMMIT = 4c32c42236b4a601fbb2d31e265200cbb90b57b4
 
 AI_SKILLS_FORMAL_RELEASE = yuukias-ai-skills installed; marketplace upgrade reported no available upgrade
 AI_SKILLS_MAINTAINER_VERSION = ai-skills-core 0.5
