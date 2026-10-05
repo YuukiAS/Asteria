@@ -149,3 +149,34 @@ W01 不能因为 `NO_EDGE_LABEL_CARD_COLLISION = PASS` 就忽略 edge label 本�
 同时：当 UI 显示 `Trace off` 且写明 selection 只控制 Inspector 时，W01 必须记录 selection sequence 的 visible node count 与共享 node position；任何 selection-only visible-set 变化或 >1 CSS px shared-node 位移都 FAIL。
 
 Full model 不能以把所有内容缩成不可读 miniature 作为 `Fit` 的成功定义。Primary symbol/title 的 rendered readable size、content horizontal utilization 和真实 node bounds 必须参与验收。
+
+
+## 11. Route-shape / graph-engine smell gate（2026-10-05）
+
+W01 必须直接判断 connector shape，而不是只数箭头、bbox、collision。
+
+以下任一项在 Architecture / Evidence 默认截图中稳定出现，应判核心 visual P2：
+
+- 大段横竖折线像电路图；
+- source/target 明明接近却绕半屏；
+- 普通 left→right relation 明显 backtrack；
+- 一条关系出现多个无必要 bend；
+- 线路为了避障跨到另一视觉区域再返回；
+- node placement 明显导致大量关系只能蛇形穿行；
+- relation label 作为 annotation 漂在 path 上而不是进入稳定 label region；
+- Full model 因固定虚拟 canvas / fit 缩放造成内容压成一条窄带。
+
+W01 需要返回：
+
+```text
+ROUTE_GESTALT = PASS | FAIL
+AVOIDABLE_EDGE_CROSSING_COUNT = n
+LONG_DETOUR_COUNT = n
+NON_MONOTONE_ARCH_EDGE_COUNT = n
+ORTHOGONAL_MULTI_BEND_EDGE_COUNT = n
+FLOATING_RELATION_LABEL_COUNT = n
+```
+
+`NO_EDGE_LABEL_CARD_COLLISION = PASS`、`ARROWHEAD_COUNT = 0`、`NODE_OVERLAP = 0` 都不能替代这一判断。
+
+Lineage 需要检查 relation labels 是否位于一致的 relation column/row grammar；只要仍像“文字随机漂在线上”，即 FAIL。
