@@ -1,6 +1,8 @@
-import { execFileSync } from "node:child_process"
 import fs from "node:fs/promises"
+import path from "node:path"
 import { createServer } from "vite"
+import { inspectProtectedTruth } from "./lib/protected-truth.mjs"
+import { measureRouteGestalt, RC19_ROUTE_THRESHOLDS, sampleStaticRoute } from "./lib/route-gestalt.mjs"
 
 function fail(message) {
   console.error(message)
@@ -15,39 +17,20 @@ async function read(file) {
   return fs.readFile(file, "utf8")
 }
 
-function changedProtectedTruthFiles() {
-  const output = execFileSync(
-    "git",
-    [
-      "diff",
-      "--name-only",
-      "--",
-      "src/architecture/fixtures/canonicalTraceFixtures.ts",
-      "src/architecture/fixtures/multiViewTraceProject.ts",
-      "src/architecture/trace.ts",
-      "src/architecture/session.tsx",
-      "src/architecture/repositoryBridge.ts",
-      "src/architecture/schema.ts",
-      "src/architecture/validation.ts",
-    ],
-    { encoding: "utf8" },
-  )
-  return output.split("\n").map((line) => line.trim()).filter(Boolean)
-}
-
-function routeGestalt(edges) {
-  const ratios = edges.map((edge) => Number(edge.routeRatio || edge.routeScore || 0)).filter(Number.isFinite).sort((a, b) => a - b)
-  const p95 = ratios.length ? ratios[Math.min(ratios.length - 1, Math.ceil(ratios.length * 0.95) - 1)] : 0
-  return {
-    edgeCount: edges.length,
-    avoidableEdgeCrossingCount: 0,
-    longDetourCount: ratios.filter((ratio) => ratio > 1.45).length,
-    nonMonotoneArchEdgeCount: edges.filter((edge) => edge.nonMonotone).length,
-    orthogonalMultiBendEdgeCount: edges.filter((edge) => edge.grammar === "rounded-orthogonal" && edge.bendCount > 1).length,
-    floatingRelationLabelCount: 0,
-    simpleArchEdgeMaxRouteRatio: ratios.length ? Math.max(...ratios) : 0,
-    archEdgeP95RouteRatio: p95,
-  }
+function routeGestalt(layout) {
+  const lanes = new Map(layout.nodes.map((node) => [node.entityId, node.lane]))
+  return measureRouteGestalt({
+    edges: layout.edges.map((edge) => ({
+      id: edge.relation?.id,
+      sourceId: edge.relation?.sourceId,
+      targetId: edge.relation?.targetId,
+      sourceLane: lanes.get(edge.relation?.sourceId),
+      targetLane: lanes.get(edge.relation?.targetId),
+      points: sampleStaticRoute(edge),
+      hardBendCount: edge.grammar === "rounded-orthogonal" ? edge.bendCount : 0,
+    })),
+    floatingLabels: [],
+  })
 }
 
 const vite = await createServer({
@@ -65,7 +48,7 @@ try {
 
   assert(packageJson.version === "2.0.0-rc.19", "package.json must declare 2.0.0-rc.19.")
   assert(appSource.includes('const appVersion = "2.0.0-rc.19"'), "App shell must display 2.0.0-rc.19.")
-  assert(packageJson.scripts["test:architecture-rc19"] === 'node scripts/validate-architecture-rc19.mjs && playwright test --grep "RC19"', "package.json must expose RC.19 focused validation.")
+  assert(packageJson.scripts["test:architecture-rc19"] === "node scripts/run-architecture-rc19-validation.mjs", "package.json must expose the RC.19 hardening runner.")
   assert(packageJson.scripts["test:regression"].includes("test:architecture-rc19"), "Cumulative regression must include RC.19.")
 
   assert(projectionSource.includes("routeLayeredEdge(sourceRect, targetRect, routeOptions)"), "Architecture/Evidence must use layout-first routeLayeredEdge.")
@@ -76,27 +59,33 @@ try {
   assert(workspaceSource.includes("data-route-ratio") && workspaceSource.includes("data-route-non-monotone"), "Projected edges must expose RC19 route-shape metrics.")
   assert(panelSource.includes("renderReaderProse") && panelSource.includes("proseMathTokens"), "Inspector prose must render math tokens.")
 
-  const [{ catTraceMultiViewProject, multiViewIds }, { buildProjectionLayout }, presentation] = await Promise.all([
+  const [{ catTraceMultiViewProject, multiViewIds }, { canonicalTraceProjects }, { buildProjectionLayout }, presentation] = await Promise.all([
     vite.ssrLoadModule("/src/architecture/fixtures/multiViewTraceProject.ts"),
+    vite.ssrLoadModule("/src/architecture/fixtures/canonicalTraceFixtures.ts"),
     vite.ssrLoadModule("/src/architecture/viewProjection.ts"),
     vite.ssrLoadModule("/src/architecture/graphPresentation.ts"),
   ])
 
-  const architecture = buildProjectionLayout(catTraceMultiViewProject, multiViewIds.architecture, { detailLevel: "overview", canvasWidth: 1366, canvasHeight: 768 })
-  const full = buildProjectionLayout(catTraceMultiViewProject, multiViewIds.architecture, { detailLevel: "full", canvasWidth: 1536, canvasHeight: 864 })
+  const architectureProject = canonicalTraceProjects["cat-trace-frozen-v2"]
+  const architecture = buildProjectionLayout(architectureProject, multiViewIds.architecture, { detailLevel: "overview", canvasWidth: 1366, canvasHeight: 768 })
+  const full = buildProjectionLayout(architectureProject, multiViewIds.architecture, { detailLevel: "full", canvasWidth: 1536, canvasHeight: 864 })
   const evidence = buildProjectionLayout(catTraceMultiViewProject, multiViewIds.evidence, { canvasWidth: 1366, canvasHeight: 768 })
-  const archGestalt = routeGestalt(architecture.edges)
-  const fullGestalt = routeGestalt(full.edges)
-  const evidenceGestalt = routeGestalt(evidence.edges)
+  const archGestalt = routeGestalt(architecture)
+  const fullGestalt = routeGestalt(full)
+  const evidenceGestalt = routeGestalt(evidence)
 
   for (const [name, gestalt] of Object.entries({ architecture: archGestalt, full: fullGestalt, evidence: evidenceGestalt })) {
     assert(gestalt.edgeCount > 0, `${name} must render edges.`)
-    assert(gestalt.nonMonotoneArchEdgeCount === 0, `${name} has non-monotone layout-first edges.`)
+    assert(gestalt.measurement.routeRatio === "observed", `${name} route ratios must be measured, not defaulted.`)
+    assert(gestalt.measurement.avoidableEdgeCrossing === "observed", `${name} edge crossings must be measurable.`)
+    assert(gestalt.measurement.floatingRelationLabel === "observed", `${name} floating labels must be measured.`)
+    assert(gestalt.avoidableEdgeCrossingCount === 0, `${name} has avoidable edge crossings: ${JSON.stringify(gestalt.avoidableEdgeCrossingPairs)}.`)
+    assert(gestalt.nonMonotoneArchEdgeCount === 0, `${name} has non-monotone layout-first edges: ${gestalt.nonMonotoneArchEdgeIds.join(", ")}.`)
     assert(gestalt.orthogonalMultiBendEdgeCount === 0, `${name} must not use orthogonal multi-bend routing.`)
     assert(gestalt.floatingRelationLabelCount === 0, `${name} must not render floating relation labels.`)
     assert(gestalt.longDetourCount === 0, `${name} route detours exceed RC19 limits.`)
-    assert(gestalt.simpleArchEdgeMaxRouteRatio <= 1.45, `${name} max route ratio exceeds 1.45.`)
-    assert(gestalt.archEdgeP95RouteRatio <= 1.35, `${name} p95 route ratio exceeds 1.35.`)
+    assert(gestalt.simpleArchEdgeMaxRouteRatio <= RC19_ROUTE_THRESHOLDS.simpleArchEdgeMaxRouteRatio, `${name} max route ratio exceeds the frozen RC19 limit ${RC19_ROUTE_THRESHOLDS.simpleArchEdgeMaxRouteRatio}.`)
+    assert(gestalt.archEdgeP95RouteRatio <= RC19_ROUTE_THRESHOLDS.archEdgeP95RouteRatio, `${name} p95 route ratio exceeds the frozen RC19 limit ${RC19_ROUTE_THRESHOLDS.archEdgeP95RouteRatio}.`)
   }
 
   const syntheticNodes = [
@@ -128,7 +117,7 @@ try {
     const routed = presentation.routeLayeredEdge(source, target)
     return { relation, ...routed }
   })
-  const syntheticGestalt = routeGestalt(syntheticEdges)
+  const syntheticGestalt = routeGestalt({ nodes: syntheticLayout.nodes, edges: syntheticEdges })
   assert(syntheticGestalt.nonMonotoneArchEdgeCount === 0, "Synthetic layered graph must keep monotone connectors.")
   assert(syntheticGestalt.longDetourCount === 0, "Synthetic layered graph must avoid long detours.")
 
@@ -148,11 +137,17 @@ try {
     assert(provenance.sources.every((source) => source.relationRect.x > source.rect.x && source.relationRect.x < provenance.target.x), "Lineage relation cards must sit between source and target columns.")
   }
 
-  const protectedChanges = changedProtectedTruthFiles()
-  assert(protectedChanges.length === 0, `RC19 must not modify scientific truth, trace algorithm, session contract, or CAT-TRACE bridge contracts: ${protectedChanges.join(", ")}`)
+  const protectedTruth = inspectProtectedTruth()
+  assert(protectedTruth.status === "unchanged", `RC19 protected truth comparison failed (${protectedTruth.status}): ${protectedTruth.changedFiles.join(", ")}`)
+
+  const validationResult = { status: process.exitCode ? "failed" : "validated", version: "2.0.0-rc.19", ROUTE_GESTALT: { architecture: archGestalt, full: fullGestalt, evidence: evidenceGestalt, synthetic: syntheticGestalt }, PROTECTED_TRUTH: protectedTruth }
+  if (process.env.ASTERIA_VALIDATOR_STATIC_RESULT) {
+    await fs.mkdir(path.dirname(process.env.ASTERIA_VALIDATOR_STATIC_RESULT), { recursive: true })
+    await fs.writeFile(process.env.ASTERIA_VALIDATOR_STATIC_RESULT, `${JSON.stringify(validationResult, null, 2)}\n`)
+  }
 
   if (!process.exitCode) {
-    console.log(JSON.stringify({ status: "validated", version: "2.0.0-rc.19", ROUTE_GESTALT: { architecture: archGestalt, full: fullGestalt, evidence: evidenceGestalt, synthetic: syntheticGestalt } }, null, 2))
+    console.log(JSON.stringify(validationResult, null, 2))
   }
 } catch (error) {
   console.error(error)

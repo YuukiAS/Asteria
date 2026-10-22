@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 import fs from "node:fs/promises"
 import path from "node:path"
+import { measureRouteGestalt, RC19_ROUTE_THRESHOLDS } from "../../scripts/lib/route-gestalt.mjs"
 
 const screenshotDir = process.env.ASTERIA_BROWSER_QA_DIR || "/tmp/asteria-browser-qa"
 const acceptanceDir = process.env.ASTERIA_ACCEPTANCE_SCREENSHOT_DIR || path.resolve("results/asteria_v2_rc11_reader_finish/screenshots")
@@ -2250,30 +2251,68 @@ test("RC18 quiet graph convergence keeps selection stable, connectors quiet, and
   )
 })
 
-async function rc19RouteGestalt(page: Page) {
+async function rc19RouteGestalt(page: Page, rootSelector?: string) {
   await waitForProjectionGeometrySettled(page)
-  return page.evaluate(() => {
-    const edges = [...document.querySelectorAll<SVGGElement>(".architecture-map-edge")].map((group) => ({
-      relationId: group.dataset.relationId || "",
-      grammar: group.dataset.routeGrammar || "",
-      bendCount: Number(group.dataset.routeBendCount || "0"),
-      ratio: Number(group.dataset.routeRatio || "0"),
-      nonMonotone: group.dataset.routeNonMonotone === "true",
-      labelVisible: group.dataset.edgeLabelVisible === "true",
-    }))
-    const ratios = edges.map((edge) => edge.ratio).filter(Number.isFinite).sort((a, b) => a - b)
-    return {
-      ROUTE_GESTALT_EDGE_COUNT: edges.length,
-      AVOIDABLE_EDGE_CROSSING_COUNT: 0,
-      LONG_DETOUR_COUNT: ratios.filter((ratio) => ratio > 1.45).length,
-      NON_MONOTONE_ARCH_EDGE_COUNT: edges.filter((edge) => edge.nonMonotone).length,
-      ORTHOGONAL_MULTI_BEND_EDGE_COUNT: edges.filter((edge) => edge.grammar === "rounded-orthogonal" && edge.bendCount > 1).length,
-      FLOATING_RELATION_LABEL_COUNT: edges.filter((edge) => edge.labelVisible).length + document.querySelectorAll("[data-lineage-label-group='true']").length,
-      SIMPLE_ARCH_EDGE_MAX_ROUTE_RATIO: ratios.length ? Number(Math.max(...ratios).toFixed(3)) : 0,
-      ARCH_EDGE_P95_ROUTE_RATIO: ratios.length ? Number(ratios[Math.min(ratios.length - 1, Math.ceil(ratios.length * 0.95) - 1)].toFixed(3)) : 0,
-      RELATION_COLUMN_CARD_COUNT: document.querySelectorAll("[data-lineage-card='relation']").length,
+  const observed = await page.evaluate((selector) => {
+    const root = selector ? document.querySelector(selector) : document
+    if (!root) return { edges: undefined, floatingLabels: undefined, relationCardCount: 0 }
+    const nodeLanes = new Map(
+      [...root.querySelectorAll<HTMLElement>(".architecture-map-node")].map((node) => [node.dataset.entityId || "", Number(node.dataset.nodeLane)] as const),
+    )
+    const toScreen = (path: SVGPathElement, point: DOMPoint) => {
+      const ctm = path.getScreenCTM()
+      const transformed = ctm ? new DOMPoint(point.x, point.y).matrixTransform(ctm) : point
+      return { x: transformed.x, y: transformed.y }
     }
-  })
+    const edges = [...root.querySelectorAll<SVGPathElement>(".architecture-map-edge path")].map((path) => {
+      const group = path.closest<SVGGElement>(".architecture-map-edge")
+      const length = path.getTotalLength()
+      const points = Array.from({ length: 65 }, (_, index) => toScreen(path, path.getPointAtLength((length * index) / 64)))
+      const route = path.getAttribute("d") || ""
+      const hardBendCount = /\bC\b/i.test(route)
+        ? 0
+        : Math.max((route.match(/\bQ\b/gi) || []).length, Math.max(0, (route.match(/\bL\b/gi) || []).length - 1))
+      return {
+        relationId: group?.dataset.relationId || "",
+        sourceId: group?.dataset.sourceId || "",
+        targetId: group?.dataset.targetId || "",
+        sourceLane: nodeLanes.get(group?.dataset.sourceId || ""),
+        targetLane: nodeLanes.get(group?.dataset.targetId || ""),
+        points,
+        hardBendCount,
+      }
+    })
+    const floatingLabels = [
+      ...root.querySelectorAll<HTMLElement>("[data-edge-label='true'], [data-lineage-label-group='true']"),
+      ...root.querySelectorAll<HTMLElement>("[data-lineage-card='relation']"),
+    ].map((label) => {
+      const style = getComputedStyle(label)
+      const rect = label.getBoundingClientRect()
+      return {
+        visible: style.display !== "none" && style.visibility !== "hidden" && Number.parseFloat(style.opacity || "1") > 0.05 && rect.width > 0 && rect.height > 0,
+        placement: label.matches("[data-lineage-card='relation']") ? "stable_relation_column" : "path_annotation",
+      }
+    })
+    return {
+      edges,
+      floatingLabels,
+      relationCardCount: root.querySelectorAll("[data-lineage-card='relation']").length,
+    }
+  }, rootSelector)
+  const measured = measureRouteGestalt(observed)
+  return {
+    ROUTE_GESTALT_EDGE_COUNT: measured.edgeCount,
+    ROUTE_GESTALT_MEASUREMENT: measured.measurement,
+    AVOIDABLE_EDGE_CROSSING_COUNT: measured.avoidableEdgeCrossingCount,
+    AVOIDABLE_EDGE_CROSSING_PAIRS: measured.avoidableEdgeCrossingPairs,
+    LONG_DETOUR_COUNT: measured.longDetourCount,
+    NON_MONOTONE_ARCH_EDGE_COUNT: measured.nonMonotoneArchEdgeCount,
+    ORTHOGONAL_MULTI_BEND_EDGE_COUNT: measured.orthogonalMultiBendEdgeCount,
+    FLOATING_RELATION_LABEL_COUNT: measured.floatingRelationLabelCount,
+    SIMPLE_ARCH_EDGE_MAX_ROUTE_RATIO: measured.simpleArchEdgeMaxRouteRatio === null ? null : Number(measured.simpleArchEdgeMaxRouteRatio.toFixed(3)),
+    ARCH_EDGE_P95_ROUTE_RATIO: measured.archEdgeP95RouteRatio === null ? null : Number(measured.archEdgeP95RouteRatio.toFixed(3)),
+    RELATION_COLUMN_CARD_COUNT: observed.relationCardCount,
+  }
 }
 
 test("RC19 layout-first graph convergence exposes route gestalt and relation-column provenance", async ({ page }) => {
@@ -2284,14 +2323,31 @@ test("RC19 layout-first graph convergence exposes route gestalt and relation-col
   await expect(page.getByTestId("architecture-workspace-stage")).toHaveAttribute("data-active-view", "view:architecture")
 
   const architectureGestalt = await rc19RouteGestalt(page)
-  expect(architectureGestalt.ROUTE_GESTALT_EDGE_COUNT).toBeGreaterThan(0)
-  expect(architectureGestalt.LONG_DETOUR_COUNT).toBe(0)
-  expect(architectureGestalt.NON_MONOTONE_ARCH_EDGE_COUNT).toBe(0)
-  expect(architectureGestalt.ORTHOGONAL_MULTI_BEND_EDGE_COUNT).toBe(0)
-  expect(architectureGestalt.FLOATING_RELATION_LABEL_COUNT).toBe(0)
-  expect(architectureGestalt.SIMPLE_ARCH_EDGE_MAX_ROUTE_RATIO).toBeLessThanOrEqual(1.45)
+  console.log(JSON.stringify({ RC19_ARCHITECTURE_GESTALT: architectureGestalt }, null, 2))
+  expect.soft(architectureGestalt.ROUTE_GESTALT_EDGE_COUNT).toBeGreaterThan(0)
+  expect.soft(architectureGestalt.ROUTE_GESTALT_MEASUREMENT.routeRatio).toBe("observed")
+  expect.soft(architectureGestalt.ROUTE_GESTALT_MEASUREMENT.avoidableEdgeCrossing).toBe("observed")
+  expect.soft(architectureGestalt.AVOIDABLE_EDGE_CROSSING_COUNT, JSON.stringify(architectureGestalt.AVOIDABLE_EDGE_CROSSING_PAIRS)).toBe(0)
+  expect.soft(architectureGestalt.LONG_DETOUR_COUNT).toBe(0)
+  expect.soft(architectureGestalt.NON_MONOTONE_ARCH_EDGE_COUNT).toBe(0)
+  expect.soft(architectureGestalt.ORTHOGONAL_MULTI_BEND_EDGE_COUNT).toBe(0)
+  expect.soft(architectureGestalt.FLOATING_RELATION_LABEL_COUNT).toBe(0)
+  expect.soft(architectureGestalt.SIMPLE_ARCH_EDGE_MAX_ROUTE_RATIO).toBeLessThanOrEqual(RC19_ROUTE_THRESHOLDS.simpleArchEdgeMaxRouteRatio)
+  expect.soft(architectureGestalt.ARCH_EDGE_P95_ROUTE_RATIO).toBeLessThanOrEqual(RC19_ROUTE_THRESHOLDS.archEdgeP95RouteRatio)
   await expect(page.locator(".architecture-prose-math .katex").first()).toBeVisible()
   await page.screenshot({ path: path.join(screenshotDir, "rc19-architecture-layout-first-1366.png"), fullPage: false })
+
+  await page.getByTestId("detail-full-model").click()
+  const fullGestalt = await rc19RouteGestalt(page)
+  console.log(JSON.stringify({ RC19_FULL_GESTALT: fullGestalt }, null, 2))
+  expect.soft(fullGestalt.ROUTE_GESTALT_MEASUREMENT.routeRatio).toBe("observed")
+  expect.soft(fullGestalt.AVOIDABLE_EDGE_CROSSING_COUNT, JSON.stringify(fullGestalt.AVOIDABLE_EDGE_CROSSING_PAIRS)).toBe(0)
+  expect.soft(fullGestalt.LONG_DETOUR_COUNT).toBe(0)
+  expect.soft(fullGestalt.NON_MONOTONE_ARCH_EDGE_COUNT).toBe(0)
+  expect.soft(fullGestalt.SIMPLE_ARCH_EDGE_MAX_ROUTE_RATIO).toBeLessThanOrEqual(RC19_ROUTE_THRESHOLDS.simpleArchEdgeMaxRouteRatio)
+  expect.soft(fullGestalt.ARCH_EDGE_P95_ROUTE_RATIO).toBeLessThanOrEqual(RC19_ROUTE_THRESHOLDS.archEdgeP95RouteRatio)
+  await page.screenshot({ path: path.join(screenshotDir, "rc19-architecture-full-1366.png"), fullPage: false })
+  await page.getByTestId("detail-overview").click()
 
   await page.getByTestId("view-lineage").click()
   await assertLineagePresentationGeometry(page)
@@ -2302,12 +2358,44 @@ test("RC19 layout-first graph convergence exposes route gestalt and relation-col
 
   await page.getByTestId("view-evidence").click()
   const evidenceGestalt = await rc19RouteGestalt(page)
-  expect(evidenceGestalt.ROUTE_GESTALT_EDGE_COUNT).toBeGreaterThan(0)
-  expect(evidenceGestalt.LONG_DETOUR_COUNT).toBe(0)
-  expect(evidenceGestalt.NON_MONOTONE_ARCH_EDGE_COUNT).toBe(0)
-  expect(evidenceGestalt.ORTHOGONAL_MULTI_BEND_EDGE_COUNT).toBe(0)
-  expect(evidenceGestalt.FLOATING_RELATION_LABEL_COUNT).toBe(0)
+  console.log(JSON.stringify({ RC19_EVIDENCE_GESTALT: evidenceGestalt }, null, 2))
+  expect.soft(evidenceGestalt.ROUTE_GESTALT_EDGE_COUNT).toBeGreaterThan(0)
+  expect.soft(evidenceGestalt.ROUTE_GESTALT_MEASUREMENT.routeRatio).toBe("observed")
+  expect.soft(evidenceGestalt.ROUTE_GESTALT_MEASUREMENT.avoidableEdgeCrossing).toBe("observed")
+  expect.soft(evidenceGestalt.AVOIDABLE_EDGE_CROSSING_COUNT, JSON.stringify(evidenceGestalt.AVOIDABLE_EDGE_CROSSING_PAIRS)).toBe(0)
+  expect.soft(evidenceGestalt.LONG_DETOUR_COUNT).toBe(0)
+  expect.soft(evidenceGestalt.NON_MONOTONE_ARCH_EDGE_COUNT).toBe(0)
+  expect.soft(evidenceGestalt.ORTHOGONAL_MULTI_BEND_EDGE_COUNT).toBe(0)
+  expect.soft(evidenceGestalt.FLOATING_RELATION_LABEL_COUNT).toBe(0)
   await page.screenshot({ path: path.join(screenshotDir, "rc19-evidence-claim-centered-1366.png"), fullPage: false })
 
-  console.log(JSON.stringify({ ROUTE_GESTALT: { architecture: architectureGestalt, lineage: lineageGestalt, evidence: evidenceGestalt } }, null, 2))
+  const routeGestaltResult = { ROUTE_GESTALT: { architecture: architectureGestalt, full: fullGestalt, lineage: lineageGestalt, evidence: evidenceGestalt } }
+  if (process.env.ASTERIA_VALIDATOR_BROWSER_RESULT) {
+    await fs.mkdir(path.dirname(process.env.ASTERIA_VALIDATOR_BROWSER_RESULT), { recursive: true })
+    await fs.writeFile(process.env.ASTERIA_VALIDATOR_BROWSER_RESULT, `${JSON.stringify(routeGestaltResult, null, 2)}\n`)
+  }
+  console.log(JSON.stringify(routeGestaltResult, null, 2))
+})
+
+test("RC19 validator hardening rejects bad rendered geometry despite falsified data-route metrics", async ({ page }) => {
+  await page.evaluate(() => {
+    const host = document.createElement("div")
+    host.innerHTML = `
+      <svg id="validator-bad-fixture" width="320" height="220" viewBox="0 0 320 220" style="position:fixed;left:20px;top:20px;z-index:9999;background:white">
+        <g class="architecture-map-edge" data-relation-id="bad-a" data-source-id="a" data-target-id="b" data-route-ratio="0" data-route-non-monotone="false">
+          <path d="M 20 20 L 300 200" stroke="black" fill="none" />
+        </g>
+        <g class="architecture-map-edge" data-relation-id="bad-b" data-source-id="c" data-target-id="d" data-route-ratio="0" data-route-non-monotone="false">
+          <path d="M 20 200 L 300 20" stroke="black" fill="none" />
+        </g>
+        <text x="135" y="95" data-edge-label="true">floating relation</text>
+      </svg>`
+    document.body.append(host)
+  })
+  const result = await rc19RouteGestalt(page, "#validator-bad-fixture")
+  expect(result.ROUTE_GESTALT_MEASUREMENT.routeRatio).toBe("observed")
+  expect(result.AVOIDABLE_EDGE_CROSSING_COUNT).toBe(1)
+  expect(result.FLOATING_RELATION_LABEL_COUNT).toBe(1)
+  expect(result.SIMPLE_ARCH_EDGE_MAX_ROUTE_RATIO).toBeGreaterThan(0)
+  await page.locator("#validator-bad-fixture").evaluate((element) => element.parentElement?.remove())
 })

@@ -1,0 +1,771 @@
+{
+  "schemaVersion": "asteria.validator-run/1",
+  "validator": "asteria-rc19-scientific-graph-hardening",
+  "candidate": {
+    "head": "60ba27a38324980beea78d4c07b7b28abda522cf",
+    "worktreeStatus": [
+      " M package.json",
+      " M results/asteria_v2_rc11_reader_finish/screenshots/rc11-alphaU-definition.png",
+      " M results/asteria_v2_rc11_reader_finish/screenshots/rc11-beta-definition.png",
+      " M results/asteria_v2_rc11_reader_finish/screenshots/rc11-cat-full-1366.png",
+      " M results/asteria_v2_rc11_reader_finish/screenshots/rc11-cat-full-1536.png",
+      " M results/asteria_v2_rc11_reader_finish/screenshots/rc11-cat-overview-dark-1536.png",
+      " M results/asteria_v2_rc11_reader_finish/screenshots/rc11-cat-overview-light-1366.png",
+      " M results/asteria_v2_rc11_reader_finish/screenshots/rc11-gamma-definition.png",
+      " M results/asteria_v2_rc11_reader_finish/screenshots/rc11-original-trace-definition.png",
+      " M results/asteria_v2_rc11_reader_finish/screenshots/rc11-sigmaW-definition.png",
+      " M scripts/validate-architecture-rc19.mjs",
+      " M tests/browser/asteria-v2-rc.spec.ts",
+      "?? results/asteria_validator_hardening_20261022/",
+      "?? scripts/lib/",
+      "?? scripts/run-architecture-rc19-validation.mjs",
+      "?? scripts/test-validator-hardening.mjs"
+    ],
+    "worktreeDiffSha256": "75506205cbbecfd7c54ac12722d2a49d084f55b7361ae55545ed907ccc1c724a"
+  },
+  "approvedScientificBaseline": "193c033659a7612a99442763077217b130e9b756",
+  "approvedThresholdSource": "prompts/tasks/asteria_v2_rc19_layout_first_graph_convergence_task.md#8",
+  "thresholds": {
+    "simpleArchEdgeMaxRouteRatio": 1.3,
+    "archEdgeP95RouteRatio": 1.45,
+    "longDetourRouteRatio": 1.45
+  },
+  "commands": [
+    {
+      "name": "validator-control-set",
+      "argv": [
+        "npm",
+        "run",
+        "test:validator-hardening"
+      ],
+      "exitCode": 0,
+      "durationMs": 350,
+      "stdoutTail": "\n> asteria@2.0.0-rc.19 test:validator-hardening\n> node scripts/test-validator-hardening.mjs\n\n{\n  \"status\": \"validator-hardening-controls-pass\",\n  \"caseCount\": 12,\n  \"cases\": [\n    \"geometry-good-no-conflict\",\n    \"geometry-bad-crossing-and-floating-label\",\n    \"geometry-missing-edge-measurement\",\n    \"geometry-invalid-nan\",\n    \"geometry-invalid-infinity\",\n    \"geometry-no-edge-data\",\n    \"geometry-shared-endpoint-and-stable-relation-column\",\n    \"protected-truth-clean\",\n    \"protected-truth-unstaged\",\n    \"protected-truth-staged\",\n    \"protected-truth-committed\",\n    \"protected-truth-baseline-missing\"\n  ]\n}\n",
+      "stderrTail": ""
+    },
+    {
+      "name": "static-rc19-observer",
+      "argv": [
+        "node",
+        "scripts/validate-architecture-rc19.mjs"
+      ],
+      "exitCode": 1,
+      "durationMs": 581,
+      "stdoutTail": "",
+      "stderrTail": "architecture has avoidable edge crossings: [[\"relation:cat-trace-frozen-v2:22:gamma_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\"],[\"relation:cat-trace-frozen-v2:22:gamma_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:23:p_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\"],[\"relation:cat-trace-frozen-v2:23:p_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:29:posterior_inference:alphaU_gh\",\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\"],[\"relation:cat-trace-frozen-v2:2:g_f:mathcal_G\",\"relation:cat-trace-frozen-v2:33:c_f:mathcal_U\"],[\"relation:cat-trace-frozen-v2:2:g_f:mathcal_G\",\"relation:cat-trace-frozen-v2:10:x_i:zU_igh\"],[\"relation:cat-trace-frozen-v2:33:c_f:mathcal_U\",\"relation:cat-trace-frozen-v2:10:x_i:zU_igh\"],[\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\",\"relation:cat-trace-frozen-v2:8:alphaU_gh:zU_igh\"]].\nfull has avoidable edge crossings: [[\"relation:cat-trace-frozen-v2:22:gamma_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:12:a_g:betaU_gh\"],[\"relation:cat-trace-frozen-v2:23:p_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:18:bphy_j:betaK_j\"],[\"relation:cat-trace-frozen-v2:23:p_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:16:Gamma:betaK_j\"],[\"relation:cat-trace-frozen-v2:23:p_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:19:vK_j:betaK_j\"],[\"relation:cat-trace-frozen-v2:23:p_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:13:vU_gh:betaU_gh\"],[\"relation:cat-trace-frozen-v2:23:p_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:29:posterior_inference:alphaU_gh\",\"relation:cat-trace-frozen-v2:12:a_g:betaU_gh\"],[\"relation:cat-trace-frozen-v2:29:posterior_inference:alphaU_gh\",\"relation:cat-trace-frozen-v2:11:nu:betaU_gh\"],[\"relation:cat-trace-frozen-v2:29:posterior_inference:alphaU_gh\",\"relation:cat-trace-frozen-v2:20:gamma0:gamma_g\"],[\"relation:cat-trace-frozen-v2:29:posterior_inference:alphaU_gh\",\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\"],[\"relation:cat-trace-frozen-v2:15:a_g:betaK_j\",\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\"],[\"relation:cat-trace-frozen-v2:18:bphy_j:betaK_j\",\"relation:cat-trace-frozen-v2:13:vU_gh:betaU_gh\"],[\"relation:cat-trace-frozen-v2:18:bphy_j:betaK_j\",\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\"],[\"relation:cat-trace-frozen-v2:18:bphy_j:betaK_j\",\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\"],[\"relation:cat-trace-frozen-v2:18:bphy_j:betaK_j\",\"relation:cat-trace-frozen-v2:5:alphaK_j:zK_ij\"],[\"relation:cat-trace-frozen-v2:18:bphy_j:betaK_j\",\"relation:cat-trace-frozen-v2:8:alphaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:18:bphy_j:betaK_j\",\"relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:16:Gamma:betaK_j\",\"relation:cat-trace-frozen-v2:13:vU_gh:betaU_gh\"],[\"relation:cat-trace-frozen-v2:16:Gamma:betaK_j\",\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\"],[\"relation:cat-trace-frozen-v2:16:Gamma:betaK_j\",\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\"],[\"relation:cat-trace-frozen-v2:16:Gamma:betaK_j\",\"relation:cat-trace-frozen-v2:5:alphaK_j:zK_ij\"],[\"relation:cat-trace-frozen-v2:16:Gamma:betaK_j\",\"relation:cat-trace-frozen-v2:8:alphaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:16:Gamma:betaK_j\",\"relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:17:t_j:betaK_j\",\"relation:cat-trace-frozen-v2:2:g_f:mathcal_G\"],[\"relation:cat-trace-frozen-v2:17:t_j:betaK_j\",\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\"],[\"relation:cat-trace-frozen-v2:17:t_j:betaK_j\",\"relation:cat-trace-frozen-v2:3:zK_ij:yK_ij\"],[\"relation:cat-trace-frozen-v2:19:vK_j:betaK_j\",\"relation:cat-trace-frozen-v2:13:vU_gh:betaU_gh\"],[\"relation:cat-trace-frozen-v2:19:vK_j:betaK_j\",\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\"],[\"relation:cat-trace-frozen-v2:19:vK_j:betaK_j\",\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\"],[\"relation:cat-trace-frozen-v2:19:vK_j:betaK_j\",\"relation:cat-trace-frozen-v2:25:p_g:zero_slots\"],[\"relation:cat-trace-frozen-v2:19:vK_j:betaK_j\",\"relation:cat-trace-frozen-v2:5:alphaK_j:zK_ij\"],[\"relation:cat-trace-frozen-v2:19:vK_j:betaK_j\",\"relation:cat-trace-frozen-v2:8:alphaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:19:vK_j:betaK_j\",\"relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:12:a_g:betaU_gh\",\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\"],[\"relation:cat-trace-frozen-v2:11:nu:betaU_gh\",\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\"],[\"relation:cat-trace-frozen-v2:11:nu:betaU_gh\",\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\"],[\"relation:cat-trace-frozen-v2:30:posterior_inference:betaU_gh\",\"relation:cat-trace-frozen-v2:20:gamma0:gamma_g\"],[\"relation:cat-trace-frozen-v2:30:posterior_inference:betaU_gh\",\"relation:cat-trace-frozen-v2:21:pi_g:gamma_g\"],[\"relation:cat-trace-frozen-v2:20:gamma0:gamma_g\",\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\"],[\"relation:cat-trace-frozen-v2:20:gamma0:gamma_g\",\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\"],[\"relation:cat-trace-frozen-v2:2:g_f:mathcal_G\",\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\"],[\"relation:cat-trace-frozen-v2:2:g_f:mathcal_G\",\"relation:cat-trace-frozen-v2:7:x_i:zK_ij\"],[\"relation:cat-trace-frozen-v2:26:Lambda_W:Omega_W\",\"relation:cat-trace-frozen-v2:28:mathcal_W:Sigma_W\"],[\"relation:cat-trace-frozen-v2:26:Lambda_W:Omega_W\",\"relation:cat-trace-frozen-v2:25:p_g:zero_slots\"],[\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\",\"relation:cat-trace-frozen-v2:3:zK_ij:yK_ij\"],[\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\",\"relation:cat-trace-frozen-v2:4:zU_igh:yU_igh\"],[\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\",\"relation:cat-trace-frozen-v2:5:alphaK_j:zK_ij\"],[\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\",\"relation:cat-trace-frozen-v2:6:betaK_j:zK_ij\"],[\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\",\"relation:cat-trace-frozen-v2:5:alphaK_j:zK_ij\"],[\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\",\"relation:cat-trace-frozen-v2:6:betaK_j:zK_ij\"],[\"relation:cat-trace-frozen-v2:28:mathcal_W:Sigma_W\",\"relation:cat-trace-frozen-v2:25:p_g:zero_slots\"],[\"relation:cat-trace-frozen-v2:28:mathcal_W:Sigma_W\",\"relation:cat-trace-frozen-v2:8:alphaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:28:mathcal_W:Sigma_W\",\"relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:3:zK_ij:yK_ij\",\"relation:cat-trace-frozen-v2:4:zU_igh:yU_igh\"],[\"relation:cat-trace-frozen-v2:4:zU_igh:yU_igh\",\"relation:cat-trace-frozen-v2:7:x_i:zK_ij\"]].\nevidence has avoidable edge crossings: [[\"relation:evidence:malagasy-pending\",\"relation:evidence:realdata-gap-tail\"]].\n"
+    },
+    {
+      "name": "browser-falsified-metrics-control",
+      "argv": [
+        "npx",
+        "playwright",
+        "test",
+        "--grep",
+        "RC19 validator hardening"
+      ],
+      "exitCode": 0,
+      "durationMs": 2551,
+      "stdoutTail": "\nRunning 1 test using 1 worker\n\n  ✓  1 [chromium] › tests/browser/asteria-v2-rc.spec.ts:2380:1 › RC19 validator hardening rejects bad rendered geometry despite falsified data-route metrics (1.1s)\n\n  1 passed (2.1s)\n",
+      "stderrTail": "[WebServer] (node:2733) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n(node:2751) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "name": "browser-rendered-product-gate",
+      "argv": [
+        "npx",
+        "playwright",
+        "test",
+        "--grep",
+        "RC19 layout-first"
+      ],
+      "exitCode": 1,
+      "durationMs": 3769,
+      "stdoutTail": "      2345 |   expect.soft(fullGestalt.LONG_DETOUR_COUNT).toBe(0)\n      2346 |   expect.soft(fullGestalt.NON_MONOTONE_ARCH_EDGE_COUNT).toBe(0)\n      2347 |   expect.soft(fullGestalt.SIMPLE_ARCH_EDGE_MAX_ROUTE_RATIO).toBeLessThanOrEqual(RC19_ROUTE_THRESHOLDS.simpleArchEdgeMaxRouteRatio)\n        at /home/yuukias/code/Asteria/tests/browser/asteria-v2-rc.spec.ts:2344:117\n\n    Error: [[\"entity:evidence:data:malagasy->entity:evidence:claim:open-tail-response\",\"entity:evidence:limitation:real-data->entity:evidence:claim:tail-calibration\"]]\n\n    expect(received).toBe(expected) // Object.is equality\n\n    Expected: 0\n    Received: 1\n\n      2363 |   expect.soft(evidenceGestalt.ROUTE_GESTALT_MEASUREMENT.routeRatio).toBe(\"observed\")\n      2364 |   expect.soft(evidenceGestalt.ROUTE_GESTALT_MEASUREMENT.avoidableEdgeCrossing).toBe(\"observed\")\n    > 2365 |   expect.soft(evidenceGestalt.AVOIDABLE_EDGE_CROSSING_COUNT, JSON.stringify(evidenceGestalt.AVOIDABLE_EDGE_CROSSING_PAIRS)).toBe(0)\n           |                                                                                                                             ^\n      2366 |   expect.soft(evidenceGestalt.LONG_DETOUR_COUNT).toBe(0)\n      2367 |   expect.soft(evidenceGestalt.NON_MONOTONE_ARCH_EDGE_COUNT).toBe(0)\n      2368 |   expect.soft(evidenceGestalt.ORTHOGONAL_MULTI_BEND_EDGE_COUNT).toBe(0)\n        at /home/yuukias/code/Asteria/tests/browser/asteria-v2-rc.spec.ts:2365:125\n\n    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────\n    ../../../../tmp/asteria-playwright-results/asteria-v2-rc-RC19-layout--8d137--relation-column-provenance-chromium/test-failed-1.png\n    ────────────────────────────────────────────────────────────────────────────────────────────────\n\n    Error Context: ../../../../tmp/asteria-playwright-results/asteria-v2-rc-RC19-layout--8d137--relation-column-provenance-chromium/error-context.md\n\n  1 failed\n    [chromium] › tests/browser/asteria-v2-rc.spec.ts:2318:1 › RC19 layout-first graph convergence exposes route gestalt and relation-column provenance \n",
+      "stderrTail": "[WebServer] (node:2891) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n(node:2909) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    }
+  ],
+  "controls": {
+    "nodeCaseCount": 12,
+    "browserFalsifiedMetricsRejected": true
+  },
+  "static": {
+    "status": "failed",
+    "version": "2.0.0-rc.19",
+    "ROUTE_GESTALT": {
+      "architecture": {
+        "edgeCount": 13,
+        "measuredEdgeCount": 13,
+        "missingEdgeGeometryCount": 0,
+        "nanEdgeGeometryCount": 0,
+        "infiniteEdgeGeometryCount": 0,
+        "eligibleEdgePairCount": 60,
+        "avoidableEdgeCrossingCount": 9,
+        "avoidableEdgeCrossingPairs": [
+          [
+            "relation:cat-trace-frozen-v2:22:gamma_g:alphaU_gh",
+            "relation:cat-trace-frozen-v2:31:yU_igh:richness_targets"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:22:gamma_g:alphaU_gh",
+            "relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:23:p_g:alphaU_gh",
+            "relation:cat-trace-frozen-v2:31:yU_igh:richness_targets"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:23:p_g:alphaU_gh",
+            "relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:29:posterior_inference:alphaU_gh",
+            "relation:cat-trace-frozen-v2:31:yU_igh:richness_targets"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:2:g_f:mathcal_G",
+            "relation:cat-trace-frozen-v2:33:c_f:mathcal_U"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:2:g_f:mathcal_G",
+            "relation:cat-trace-frozen-v2:10:x_i:zU_igh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:33:c_f:mathcal_U",
+            "relation:cat-trace-frozen-v2:10:x_i:zU_igh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:31:yU_igh:richness_targets",
+            "relation:cat-trace-frozen-v2:8:alphaU_gh:zU_igh"
+          ]
+        ],
+        "longDetourCount": 0,
+        "nonMonotoneArchEdgeCount": 0,
+        "nonMonotoneArchEdgeIds": [],
+        "orthogonalMultiBendEdgeCount": 0,
+        "floatingRelationLabelCount": 0,
+        "simpleArchEdgeMaxRouteRatio": 1.2448979591836735,
+        "archEdgeP95RouteRatio": 1.2448979591836735,
+        "measurement": {
+          "edgeSet": "observed",
+          "routeRatio": "observed",
+          "avoidableEdgeCrossing": "observed",
+          "floatingRelationLabel": "observed"
+        }
+      },
+      "full": {
+        "edgeCount": 34,
+        "measuredEdgeCount": 34,
+        "missingEdgeGeometryCount": 0,
+        "nanEdgeGeometryCount": 0,
+        "infiniteEdgeGeometryCount": 0,
+        "eligibleEdgePairCount": 496,
+        "avoidableEdgeCrossingCount": 55,
+        "avoidableEdgeCrossingPairs": [
+          [
+            "relation:cat-trace-frozen-v2:22:gamma_g:alphaU_gh",
+            "relation:cat-trace-frozen-v2:12:a_g:betaU_gh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:23:p_g:alphaU_gh",
+            "relation:cat-trace-frozen-v2:18:bphy_j:betaK_j"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:23:p_g:alphaU_gh",
+            "relation:cat-trace-frozen-v2:16:Gamma:betaK_j"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:23:p_g:alphaU_gh",
+            "relation:cat-trace-frozen-v2:19:vK_j:betaK_j"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:23:p_g:alphaU_gh",
+            "relation:cat-trace-frozen-v2:13:vU_gh:betaU_gh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:23:p_g:alphaU_gh",
+            "relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:29:posterior_inference:alphaU_gh",
+            "relation:cat-trace-frozen-v2:12:a_g:betaU_gh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:29:posterior_inference:alphaU_gh",
+            "relation:cat-trace-frozen-v2:11:nu:betaU_gh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:29:posterior_inference:alphaU_gh",
+            "relation:cat-trace-frozen-v2:20:gamma0:gamma_g"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:29:posterior_inference:alphaU_gh",
+            "relation:cat-trace-frozen-v2:32:K_n:richness_targets"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:15:a_g:betaK_j",
+            "relation:cat-trace-frozen-v2:31:yU_igh:richness_targets"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:18:bphy_j:betaK_j",
+            "relation:cat-trace-frozen-v2:13:vU_gh:betaU_gh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:18:bphy_j:betaK_j",
+            "relation:cat-trace-frozen-v2:32:K_n:richness_targets"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:18:bphy_j:betaK_j",
+            "relation:cat-trace-frozen-v2:31:yU_igh:richness_targets"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:18:bphy_j:betaK_j",
+            "relation:cat-trace-frozen-v2:5:alphaK_j:zK_ij"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:18:bphy_j:betaK_j",
+            "relation:cat-trace-frozen-v2:8:alphaU_gh:zU_igh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:18:bphy_j:betaK_j",
+            "relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:16:Gamma:betaK_j",
+            "relation:cat-trace-frozen-v2:13:vU_gh:betaU_gh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:16:Gamma:betaK_j",
+            "relation:cat-trace-frozen-v2:32:K_n:richness_targets"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:16:Gamma:betaK_j",
+            "relation:cat-trace-frozen-v2:31:yU_igh:richness_targets"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:16:Gamma:betaK_j",
+            "relation:cat-trace-frozen-v2:5:alphaK_j:zK_ij"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:16:Gamma:betaK_j",
+            "relation:cat-trace-frozen-v2:8:alphaU_gh:zU_igh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:16:Gamma:betaK_j",
+            "relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:17:t_j:betaK_j",
+            "relation:cat-trace-frozen-v2:2:g_f:mathcal_G"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:17:t_j:betaK_j",
+            "relation:cat-trace-frozen-v2:32:K_n:richness_targets"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:17:t_j:betaK_j",
+            "relation:cat-trace-frozen-v2:3:zK_ij:yK_ij"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:19:vK_j:betaK_j",
+            "relation:cat-trace-frozen-v2:13:vU_gh:betaU_gh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:19:vK_j:betaK_j",
+            "relation:cat-trace-frozen-v2:32:K_n:richness_targets"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:19:vK_j:betaK_j",
+            "relation:cat-trace-frozen-v2:31:yU_igh:richness_targets"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:19:vK_j:betaK_j",
+            "relation:cat-trace-frozen-v2:25:p_g:zero_slots"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:19:vK_j:betaK_j",
+            "relation:cat-trace-frozen-v2:5:alphaK_j:zK_ij"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:19:vK_j:betaK_j",
+            "relation:cat-trace-frozen-v2:8:alphaU_gh:zU_igh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:19:vK_j:betaK_j",
+            "relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:12:a_g:betaU_gh",
+            "relation:cat-trace-frozen-v2:32:K_n:richness_targets"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:11:nu:betaU_gh",
+            "relation:cat-trace-frozen-v2:32:K_n:richness_targets"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:11:nu:betaU_gh",
+            "relation:cat-trace-frozen-v2:31:yU_igh:richness_targets"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:30:posterior_inference:betaU_gh",
+            "relation:cat-trace-frozen-v2:20:gamma0:gamma_g"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:30:posterior_inference:betaU_gh",
+            "relation:cat-trace-frozen-v2:21:pi_g:gamma_g"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:20:gamma0:gamma_g",
+            "relation:cat-trace-frozen-v2:32:K_n:richness_targets"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:20:gamma0:gamma_g",
+            "relation:cat-trace-frozen-v2:31:yU_igh:richness_targets"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:2:g_f:mathcal_G",
+            "relation:cat-trace-frozen-v2:32:K_n:richness_targets"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:2:g_f:mathcal_G",
+            "relation:cat-trace-frozen-v2:7:x_i:zK_ij"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:26:Lambda_W:Omega_W",
+            "relation:cat-trace-frozen-v2:28:mathcal_W:Sigma_W"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:26:Lambda_W:Omega_W",
+            "relation:cat-trace-frozen-v2:25:p_g:zero_slots"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:32:K_n:richness_targets",
+            "relation:cat-trace-frozen-v2:3:zK_ij:yK_ij"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:32:K_n:richness_targets",
+            "relation:cat-trace-frozen-v2:4:zU_igh:yU_igh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:32:K_n:richness_targets",
+            "relation:cat-trace-frozen-v2:5:alphaK_j:zK_ij"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:32:K_n:richness_targets",
+            "relation:cat-trace-frozen-v2:6:betaK_j:zK_ij"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:31:yU_igh:richness_targets",
+            "relation:cat-trace-frozen-v2:5:alphaK_j:zK_ij"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:31:yU_igh:richness_targets",
+            "relation:cat-trace-frozen-v2:6:betaK_j:zK_ij"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:28:mathcal_W:Sigma_W",
+            "relation:cat-trace-frozen-v2:25:p_g:zero_slots"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:28:mathcal_W:Sigma_W",
+            "relation:cat-trace-frozen-v2:8:alphaU_gh:zU_igh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:28:mathcal_W:Sigma_W",
+            "relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:3:zK_ij:yK_ij",
+            "relation:cat-trace-frozen-v2:4:zU_igh:yU_igh"
+          ],
+          [
+            "relation:cat-trace-frozen-v2:4:zU_igh:yU_igh",
+            "relation:cat-trace-frozen-v2:7:x_i:zK_ij"
+          ]
+        ],
+        "longDetourCount": 0,
+        "nonMonotoneArchEdgeCount": 0,
+        "nonMonotoneArchEdgeIds": [],
+        "orthogonalMultiBendEdgeCount": 0,
+        "floatingRelationLabelCount": 0,
+        "simpleArchEdgeMaxRouteRatio": 1.24,
+        "archEdgeP95RouteRatio": 1.2399999999999995,
+        "measurement": {
+          "edgeSet": "observed",
+          "routeRatio": "observed",
+          "avoidableEdgeCrossing": "observed",
+          "floatingRelationLabel": "observed"
+        }
+      },
+      "evidence": {
+        "edgeCount": 8,
+        "measuredEdgeCount": 8,
+        "missingEdgeGeometryCount": 0,
+        "nanEdgeGeometryCount": 0,
+        "infiniteEdgeGeometryCount": 0,
+        "eligibleEdgePairCount": 22,
+        "avoidableEdgeCrossingCount": 1,
+        "avoidableEdgeCrossingPairs": [
+          [
+            "relation:evidence:malagasy-pending",
+            "relation:evidence:realdata-gap-tail"
+          ]
+        ],
+        "longDetourCount": 0,
+        "nonMonotoneArchEdgeCount": 0,
+        "nonMonotoneArchEdgeIds": [],
+        "orthogonalMultiBendEdgeCount": 0,
+        "floatingRelationLabelCount": 0,
+        "simpleArchEdgeMaxRouteRatio": 1.0946636868943467,
+        "archEdgeP95RouteRatio": 1.0946636868943467,
+        "measurement": {
+          "edgeSet": "observed",
+          "routeRatio": "observed",
+          "avoidableEdgeCrossing": "observed",
+          "floatingRelationLabel": "observed"
+        }
+      },
+      "synthetic": {
+        "edgeCount": 8,
+        "measuredEdgeCount": 8,
+        "missingEdgeGeometryCount": 0,
+        "nanEdgeGeometryCount": 0,
+        "infiniteEdgeGeometryCount": 0,
+        "eligibleEdgePairCount": 18,
+        "avoidableEdgeCrossingCount": 0,
+        "avoidableEdgeCrossingPairs": [],
+        "longDetourCount": 0,
+        "nonMonotoneArchEdgeCount": 0,
+        "nonMonotoneArchEdgeIds": [],
+        "orthogonalMultiBendEdgeCount": 0,
+        "floatingRelationLabelCount": 0,
+        "simpleArchEdgeMaxRouteRatio": 1.0162192154185106,
+        "archEdgeP95RouteRatio": 1.0162192154185106,
+        "measurement": {
+          "edgeSet": "observed",
+          "routeRatio": "observed",
+          "avoidableEdgeCrossing": "observed",
+          "floatingRelationLabel": "observed"
+        }
+      }
+    },
+    "PROTECTED_TRUTH": {
+      "status": "unchanged",
+      "baselineRef": "193c033659a7612a99442763077217b130e9b756",
+      "candidateRef": "60ba27a38324980beea78d4c07b7b28abda522cf",
+      "changedFiles": [],
+      "scopes": {
+        "committed": [],
+        "staged": [],
+        "unstaged": [],
+        "untracked": []
+      }
+    }
+  },
+  "browser": {
+    "ROUTE_GESTALT": {
+      "architecture": {
+        "ROUTE_GESTALT_EDGE_COUNT": 13,
+        "ROUTE_GESTALT_MEASUREMENT": {
+          "edgeSet": "observed",
+          "routeRatio": "observed",
+          "avoidableEdgeCrossing": "observed",
+          "floatingRelationLabel": "observed"
+        },
+        "AVOIDABLE_EDGE_CROSSING_COUNT": 9,
+        "AVOIDABLE_EDGE_CROSSING_PAIRS": [
+          [
+            "entity:cat-trace-frozen-v2:gamma_g->entity:cat-trace-frozen-v2:alphaU_gh",
+            "entity:cat-trace-frozen-v2:yU_igh->entity:cat-trace-frozen-v2:richness_targets"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:gamma_g->entity:cat-trace-frozen-v2:alphaU_gh",
+            "entity:cat-trace-frozen-v2:betaU_gh->entity:cat-trace-frozen-v2:zU_igh"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:p_g->entity:cat-trace-frozen-v2:alphaU_gh",
+            "entity:cat-trace-frozen-v2:yU_igh->entity:cat-trace-frozen-v2:richness_targets"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:p_g->entity:cat-trace-frozen-v2:alphaU_gh",
+            "entity:cat-trace-frozen-v2:betaU_gh->entity:cat-trace-frozen-v2:zU_igh"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:posterior_inference->entity:cat-trace-frozen-v2:alphaU_gh",
+            "entity:cat-trace-frozen-v2:yU_igh->entity:cat-trace-frozen-v2:richness_targets"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:g_f->entity:cat-trace-frozen-v2:mathcal_G",
+            "entity:cat-trace-frozen-v2:c_f->entity:cat-trace-frozen-v2:mathcal_U"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:g_f->entity:cat-trace-frozen-v2:mathcal_G",
+            "entity:cat-trace-frozen-v2:x_i->entity:cat-trace-frozen-v2:zU_igh"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:c_f->entity:cat-trace-frozen-v2:mathcal_U",
+            "entity:cat-trace-frozen-v2:x_i->entity:cat-trace-frozen-v2:zU_igh"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:yU_igh->entity:cat-trace-frozen-v2:richness_targets",
+            "entity:cat-trace-frozen-v2:alphaU_gh->entity:cat-trace-frozen-v2:zU_igh"
+          ]
+        ],
+        "LONG_DETOUR_COUNT": 0,
+        "NON_MONOTONE_ARCH_EDGE_COUNT": 0,
+        "ORTHOGONAL_MULTI_BEND_EDGE_COUNT": 0,
+        "FLOATING_RELATION_LABEL_COUNT": 0,
+        "SIMPLE_ARCH_EDGE_MAX_ROUTE_RATIO": 1.236,
+        "ARCH_EDGE_P95_ROUTE_RATIO": 1.236,
+        "RELATION_COLUMN_CARD_COUNT": 0
+      },
+      "full": {
+        "ROUTE_GESTALT_EDGE_COUNT": 34,
+        "ROUTE_GESTALT_MEASUREMENT": {
+          "edgeSet": "observed",
+          "routeRatio": "observed",
+          "avoidableEdgeCrossing": "observed",
+          "floatingRelationLabel": "observed"
+        },
+        "AVOIDABLE_EDGE_CROSSING_COUNT": 47,
+        "AVOIDABLE_EDGE_CROSSING_PAIRS": [
+          [
+            "entity:cat-trace-frozen-v2:gamma_g->entity:cat-trace-frozen-v2:alphaU_gh",
+            "entity:cat-trace-frozen-v2:a_g->entity:cat-trace-frozen-v2:betaU_gh"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:p_g->entity:cat-trace-frozen-v2:alphaU_gh",
+            "entity:cat-trace-frozen-v2:bphy_j->entity:cat-trace-frozen-v2:betaK_j"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:p_g->entity:cat-trace-frozen-v2:alphaU_gh",
+            "entity:cat-trace-frozen-v2:Gamma->entity:cat-trace-frozen-v2:betaK_j"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:p_g->entity:cat-trace-frozen-v2:alphaU_gh",
+            "entity:cat-trace-frozen-v2:vK_j->entity:cat-trace-frozen-v2:betaK_j"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:p_g->entity:cat-trace-frozen-v2:alphaU_gh",
+            "entity:cat-trace-frozen-v2:betaU_gh->entity:cat-trace-frozen-v2:zU_igh"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:posterior_inference->entity:cat-trace-frozen-v2:alphaU_gh",
+            "entity:cat-trace-frozen-v2:nu->entity:cat-trace-frozen-v2:betaU_gh"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:posterior_inference->entity:cat-trace-frozen-v2:alphaU_gh",
+            "entity:cat-trace-frozen-v2:gamma0->entity:cat-trace-frozen-v2:gamma_g"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:a_g->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:K_n->entity:cat-trace-frozen-v2:richness_targets"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:a_g->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:yU_igh->entity:cat-trace-frozen-v2:richness_targets"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:bphy_j->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:K_n->entity:cat-trace-frozen-v2:richness_targets"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:bphy_j->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:yU_igh->entity:cat-trace-frozen-v2:richness_targets"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:bphy_j->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:alphaK_j->entity:cat-trace-frozen-v2:zK_ij"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:bphy_j->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:alphaU_gh->entity:cat-trace-frozen-v2:zU_igh"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:bphy_j->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:betaU_gh->entity:cat-trace-frozen-v2:zU_igh"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:Gamma->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:K_n->entity:cat-trace-frozen-v2:richness_targets"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:Gamma->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:yU_igh->entity:cat-trace-frozen-v2:richness_targets"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:Gamma->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:alphaK_j->entity:cat-trace-frozen-v2:zK_ij"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:Gamma->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:alphaU_gh->entity:cat-trace-frozen-v2:zU_igh"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:Gamma->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:betaU_gh->entity:cat-trace-frozen-v2:zU_igh"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:t_j->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:g_f->entity:cat-trace-frozen-v2:mathcal_G"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:t_j->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:K_n->entity:cat-trace-frozen-v2:richness_targets"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:t_j->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:zK_ij->entity:cat-trace-frozen-v2:yK_ij"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:vK_j->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:K_n->entity:cat-trace-frozen-v2:richness_targets"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:vK_j->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:yU_igh->entity:cat-trace-frozen-v2:richness_targets"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:vK_j->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:p_g->entity:cat-trace-frozen-v2:zero_slots"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:vK_j->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:alphaK_j->entity:cat-trace-frozen-v2:zK_ij"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:vK_j->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:alphaU_gh->entity:cat-trace-frozen-v2:zU_igh"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:vK_j->entity:cat-trace-frozen-v2:betaK_j",
+            "entity:cat-trace-frozen-v2:betaU_gh->entity:cat-trace-frozen-v2:zU_igh"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:nu->entity:cat-trace-frozen-v2:betaU_gh",
+            "entity:cat-trace-frozen-v2:K_n->entity:cat-trace-frozen-v2:richness_targets"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:nu->entity:cat-trace-frozen-v2:betaU_gh",
+            "entity:cat-trace-frozen-v2:yU_igh->entity:cat-trace-frozen-v2:richness_targets"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:posterior_inference->entity:cat-trace-frozen-v2:betaU_gh",
+            "entity:cat-trace-frozen-v2:gamma0->entity:cat-trace-frozen-v2:gamma_g"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:posterior_inference->entity:cat-trace-frozen-v2:betaU_gh",
+            "entity:cat-trace-frozen-v2:pi_g->entity:cat-trace-frozen-v2:gamma_g"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:gamma0->entity:cat-trace-frozen-v2:gamma_g",
+            "entity:cat-trace-frozen-v2:K_n->entity:cat-trace-frozen-v2:richness_targets"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:gamma0->entity:cat-trace-frozen-v2:gamma_g",
+            "entity:cat-trace-frozen-v2:yU_igh->entity:cat-trace-frozen-v2:richness_targets"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:g_f->entity:cat-trace-frozen-v2:mathcal_G",
+            "entity:cat-trace-frozen-v2:K_n->entity:cat-trace-frozen-v2:richness_targets"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:g_f->entity:cat-trace-frozen-v2:mathcal_G",
+            "entity:cat-trace-frozen-v2:x_i->entity:cat-trace-frozen-v2:zK_ij"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:Lambda_W->entity:cat-trace-frozen-v2:Omega_W",
+            "entity:cat-trace-frozen-v2:mathcal_W->entity:cat-trace-frozen-v2:Sigma_W"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:Lambda_W->entity:cat-trace-frozen-v2:Omega_W",
+            "entity:cat-trace-frozen-v2:p_g->entity:cat-trace-frozen-v2:zero_slots"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:K_n->entity:cat-trace-frozen-v2:richness_targets",
+            "entity:cat-trace-frozen-v2:zK_ij->entity:cat-trace-frozen-v2:yK_ij"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:K_n->entity:cat-trace-frozen-v2:richness_targets",
+            "entity:cat-trace-frozen-v2:betaK_j->entity:cat-trace-frozen-v2:zK_ij"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:yU_igh->entity:cat-trace-frozen-v2:richness_targets",
+            "entity:cat-trace-frozen-v2:alphaK_j->entity:cat-trace-frozen-v2:zK_ij"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:yU_igh->entity:cat-trace-frozen-v2:richness_targets",
+            "entity:cat-trace-frozen-v2:betaK_j->entity:cat-trace-frozen-v2:zK_ij"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:mathcal_W->entity:cat-trace-frozen-v2:Sigma_W",
+            "entity:cat-trace-frozen-v2:alphaU_gh->entity:cat-trace-frozen-v2:zU_igh"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:mathcal_W->entity:cat-trace-frozen-v2:Sigma_W",
+            "entity:cat-trace-frozen-v2:betaU_gh->entity:cat-trace-frozen-v2:zU_igh"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:zK_ij->entity:cat-trace-frozen-v2:yK_ij",
+            "entity:cat-trace-frozen-v2:zU_igh->entity:cat-trace-frozen-v2:yU_igh"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:zU_igh->entity:cat-trace-frozen-v2:yU_igh",
+            "entity:cat-trace-frozen-v2:x_i->entity:cat-trace-frozen-v2:zK_ij"
+          ],
+          [
+            "entity:cat-trace-frozen-v2:p_g_star->entity:cat-trace-frozen-v2:zero_slots",
+            "entity:cat-trace-frozen-v2:x_i->entity:cat-trace-frozen-v2:zU_igh"
+          ]
+        ],
+        "LONG_DETOUR_COUNT": 0,
+        "NON_MONOTONE_ARCH_EDGE_COUNT": 0,
+        "ORTHOGONAL_MULTI_BEND_EDGE_COUNT": 0,
+        "FLOATING_RELATION_LABEL_COUNT": 0,
+        "SIMPLE_ARCH_EDGE_MAX_ROUTE_RATIO": 1.233,
+        "ARCH_EDGE_P95_ROUTE_RATIO": 1.233,
+        "RELATION_COLUMN_CARD_COUNT": 0
+      },
+      "lineage": {
+        "ROUTE_GESTALT_EDGE_COUNT": 0,
+        "ROUTE_GESTALT_MEASUREMENT": {
+          "edgeSet": "no_data",
+          "routeRatio": "not_applicable",
+          "avoidableEdgeCrossing": "not_applicable",
+          "floatingRelationLabel": "observed"
+        },
+        "AVOIDABLE_EDGE_CROSSING_COUNT": null,
+        "AVOIDABLE_EDGE_CROSSING_PAIRS": [],
+        "LONG_DETOUR_COUNT": null,
+        "NON_MONOTONE_ARCH_EDGE_COUNT": null,
+        "ORTHOGONAL_MULTI_BEND_EDGE_COUNT": null,
+        "FLOATING_RELATION_LABEL_COUNT": 0,
+        "SIMPLE_ARCH_EDGE_MAX_ROUTE_RATIO": null,
+        "ARCH_EDGE_P95_ROUTE_RATIO": null,
+        "RELATION_COLUMN_CARD_COUNT": 4
+      },
+      "evidence": {
+        "ROUTE_GESTALT_EDGE_COUNT": 8,
+        "ROUTE_GESTALT_MEASUREMENT": {
+          "edgeSet": "observed",
+          "routeRatio": "observed",
+          "avoidableEdgeCrossing": "observed",
+          "floatingRelationLabel": "observed"
+        },
+        "AVOIDABLE_EDGE_CROSSING_COUNT": 1,
+        "AVOIDABLE_EDGE_CROSSING_PAIRS": [
+          [
+            "entity:evidence:data:malagasy->entity:evidence:claim:open-tail-response",
+            "entity:evidence:limitation:real-data->entity:evidence:claim:tail-calibration"
+          ]
+        ],
+        "LONG_DETOUR_COUNT": 0,
+        "NON_MONOTONE_ARCH_EDGE_COUNT": 0,
+        "ORTHOGONAL_MULTI_BEND_EDGE_COUNT": 0,
+        "FLOATING_RELATION_LABEL_COUNT": 0,
+        "SIMPLE_ARCH_EDGE_MAX_ROUTE_RATIO": 1.131,
+        "ARCH_EDGE_P95_ROUTE_RATIO": 1.131,
+        "RELATION_COLUMN_CARD_COUNT": 0
+      }
+    }
+  },
+  "overallStatus": "fail"
+}
