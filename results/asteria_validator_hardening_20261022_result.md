@@ -15,8 +15,8 @@
 - `THRESHOLD_AUTHORITY = prompts/tasks/asteria_v2_rc19_layout_first_graph_convergence_task.md §8`
 - `SIMPLE_ARCH_EDGE_MAX_ROUTE_RATIO <= 1.30`
 - `ARCH_EDGE_P95_ROUTE_RATIO <= 1.45`
-- `IMPLEMENTATION_COMMIT = PENDING_LOCAL_COMMIT`
-- `FINAL_EVIDENCE_COMMIT = PENDING_LOCAL_COMMIT`
+- `IMPLEMENTATION_COMMIT = 2466ed84562963a52a81868b05229c3f712f7e05`
+- `FINAL_EVIDENCE_COMMIT = LOCAL_FOLLOWUP_COMMIT_CONTAINING_THIS_FILE`
 - `PUSH_STATUS = NOT_RUN_TASK_FORBIDS_EXTERNAL_UPLOAD`
 - `RESTART_OR_RECONNECT = NOT_REQUIRED`
 - `VISUAL_REVIEW_PACK = results/asteria_validator_hardening_20261022/VISUAL_REVIEW_PACK.md`
@@ -75,7 +75,7 @@ Lineage 同时观察到 4 个稳定 relation-column 卡片。这里的 `null/not
 
 `test:browser` 会按旧脚本行为覆盖 RC11 已跟踪截图；本轮运行产生的 17 个非目标二进制差异已按本轮开始时的干净 `HEAD` 精确还原，未纳入任务改动。
 
-原始正常 runner 记录在 `results/asteria_validator_hardening_20261022/validator-run.json`，schema 为 `asteria.validator-run/1`。16 张整屏证据和逐图人工观察见 `VISUAL_REVIEW_PACK.md`。
+原始正常 runner 记录在 `results/asteria_validator_hardening_20261022/validator-run.json`，schema 为 `asteria.validator-run/1`。最终一次运行绑定干净实现提交 `2466ed84562963a52a81868b05229c3f712f7e05`，`worktreeStatus=[]`，空 diff 的 SHA-256 为 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`。16 张整屏证据和逐图人工观察见 `VISUAL_REVIEW_PACK.md`。
 
 ## 修改与未修改范围
 

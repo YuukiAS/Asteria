@@ -2,26 +2,9 @@
   "schemaVersion": "asteria.validator-run/1",
   "validator": "asteria-rc19-scientific-graph-hardening",
   "candidate": {
-    "head": "60ba27a38324980beea78d4c07b7b28abda522cf",
-    "worktreeStatus": [
-      " M package.json",
-      " M results/asteria_v2_rc11_reader_finish/screenshots/rc11-alphaU-definition.png",
-      " M results/asteria_v2_rc11_reader_finish/screenshots/rc11-beta-definition.png",
-      " M results/asteria_v2_rc11_reader_finish/screenshots/rc11-cat-full-1366.png",
-      " M results/asteria_v2_rc11_reader_finish/screenshots/rc11-cat-full-1536.png",
-      " M results/asteria_v2_rc11_reader_finish/screenshots/rc11-cat-overview-dark-1536.png",
-      " M results/asteria_v2_rc11_reader_finish/screenshots/rc11-cat-overview-light-1366.png",
-      " M results/asteria_v2_rc11_reader_finish/screenshots/rc11-gamma-definition.png",
-      " M results/asteria_v2_rc11_reader_finish/screenshots/rc11-original-trace-definition.png",
-      " M results/asteria_v2_rc11_reader_finish/screenshots/rc11-sigmaW-definition.png",
-      " M scripts/validate-architecture-rc19.mjs",
-      " M tests/browser/asteria-v2-rc.spec.ts",
-      "?? results/asteria_validator_hardening_20261022/",
-      "?? scripts/lib/",
-      "?? scripts/run-architecture-rc19-validation.mjs",
-      "?? scripts/test-validator-hardening.mjs"
-    ],
-    "worktreeDiffSha256": "75506205cbbecfd7c54ac12722d2a49d084f55b7361ae55545ed907ccc1c724a"
+    "head": "2466ed84562963a52a81868b05229c3f712f7e05",
+    "worktreeStatus": [],
+    "worktreeDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   },
   "approvedScientificBaseline": "193c033659a7612a99442763077217b130e9b756",
   "approvedThresholdSource": "prompts/tasks/asteria_v2_rc19_layout_first_graph_convergence_task.md#8",
@@ -39,7 +22,7 @@
         "test:validator-hardening"
       ],
       "exitCode": 0,
-      "durationMs": 350,
+      "durationMs": 325,
       "stdoutTail": "\n> asteria@2.0.0-rc.19 test:validator-hardening\n> node scripts/test-validator-hardening.mjs\n\n{\n  \"status\": \"validator-hardening-controls-pass\",\n  \"caseCount\": 12,\n  \"cases\": [\n    \"geometry-good-no-conflict\",\n    \"geometry-bad-crossing-and-floating-label\",\n    \"geometry-missing-edge-measurement\",\n    \"geometry-invalid-nan\",\n    \"geometry-invalid-infinity\",\n    \"geometry-no-edge-data\",\n    \"geometry-shared-endpoint-and-stable-relation-column\",\n    \"protected-truth-clean\",\n    \"protected-truth-unstaged\",\n    \"protected-truth-staged\",\n    \"protected-truth-committed\",\n    \"protected-truth-baseline-missing\"\n  ]\n}\n",
       "stderrTail": ""
     },
@@ -50,7 +33,7 @@
         "scripts/validate-architecture-rc19.mjs"
       ],
       "exitCode": 1,
-      "durationMs": 581,
+      "durationMs": 489,
       "stdoutTail": "",
       "stderrTail": "architecture has avoidable edge crossings: [[\"relation:cat-trace-frozen-v2:22:gamma_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\"],[\"relation:cat-trace-frozen-v2:22:gamma_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:23:p_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\"],[\"relation:cat-trace-frozen-v2:23:p_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:29:posterior_inference:alphaU_gh\",\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\"],[\"relation:cat-trace-frozen-v2:2:g_f:mathcal_G\",\"relation:cat-trace-frozen-v2:33:c_f:mathcal_U\"],[\"relation:cat-trace-frozen-v2:2:g_f:mathcal_G\",\"relation:cat-trace-frozen-v2:10:x_i:zU_igh\"],[\"relation:cat-trace-frozen-v2:33:c_f:mathcal_U\",\"relation:cat-trace-frozen-v2:10:x_i:zU_igh\"],[\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\",\"relation:cat-trace-frozen-v2:8:alphaU_gh:zU_igh\"]].\nfull has avoidable edge crossings: [[\"relation:cat-trace-frozen-v2:22:gamma_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:12:a_g:betaU_gh\"],[\"relation:cat-trace-frozen-v2:23:p_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:18:bphy_j:betaK_j\"],[\"relation:cat-trace-frozen-v2:23:p_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:16:Gamma:betaK_j\"],[\"relation:cat-trace-frozen-v2:23:p_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:19:vK_j:betaK_j\"],[\"relation:cat-trace-frozen-v2:23:p_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:13:vU_gh:betaU_gh\"],[\"relation:cat-trace-frozen-v2:23:p_g:alphaU_gh\",\"relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:29:posterior_inference:alphaU_gh\",\"relation:cat-trace-frozen-v2:12:a_g:betaU_gh\"],[\"relation:cat-trace-frozen-v2:29:posterior_inference:alphaU_gh\",\"relation:cat-trace-frozen-v2:11:nu:betaU_gh\"],[\"relation:cat-trace-frozen-v2:29:posterior_inference:alphaU_gh\",\"relation:cat-trace-frozen-v2:20:gamma0:gamma_g\"],[\"relation:cat-trace-frozen-v2:29:posterior_inference:alphaU_gh\",\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\"],[\"relation:cat-trace-frozen-v2:15:a_g:betaK_j\",\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\"],[\"relation:cat-trace-frozen-v2:18:bphy_j:betaK_j\",\"relation:cat-trace-frozen-v2:13:vU_gh:betaU_gh\"],[\"relation:cat-trace-frozen-v2:18:bphy_j:betaK_j\",\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\"],[\"relation:cat-trace-frozen-v2:18:bphy_j:betaK_j\",\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\"],[\"relation:cat-trace-frozen-v2:18:bphy_j:betaK_j\",\"relation:cat-trace-frozen-v2:5:alphaK_j:zK_ij\"],[\"relation:cat-trace-frozen-v2:18:bphy_j:betaK_j\",\"relation:cat-trace-frozen-v2:8:alphaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:18:bphy_j:betaK_j\",\"relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:16:Gamma:betaK_j\",\"relation:cat-trace-frozen-v2:13:vU_gh:betaU_gh\"],[\"relation:cat-trace-frozen-v2:16:Gamma:betaK_j\",\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\"],[\"relation:cat-trace-frozen-v2:16:Gamma:betaK_j\",\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\"],[\"relation:cat-trace-frozen-v2:16:Gamma:betaK_j\",\"relation:cat-trace-frozen-v2:5:alphaK_j:zK_ij\"],[\"relation:cat-trace-frozen-v2:16:Gamma:betaK_j\",\"relation:cat-trace-frozen-v2:8:alphaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:16:Gamma:betaK_j\",\"relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:17:t_j:betaK_j\",\"relation:cat-trace-frozen-v2:2:g_f:mathcal_G\"],[\"relation:cat-trace-frozen-v2:17:t_j:betaK_j\",\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\"],[\"relation:cat-trace-frozen-v2:17:t_j:betaK_j\",\"relation:cat-trace-frozen-v2:3:zK_ij:yK_ij\"],[\"relation:cat-trace-frozen-v2:19:vK_j:betaK_j\",\"relation:cat-trace-frozen-v2:13:vU_gh:betaU_gh\"],[\"relation:cat-trace-frozen-v2:19:vK_j:betaK_j\",\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\"],[\"relation:cat-trace-frozen-v2:19:vK_j:betaK_j\",\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\"],[\"relation:cat-trace-frozen-v2:19:vK_j:betaK_j\",\"relation:cat-trace-frozen-v2:25:p_g:zero_slots\"],[\"relation:cat-trace-frozen-v2:19:vK_j:betaK_j\",\"relation:cat-trace-frozen-v2:5:alphaK_j:zK_ij\"],[\"relation:cat-trace-frozen-v2:19:vK_j:betaK_j\",\"relation:cat-trace-frozen-v2:8:alphaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:19:vK_j:betaK_j\",\"relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:12:a_g:betaU_gh\",\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\"],[\"relation:cat-trace-frozen-v2:11:nu:betaU_gh\",\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\"],[\"relation:cat-trace-frozen-v2:11:nu:betaU_gh\",\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\"],[\"relation:cat-trace-frozen-v2:30:posterior_inference:betaU_gh\",\"relation:cat-trace-frozen-v2:20:gamma0:gamma_g\"],[\"relation:cat-trace-frozen-v2:30:posterior_inference:betaU_gh\",\"relation:cat-trace-frozen-v2:21:pi_g:gamma_g\"],[\"relation:cat-trace-frozen-v2:20:gamma0:gamma_g\",\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\"],[\"relation:cat-trace-frozen-v2:20:gamma0:gamma_g\",\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\"],[\"relation:cat-trace-frozen-v2:2:g_f:mathcal_G\",\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\"],[\"relation:cat-trace-frozen-v2:2:g_f:mathcal_G\",\"relation:cat-trace-frozen-v2:7:x_i:zK_ij\"],[\"relation:cat-trace-frozen-v2:26:Lambda_W:Omega_W\",\"relation:cat-trace-frozen-v2:28:mathcal_W:Sigma_W\"],[\"relation:cat-trace-frozen-v2:26:Lambda_W:Omega_W\",\"relation:cat-trace-frozen-v2:25:p_g:zero_slots\"],[\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\",\"relation:cat-trace-frozen-v2:3:zK_ij:yK_ij\"],[\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\",\"relation:cat-trace-frozen-v2:4:zU_igh:yU_igh\"],[\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\",\"relation:cat-trace-frozen-v2:5:alphaK_j:zK_ij\"],[\"relation:cat-trace-frozen-v2:32:K_n:richness_targets\",\"relation:cat-trace-frozen-v2:6:betaK_j:zK_ij\"],[\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\",\"relation:cat-trace-frozen-v2:5:alphaK_j:zK_ij\"],[\"relation:cat-trace-frozen-v2:31:yU_igh:richness_targets\",\"relation:cat-trace-frozen-v2:6:betaK_j:zK_ij\"],[\"relation:cat-trace-frozen-v2:28:mathcal_W:Sigma_W\",\"relation:cat-trace-frozen-v2:25:p_g:zero_slots\"],[\"relation:cat-trace-frozen-v2:28:mathcal_W:Sigma_W\",\"relation:cat-trace-frozen-v2:8:alphaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:28:mathcal_W:Sigma_W\",\"relation:cat-trace-frozen-v2:9:betaU_gh:zU_igh\"],[\"relation:cat-trace-frozen-v2:3:zK_ij:yK_ij\",\"relation:cat-trace-frozen-v2:4:zU_igh:yU_igh\"],[\"relation:cat-trace-frozen-v2:4:zU_igh:yU_igh\",\"relation:cat-trace-frozen-v2:7:x_i:zK_ij\"]].\nevidence has avoidable edge crossings: [[\"relation:evidence:malagasy-pending\",\"relation:evidence:realdata-gap-tail\"]].\n"
     },
@@ -64,9 +47,9 @@
         "RC19 validator hardening"
       ],
       "exitCode": 0,
-      "durationMs": 2551,
-      "stdoutTail": "\nRunning 1 test using 1 worker\n\n  ✓  1 [chromium] › tests/browser/asteria-v2-rc.spec.ts:2380:1 › RC19 validator hardening rejects bad rendered geometry despite falsified data-route metrics (1.1s)\n\n  1 passed (2.1s)\n",
-      "stderrTail": "[WebServer] (node:2733) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n(node:2751) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+      "durationMs": 2663,
+      "stdoutTail": "\nRunning 1 test using 1 worker\n\n  ✓  1 [chromium] › tests/browser/asteria-v2-rc.spec.ts:2380:1 › RC19 validator hardening rejects bad rendered geometry despite falsified data-route metrics (1.3s)\n\n  1 passed (2.1s)\n",
+      "stderrTail": "[WebServer] (node:492) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n(node:510) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
     },
     {
       "name": "browser-rendered-product-gate",
@@ -78,9 +61,9 @@
         "RC19 layout-first"
       ],
       "exitCode": 1,
-      "durationMs": 3769,
+      "durationMs": 3782,
       "stdoutTail": "      2345 |   expect.soft(fullGestalt.LONG_DETOUR_COUNT).toBe(0)\n      2346 |   expect.soft(fullGestalt.NON_MONOTONE_ARCH_EDGE_COUNT).toBe(0)\n      2347 |   expect.soft(fullGestalt.SIMPLE_ARCH_EDGE_MAX_ROUTE_RATIO).toBeLessThanOrEqual(RC19_ROUTE_THRESHOLDS.simpleArchEdgeMaxRouteRatio)\n        at /home/yuukias/code/Asteria/tests/browser/asteria-v2-rc.spec.ts:2344:117\n\n    Error: [[\"entity:evidence:data:malagasy->entity:evidence:claim:open-tail-response\",\"entity:evidence:limitation:real-data->entity:evidence:claim:tail-calibration\"]]\n\n    expect(received).toBe(expected) // Object.is equality\n\n    Expected: 0\n    Received: 1\n\n      2363 |   expect.soft(evidenceGestalt.ROUTE_GESTALT_MEASUREMENT.routeRatio).toBe(\"observed\")\n      2364 |   expect.soft(evidenceGestalt.ROUTE_GESTALT_MEASUREMENT.avoidableEdgeCrossing).toBe(\"observed\")\n    > 2365 |   expect.soft(evidenceGestalt.AVOIDABLE_EDGE_CROSSING_COUNT, JSON.stringify(evidenceGestalt.AVOIDABLE_EDGE_CROSSING_PAIRS)).toBe(0)\n           |                                                                                                                             ^\n      2366 |   expect.soft(evidenceGestalt.LONG_DETOUR_COUNT).toBe(0)\n      2367 |   expect.soft(evidenceGestalt.NON_MONOTONE_ARCH_EDGE_COUNT).toBe(0)\n      2368 |   expect.soft(evidenceGestalt.ORTHOGONAL_MULTI_BEND_EDGE_COUNT).toBe(0)\n        at /home/yuukias/code/Asteria/tests/browser/asteria-v2-rc.spec.ts:2365:125\n\n    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────\n    ../../../../tmp/asteria-playwright-results/asteria-v2-rc-RC19-layout--8d137--relation-column-provenance-chromium/test-failed-1.png\n    ────────────────────────────────────────────────────────────────────────────────────────────────\n\n    Error Context: ../../../../tmp/asteria-playwright-results/asteria-v2-rc-RC19-layout--8d137--relation-column-provenance-chromium/error-context.md\n\n  1 failed\n    [chromium] › tests/browser/asteria-v2-rc.spec.ts:2318:1 › RC19 layout-first graph convergence exposes route gestalt and relation-column provenance \n",
-      "stderrTail": "[WebServer] (node:2891) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n(node:2909) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+      "stderrTail": "[WebServer] (node:648) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n(node:666) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
     }
   ],
   "controls": {
@@ -450,7 +433,7 @@
     "PROTECTED_TRUTH": {
       "status": "unchanged",
       "baselineRef": "193c033659a7612a99442763077217b130e9b756",
-      "candidateRef": "60ba27a38324980beea78d4c07b7b28abda522cf",
+      "candidateRef": "2466ed84562963a52a81868b05229c3f712f7e05",
       "changedFiles": [],
       "scopes": {
         "committed": [],
