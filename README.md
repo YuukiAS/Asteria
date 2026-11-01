@@ -1,6 +1,10 @@
 # Asteria
 
-Asteria 2.0 is the active Web product shell for inspecting canonical statistical-model architecture maps. The current build focuses on Original TRACE and CAT-TRACE Frozen V2, with first-level Architecture, Lineage, and Evidence views backed by the same typed semantic graph.
+Asteria is evolving into a product family. The current active implementation remains the existing Asteria 2.0 scientific architecture product for Original TRACE and CAT-TRACE Frozen V2, with first-level Architecture, Lineage, and Evidence views backed by the same typed semantic graph.
+
+Asteria Atlas and Asteria Blueprint are defined product boundaries, not implemented product surfaces. Atlas is planned for research domains and knowledge maps; its first phase will use Markdown/YAML in an independent knowledge repository with Obsidian as the primary human interface. Blueprint is planned for complex-system design and implementation blueprints based on future frozen Design Assurance outputs. Neither product currently has a Web route, domain schema, public service, or release in this repository.
+
+The product-family boundary and the rules for any future shared Core are defined in [`docs/design/ASTERIA_PRODUCT_FAMILY_BOUNDARY.md`](docs/design/ASTERIA_PRODUCT_FAMILY_BOUNDARY.md). The current `src/architecture/` schema, typed relations, Evidence semantics, Inspector, session behavior, and CAT-TRACE bridge remain protected Asteria 2.0 product assets rather than a universal Atlas/Blueprint ontology.
 
 Current app version: `2.0.0-rc.19`.
 
@@ -18,6 +22,16 @@ Architecture provides the formal `Original TRACE` / `CAT-TRACE Frozen V2` model 
 The first CAT-TRACE repository bridge is now specified as a read-only B0/B1/B2 contract. Asteria includes only the bridge schema, validator, and synthetic pinned-commit fixture; live GitHub ingestion, call-graph analysis, and any scientific-truth update remain outside this RC.
 
 After RC.19, the next acceptance step is one parent GPT Work acceptance prompt, not manual final acceptance or stable release.
+
+## Product Family Status
+
+| Product | Status | Current boundary |
+| --- | --- | --- |
+| Asteria 2.0 | Active release candidate | Existing scientific Architecture, Lineage, Evidence, trace, semantic diff, Inspector, export, session, and CAT-TRACE bridge behavior. |
+| Asteria Atlas | Planned; not implemented | Independent Markdown/YAML research knowledge content, read primarily through Obsidian. Any future Web integration requires an Atlas-owned adapter contract. |
+| Asteria Blueprint | Planned; not implemented | Future Design Assurance blueprint consumer with its own domain model and adapter after authoritative design contracts are frozen. |
+
+No shared business Core has been extracted for Atlas and Blueprint. A capability may move into Core only after two real consumers prove identical semantics, lifecycle, change reasons, and a concrete duplication or consistency risk.
 
 ## Legacy Compatibility
 
@@ -68,6 +82,7 @@ npm run serve:shared
 
 ```bash
 npm run build
+npm run test:product-family-boundary
 npm run test:legacy-roundtrip
 npm run test:architecture-kernel
 npm run test:canonical-trace
@@ -106,9 +121,10 @@ npm run smoke:public-rc19
 ## Repository Map
 
 - `src/app/App.tsx`: Asteria 2.0 root shell.
-- `src/architecture/`: canonical graph schema, fixtures, projections, trace, semantic diff, validation, migration, and session state.
+- `src/architecture/`: current Asteria 2.0 scientific-product schema, fixtures, projections, trace, semantic diff, validation, migration, and session state. It is not a universal product-family Core.
 - `src/components/ArchitectureWorkspace.tsx`: central Architecture / Lineage / Evidence projection workspace.
 - `src/components/ArchitectureReferencePanel.tsx`: model selector, view selector, trace controls, inspector, export, semantic diff, and session actions.
 - `src/fixtures/legacyV1FreezeMap.ts`: v1 compatibility fixture.
 - `archive/asteria-v1-ui/`: retired Asteria 1.x live UI/runtime source archive.
+- `docs/design/ASTERIA_PRODUCT_FAMILY_BOUNDARY.md`: Atlas, Blueprint, current-product, adapter, and shared-Core boundaries.
 - `results/`: task results, screenshots, and acceptance evidence.

@@ -1,9 +1,9 @@
-# TODO — 模型架构优先
+# TODO — 当前 Asteria 2.0 模型架构产品
 
-更新日期：2026-09-15
-状态：长期产品方向与后续设计任务。本文档不授权直接大规模改代码；实现前仍需拆成独立 task、完成结构评审与兼容性计划。
+更新日期：2026-11-02
+状态：本文档记录当前 Asteria 2.0 科学模型架构产品的长期方向，不是 Asteria Atlas、Asteria Blueprint 或共享 Core 的需求清单，也不授权直接大规模改代码。实现前仍需拆成独立 task、完成结构评审与兼容性计划。
 
-Asteria 当前已经具备可编辑画布、类型化模块、符号条目、模型版本、叙事提纲与 Markdown 导出。下一阶段不应继续把更多研究内容无差别塞进同一张无限画布，也不应把 Asteria 做成 PPT 编辑器。最重要的产品转向是：
+Asteria 2.0 当前已经具备类型化科学实体、符号、模型版本、Architecture、Lineage、Evidence、trace、semantic diff、Inspector、导出与 v1 兼容能力。下一阶段不应继续把更多研究内容无差别塞进同一张图，也不应把 Asteria 做成 PPT 编辑器。当前产品仍以模型架构阅读与追踪为主：
 
 > **Asteria 应成为一套通用统计架构地图：让每个对象、符号、层级、依赖、假设、估计目标和推断步骤都可以追溯。**
 
@@ -11,7 +11,21 @@ Asteria 当前已经具备可编辑画布、类型化模块、符号条目、模
 
 > **Asteria 是面向统计研究的“模型架构地图”，首先回答一个方法到底由哪些层组成、每个量是什么、从哪里来、如何得到、影响什么；然后再连接方法谱系与研究证据。**
 
-这个定位不局限于贝叶斯模型。贝叶斯先验只是某一种随机设定；频率学派估计方程、优化目标、因果估计目标、识别假设、机器学习损失函数和算法变换都应当是同等一等对象。
+这个定位不局限于贝叶斯模型。贝叶斯先验只是某一种随机设定；频率学派估计方程、优化目标、因果估计目标、识别假设、机器学习损失函数和算法变换都可以是当前科学模型产品的一等对象。这套科学本体不自动成为 Atlas 或 Blueprint 的业务模型。
+
+## 0. 产品族边界
+
+Asteria 后续包含三条清楚的产品边界：
+
+- 当前 **Asteria 2.0** 继续负责现有科学模型 Architecture、Lineage、Evidence 与 CAT-TRACE 资产；
+- **Asteria Atlas** 负责科研领域与知识地图，第一阶段在独立知识仓库中使用 Markdown/YAML，并由 Obsidian 提供主要人工阅读入口；本仓库当前没有 Atlas 产品实现；
+- **Asteria Blueprint** 负责未来 Design Assurance 的复杂系统设计与实施蓝图，必须等待权威架构合同冻结；本仓库当前没有 Blueprint 产品实现。
+
+当前没有足够证据提取共享业务 Core。`ArchitectureProjectV2`、现有关系分类、Evidence 本体、Inspector、会话状态、图形呈现与 CAT-TRACE bridge 都先留在当前 Asteria 2.0 产品中。即使图形呈现、视口、选择、布局、导出或 `RenderedMath` 看起来可能复用，也要等第二个真实消费者出现后再按 Core Gate 评估。
+
+完整边界见 [`docs/design/ASTERIA_PRODUCT_FAMILY_BOUNDARY.md`](docs/design/ASTERIA_PRODUCT_FAMILY_BOUNDARY.md)。在出现真实重复前，不创建 `UniversalNode`、`UniversalEdge`、`UniversalEvidence`、`UniversalInspector`，也不建立占位 `src/core/`、`src/atlas/` 或 `src/blueprint/`。
+
+产品族的下一项唯一建议动作是：等独立 Atlas 知识仓库产生第一份真实、版本化的 Markdown/YAML 内容集后，再基于那份真实样本创建一张只做设计的 Atlas 导入适配合同任务。此前不抽取 Core，也不实现 Atlas Web。
 
 ---
 
@@ -29,9 +43,9 @@ Asteria 当前已经具备可编辑画布、类型化模块、符号条目、模
 
 ---
 
-## 2. 长期信息架构：一个知识图谱，多种视图
+## 2. 当前 Asteria 2.0 的长期信息架构：一个知识图谱，多种视图
 
-Asteria 长期采用一个项目下共享实体/关系的多视图结构：
+当前 Asteria 2.0 科学模型产品采用一个项目下共享实体/关系的多视图结构。这个约束不外推到 Atlas 或 Blueprint：
 
 ```text
 Project: CAT-TRACE / Causal Study / Bioinformatics Pipeline / ...
@@ -426,7 +440,7 @@ Input / label → representation → 模型 → 损失函数 / regularization �
 
 Raw assay → QC → preprocessing → features → 模型 → 推断 → biological interpretation，且每步记录软件、版本、参数与产物来源。
 
-这些模板应共享底层结构，而不是各自重新开发一套模块系统。
+这些模板可在当前 Asteria 2.0 科学模型产品内共享底层结构，而不是各自重新开发一套模块系统；这不构成 Atlas 与 Blueprint 共享本体的依据。
 
 ---
 
@@ -537,12 +551,15 @@ JSON 是 canonical exchange format；Markdown/LaTeX 是可读投影，不反过�
 6. 不删除现有版本、叙事提纲或旧 map 兼容；
 7. 不在结构未评审前直接实现多 tab 大迁移；
 8. 不把 causal DAG editor 当成单独产品分叉；DAG 是 general architecture 结构的一种投影。
+9. 不实现 Atlas Web、Atlas schema、DII 页面或虚构论文数据；
+10. 不实现 Blueprint schema、Design Assurance 工作流或系统样例；
+11. 不把当前 Architecture、Lineage、Evidence、relation taxonomy 或 Inspector 提升为 Atlas/Blueprint 的通用 Core。
 
 ---
 
-## 15. 下一张正式任务应产出什么
+## 15. 历史设计任务入口（已执行，不是当前下一任务）
 
-后续 Codex task 应是 **design-only**，不是实现。建议任务名称：
+以下内容保留 2026-09 的设计规划背景。其对应的 Asteria 2.0 G00–G06 与后续 RC 实现链已经进入当前 `2.0.0-rc.19`，不得再把这一节当成当前任务入口。历史建议任务名称为：
 
 ```text
 prompts/tasks/asteria_statistical_architecture_schema_plan_task.md
@@ -558,7 +575,7 @@ prompts/tasks/asteria_statistical_architecture_schema_plan_task.md
 6. P1 最小实现边界与 regression-test plan；
 7. 明确列出哪些当前 store/export assumptions 会阻碍新架构。
 
-完成 design review 后，再拆出 P1 实现 task。不要让 Codex根据本 TODO 一次性开发 P0--P5。
+这段历史计划不授权继续开发 P0–P5，也不授权把其中科学模型 schema 改造成 Atlas/Blueprint 共享 Core。新的执行工作仍须由独立 task 明确授权。
 
 ---
 
