@@ -17,8 +17,8 @@ function read(relativePath) {
 const packageJson = JSON.parse(read("package.json"))
 const appSource = read("src/app/App.tsx")
 const readme = read("README.md")
-const roadmap = read("ROADMAP.md")
-const todo = read("TODO.md")
+const roadmap = read("docs/product/ROADMAP.md")
+const todo = read("docs/product/TODO.md")
 const boundary = read("docs/design/ASTERIA_PRODUCT_FAMILY_BOUNDARY.md")
 
 assert(packageJson.version === "2.0.0-rc.19", "Product-family maintenance must not change the current release candidate version.")
@@ -33,16 +33,16 @@ for (const speculativePath of ["src/core", "src/atlas", "src/blueprint"]) {
 
 for (const [file, content] of [
   ["README.md", readme],
-  ["ROADMAP.md", roadmap],
-  ["TODO.md", todo],
+  ["docs/product/ROADMAP.md", roadmap],
+  ["docs/product/TODO.md", todo],
   ["docs/design/ASTERIA_PRODUCT_FAMILY_BOUNDARY.md", boundary],
 ]) {
   assert(content.includes("Asteria Atlas"), `${file} must name the Atlas boundary.`)
   assert(content.includes("Asteria Blueprint"), `${file} must name the Blueprint boundary.`)
 }
 
-assert(readme.includes("The current active implementation remains the existing Asteria 2.0 scientific architecture product"), "README must identify the current active product without implying Atlas or Blueprint support.")
-assert(readme.includes("Planned; not implemented"), "README must expose planned/not-implemented product status.")
+assert(readme.includes("The current implementation is **Asteria 2.0**"), "README must identify the current active product without implying Atlas or Blueprint support.")
+assert(readme.includes("but neither is implemented"), "README must expose planned/not-implemented product status.")
 assert(readme.includes("https://asteria.httpwwwcardiacnexus-ukb.com/"), "README must preserve the fixed public entry point.")
 assert(!readme.includes("Asteria now supports Atlas and Blueprint"), "README must not claim that planned products are supported.")
 
@@ -59,10 +59,10 @@ for (const requiredText of [
   assert(boundary.includes(requiredText), `Product-family boundary is missing required contract text: ${requiredText}`)
 }
 
-assert(roadmap.includes("CURRENT_CANDIDATE = 2.0.0-rc.19"), "ROADMAP must match the current formal candidate.")
-assert(roadmap.includes("当前没有任何运行时模块满足"), "ROADMAP must record why shared business Core is not extracted.")
+assert(roadmap.includes("当前候选版本为 `2.0.0-rc.19`"), "ROADMAP must match the current formal candidate.")
+assert(roadmap.includes("没有第二个真实消费者前，不抽取共享业务 Core"), "ROADMAP must record why shared business Core is not extracted.")
 assert(todo.includes("下一项唯一建议动作"), "TODO must identify one bounded next product-family action.")
-assert(todo.includes("只做设计的 Atlas 导入适配合同任务"), "TODO must defer Atlas integration to a real-corpus adapter contract task.")
+assert(todo.includes("创建独立的 Asteria Atlas 知识仓库"), "TODO must make the independent real-content Atlas repository the next action.")
 
 if (!process.exitCode) {
   console.log(

@@ -1,130 +1,105 @@
 # Asteria
 
-Asteria is evolving into a product family. The current active implementation remains the existing Asteria 2.0 scientific architecture product for Original TRACE and CAT-TRACE Frozen V2, with first-level Architecture, Lineage, and Evidence views backed by the same typed semantic graph.
+Asteria is a family of tools for turning complex scientific and system
+structures into readable, traceable maps.
 
-Asteria Atlas and Asteria Blueprint are defined product boundaries, not implemented product surfaces. Atlas is planned for research domains and knowledge maps; its first phase will use Markdown/YAML in an independent knowledge repository with Obsidian as the primary human interface. Blueprint is planned for complex-system design and implementation blueprints based on future frozen Design Assurance outputs. Neither product currently has a Web route, domain schema, public service, or release in this repository.
+The current implementation is **Asteria 2.0**, a Web product for statistical
+and scientific architecture maps. Asteria Atlas and Asteria Blueprint are
+planned product lines with defined boundaries, but neither is implemented as a
+product surface in this repository.
 
-The product-family boundary and the rules for any future shared Core are defined in [`docs/design/ASTERIA_PRODUCT_FAMILY_BOUNDARY.md`](docs/design/ASTERIA_PRODUCT_FAMILY_BOUNDARY.md). The current `src/architecture/` schema, typed relations, Evidence semantics, Inspector, session behavior, and CAT-TRACE bridge remain protected Asteria 2.0 product assets rather than a universal Atlas/Blueprint ontology.
+Current version: `2.0.0-rc.19` · Stable `2.0.0`: not released
 
-Current app version: `2.0.0-rc.19`.
+## Product family
 
-## Product State
-
-`2.0.0-rc.19` keeps Asteria 2.0 as the only active product shell and replaces the graph presentation path for Architecture, Lineage, and Evidence with layout-first readable surfaces. Architecture now uses semantic lanes, stable card-side ports, and short monotone connectors; Lineage renders a clear source / relation / target provenance figure; Evidence centers claims and arranges support, datasets, and gaps around those claims. Opening Asteria goes directly to:
-
-- Project: `CAT-TRACE`
-- View: `Architecture`
-- Model: `CAT-TRACE Frozen V2`
-- Selected symbol: `beta^U_gh`
-
-Architecture provides the formal `Original TRACE` / `CAT-TRACE Frozen V2` model selector and an `Overview` / `Full model` detail control. Selection drives the inspector; trace highlighting only appears after `Show trace` is activated. Lineage and Evidence are direct first-level views. Save/Restore stores only the Asteria 2.0 view session state, not the retired shared/local 1.x canvas workspace.
-
-The first CAT-TRACE repository bridge is now specified as a read-only B0/B1/B2 contract. Asteria includes only the bridge schema, validator, and synthetic pinned-commit fixture; live GitHub ingestion, call-graph analysis, and any scientific-truth update remain outside this RC.
-
-After RC.19, the next acceptance step is one parent GPT Work acceptance prompt, not manual final acceptance or stable release.
-
-## Product Family Status
-
-| Product | Status | Current boundary |
+| Product | Purpose | Status |
 | --- | --- | --- |
-| Asteria 2.0 | Active release candidate | Existing scientific Architecture, Lineage, Evidence, trace, semantic diff, Inspector, export, session, and CAT-TRACE bridge behavior. |
-| Asteria Atlas | Planned; not implemented | Independent Markdown/YAML research knowledge content, read primarily through Obsidian. Any future Web integration requires an Atlas-owned adapter contract. |
-| Asteria Blueprint | Planned; not implemented | Future Design Assurance blueprint consumer with its own domain model and adapter after authoritative design contracts are frozen. |
+| Asteria 2.0 | Statistical and scientific Architecture, Lineage, and Evidence maps | Active release candidate |
+| Asteria Atlas | Research-domain knowledge maps | Planned; the first phase uses an independent Markdown/YAML knowledge repository with Obsidian |
+| Asteria Blueprint | Complex-system design and implementation blueprints | Planned; awaits authoritative Design Assurance contracts |
 
-No shared business Core has been extracted for Atlas and Blueprint. A capability may move into Core only after two real consumers prove identical semantics, lifecycle, change reasons, and a concrete duplication or consistency risk.
+There is no shared business Core today. The current `src/architecture/`
+schema, relation taxonomy, Evidence semantics, Inspector, session behavior, and
+CAT-TRACE bridge belong to Asteria 2.0. Future sharing requires two real
+consumers with the same semantics, lifecycle, and change reasons.
 
-## Legacy Compatibility
+## Current implementation: Asteria 2.0
 
-`v1.0.0` remains the complete freeze point for the historical Asteria 1.x research canvas. The retired live UI/runtime source is archived under:
+Asteria 2.0 currently provides:
 
-```text
-archive/asteria-v1-ui/
-```
+- **Architecture** for statistical entities, symbols, typed relations, model
+  layers, Original TRACE / CAT-TRACE Frozen V2 comparison, and semantic diff;
+- **Lineage** for method provenance;
+- **Evidence** for claims, support, limitations, implementation evidence, and
+  unresolved gaps;
+- an Inspector, direct and recursive trace, search, export, Save/Restore of the
+  2.0 view session, and v1 import compatibility;
+- a read-only CAT-TRACE repository-bridge contract with synthetic pinned-commit
+  validation.
 
-That archive is historical reference only and is not imported by the active Asteria 2.0 build. Asteria 2.0 does not provide a hidden live legacy canvas mode.
+Atlas has no Web route, schema, data fixture, or public service here. Blueprint
+has no schema, workflow, route, or public service here. Current Architecture is
+not Blueprint, and current Lineage / Evidence are not Atlas.
 
-Active `src/` keeps the v1 compatibility pieces needed for migration: v1 payload/type definitions, import normalization, freeze fixtures, `migrateV1MapToArchitectureProjectV2`, and regression coverage such as `npm run test:legacy-roundtrip`.
-
-## Fixed Public Acceptance URL
-
-The fixed public Asteria acceptance entry point is:
-
-```text
-https://asteria.httpwwwcardiacnexus-ukb.com/
-```
-
-Acceptance-mode changes must refresh and verify this fixed URL after the commit is pushed. Do not create a quick tunnel, alternate hostname, alternate deployment, or replacement public link.
-
-The shared local origin for the fixed URL is:
-
-```bash
-HOST=0.0.0.0 PORT=5174 ASTERIA_RUNTIME_DIR=/home/yuukias/.local/state/asteria/runtime node scripts/asteria-server.mjs
-```
-
-`/api/asteria/status` remains available for fixed-origin health checks. The old `/api/asteria/map` and `/api/asteria/session` endpoints may remain as compatibility API surface, but the active 2.0 UI does not use them as a startup gate.
-
-## Run
+## Run locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-The local dev server is configured for `http://127.0.0.1:5173/`.
+The local development server opens at `http://127.0.0.1:5173/`.
 
-For the shared server used by the fixed public entry point:
+The fixed public acceptance entry remains:
 
-```bash
-npm run serve:shared
+```text
+https://asteria.httpwwwcardiacnexus-ukb.com/
 ```
 
-## Build And Test
+Public availability is an operational state, not a product-family capability
+claim. Shared-server, tunnel, and Cloudflare recovery procedures live in
+[`docs/operations/development/RUNTIME_OPERATIONS.md`](docs/operations/development/RUNTIME_OPERATIONS.md).
+
+## Verify
 
 ```bash
 npm run build
 npm run test:product-family-boundary
-npm run test:legacy-roundtrip
-npm run test:architecture-kernel
-npm run test:canonical-trace
-npm run test:cat-trace-bridge
-npm run test:architecture-g03
-npm run test:architecture-g04
-npm run test:architecture-g05
-npm run test:architecture-g06
-npm run test:architecture-rc3
-npm run test:architecture-rc4
-npm run test:architecture-rc5
-npm run test:architecture-rc6
-npm run test:architecture-rc7
-npm run test:architecture-rc8
-npm run test:architecture-rc9
-npm run test:architecture-rc10
-npm run test:architecture-rc11
-npm run test:architecture-rc12
-npm run test:architecture-rc13
-npm run test:architecture-rc14
-npm run test:architecture-rc15
-npm run test:architecture-rc16
-npm run test:architecture-rc17
-npm run test:architecture-rc18
-npm run test:architecture-rc19
+npm run test:repository-entry
 npm run test:regression
 npm run test:browser
 ```
 
-Public acceptance smoke after a pushed RC.19 commit:
+The cumulative regression protects Asteria 1.x import compatibility, the
+Asteria 2.0 semantic graph, Original TRACE and CAT-TRACE fixtures, Architecture
+/ Lineage / Evidence behavior, the repository bridge, and RC-specific
+regressions.
 
-```bash
-npm run smoke:public-rc19
-```
+## Read next
 
-## Repository Map
+| Topic | Document |
+| --- | --- |
+| Product-family authority | [Asteria Product Family Boundary](docs/design/ASTERIA_PRODUCT_FAMILY_BOUNDARY.md) |
+| Product direction | [Product Roadmap](docs/product/ROADMAP.md) |
+| Actionable future work | [Product TODO](docs/product/TODO.md) |
+| Version and compatibility rules | [Versioning](docs/product/VERSIONING.md) |
+| Release history | [Changelog](CHANGELOG.md) |
+| Scientific graph presentation | [Scientific Graph Visual System](docs/design/SCIENTIFIC_GRAPH_VISUAL_SYSTEM.md) |
+| Runtime operations | [Runtime Operations](docs/operations/development/RUNTIME_OPERATIONS.md) |
+| Agent and handoff rules | [AGENTS.md](AGENTS.md) and [Agent Rules](prompts/AGENT_RULES.md) |
 
-- `src/app/App.tsx`: Asteria 2.0 root shell.
-- `src/architecture/`: current Asteria 2.0 scientific-product schema, fixtures, projections, trace, semantic diff, validation, migration, and session state. It is not a universal product-family Core.
-- `src/components/ArchitectureWorkspace.tsx`: central Architecture / Lineage / Evidence projection workspace.
-- `src/components/ArchitectureReferencePanel.tsx`: model selector, view selector, trace controls, inspector, export, semantic diff, and session actions.
-- `src/fixtures/legacyV1FreezeMap.ts`: v1 compatibility fixture.
-- `archive/asteria-v1-ui/`: retired Asteria 1.x live UI/runtime source archive.
-- `docs/design/ASTERIA_PRODUCT_FAMILY_BOUNDARY.md`: Atlas, Blueprint, current-product, adapter, and shared-Core boundaries.
-- `results/`: task results, screenshots, and acceptance evidence.
+## Repository layout
+
+- `src/`: active Asteria 2.0 application and compatibility code.
+- `tests/` and `scripts/`: browser, regression, validation, build, and runtime
+  tooling.
+- `docs/product/`: active roadmap, actionable TODO, and version rules.
+- `docs/design/`: long-lived product and visual contracts.
+- `docs/operations/`: runtime and acceptance operations.
+- `prompts/` and `results/`: file-based task handoff and execution evidence.
+- `archive/asteria-v1-ui/`: retired Asteria 1.x live UI/runtime source; it is
+  historical reference, not part of the active build.
+
+`v1.0.0` remains the frozen compatibility baseline. Active code retains the v1
+payload, fixture, migration, and regression paths required to import historical
+maps into Asteria 2.0.

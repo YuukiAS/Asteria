@@ -17,4 +17,4 @@ The concept images define the visual and interaction language for layout, densit
 
 If any formula, author, citation, state label, result status, or numerical claim inside an image conflicts with the current canonical references, the image content must be ignored and the canonical text references must be used instead.
 
-The active canonical references for implementation are `ROADMAP.md`, `VERSIONING.md`, `docs/notes/2026-09-09_asteria_v2_web_delivery_plan.md`, and `docs/notes/2026-09-09_trace_and_cat_trace_reference_for_asteria_v2.md`.
+The active canonical references for implementation are `docs/product/ROADMAP.md`, `docs/product/VERSIONING.md`, `docs/notes/2026-09-09_asteria_v2_web_delivery_plan.md`, and `docs/notes/2026-09-09_trace_and_cat_trace_reference_for_asteria_v2.md`.
